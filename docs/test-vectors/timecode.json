@@ -1,0 +1,135 @@
+{
+  "description": "Shared timecode vectors. Read by the Rust tests of se-domain (crates/se-domain/tests/test_vectors.rs) and by the TypeScript timecode helpers (prompt 10) so both sides parse and format identically. frameRate is null when none is given. SMPTE timecodes count frames at the nominal rate (30 for 29.97); ';' (drop-frame notation) is read as non-drop for now. Error codes name the Rust TimecodeErrorReason variants in camelCase. Formatting rounds down to the displayed frame and prefixes negative times with '-'.",
+  "parse": [
+    { "input": "51s", "frameRate": null, "flicks": 35985600000 },
+    { "input": "51.5s", "frameRate": null, "flicks": 36338400000 },
+    { "input": " 51s ", "frameRate": null, "flicks": 35985600000 },
+    { "input": "51s", "frameRate": { "numerator": 25, "denominator": 1 }, "flicks": 35985600000 },
+    { "input": "0.000000001s", "frameRate": null, "flicks": 1 },
+    { "input": "-2s", "frameRate": null, "flicks": -1411200000 },
+    { "input": "00:51", "frameRate": null, "flicks": 35985600000 },
+    { "input": "1:02.500", "frameRate": null, "flicks": 44100000000 },
+    { "input": "90:00", "frameRate": null, "flicks": 3810240000000 },
+    { "input": "1:00:00", "frameRate": null, "flicks": 2540160000000 },
+    { "input": "01:02:03.5", "frameRate": null, "flicks": 2627301600000 },
+    {
+      "input": "00:00:51:12",
+      "frameRate": { "numerator": 25, "denominator": 1 },
+      "flicks": 36324288000
+    },
+    {
+      "input": "00:00:51:12",
+      "frameRate": { "numerator": 30000, "denominator": 1001 },
+      "flicks": 36304107840
+    },
+    {
+      "input": "00:00:51;12",
+      "frameRate": { "numerator": 30000, "denominator": 1001 },
+      "flicks": 36304107840
+    },
+    {
+      "input": "23:59:59:29",
+      "frameRate": { "numerator": 30000, "denominator": 1001 },
+      "flicks": 61024780296480
+    },
+    {
+      "input": "00:00:00:119",
+      "frameRate": { "numerator": 120, "denominator": 1 },
+      "flicks": 699720000
+    },
+    {
+      "input": "-00:00:01:00",
+      "frameRate": { "numerator": 25, "denominator": 1 },
+      "flicks": -705600000
+    }
+  ],
+  "parseErrors": [
+    { "input": "", "frameRate": null, "error": "empty" },
+    { "input": "   ", "frameRate": null, "error": "empty" },
+    { "input": "51", "frameRate": null, "error": "missingUnit" },
+    { "input": "5.5", "frameRate": null, "error": "missingUnit" },
+    { "input": "abc", "frameRate": null, "error": "unrecognised" },
+    { "input": "1.2.3s", "frameRate": null, "error": "unrecognised" },
+    { "input": ".5s", "frameRate": null, "error": "unrecognised" },
+    { "input": "5.s", "frameRate": null, "error": "unrecognised" },
+    { "input": "+5s", "frameRate": null, "error": "unrecognised" },
+    { "input": "--5s", "frameRate": null, "error": "unrecognised" },
+    { "input": "5 s", "frameRate": null, "error": "unrecognised" },
+    { "input": "1:2:3:4:5", "frameRate": null, "error": "unrecognised" },
+    { "input": "1::2", "frameRate": null, "error": "unrecognised" },
+    {
+      "input": "00;00:51:12",
+      "frameRate": { "numerator": 30000, "denominator": 1001 },
+      "error": "unrecognised"
+    },
+    { "input": "00:51;12", "frameRate": null, "error": "unrecognised" },
+    { "input": "1:75", "frameRate": null, "error": "secondsOutOfRange" },
+    { "input": "1:60:00", "frameRate": null, "error": "minutesOutOfRange" },
+    {
+      "input": "00:00:60:00",
+      "frameRate": { "numerator": 25, "denominator": 1 },
+      "error": "secondsOutOfRange"
+    },
+    { "input": "00:00:51:12", "frameRate": null, "error": "frameRateRequired" },
+    {
+      "input": "00:00:51:30",
+      "frameRate": { "numerator": 30000, "denominator": 1001 },
+      "error": "framesOutOfRange"
+    },
+    {
+      "input": "00:00:01:25",
+      "frameRate": { "numerator": 25, "denominator": 1 },
+      "error": "framesOutOfRange"
+    },
+    { "input": "1.0000000001s", "frameRate": null, "error": "tooManyDecimals" },
+    { "input": "20000000s", "frameRate": null, "error": "outOfRange" }
+  ],
+  "format": [
+    { "flicks": 0, "frameRate": { "numerator": 25, "denominator": 1 }, "timecode": "00:00:00:00" },
+    {
+      "flicks": 36324288000,
+      "frameRate": { "numerator": 25, "denominator": 1 },
+      "timecode": "00:00:51:12"
+    },
+    {
+      "flicks": 36304107840,
+      "frameRate": { "numerator": 30000, "denominator": 1001 },
+      "timecode": "00:00:51:12"
+    },
+    {
+      "flicks": 36304107839,
+      "frameRate": { "numerator": 30000, "denominator": 1001 },
+      "timecode": "00:00:51:11"
+    },
+    {
+      "flicks": 2540160000000,
+      "frameRate": { "numerator": 24, "denominator": 1 },
+      "timecode": "01:00:00:00"
+    },
+    {
+      "flicks": 2540160000000,
+      "frameRate": { "numerator": 30000, "denominator": 1001 },
+      "timecode": "00:59:56:12"
+    },
+    {
+      "flicks": -705600000,
+      "frameRate": { "numerator": 25, "denominator": 1 },
+      "timecode": "-00:00:01:00"
+    },
+    {
+      "flicks": -1,
+      "frameRate": { "numerator": 25, "denominator": 1 },
+      "timecode": "-00:00:00:00"
+    },
+    {
+      "flicks": 254016000000000,
+      "frameRate": { "numerator": 25, "denominator": 1 },
+      "timecode": "100:00:00:00"
+    },
+    {
+      "flicks": 699720000,
+      "frameRate": { "numerator": 120, "denominator": 1 },
+      "timecode": "00:00:00:119"
+    }
+  ]
+}
