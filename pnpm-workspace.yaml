@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Dependency install scripts are opt-in. electron-winstaller only serves Squirrel installers,
+# which we do not build (NSIS is used on Windows).
+allowBuilds:
+  electron-winstaller: false

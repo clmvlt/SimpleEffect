@@ -1,0 +1,13 @@
+{
+  "name": "@se/engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Rendering engine shared by preview and export: evaluate, decode, composite, audio, export.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}
