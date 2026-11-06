@@ -93,6 +93,8 @@ export function DockHandle({ label = 'Resize panels', className, ...props }: Doc
         'aria-[orientation=vertical]:w-px aria-[orientation=horizontal]:h-px',
         'data-[separator=hover]:bg-accent data-[separator=active]:bg-accent',
         'data-[separator=focus]:bg-focus-ring',
+        // Keyboard focus: a 1 px line is too thin to spot, so add a ring around it.
+        'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus-ring',
         className,
       )}
       {...props}
