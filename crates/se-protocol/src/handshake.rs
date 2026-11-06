@@ -3,12 +3,14 @@
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 /// Connection details announced by `se-core` on stdout at startup, read by the Electron supervisor.
 ///
 /// Serialised as exactly one line: `{"port":<u16>,"token":"<hex>","version":"<semver>"}`.
-/// Everything else `se-core` logs goes to stderr.
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// Everything else `se-core` logs goes to stderr. Exported to TypeScript for the Electron
+/// supervisor, which parses and validates the line.
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 pub struct CoreHandshake {
     /// TCP port on 127.0.0.1 where `se-core` listens (chosen by the OS).
     pub port: u16,

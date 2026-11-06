@@ -2,8 +2,11 @@ import { spawn, type ChildProcessByStdio } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import type { Readable, Writable } from 'node:stream';
 
+import type { CoreHandshake } from '@se/protocol';
+
 import type { CoreConnection } from '../shared/bridge-api';
-import { parseHandshakeLine, type CoreHandshake } from './core-handshake';
+import { coreEnvironment } from './core-environment';
+import { parseHandshakeLine } from './core-handshake';
 import { restartDelayMs } from './restart-backoff';
 
 type CoreProcess = ChildProcessByStdio<Writable, Readable, Readable>;
@@ -14,6 +17,8 @@ export type SupervisorLogger = Pick<Console, 'info' | 'warn' | 'error'>;
 /** Options of {@link CoreSupervisor}. */
 export interface CoreSupervisorOptions {
   readonly binaryPath: string;
+  /** App data folder passed to se-core as `SE_DATA_DIR` (its logs go to `<dataDir>/logs`). */
+  readonly dataDir: string;
   readonly logger?: SupervisorLogger;
 }
 
@@ -33,6 +38,7 @@ const STABLE_RUN_MS = 10_000;
  */
 export class CoreSupervisor {
   readonly #binaryPath: string;
+  readonly #dataDir: string;
   readonly #logger: SupervisorLogger;
   #process: CoreProcess | null = null;
   #connection: CoreConnection | null = null;
@@ -42,8 +48,9 @@ export class CoreSupervisor {
   #restartTimer: NodeJS.Timeout | undefined;
   #stopping = false;
 
-  constructor({ binaryPath, logger = console }: CoreSupervisorOptions) {
+  constructor({ binaryPath, dataDir, logger = console }: CoreSupervisorOptions) {
     this.#binaryPath = binaryPath;
+    this.#dataDir = dataDir;
     this.#logger = logger;
   }
 
@@ -78,6 +85,7 @@ export class CoreSupervisor {
   #launch(): void {
     const child = spawn(this.#binaryPath, [], {
       stdio: ['pipe', 'pipe', 'pipe'],
+      env: coreEnvironment(this.#dataDir, process.env),
       windowsHide: true,
     });
     this.#process = child;

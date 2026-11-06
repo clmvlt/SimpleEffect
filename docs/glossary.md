@@ -59,3 +59,8 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Session token** | 256-bit random secret of one core run, required by every request (`?t=`); never logged | `SessionToken` |
 | **Core supervisor** | Electron main component that spawns, restarts (with backoff) and stops the core | `CoreSupervisor` |
 | **Bridge** | The minimal typed API the preload script exposes to the renderer as `window.simpleEffect` | `SimpleEffectBridge` |
+| **Command** | A request sent to se-core over `/rpc`; answered by the command result of the same kind | `Command`, `CommandResult` |
+| **Core event** | A message pushed by se-core to every connected client | `CoreEvent` |
+| **Resync** | Refetching state after missed events or a reconnection | `CoreEvent::ResyncRequired` |
+| **Core client** | The renderer's typed connection to se-core (requests, events, reconnection) | `CoreClient` |
+| **App data folder** | Per-user folder shared by the app and se-core (logs, later settings and library) | `SE_DATA_DIR`, `AppPaths` |

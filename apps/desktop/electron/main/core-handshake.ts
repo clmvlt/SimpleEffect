@@ -1,9 +1,4 @@
-/** Connection details printed by se-core as the first line of its stdout. */
-export interface CoreHandshake {
-  readonly port: number;
-  readonly token: string;
-  readonly version: string;
-}
+import type { CoreHandshake } from '@se/protocol';
 
 /** Result of {@link parseHandshakeLine}: errors are values, with an actionable message. */
 export type HandshakeParseResult =

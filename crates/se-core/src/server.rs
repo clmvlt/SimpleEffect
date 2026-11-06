@@ -3,22 +3,26 @@
 use std::{net::Ipv4Addr, sync::Arc, time::Duration};
 
 use axum::{Router, middleware, routing::get};
-use se_protocol::CoreHandshake;
+use se_protocol::{CoreEvent, CoreHandshake};
 use tokio::{net::TcpListener, sync::watch};
 
 use crate::{
     CORE_VERSION,
     access_guard::{AccessGuard, SessionToken, require_local_access},
+    app_paths::AppPaths,
     error::CoreError,
     handshake,
-    rpc::{self, RpcState},
+    rpc::{self, EventBus, HandlerContext, RpcRouter, RpcState},
 };
 
 /// How long open connections get to close after shutdown starts before the process exits anyway.
 const DRAIN_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Runs the core server until `shutdown` resolves, then drains connections and returns.
-pub async fn run(shutdown: impl Future<Output = ()> + Send + 'static) -> Result<(), CoreError> {
+pub async fn run(
+    paths: AppPaths,
+    shutdown: impl Future<Output = ()> + Send + 'static,
+) -> Result<(), CoreError> {
     let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
         .await
         .map_err(CoreError::Bind)?;
@@ -33,15 +37,23 @@ pub async fn run(shutdown: impl Future<Output = ()> + Send + 'static) -> Result<
     tracing::info!(
         port,
         version = CORE_VERSION,
+        data_dir = %paths.data_dir.display(),
         "se-core listening on 127.0.0.1"
     );
 
+    let events = EventBus::new();
     let (stopping_sender, stopping) = watch::channel(false);
-    let server =
-        axum::serve(listener, router(guard, stopping.clone())).with_graceful_shutdown(async move {
-            shutdown.await;
-            stopping_sender.send_replace(true);
-        });
+    let router = RpcRouter::new(HandlerContext {
+        version: CORE_VERSION,
+        paths,
+    });
+    let state = RpcState::new(router, events.clone(), stopping.clone());
+    let server = axum::serve(listener, routes(guard, state)).with_graceful_shutdown(async move {
+        shutdown.await;
+        // Tell every client first, then close the sockets (see `rpc::connection`).
+        events.publish(CoreEvent::CoreShuttingDown);
+        stopping_sender.send_replace(true);
+    });
 
     tokio::select! {
         result = server.into_future() => result.map_err(CoreError::Serve),
@@ -52,10 +64,10 @@ pub async fn run(shutdown: impl Future<Output = ()> + Send + 'static) -> Result<
     }
 }
 
-fn router(guard: Arc<AccessGuard>, stopping: watch::Receiver<bool>) -> Router {
+fn routes(guard: Arc<AccessGuard>, state: RpcState) -> Router {
     Router::new()
         .route("/rpc", get(rpc::upgrade))
-        .with_state(RpcState { stopping })
+        .with_state(state)
         .layer(middleware::from_fn_with_state(guard, require_local_access))
 }
 

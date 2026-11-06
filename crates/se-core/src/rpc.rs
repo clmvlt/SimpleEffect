@@ -1,64 +1,55 @@
-//! The `/rpc` WebSocket endpoint: JSON requests in, JSON responses out.
+//! The `/rpc` WebSocket endpoint: typed requests in, responses and pushed events out
+//! (`docs/architecture.md` §6, ADR-0012).
+//!
+//! - [`router`]: one text frame in, one response frame out (parse, dispatch, encode).
+//! - [`handlers`]: one file per command group, called by the router.
+//! - [`event_bus`]: fan-out of [`se_protocol::CoreEvent`]s to every connection.
+//! - [`connection`]: the per-socket loop interleaving responses and events.
+
+mod connection;
+mod encode;
+mod event_bus;
+mod handlers;
+mod request;
+mod router;
+
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 use axum::{
-    extract::{
-        State, WebSocketUpgrade,
-        ws::{Message, WebSocket},
-    },
+    extract::{State, WebSocketUpgrade},
     response::Response,
 };
+pub use event_bus::EventBus;
+pub use handlers::HandlerContext;
+pub use router::RpcRouter;
 use tokio::sync::watch;
-
-use crate::dispatch;
 
 /// State shared by every `/rpc` connection.
 #[derive(Clone)]
 pub struct RpcState {
-    /// Becomes `true` when the core starts shutting down, so open sockets close cleanly.
-    pub stopping: watch::Receiver<bool>,
+    router: Arc<RpcRouter>,
+    events: EventBus,
+    stopping: watch::Receiver<bool>,
+    next_connection_id: Arc<AtomicU64>,
+}
+
+impl RpcState {
+    /// `stopping` becomes `true` when the core starts shutting down, so open sockets close.
+    pub fn new(router: RpcRouter, events: EventBus, stopping: watch::Receiver<bool>) -> Self {
+        Self {
+            router: Arc::new(router),
+            events,
+            stopping,
+            next_connection_id: Arc::new(AtomicU64::new(1)),
+        }
+    }
 }
 
 /// Upgrades an authorised HTTP request (see `access_guard`) to a WebSocket.
 pub async fn upgrade(websocket: WebSocketUpgrade, State(state): State<RpcState>) -> Response {
-    websocket.on_upgrade(move |socket| serve(socket, state.stopping))
-}
-
-async fn serve(mut socket: WebSocket, mut stopping: watch::Receiver<bool>) {
-    tracing::debug!("rpc client connected");
-    loop {
-        tokio::select! {
-            incoming = socket.recv() => {
-                let Some(Ok(message)) = incoming else { break };
-                if !answer(&mut socket, message).await {
-                    break;
-                }
-            }
-            () = stop_requested(&mut stopping) => {
-                // Best effort: the client sees a clean close frame instead of a reset.
-                let _ = socket.send(Message::Close(None)).await;
-                break;
-            }
-        }
-    }
-    tracing::debug!("rpc client disconnected");
-}
-
-/// Resolves once shutdown starts (or the shutdown signal is gone).
-///
-/// Kept in its own function so the non-`Send` `watch::Ref` never lives across an `.await`.
-async fn stop_requested(stopping: &mut watch::Receiver<bool>) {
-    let _ = stopping.wait_for(|stopping| *stopping).await;
-}
-
-/// Answers one frame. Returns `false` when the connection must end.
-async fn answer(socket: &mut WebSocket, message: Message) -> bool {
-    match message {
-        Message::Text(text) => {
-            let reply = dispatch::handle_text(text.as_str());
-            socket.send(Message::Text(reply.into())).await.is_ok()
-        }
-        Message::Close(_) => false,
-        // Axum answers pings itself; binary frames are not part of the protocol yet.
-        Message::Binary(_) | Message::Ping(_) | Message::Pong(_) => true,
-    }
+    let connection_id = state.next_connection_id.fetch_add(1, Ordering::Relaxed);
+    websocket.on_upgrade(move |socket| connection::serve(socket, state, connection_id))
 }
