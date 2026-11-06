@@ -123,7 +123,8 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
   4. `pnpm check` green.
   5. `git push -u origin feature/<…>`
   6. `git checkout dev && git pull --ff-only origin dev && git merge --no-ff feature/<…>` — resolve conflicts and re-run `pnpm check` if needed — then `git push origin dev`.
-- Merge into `dev` only when the work is complete and `pnpm check` is green. Unfinished work stays on the pushed feature branch and is logged as `Partial` in `prompts/PROGRESS.md` with what remains.
+  7. Once `dev` is pushed, delete the merged branch on GitHub and locally: `git push origin --delete feature/<…> && git branch -d feature/<…>`. GitHub only keeps `main`, `recette`, `dev` and unfinished feature branches.
+- Merge into `dev` only when the work is complete and `pnpm check` is green. Unfinished work stays on the pushed feature branch (never deleted) and is logged as `Partial` in `prompts/PROGRESS.md` with what remains.
 - **Small maintenance** (docs, config, typo): commit directly on an up-to-date `dev` and push.
 - **Never** commit, merge, push, rebase or tag on `main` or `recette`, and never open a pull request towards them; never force-push; never rewrite pushed history; never create tags or releases (the user releases, see `GUIDE-GIT.md`).
 - Never commit secrets, `resources/bin/` binaries, build outputs or large media files.
@@ -141,7 +142,7 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
   - new domain term → `docs/glossary.md`;
   - module purpose/rules changed → that module's `CLAUDE.md`.
 - [ ] When executing a roadmap prompt: tick it in `prompts/README.md` and append an entry to `prompts/PROGRESS.md` (done, deviations, follow-ups, branch).
-- [ ] Work committed on its branch, pushed, merged into `dev` and `dev` pushed (see Git workflow); CI green on `dev` (`gh run list --branch dev`).
+- [ ] Work committed on its branch, pushed, merged into `dev`, `dev` pushed and the feature branch deleted (see Git workflow); CI green on `dev` (`gh run list --branch dev`).
 
 ## Gotchas
 

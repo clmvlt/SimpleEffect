@@ -10,7 +10,7 @@ Chaque fichier `NN-*.md` décrit **une** fonctionnalité, avec son contexte, son
    lance le prompt 01
    ```
 3. Claude crée une branche `feature/NN-…` depuis `dev` à jour, lit `CLAUDE.md`, la doc et le prompt, puis développe. S'il te pose une question (installation, téléchargement, choix produit), réponds-lui.
-4. À la fin, il coche le prompt ci-dessous, ajoute une entrée dans `PROGRESS.md`, pousse sa branche et la fusionne dans `dev` (sans PR).
+4. À la fin, il coche le prompt ci-dessous, ajoute une entrée dans `PROGRESS.md`, pousse sa branche, la fusionne dans `dev` (sans PR) puis la supprime de GitHub.
 5. Toi, tu testes, puis tu promeus `dev` → `recette` → `main` et tu lances les releases : voir [`GUIDE-GIT.md`](../GUIDE-GIT.md).
 
 **Si un prompt est trop gros pour une session**, Claude s'arrête à un point cohérent et note ce qui reste dans `PROGRESS.md`. Relance alors : `Continue le prompt prompts/NN-....md`.
