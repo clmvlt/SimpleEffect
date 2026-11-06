@@ -18,6 +18,8 @@
   --animate-content-in: content-in var(--duration-normal) var(--ease-out);
   --animate-content-out: content-out var(--duration-fast) var(--ease-in);
   --animate-progress-indeterminate: progress-indeterminate 1.4s var(--ease-standard) infinite;
+  /* The easing editor preview: callers set `animation-timing-function` to the curve shown. */
+  --animate-easing-preview: easing-preview 1.6s infinite;
 
   @keyframes spin {
     to {
@@ -54,6 +56,17 @@
     to {
       opacity: 0;
       transform: scale(0.97);
+    }
+  }
+
+  /* A dot crossing its track (minus its own 0.75 rem width), then resting before the next loop. */
+  @keyframes easing-preview {
+    from {
+      left: 0;
+    }
+    70%,
+    to {
+      left: calc(100% - 0.75rem);
     }
   }
 

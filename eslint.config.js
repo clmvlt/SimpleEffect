@@ -17,6 +17,7 @@ const PRIMITIVE_LIBRARIES = [
   'lucide-react',
   'sonner',
   'class-variance-authority',
+  'react-resizable-panels',
 ];
 
 /**
