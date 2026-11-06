@@ -1,0 +1,15 @@
+[package]
+name = "se-agents"
+description = "AI CLI providers (Claude Code first) and their stream parsing."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+repository.workspace = true
+
+[dependencies]
+se-app = { workspace = true }
+se-domain = { workspace = true }
+
+[lints]
+workspace = true

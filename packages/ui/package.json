@@ -1,0 +1,13 @@
+{
+  "name": "@se/ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SimpleEffect design system: tokens, primitives and generic editor widgets.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}

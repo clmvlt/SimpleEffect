@@ -61,7 +61,9 @@ SimpleEffect/
 ├─ prompts/                  roadmap: one prompt per feature, executed in order (French)
 ├─ apps/
 │  └─ desktop/
-│     ├─ electron/           main + preload (TypeScript, no business logic)
+│     ├─ electron/           main + preload + shared bridge contract (TypeScript, no business logic)
+│     ├─ tooling/            build-time helpers (Content-Security-Policy plugin)
+│     ├─ electron-builder.yml  installer configuration (`pnpm package`)
 │     └─ src/                renderer React app
 │        ├─ app/             providers, routing, shell layout
 │        ├─ features/        one folder per feature (see §4.3)
@@ -83,7 +85,7 @@ SimpleEffect/
 │  ├─ protocol/              @se/protocol: generated TS types + typed RPC client
 │  ├─ engine/                @se/engine: evaluation, decode, composite, audio, export
 │  └─ ui/                    @se/ui: design system (shadcn-style, editor components)
-├─ scripts/                  codegen, fetch-binaries, dev helpers
+├─ scripts/                  Node scripts behind pnpm commands (check, dev, build, package, set-version, codegen…)
 └─ resources/bin/<platform>/ ffmpeg, ffprobe, whisper-cli (gitignored, fetched)
 ```
 
@@ -155,9 +157,12 @@ features/<name>/
 
 ### 4.4 Electron (`apps/desktop/electron`)
 
-- `main/`: app lifecycle, windows, menus, dialogs, `CoreSupervisor` (spawn se-core, read handshake line `{"port":…, "token":…}` on stdout, restart on crash with backoff).
-- `preload/`: exposes a minimal typed API via `contextBridge` (`getCoreConnection()`, `getPathForFile(file)`, `openDialog(...)`).
-- Security: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, strict CSP (connect only to the core origin).
+- `main/`: app lifecycle, windows, menus, dialogs, `CoreSupervisor` (spawn se-core, read the handshake line `{"port":…,"token":…,"version":…}` on stdout, restart on crash with exponential backoff, stop it by closing its stdin when the app quits).
+- `preload/`: exposes a minimal typed API via `contextBridge` as `window.simpleEffect` (`getCoreConnection()`; later `getPathForFile(file)`, `openDialog(...)`). Built as CommonJS because sandboxed preloads cannot be ES modules.
+- `shared/`: the bridge contract (types and IPC channel names) bundled into main, preload and renderer.
+- Security: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, no pop-ups or navigation, strict CSP written as a meta tag at build time (`tooling/`): production connects only to `127.0.0.1`.
+
+**se-core process contract**: stdout carries exactly one handshake line; logs go to stderr; stdin stays open and its end-of-file means "shut down" (so the core dies with the app, even if the app crashes). The packaged binary lives in `resources/bin/`, the development one in `target/debug/`.
 
 ## 5. Core concepts
 
@@ -362,7 +367,7 @@ Only `crates/se-agents/src/providers/<provider>/` knows a concrete CLI. Everythi
 
 ## 13. Security model
 
-- se-core listens on 127.0.0.1 only, on a random port, with a random 256-bit token; rejects requests with a foreign `Host` header.
+- se-core listens on 127.0.0.1 only, on a random port, with a random 256-bit token (`?t=` query parameter, compared in constant time; 401 otherwise); rejects requests whose `Host` is not `127.0.0.1:<port>` or `localhost:<port>` (403, defeats DNS rebinding). The token is never logged.
 - Per-task MCP tokens are minted at task start and revoked when the run ends.
 - Agents run with `--tools ""` (no built-in tools), in an empty working directory.
 - Renderer is sandboxed; motion templates run in an isolated Worker.

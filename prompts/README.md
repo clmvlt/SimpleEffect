@@ -33,7 +33,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | ✓ | # | Prompt | Dépend de | Parallélisable avec |
 |---|---|---|---|---|
 | **Phase 0 — Fondations** |||||
-| [ ] | 01 | [Bootstrap du monorepo](01-bootstrap-monorepo.md) | — | — |
+| [x] | 01 | [Bootstrap du monorepo](01-bootstrap-monorepo.md) | — | — |
 | [ ] | 02 | [Protocole typé et couche RPC](02-protocole-rpc.md) | 01 | 03, 05 |
 | [ ] | 03 | [Design system : fondations](03-design-system-fondations.md) | 01 | 02, 05, 06 |
 | [ ] | 04 | [Design system : composants montage, shell, i18n](04-design-system-editeur-shell.md) | 02, 03 | 05, 06 |

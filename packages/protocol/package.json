@@ -1,0 +1,13 @@
+{
+  "name": "@se/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Types generated from se-protocol and the typed client for se-core.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}

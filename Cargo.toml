@@ -1,0 +1,64 @@
+[workspace]
+resolver = "3"
+members = [
+  "crates/se-domain",
+  "crates/se-protocol",
+  "crates/se-app",
+  "crates/se-store",
+  "crates/se-media",
+  "crates/se-transcribe",
+  "crates/se-vision",
+  "crates/se-agents",
+  "crates/se-mcp",
+  "crates/se-export",
+  "crates/se-core",
+]
+
+# Shared package metadata. `scripts/set-version.mjs` rewrites `version` at release time.
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+publish = false
+repository = "https://github.com/clmvlt/SimpleEffect"
+
+# Every crate declares its dependencies with `{ workspace = true }` so versions live in one place.
+[workspace.dependencies]
+# Workspace crates (dependency rules: docs/architecture.md §3).
+se-domain = { path = "crates/se-domain" }
+se-protocol = { path = "crates/se-protocol" }
+se-app = { path = "crates/se-app" }
+se-store = { path = "crates/se-store" }
+se-media = { path = "crates/se-media" }
+se-transcribe = { path = "crates/se-transcribe" }
+se-vision = { path = "crates/se-vision" }
+se-agents = { path = "crates/se-agents" }
+se-mcp = { path = "crates/se-mcp" }
+se-export = { path = "crates/se-export" }
+
+# Third-party crates.
+anyhow = "1.0.104"
+axum = { version = "0.8.9", features = ["ws"] }
+futures-util = "0.3.34"
+hex = "0.4.3"
+rand = "0.10.3"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+tokio = "1.54.1"
+tokio-tungstenite = "0.30.0"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# Errors are values: no implicit panics outside tests (tests are allowed via clippy.toml).
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+dbg_macro = "deny"

@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+target/
+dist/
+out/
+release/
+.tsbuild/
+*.tsbuildinfo
+storybook-static/
+
+# Sidecar binaries (fetched with `pnpm fetch-binaries`, never committed)
+resources/bin/
+
+# Test and tooling leftovers
+coverage/
+.vitest/
+*.tmp
+*.log
+tmp/
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local environment
+.env
+.env.*

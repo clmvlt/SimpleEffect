@@ -60,12 +60,16 @@ Adapters depend on `se-app` and `se-domain`, never on each other. `se-core` depe
 | Command | Purpose |
 |---|---|
 | `pnpm install` | Install JS dependencies |
-| `pnpm dev` | Run Electron + renderer + se-core in development |
-| `pnpm check` | Everything CI runs: format check, lint, typecheck, JS tests, `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test`, codegen freshness |
+| `pnpm dev` | Build the debug se-core, then run Electron + renderer (downloads the Electron binary on first run) |
+| `pnpm check` | Everything CI runs: format check, lint, typecheck, JS tests, `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test`, codegen freshness (`scripts/check.mjs`) |
 | `pnpm test` / `cargo test --workspace` | Tests only |
-| `pnpm codegen` | Regenerate TypeScript types from Rust (`--check` to verify) |
-| `pnpm storybook` | Design system playground |
-| `pnpm fetch-binaries` | Download ffmpeg/ffprobe/whisper binaries into `resources/bin/<platform>/` (asks before downloading) |
+| `pnpm lint` / `pnpm format` / `pnpm typecheck` | Single steps of `pnpm check` (`format` rewrites files) |
+| `pnpm build` | Release se-core + production bundles of the Electron app |
+| `pnpm package` | `build`, then the installer of the current platform into `apps/desktop/release/` |
+| `pnpm set-version <semver>` | Write the version into every `package.json` and `Cargo.toml` (used by the release workflow) |
+| `pnpm codegen` | Regenerate TypeScript types from Rust (`--check` to verify) — placeholder until prompt 02 |
+| `pnpm storybook` | Design system playground — placeholder until prompt 03 |
+| `pnpm fetch-binaries` | Download ffmpeg/ffprobe/whisper binaries into `resources/bin/<platform>/` (asks before downloading) — added by prompt 08 |
 
 ## Code conventions
 
@@ -144,3 +148,7 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
 - **`VideoFrame` leaks GPU memory** if not closed; the decoder pool owns frame lifetimes.
 - **Binaries** (ffmpeg, ffprobe, whisper) are not committed: `pnpm fetch-binaries`.
 - **Never** log or persist AI CLI credentials or tokens; MCP task tokens are redacted in logs.
+- **TypeScript is pinned to 6.0.x**: TypeScript 7 (native) has no JS API, and `typescript-eslint` (typed lint) supports `<6.1`. Upgrade only when `typescript-eslint` supports 7.
+- **Electron binary**: since Electron 45 it is not downloaded at install time; the desktop `dev` script runs `install-electron` (idempotent) first. electron-builder downloads its own copy for packaging.
+- **Dependency install scripts** are blocked by pnpm unless listed in `allowBuilds` (`pnpm-workspace.yaml`). pnpm also refuses versions published less than a day ago (`minimumReleaseAge`): pick the previous release rather than adding exclusions.
+- **Repository drive**: pnpm needs symlinks/junctions, so the checkout must be on NTFS/APFS/ext4, never exFAT/FAT32.

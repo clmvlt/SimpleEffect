@@ -1,0 +1,29 @@
+# Normalise every text file to LF in the repository and the working tree.
+* text=auto eol=lf
+
+# Windows scripts need CRLF to run reliably in cmd.exe.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binary assets: never diff or normalise.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.mp4 binary
+*.mov binary
+*.wav binary
+*.mp3 binary
+*.onnx binary
+*.bin binary
+*.exe binary
+*.dll binary
+*.dylib binary
+*.so binary

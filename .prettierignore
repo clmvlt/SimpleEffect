@@ -1,0 +1,11 @@
+# Prettier also honours .gitignore; these are extra exclusions.
+
+# Lockfiles are machine-written.
+pnpm-lock.yaml
+Cargo.lock
+
+# Generated from Rust by `pnpm codegen` (never hand-edited).
+packages/protocol/src/generated/
+
+# Markdown is hand-formatted: Prettier would re-pad every table and create noisy diffs in docs and prompts.
+*.md
