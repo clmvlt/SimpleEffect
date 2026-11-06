@@ -5,7 +5,9 @@ import {
   contrastRatio,
   isInSrgbGamut,
   oklchToSrgb,
+  parseHex,
   parseOklch,
+  srgbToOklch,
   toHex,
 } from './color-math';
 import { parseTokenDeclarations, readAccentVariants } from './token-css';
@@ -66,6 +68,34 @@ describe('contrastRatio', () => {
     const grey = compositeOver(halfWhite, black);
     expect(grey.red).toBeCloseTo(0.5);
     expect(grey.blue).toBeCloseTo(0.5);
+  });
+});
+
+describe('srgbToOklch', () => {
+  it('inverts oklchToSrgb for colours inside the gamut', () => {
+    const colour = { lightness: 0.7, chroma: 0.12, hue: 250, alpha: 1 };
+    const back = srgbToOklch(oklchToSrgb(colour));
+    expect(back.lightness).toBeCloseTo(0.7, 4);
+    expect(back.chroma).toBeCloseTo(0.12, 4);
+    expect(back.hue).toBeCloseTo(250, 2);
+  });
+
+  it('reports greys with zero chroma and hue', () => {
+    expect(srgbToOklch({ red: 0.5, green: 0.5, blue: 0.5 })).toMatchObject({ chroma: 0, hue: 0 });
+  });
+});
+
+describe('parseHex', () => {
+  it('reads short and long forms, with or without #', () => {
+    expect(parseHex('#fff')).toEqual({ red: 1, green: 1, blue: 1 });
+    expect(parseHex('FF0000')).toEqual({ red: 1, green: 0, blue: 0 });
+    expect(toHex(parseHex(' #33AAff ') ?? { red: 0, green: 0, blue: 0 })).toBe('#33aaff');
+  });
+
+  it('rejects anything else', () => {
+    expect(parseHex('#ff00')).toBeNull();
+    expect(parseHex('red')).toBeNull();
+    expect(parseHex('#gg0000')).toBeNull();
   });
 });
 

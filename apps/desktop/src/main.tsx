@@ -1,8 +1,12 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { createHashRouter, RouterProvider } from 'react-router';
 
-import { App } from './app/App';
-import { CoreClientProvider, createCoreClient } from './shared/core';
+import { AppProviders } from './app/AppProviders';
+import { createAppRoutes } from './app/routes';
+import { createI18n } from './i18n';
+import { createCoreClient } from './shared/core';
+import { uiPreferencesStorage } from './shared/storage';
 import './app/styles.css';
 
 const container = document.getElementById('root');
@@ -10,13 +14,17 @@ if (container === null) {
   throw new Error('index.html must contain a <div id="root"> element for the React app.');
 }
 
-// One client for the app's lifetime: it reconnects by itself when se-core restarts.
+// Composition root: one core client (it reconnects by itself when se-core restarts), one
+// i18next instance, and a hash router (the renderer is a file in production, so paths live in
+// the URL fragment).
 const coreClient = createCoreClient(window.simpleEffect);
+const i18n = createI18n();
+const router = createHashRouter(createAppRoutes({ layoutStorage: uiPreferencesStorage() }));
 
 createRoot(container).render(
   <StrictMode>
-    <CoreClientProvider client={coreClient}>
-      <App />
-    </CoreClientProvider>
+    <AppProviders coreClient={coreClient} i18n={i18n}>
+      <RouterProvider router={router} />
+    </AppProviders>
   </StrictMode>,
 );

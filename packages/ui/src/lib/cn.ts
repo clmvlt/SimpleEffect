@@ -12,7 +12,14 @@ const mergeClasses = extendTailwindMerge({
       spacing: ['control-xs', 'control-sm', 'control-md'],
       shadow: ['overlay'],
       ease: ['standard'],
-      animate: ['overlay-in', 'overlay-out', 'content-in', 'content-out', 'progress-indeterminate'],
+      animate: [
+        'overlay-in',
+        'overlay-out',
+        'content-in',
+        'content-out',
+        'progress-indeterminate',
+        'easing-preview',
+      ],
     },
   },
 });

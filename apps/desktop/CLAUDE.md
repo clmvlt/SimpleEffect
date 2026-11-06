@@ -21,25 +21,40 @@ The Electron application: the main process supervises se-core and manages window
 | `electron/main/main-window.ts` | Hardened `BrowserWindow` (context isolation, sandbox, no Node, no pop-ups or navigation) |
 | `electron/preload/index.ts` | `contextBridge` exposure of the bridge (built as CommonJS: required by the sandbox) |
 | `tooling/` | Build-time helpers: Content-Security-Policy builder and its Vite plugin |
-| `src/main.tsx` | Creates the single `CoreClient` and renders `<CoreClientProvider><App/></CoreClientProvider>` |
-| `src/app/` | Root layout (`App.tsx`); temporary connection screen (status + `getCoreInfo`) until prompt 04; `styles.css` only imports `@se/ui/styles.css` |
+| `src/main.tsx` | Composition root: one `CoreClient`, one i18next instance, the hash router built from `createAppRoutes({ layoutStorage })`, rendered inside `AppProviders` |
+| `src/app/AppProviders.tsx` | App-wide contexts: `I18nextProvider`, `CoreClientProvider`, `TooltipProvider`, and the `Toaster` |
+| `src/app/routes.tsx` | Routes (`/` home, `/project/:projectId` editor) under `AppLayout`; dependencies injected so tests use a memory router |
+| `src/app/layout/AppLayout.tsx` | Window frame: the route's page above, the status bar below |
+| `src/app/editor/EditorPage.tsx` | Editor layout: nested `Dock`s (ids `editor.rows`, `editor.columns`) holding the feature panels; Inspecteur and IA share the right panel as tabs |
+| `src/app/status-bar/` | `StatusBar` (core connection announced as a `status`, AI availability, `__APP_VERSION__`) and the pure `connectionIndicator(state)` |
+| `src/app/styles.css` | Only imports `@se/ui/styles.css` |
 | `src/shared/core/` | The core connection: `createCoreClient(bridge)`, `CoreClientProvider`, `useCoreClient()`, `useConnectionStatus()`, `useCoreEvent(kind, handler)`, `useCoreInfo()` (logic in `watch-core-info.ts`) |
-| `src/features/<name>/` | One folder per feature (`components/`, `hooks/`, `store/`, `services/`, `api.ts`, `index.ts`) |
-| `src/i18n/` | Locales (`fr` default), from prompt 04 |
+| `src/shared/storage/` | `createNamespacedStorage(storage, namespace)` (errors swallowed) and `uiPreferencesStorage()` (`localStorage` under `se.ui.`): panel sizes and other machine preferences |
+| `src/features/<name>/` | One folder per feature (`components/`, `hooks/`, `store/`, `services/`, `api.ts`, `index.ts`; create only what is needed). Today: `projects` (`HomePage`), `media-bin` (`MediaBinPanel`), `viewer` (`ViewerPanel`), `inspector` (`InspectorView`), `ai` (`AiView`), `timeline` (`TimelinePanel`), each an empty state with a `TODO(prompt-NN)` |
+| `src/i18n/` | `createI18n()` (synchronous, bundled resources), `locales/fr.json` (keys by area: `app`, `home`, `editor`, `statusBar`, `common`), `i18next.d.ts` (typed keys) |
 
 ## Rules and invariants
 - Security: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`; the CSP (meta tag written by `tooling/csp-plugin.ts`) only allows scripts from the bundle and connections to `127.0.0.1` in production; inline `<style>` elements are allowed for Radix and sonner (ADR-0013).
-- UI: components, icons (`@se/ui/icons`) and toasts come from `@se/ui` only; ESLint rejects imports of `radix-ui`, `lucide-react`, `sonner` and `class-variance-authority` here. Style with token utilities (`bg-panel`, `text-text-muted`…): the default Tailwind palette does not exist and raw colours fail `pnpm check`.
+- UI: components, icons (`@se/ui/icons`) and toasts come from `@se/ui` only; ESLint rejects imports of `radix-ui`, `lucide-react`, `sonner`, `class-variance-authority` and `react-resizable-panels` here. Style with token utilities (`bg-panel`, `text-text-muted`…): the default Tailwind palette does not exist and raw colours fail `pnpm check`.
 - The session token is never logged (the supervisor logs the URL and version only).
 - Features import each other only through their `index.ts`; `shared/` never imports features or `app/` (enforced by `eslint-plugin-boundaries` in the root `eslint.config.js`).
 - Keep hooks thin: put connection logic in plain functions taking a `CoreClient` (or a `Pick` of it) so it is testable in Node (see `watch-core-info.ts`).
-- Components hold no business logic; all UI strings go through i18n from prompt 04 (temporary French strings are marked `TODO(prompt-04)`).
+- Components hold no business logic; every user-visible string goes through i18n (`useTranslation()` → `t('area.key')`). ESLint (`i18next/no-literal-string`, mode `jsx-only`) rejects JSX text and literal `aria-label`, `title`, `placeholder`, `label`, `description`, `content`, `alt`, `*Label`… in `src/**/*.tsx` (tests exempt; digits/punctuation and CAPITALS allowed). Pass `@se/ui` widgets their labels from `t()`, overriding their English defaults.
+- Routing: React Router in library mode with a **hash router** (the renderer is a file in production). Add a screen as a route object in `app/routes.tsx`; inject what it needs through `AppRouteDependencies`.
+- Panel sizes are machine preferences (`uiPreferencesStorage()`), never project data. Dock `layoutId`s are a compatibility surface: renaming one resets users' sizes.
+- `__APP_VERSION__` (from `package.json`) is injected by Vite `define` in `electron.vite.config.ts` and `vitest.config.ts`.
 - All runtime dependencies are bundled by electron-vite, so they are `devDependencies` and the packaged app ships no `node_modules`.
 
 ## Allowed dependencies
 `@se/protocol` (renderer; type imports only in `electron/`), `@se/engine`, `@se/ui` (renderer only), React, Zustand. Electron APIs only in `electron/`. See `docs/architecture.md` §4.
 
+## How to add a translation key
+1. Add it to `src/i18n/locales/fr.json` under its area (`editor.timeline.zoomIn`), in French, with typographic apostrophes (’) and ellipses (…).
+2. Use it: `const { t } = useTranslation(); … t('editor.timeline.zoomIn')`. Interpolation: `"version": "Version {{version}}"` → `t('statusBar.version', { version })`.
+3. `tsc` fails on an unknown key; `create-i18n.test.ts` fails on an empty value.
+
 ## How to test
-- `pnpm vitest run --project desktop` (or `pnpm test` at the root): `electron/**/*.test.ts`, `tooling/**/*.test.ts`, `src/**/*.test.{ts,tsx}`.
+- `pnpm vitest run --project desktop` (or `pnpm test` at the root): `electron/**/*.test.ts`, `tooling/**/*.test.ts`, `src/**/*.test.{ts,tsx}`. Tests run in Node; a test that renders React starts with a `/** @vitest-environment jsdom */` docblock (`vitest.setup.ts` adds jest-dom matchers, cleanup and jsdom stubs).
+- Shell tests (`src/app/app-shell.test.tsx`) render `AppProviders` + a memory router from `createAppRoutes`, with a real `CoreClient` whose endpoint never resolves (stays « connecting », opens no socket) and an in-memory layout storage. Inside docks, drive tabs with the keyboard: in jsdom the panel library takes clicks for resize grabs.
 - Manual: `pnpm dev` from the root (builds se-core, downloads the Electron binary on first run, opens the window).
 - Packaging: `pnpm package` from the root → `apps/desktop/release/` (config in `electron-builder.yml`).

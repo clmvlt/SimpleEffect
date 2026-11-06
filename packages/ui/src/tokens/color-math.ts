@@ -1,7 +1,9 @@
 /**
- * Colour maths for design tokens: parse `oklch()` values, convert them to sRGB and compute WCAG
- * contrast ratios. Used by the contrast test (AA invariant on text tokens) and the Storybook Tokens
- * page. Out-of-gamut colours are clipped per channel, as Chromium does when painting.
+ * Colour maths: parse `oklch()` and hex values, convert between OKLCH and sRGB, compute WCAG
+ * contrast ratios. Used by the contrast test (AA invariant on text tokens), the Storybook Tokens
+ * page and the `ColorField` picker (user colours). Out-of-gamut colours are clipped per channel, as
+ * Chromium does when painting. It lives in `tokens/` because it is the one module allowed to spell
+ * colour syntax.
  */
 
 /** A colour in OKLCH (lightness 0–1, chroma, hue in degrees) with an alpha channel (0–1). */
@@ -104,11 +106,50 @@ export function contrastRatio(first: Srgb, second: Srgb): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-/** Formats an sRGB colour as `#rrggbb`, for display next to a token (never for styling). */
+/**
+ * Formats an sRGB colour as `#rrggbb` (channels clipped): for display next to a token, and as the
+ * value of user colours picked in `ColorField`. Never used to style the UI itself.
+ */
 export function toHex({ red, green, blue }: Srgb): string {
   const channel = (value: number) =>
     Math.round(clamp01(value) * 255)
       .toString(16)
       .padStart(2, '0');
   return `#${channel(red)}${channel(green)}${channel(blue)}`;
+}
+
+/** Linear sRGB → OKLCH via OKLab (inverse of `oklchToLinearSrgb`). */
+function linearSrgbToOklch(red: number, green: number, blue: number): Oklch {
+  const l = Math.cbrt(0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue);
+  const m = Math.cbrt(0.2119034982 * red + 0.6806995451 * green + 0.1073969566 * blue);
+  const s = Math.cbrt(0.0883024619 * red + 0.2817188376 * green + 0.6299787005 * blue);
+  const lightness = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+  const a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+  const b = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+  const chroma = Math.hypot(a, b);
+  const hue = (Math.atan2(b, a) * 180) / Math.PI;
+  return { lightness, chroma, hue: hue < 0 ? hue + 360 : hue, alpha: 1 };
+}
+
+/**
+ * Converts gamma-encoded sRGB to OKLCH. Greys have no meaningful hue: their chroma is near 0 and
+ * their hue is reported as 0, so pickers should keep their own hue while chroma is 0.
+ */
+export function srgbToOklch({ red, green, blue }: Srgb): Oklch {
+  const colour = linearSrgbToOklch(decodeGamma(red), decodeGamma(green), decodeGamma(blue));
+  return colour.chroma < 1e-4 ? { ...colour, chroma: 0, hue: 0 } : colour;
+}
+
+const HEX_PATTERN = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+/** Parses `#rgb` or `#rrggbb` (the `#` is optional, case ignored); `null` if it is neither. */
+export function parseHex(text: string): Srgb | null {
+  const digits = HEX_PATTERN.exec(text.trim())?.[1];
+  if (digits === undefined) {
+    return null;
+  }
+  const full =
+    digits.length === 3 ? digits.replace(/[0-9a-f]/gi, (digit) => digit + digit) : digits;
+  const channel = (index: number) => parseInt(full.slice(index, index + 2), 16) / 255;
+  return { red: channel(0), green: channel(2), blue: channel(4) };
 }

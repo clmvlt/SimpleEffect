@@ -1,0 +1,74 @@
+{
+  "app": {
+    "name": "SimpleEffect"
+  },
+  "home": {
+    "title": "Accueil",
+    "empty": {
+      "title": "Aucun projet",
+      "description": "Créez un projet pour importer vos médias et commencer à monter."
+    },
+    "newProject": "Nouveau projet",
+    "openEditorPreview": "Ouvrir l’éditeur (aperçu de développement)"
+  },
+  "editor": {
+    "resize": {
+      "mediaViewer": "Redimensionner les panneaux Médias et Viewer",
+      "viewerSide": "Redimensionner les panneaux Viewer et Inspecteur",
+      "workspaceTimeline": "Redimensionner la timeline"
+    },
+    "sidePanel": "Inspecteur et IA",
+    "media": {
+      "title": "Médias",
+      "empty": {
+        "title": "Aucun média",
+        "description": "Les vidéos, sons et images importés dans le projet apparaîtront ici."
+      }
+    },
+    "viewer": {
+      "title": "Viewer",
+      "empty": {
+        "title": "Aucune séquence ouverte",
+        "description": "Ouvrez une séquence pour la prévisualiser ici."
+      }
+    },
+    "inspector": {
+      "title": "Inspecteur",
+      "empty": {
+        "title": "Aucune sélection",
+        "description": "Sélectionnez un élément de la timeline pour modifier ses propriétés."
+      }
+    },
+    "ai": {
+      "title": "IA",
+      "empty": {
+        "title": "Assistant IA non configuré",
+        "description": "Connectez un assistant IA installé sur cet ordinateur pour lui confier des tâches de montage."
+      }
+    },
+    "timeline": {
+      "title": "Timeline",
+      "empty": {
+        "title": "Timeline vide",
+        "description": "Ajoutez des médias à une séquence pour commencer le montage."
+      }
+    }
+  },
+  "statusBar": {
+    "label": "Barre d’état",
+    "core": {
+      "connecting": "Connexion au cœur…",
+      "connected": "Cœur connecté",
+      "reconnecting": "Reconnexion au cœur…",
+      "closed": "Connexion au cœur fermée"
+    },
+    "ai": {
+      "notConfigured": "IA non configurée"
+    },
+    "version": "Version {{version}}"
+  },
+  "common": {
+    "notifications": "Notifications",
+    "close": "Fermer"
+  }
+}

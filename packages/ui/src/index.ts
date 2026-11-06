@@ -4,6 +4,7 @@
  */
 export { cn } from './lib/cn';
 export { focusRing } from './lib/focus-ring';
+export { detectKeyboardPlatform, type KeyboardPlatform } from './lib/platform';
 export { Slot, Slottable } from './lib/slot';
 
 export * from './primitives/alert-dialog';
@@ -34,3 +35,21 @@ export * from './primitives/textarea';
 export * from './primitives/toast';
 export * from './primitives/toggle-group';
 export * from './primitives/tooltip';
+
+export * from './editor/ai-task-card';
+export * from './editor/aspect-ratio-picker';
+export * from './editor/color-field';
+export * from './editor/dock';
+export * from './editor/easing-curve-editor';
+export * from './editor/empty-state';
+export * from './editor/keyboard-shortcut';
+export * from './editor/keyframe-button';
+export * from './editor/meter';
+export * from './editor/panel';
+export * from './editor/prompt-composer';
+export * from './editor/property-group';
+export * from './editor/scrub-input';
+export * from './editor/status-dot';
+export * from './editor/timecode';
+export * from './editor/toolbar';
+export * from './editor/transport-bar';

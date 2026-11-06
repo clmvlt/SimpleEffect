@@ -26,6 +26,39 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-06 — Prompt 04: Design system : composants montage, shell, i18n — Done
+
+**Branch**: `feature/04-design-system-editeur-shell`, merged into `dev` at `<merge>`
+
+**Done**
+- `@se/ui` editor widgets (`packages/ui/src/editor/`, Storybook « Editor », 17 folders, stories + tests each): Panel (named region from its title or `aria-label`), Dock/DockPanel/DockHandle (`react-resizable-panels` 4.18, nestable, user resizes saved in an injected `DockLayoutStorage` under `dock-layout.v1.<layoutId>`, corrupt entries ignored), Toolbar (Radix toolbar: one tab stop, arrows inside, `pressed` toggles), PropertyGroup/PropertyRow (collapsible, keyframe slot, modified mark), ScrubInput (drag, Shift ×10, Alt ×0.1, arrows, double-click/Enter/digit typing with decimal comma, injected format/parse, **one `onCommit` per gesture**), TimecodeInput/TimecodeDisplay (injected `format`/`parse`, invalid → `aria-invalid`, Escape restores), ColorField (OKLCH sliders with live gradients, OKLCH and hex fields, EyeDropper when present, recent colours, `onChange`/`onCommit`), KeyframeButton (3 states, prev/next), EasingCurveEditor (draggable + arrow-key handles, presets linear/ease-in/ease-out/ease-in-out/back/hold, animated preview), TransportBar, Meter (dBFS zones, peak lines, pure `updatePeakHold`), AspectRatioPicker (16:9, 9:16, 1:1, 4:5, custom with thumbnails to scale), StatusDot, EmptyState, KeyboardShortcut (⌘⌥⇧ on Apple, localisable names elsewhere), AiTaskCard (5 statuses, log, error, cost, actions), PromptComposer (auto-growing, removable scope chips, Backspace removes the last, Ctrl/⌘+Enter sends, model/effort slots).
+- Shared helpers: `usePointerDrag` (pointer capture, per-move deltas so modifiers can change mid-drag, one `onEnd` per press), `lib/platform.ts` (the only OS check). Colour maths gains `srgbToOklch` and `parseHex`. New token `animate-easing-preview`. Storybook wraps stories in a `TooltipProvider`.
+- Renderer: i18next + react-i18next (`src/i18n/`, synchronous bundled `fr.json` grouped by `app`, `home`, `editor`, `statusBar`, `common`; keys typed through `CustomTypeOptions`), `eslint-plugin-i18next` `no-literal-string` (`jsx-only`, user-visible attributes listed, tests exempt; checked with deliberate violations). React Router 8 in library mode, hash router: `/` home (empty state, disabled « Nouveau projet », dev-only « Ouvrir l’éditeur » preview link), `/project/:projectId` editor (Médias | Viewer | Inspecteur+IA tabs over Timeline, every panel an explicit empty state), status bar (core connection as a polite `status`, « IA non configurée », version from `__APP_VERSION__`). `AppProviders` mounts `I18nextProvider`, `CoreClientProvider`, `TooltipProvider` and the `Toaster`. Panel sizes go to `localStorage` under `se.ui.` (`shared/storage/`). The temporary connection screen of prompts 01–02 is gone.
+- Features created with their panel only: `projects`, `media-bin`, `viewer`, `inspector`, `ai`, `timeline` (each with a `TODO(prompt-NN)`).
+- Tests: 461 in `ui` (axe on every story, all new stories included), 40 in `desktop` (shell routes and panels, saved layout restored, status bar, i18n completeness, storage adapter, connection indicator). ESLint forbids `react-resizable-panels` in the renderer.
+- Verified in the built app (Electron, isolated profile, CDP): home and editor render, dragging handles and arrow keys on a focused handle resize panels, sizes are saved and identical after quitting and relaunching; core connects (« Cœur connecté »).
+- Docs: ADR-0014, `docs/architecture.md` §4.1–4.2, glossary (editor widget, panel/dock, layout id, gesture commit, shell, translation key), `packages/ui/CLAUDE.md` (editor inventory, conventions, testing gotchas), `apps/desktop/CLAUDE.md` (routing, i18n, how to add a key, tests).
+
+**Deviations from the prompt**
+- Panel-size persistence uses our own `dock-layout-storage.ts` instead of the library's `useDefaultLayout`, so loading and saving are pure, unit-tested and save only user-made resizes (`requestedLayout`).
+- `EasingCurveEditor` uses its own presentational `EasingCurve` type (`cubicBezier` | `hold`): the domain easing type arrives with prompt 15 and the app will map it.
+- `ColorField` edits in OKLCH with three gradient sliders rather than a 2D area (keyboard-accessible out of the box); its value is a `#rrggbb` string (no alpha yet).
+- Meter peak hold is computed by a pure helper the audio engine calls (`updatePeakHold`), not inside the component: values stay in props as the prompt asks, and the widget has no clock.
+- A dev-only link on the home screen opens the editor (`/project/preview`) so the shell can be tried before projects exist (TODO(prompt-07)).
+- Optional props of editor widgets are typed `?: T | undefined` for `exactOptionalPropertyTypes` consumers.
+
+**Follow-ups**
+- Prompt 07: enable « Nouveau projet », load the project of `/project/:projectId`, remove the preview link.
+- Prompts 08/10/12/15/20: fill the panels (media bin, timeline, viewer + TransportBar, inspector property groups, AI composer and task cards) with the widgets of this prompt; send document commands from `onCommit` only (ADR-0014).
+- `ColorField` has no alpha channel; `ScrubInput` has no expression evaluation (`=10*2`) nor pointer-lock infinite drag: add if a property needs them.
+- Colour contrast of the new stories was not re-run in a real browser (axe in jsdom skips it); they use existing token pairs already covered by `contrast.test.ts`.
+
+**Notes for the next agent**
+- jsdom has no layout: `react-resizable-panels` sees 0 px, so resizing cannot be unit-tested, and clicks inside a `Dock` are taken for resize grabs (pointer-down default prevented): use the keyboard for tabs/buttons inside docks in tests. Do not mock `offsetWidth` to fix it: the library then fails to find panels.
+- A shell test can use a real `CoreClient` whose endpoint resolver never resolves: it stays « connecting » and opens no socket (`app-shell.test.tsx`).
+- To try the built app without disturbing a running `pnpm dev`: `electron-vite build --outDir <tmp>/out`, add a `package.json` with `"type": "module"` there, then `electron <tmp>/out --user-data-dir=<tmp>/profile --remote-debugging-port=9223` with `SE_CORE_PATH` pointing at `target/debug/se-core.exe`; Electron honours `--user-data-dir`.
+- A running `pnpm dev` locks `target/debug/se-core.exe` on Windows, which makes `cargo test` in `pnpm check` fail with « Accès refusé »: close the app or use another `CARGO_TARGET_DIR`.
+
 ## 2026-11-06 — Prompt 03: Design system : fondations — Done
 
 **Branch**: `feature/03-design-system-fondations`, merged into `dev` at `66efd7f`
