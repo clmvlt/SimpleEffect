@@ -17,6 +17,7 @@ const supervisor = new CoreSupervisor({
     platform: process.platform,
     override: process.env[CORE_PATH_ENV],
   }),
+  dataDir: app.getPath('userData'),
 });
 
 let coreStopped = false;
