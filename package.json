@@ -19,7 +19,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -b",
     "codegen": "node scripts/codegen.mjs",
-    "storybook": "node scripts/not-yet-available.mjs storybook 03",
+    "storybook": "pnpm --filter @se/ui storybook",
     "set-version": "node scripts/set-version.mjs"
   },
   "devDependencies": {
