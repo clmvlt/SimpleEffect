@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-06 — Prompt 01: Bootstrap du monorepo — Done
 
-**Branch**: `feature/01-bootstrap-monorepo`, merged into `dev` (`--no-ff`)
+**Branch**: `feature/01-bootstrap-monorepo`, merged into `dev` at `4d8888a`
 
 **Done**
 - Rust workspace: 11 crates (edition 2024, toolchain pinned to 1.99.1), inter-crate dependencies declared per `docs/architecture.md` §3, workspace lints (`unsafe_code` forbidden, `missing_docs`, clippy `pedantic` + `unwrap_used`/`expect_used`/`panic`/`todo`/`dbg_macro` denied; tests allowed through `clippy.toml`).
