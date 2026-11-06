@@ -55,3 +55,7 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Premiere package** | Export folder with FCP7 XML, OTIO, overlay renders and SRT | — |
 | **Core** | The Rust process `se-core` | — |
 | **Renderer** | The Electron renderer process (React UI + engine) | — |
+| **Handshake** | The single JSON line (`port`, `token`, `version`) the core prints on stdout once it accepts connections | `CoreHandshake` |
+| **Session token** | 256-bit random secret of one core run, required by every request (`?t=`); never logged | `SessionToken` |
+| **Core supervisor** | Electron main component that spawns, restarts (with backoff) and stops the core | `CoreSupervisor` |
+| **Bridge** | The minimal typed API the preload script exposes to the renderer as `window.simpleEffect` | `SimpleEffectBridge` |
