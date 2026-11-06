@@ -1,6 +1,6 @@
 [package]
 name = "se-codegen"
-description = "Development tool: exports the Rust protocol types to TypeScript (`pnpm codegen`)."
+description = "Development tool: exports the Rust protocol and document types to TypeScript (`pnpm codegen`)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,6 +12,7 @@ name = "se-codegen"
 path = "src/main.rs"
 
 [dependencies]
+se-domain = { workspace = true }
 se-protocol = { workspace = true }
 thiserror = { workspace = true }
 ts-rs = { workspace = true }

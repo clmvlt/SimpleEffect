@@ -1,5 +1,5 @@
-// GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol).
-// Regenerate with `pnpm codegen`.
+// GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
+// crates/se-domain). Regenerate with `pnpm codegen`.
 
 /**
  * Stable error codes (`SCREAMING_SNAKE_CASE` on the wire). Never rename or reuse a code: clients
