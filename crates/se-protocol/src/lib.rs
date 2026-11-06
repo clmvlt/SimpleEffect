@@ -2,19 +2,29 @@
 //!
 //! Data transfer objects exchanged between `se-core` and its clients:
 //! - the startup handshake line printed by `se-core` on stdout ([`CoreHandshake`]);
-//! - the JSON messages of the `/rpc` WebSocket ([`ClientMessage`], [`ServerMessage`]).
+//! - the JSON messages of the `/rpc` WebSocket: [`ClientMessage`] (requests) and
+//!   [`ServerMessage`] (responses and pushed events).
+//!
+//! Every type derives `ts_rs::TS`: `pnpm codegen` (the `se-codegen` binary) exports them to
+//! `packages/protocol/src/generated/`, so the TypeScript side never hand-writes them (ADR-0010,
+//! ADR-0012). After any change here, run `pnpm codegen` and commit the generated files.
 //!
 //! Allowed workspace dependencies: `se-domain` (see `docs/architecture.md` §3 and §6).
 //! DTOs only: no logic beyond (de)serialisation.
-//!
-//! The types are hand-written for now. Roadmap prompt 02 derives `ts_rs::TS` on them and
-//! generates `@se/protocol` from this crate (ADR-0010).
 
+mod command;
+mod command_result;
+mod envelope;
+mod error;
+mod event;
 mod handshake;
-mod rpc;
 
-pub use handshake::CoreHandshake;
-pub use rpc::{
-    ClientMessage, Command, CommandResult, ErrorCode, ProtocolError, RequestId, Response,
-    ResponseOutcome, ServerMessage,
+pub use command::Command;
+pub use command_result::{CommandResult, CoreInfo};
+pub use envelope::{
+    ClientMessage, EventEnvelope, RequestEnvelope, RequestId, ResponseEnvelope, ResponseOutcome,
+    ServerMessage,
 };
+pub use error::{ErrorCode, ProtocolError};
+pub use event::CoreEvent;
+pub use handshake::CoreHandshake;
