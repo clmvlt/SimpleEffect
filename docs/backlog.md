@@ -3,6 +3,7 @@
 Ideas worth keeping that are not part of the current roadmap (`prompts/`). When one is scheduled, write a prompt from `prompts/_TEMPLATE.md` and remove it from here.
 
 ## Editing
+- Drop-frame timecodes (29.97/59.94 DF): `HH:MM:SS;FF` is currently read as non-drop and formatting is always non-drop (`se_domain::time::timecode`, `docs/test-vectors/timecode.json`).
 - Beat detection on music tracks (local onset detection) to snap cuts and animations to the beat.
 - Project snapshots / named versions with visual diff between versions.
 - Draft/review mode for AI changes (evaluate "document + pending changeset", accept/reject) — the storage model already allows it (ADR-0005).

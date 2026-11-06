@@ -19,6 +19,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0012](0012-rpc-protocol-conventions.md) | RPC protocol conventions: codegen binary, command/result pairing, event delivery | Accepted |
 | [0013](0013-design-tokens-and-styling.md) | Design tokens and styling conventions of `@se/ui` | Accepted |
 | [0014](0014-renderer-shell-i18n-and-editor-widgets.md) | Renderer shell, i18n and editor widget conventions | Accepted |
+| [0015](0015-spatial-units.md) | Spatial units: normalised positions, design pixels on the shorter side | Accepted |
 
 ## Template
 
