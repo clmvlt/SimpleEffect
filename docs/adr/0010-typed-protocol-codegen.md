@@ -13,6 +13,8 @@ The renderer (TypeScript) and se-core (Rust) exchange commands, results, events 
 - Errors have stable codes and actionable messages.
 - A CI check (`pnpm codegen --check`) fails if generated files are stale.
 
+Implementation conventions (codegen binary, command/result pairing, events, reconnection): ADR-0012.
+
 ## Consequences
 - One definition per type; compile errors on both sides when the contract changes.
 - Large integers: flicks are serialized as JSON numbers and stay exact in JS up to ±2^53 (see ADR-0004).

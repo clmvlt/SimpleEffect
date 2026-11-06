@@ -80,7 +80,8 @@ SimpleEffect/
 │  ├─ se-agents/             AI CLI providers (claude_code first), stream parsing
 │  ├─ se-mcp/                MCP server: tool definitions → use cases
 │  ├─ se-export/             FCP7 XML, OTIO, SRT, render orchestration
-│  └─ se-core/               binary: composition root, axum server
+│  ├─ se-core/               binary: composition root, axum server
+│  └─ se-codegen/            dev tool: exports Rust types to TypeScript (`pnpm codegen`)
 ├─ packages/
 │  ├─ protocol/              @se/protocol: generated TS types + typed RPC client
 │  ├─ engine/                @se/engine: evaluation, decode, composite, audio, export
@@ -113,11 +114,12 @@ se-domain  ◄── se-protocol
 | Crate | May depend on | Must NOT |
 |---|---|---|
 | `se-domain` | serde, thiserror, uuid, ts-rs (derive only) | do IO, use async/tokio, read the clock, spawn anything |
-| `se-protocol` | se-domain, serde, ts-rs | contain logic |
+| `se-protocol` | se-domain, serde, serde_json, ts-rs | contain logic |
 | `se-app` | se-domain, se-protocol, tokio, async-trait, tracing | touch `std::fs`, `std::process`, network, concrete adapters |
 | adapters | se-app, se-domain, their IO libraries | depend on another adapter crate |
 | `se-mcp` | se-app, se-domain, rmcp, schemars | mutate documents except through se-app use cases |
 | `se-core` | everything | contain domain logic |
+| `se-codegen` | se-protocol (later se-domain), ts-rs | be depended on, ship in the app |
 
 Adapters implement **ports** declared in `se-app::ports`: `ProjectRepository`, `AppLibraryRepository`, `MediaProber`, `MediaJobRunner`, `Transcriber`, `SubjectDetector`, `AgentProvider`, `Exporter`, `EventSink`, `Clock`, `IdGenerator`.
 Every port has an in-memory/fake implementation in `se-app` (feature `test-support`) so use cases are tested without IO.
@@ -162,7 +164,7 @@ features/<name>/
 - `shared/`: the bridge contract (types and IPC channel names) bundled into main, preload and renderer.
 - Security: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, no pop-ups or navigation, strict CSP written as a meta tag at build time (`tooling/`): production connects only to `127.0.0.1`.
 
-**se-core process contract**: stdout carries exactly one handshake line; logs go to stderr; stdin stays open and its end-of-file means "shut down" (so the core dies with the app, even if the app crashes). The packaged binary lives in `resources/bin/`, the development one in `target/debug/`.
+**se-core process contract**: stdout carries exactly one handshake line; stdin stays open and its end-of-file means "shut down" (so the core dies with the app, even if the app crashes); `SE_DATA_DIR` (set by the supervisor to `app.getPath('userData')`) is the app data folder, and logs go to daily files in `<SE_DATA_DIR>/logs/` (7 kept, filter `SE_LOG`) plus stderr in debug builds. The packaged binary lives in `resources/bin/`, the development one in `target/debug/`.
 
 ## 5. Core concepts
 
@@ -232,12 +234,16 @@ Invariants (validated in `se-domain`, property-tested):
 
 ## 6. Protocol (`se-protocol` → `@se/protocol`)
 
-- Transport: one WebSocket at `/rpc`. Messages are JSON:
-  - `{"type":"request","id":…,"command":{…}}` → `{"type":"response","id":…,"result":{…}}` or `{"type":"response","id":…,"error":{code,message,details}}`
-  - `{"type":"event","event":{…}}` for server push (project patches, job progress, task events, AI status).
-- `Command`, `CommandResult`, `Event`, `ProtocolError` are Rust enums (`#[serde(tag = "kind")]`) deriving `ts_rs::TS`.
-- `pnpm codegen` runs the ts-rs export into `packages/protocol/src/generated/` and checks the result compiles.
-- Errors carry a stable `code` (e.g. `PROJECT_NOT_FOUND`, `REVISION_CONFLICT`, `OUT_OF_SCOPE`) and a human/agent-readable message.
+Conventions and their rationale: ADR-0010 and ADR-0012.
+
+- Transport: one WebSocket at `/rpc`. Messages are JSON, tagged by `type`:
+  - `{"type":"request","id":…,"command":{"kind":…}}` → `{"type":"response","id":…,"result":{"kind":…}}` or `{"type":"response","id":…,"error":{code,message,details?}}` (`id` is `null` when the request could not be read).
+  - `{"type":"event","event":{"kind":…}}` for server push. Every connection first receives `coreReady`; `coreShuttingDown` precedes the close on shutdown; `resyncRequired` tells a connection that fell behind that it missed events (later: project patches, job progress, task events).
+- `Command`, `CommandResult`, `CoreEvent` are Rust enums (`#[serde(tag = "kind", rename_all = "camelCase")]`); every `Command` variant has a `CommandResult` variant of the same name, so `ResultFor<K>` is derived in TypeScript without a table.
+- `pnpm codegen` runs the `se-codegen` binary (ts-rs) into `packages/protocol/src/generated/`; `pnpm codegen --check` (part of `pnpm check`) fails when the committed files are stale; `tsc -b` checks they compile.
+- se-core side (`crates/se-core/src/rpc/`): `RpcRouter` parses a frame (`INVALID_REQUEST` / `UNKNOWN_COMMAND` with actionable messages), dispatches to one handler per command group (`rpc/handlers/`), encodes the response. `EventBus` (bounded `broadcast`) fans events out; a slow connection never blocks the others.
+- Client side: `CoreClient` (`@se/protocol`) correlates ids, times requests out (30 s default), reconnects with a capped exponential backoff (re-resolving the endpoint each time), queues requests while disconnected and fails in-flight ones with `CONNECTION_LOST`. The renderer creates one client in `src/shared/core/` and exposes it through React context and hooks.
+- Errors carry a stable `code` (`ErrorCode`, e.g. `UNKNOWN_COMMAND`, later `PROJECT_NOT_FOUND`, `REVISION_CONFLICT`, `OUT_OF_SCOPE`) and a human/agent-readable message. Codes raised by clients (`TIMEOUT`, `CONNECTION_LOST`, `CLIENT_CLOSED`) are part of the same enum.
 
 ## 7. Media pipeline (`se-media`)
 

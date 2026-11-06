@@ -16,6 +16,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0009](0009-design-system.md) | Design system `@se/ui` | Accepted |
 | [0010](0010-typed-protocol-codegen.md) | Typed protocol with Rust as the source of truth | Accepted |
 | [0011](0011-motion-templates.md) | AI-authored motion templates in a sandbox | Accepted |
+| [0012](0012-rpc-protocol-conventions.md) | RPC protocol conventions: codegen binary, command/result pairing, event delivery | Accepted |
 
 ## Template
 

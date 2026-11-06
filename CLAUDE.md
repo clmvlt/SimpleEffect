@@ -43,6 +43,7 @@ This codebase is developed and maintained by AI agents. Optimise every change fo
 | `crates/se-mcp` | MCP tools for agents | One tool per file; writes go through use cases |
 | `crates/se-export` | FCP7 XML, OTIO, SRT, render orchestration | Writers are pure functions |
 | `crates/se-core` | Binary: composition root, axum (`/rpc`, `/media`, `/mcp`) | Wiring only |
+| `crates/se-codegen` | Dev tool behind `pnpm codegen` (ts-rs export) | Never shipped, never depended on |
 | `packages/protocol` | `@se/protocol`: generated types + `CoreClient` | No React |
 | `packages/engine` | `@se/engine`: evaluate, decode, composite, audio, export | No React, no UI |
 | `packages/ui` | `@se/ui`: design system | No domain knowledge |
@@ -67,7 +68,7 @@ Adapters depend on `se-app` and `se-domain`, never on each other. `se-core` depe
 | `pnpm build` | Release se-core + production bundles of the Electron app |
 | `pnpm package` | `build`, then the installer of the current platform into `apps/desktop/release/` |
 | `pnpm set-version <semver>` | Write the version into every `package.json` and `Cargo.toml` (used by the release workflow) |
-| `pnpm codegen` | Regenerate TypeScript types from Rust (`--check` to verify) — placeholder until prompt 02 |
+| `pnpm codegen` | Regenerate `packages/protocol/src/generated/` from Rust (`se-codegen`); `--check` fails if stale |
 | `pnpm storybook` | Design system playground — placeholder until prompt 03 |
 | `pnpm fetch-binaries` | Download ffmpeg/ffprobe/whisper binaries into `resources/bin/<platform>/` (asks before downloading) — added by prompt 08 |
 
