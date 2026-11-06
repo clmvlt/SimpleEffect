@@ -11,6 +11,9 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Speed ramps with keyframed speed curves.
 - Color correction basics (exposure, contrast, saturation, LUT import).
 - Transitions library beyond cross dissolve (wipes, zooms, glitch) as motion templates.
+- Revisions on tracks, sequences, markers and assets so that a changeset revert can detect a later change of the same field by another actor (today the revert restores the fields the task changed; ADR-0016).
+- "Skip" for an undo or redo that no longer applies (the entry currently stays at the top of its stack until the document allows it again; ADR-0016).
+- Option for ripple delete / insert gap to move sequence markers along (they stay in place today).
 
 ## AI
 - Additional AI providers: Gemini CLI, Codex CLI, opencode (one adapter each, see architecture §15).
