@@ -39,7 +39,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | [x] | 04 | [Design system : composants montage, shell, i18n](04-design-system-editeur-shell.md) | 02, 03 | 05, 06 |
 | **Phase 1 — Domaine et projets** |||||
 | [x] | 05 | [Domaine : temps et modèle de document](05-domaine-modele.md) | 01 | 02, 03, 04 |
-| [ ] | 06 | [Domaine : opérations, historique, changesets](06-domaine-operations.md) ⚠️ | 05 | 03, 04 |
+| [x] | 06 | [Domaine : opérations, historique, changesets](06-domaine-operations.md) ⚠️ | 05 | 03, 04 |
 | [ ] | 07 | [Persistance et gestion des projets](07-persistance-projets.md) | 02, 04, 06 | — |
 | **Phase 2 — Médias** |||||
 | [ ] | 08 | [Médias 1 : import, bin, jobs, miniatures, waveforms](08-medias-import.md) | 07 | 17 |

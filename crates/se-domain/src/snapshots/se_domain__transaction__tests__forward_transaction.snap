@@ -1,0 +1,74 @@
+---
+source: crates/se-domain/src/transaction.rs
+expression: forward
+---
+{
+  "id": "00000000-0001-7000-8000-000000000000",
+  "actor": {
+    "kind": "aiTask",
+    "taskId": "00000000-0001-7000-8000-000000000000"
+  },
+  "label": "Edit",
+  "ops": [
+    {
+      "kind": "moveItem",
+      "item": "00000000-0003-7000-8000-000000000000",
+      "track": "00000000-0002-7000-8000-000000000000",
+      "start": 5644800000,
+      "expectedRevision": 1
+    },
+    {
+      "kind": "trimItem",
+      "item": "00000000-0002-7000-8000-000000000000",
+      "edge": "start",
+      "to": 7761600000,
+      "expectedRevision": null
+    },
+    {
+      "kind": "updateItem",
+      "item": "00000000-0003-7000-8000-000000000000",
+      "patch": {
+        "kind": "text",
+        "content": "Salut",
+        "fontFamily": null,
+        "fontSize": null,
+        "color": null
+      },
+      "expectedRevision": null
+    },
+    {
+      "kind": "setKeyframes",
+      "item": "00000000-0004-7000-8000-000000000000",
+      "animation": {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 0.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      "expectedRevision": null
+    },
+    {
+      "kind": "rippleDeleteRange",
+      "sequence": "00000000-0001-7000-8000-000000000000",
+      "range": {
+        "start": 3880800000,
+        "duration": 705600000
+      },
+      "tracks": [
+        "00000000-0003-7000-8000-000000000000"
+      ],
+      "splitIds": {
+        "00000000-0006-7000-8000-000000000000": "00000000-0064-7000-8000-000000000000"
+      }
+    }
+  ]
+}

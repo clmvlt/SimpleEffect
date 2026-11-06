@@ -1,4 +1,5 @@
-//! Rules of a track as a whole: `OVERLAPPING_ITEMS` and `VALUE_OUT_OF_RANGE` for pan.
+//! Rules of a track as a whole: `OVERLAPPING_ITEMS`, `ITEMS_NOT_SORTED` and
+//! `VALUE_OUT_OF_RANGE` for pan.
 
 use super::{Path, Report, ViolationCode, report::seconds};
 use crate::{Item, Track};
@@ -15,6 +16,29 @@ pub(super) fn check(track: &Track, path: &Path, report: &mut Report) {
         );
     }
     check_overlaps(&track.items, &path.field("items"), report);
+    check_order(&track.items, &path.field("items"), report);
+}
+
+/// Reports each item that starts before the item listed just before it. Operations keep items
+/// sorted by start so that their position in the list is deterministic (exact inverses) and
+/// time lookups can use binary search.
+fn check_order(items: &[Item], items_path: &Path, report: &mut Report) {
+    for pair in items.windows(2) {
+        let (previous, item) = (&pair[0], &pair[1]);
+        if item.timeline_range.start() < previous.timeline_range.start() {
+            report.push(
+                ViolationCode::ItemsNotSorted,
+                &items_path.key(item.id),
+                format!(
+                    "item starts at {}, before item {} listed just before it at {}; list the \
+                     items of a track by start time",
+                    seconds(item.timeline_range.start()),
+                    previous.id,
+                    seconds(previous.timeline_range.start()),
+                ),
+            );
+        }
+    }
 }
 
 /// Reports each item that starts before an earlier-starting item of the track has ended.
@@ -88,6 +112,20 @@ mod tests {
         let mut project = example_project();
         project.sequences[0].tracks[2].items[0].timeline_range = range_ms(2000, 4000);
         assert_eq!(validate_project(&project), []);
+    }
+
+    #[test]
+    fn reports_items_out_of_start_order() {
+        let mut project = example_project();
+        project.sequences[0].tracks[1].items.swap(0, 1);
+        let violations = validate_project(&project);
+        assert_eq!(violations.len(), 1, "{violations:#?}");
+        assert_eq!(violations[0].code, ViolationCode::ItemsNotSorted);
+        assert!(
+            violations[0]
+                .path
+                .ends_with("items[00000000-0003-7000-8000-000000000000]")
+        );
     }
 
     #[test]

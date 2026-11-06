@@ -6,7 +6,7 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 |---|---|---|
 | **Project** | A folder `<Name>.seproj/` containing one document, its database and caches | `Project` |
 | **Document** | The serialized state of a project (`project.json`) | `Project` |
-| **Revision** | Monotonic counter of committed transactions (project-wide and per item) | `revision` |
+| **Revision** | Monotonic counter bumped once per committed transaction: for the project, and for each item the transaction touched | `revision` |
 | **Asset** | A media file imported into a project (video, audio, image), referenced by path | `Asset` |
 | **Media info** | What probing an asset revealed: duration, container, video and audio streams | `MediaInfo` |
 | **Decodability** | Whether the renderer can decode an asset's original with WebCodecs, or needs its mezzanine | `Decodability` |
@@ -18,7 +18,8 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Format preset** | A named format size: 16:9 HD and UHD, 9:16, 1:1, 4:5, or custom | `FormatPreset` |
 | **Frame rate** | Frames per second as a reduced fraction (30000/1001); only rates with a whole number of flicks per frame exist | `FrameRate` |
 | **Nominal frame rate** | The frame rate rounded up (30 for 29.97): frames per second counted by SMPTE timecodes | `FrameRate::nominal_fps` |
-| **Track** | A horizontal lane of a sequence holding non-overlapping items; kind video or audio | `Track` |
+| **Track** | A horizontal lane of a sequence holding non-overlapping items, sorted by start; kind video or audio | `Track` |
+| **Locked track** | A track whose items cannot be added, changed or removed, and which cannot be removed; its header stays editable | `Track::locked` |
 | **Item** | Anything placed on a track over a time range | `Item` |
 | **Link group** | Items that move and trim together, like a clip's picture and its sound | `LinkGroupId` |
 | **Marker** | A labelled instant of a sequence, with one of Premiere's eight colours | `Marker` |
@@ -46,13 +47,24 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Safe area** | Platform UI zones to keep clear (TikTok, Reels, Shorts, YouTube) | `SafeAreaPreset` |
 | **Schema version** | Version of the `project.json` format a document was written with | `schema_version`, `CURRENT_SCHEMA_VERSION` |
 | **Violation** | A broken document invariant found by validation, with a stable code, a path and a message | `Violation`, `ViolationCode` |
-| **Operation** | One intent-level edit of the document, with a computable inverse | `Operation` |
+| **Operation** | One intent-level edit of the document, applied by the pure `apply`, with exact inverse operations | `Operation`, `apply` |
+| **Inverse** | The operations that undo an edit, computed when it is applied (`RestoreItem` snapshots for item edits) | `Applied::inverse`, `Committed::inverse` |
+| **Touched entities** | Ids of the items, tracks, sequences, markers and assets an edit added, changed or removed | `TouchedEntities` |
+| **Item patch** | A typed change of an item's content, one patch type per item kind; `null` fields stay unchanged | `ItemPatch` |
+| **Animatable property** | Position, scale, rotation, anchor, opacity (visual items) or volume (media clips), set with its keyframes or static value | `AnimatableProperty`, `PropertyAnimation` |
+| **Trim** | Moving the start or end edge of an item; a media clip keeps playing the same source at the same instants | `TrimItem`, `ItemEdge` |
+| **Split** | Cutting an item in two at an instant; the right part is a new item | `SplitItem` |
+| **Ripple delete** | Deleting a time range on tracks and moving what follows left to close the gap | `RippleDeleteRange` |
+| **Insert gap** | Opening empty time on tracks, moving what follows right | `InsertGap` |
+| **Split ids** | Ids given by the caller for the new right parts of items a ripple delete or inserted gap cuts | `splitIds` |
 | **Transaction** | Atomic group of operations by one actor | `Transaction` |
 | **Actor** | Who performed a transaction: the user or an AI task | `Actor` |
 | **Origin** | Who created an item (user or AI task), kept for traceability | `Origin` |
 | **History** | The user's undo/redo stack | `History` |
 | **Changeset** | All transactions of one AI task, revertable as a unit | `Changeset` |
-| **Conflict** | A revert or write that cannot apply because another actor changed the same item | `Conflict` |
+| **Conflict** | A part of a task's changes a revert leaves in place (item changed since, items the task never touched, inverse no longer applies); for a write, a stale `expectedRevision` | `Conflict`, `REVISION_CONFLICT` |
+| **Revert plan** | The inverse operations of a changeset that still apply to the current document, with the conflicts | `RevertPlan`, `plan_revert` |
+| **Domain error** | Why the domain refused a change: an actionable message and a stable code | `DomainError`, `DomainErrorCode` |
 | **Job** | A background processing unit (thumbnails, peaks, mezzanine, transcription…) | `Job` |
 | **Analysis** | Derived data about an asset: silences, loudness, scene changes, faces | `Analysis` |
 | **Transcript** | Word-level timed text of an asset's speech | `Transcript` |

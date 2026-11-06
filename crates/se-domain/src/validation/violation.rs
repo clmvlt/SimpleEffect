@@ -48,6 +48,8 @@ pub enum ViolationCode {
     EmptyItem,
     /// Two items of the same track overlap in time.
     OverlappingItems,
+    /// The items of a track are not sorted by start time.
+    ItemsNotSorted,
     /// An item kind that the track kind cannot hold (a text on an audio track…).
     ItemNotAllowedOnTrack,
     /// A playback speed that is not a number greater than 0.
@@ -62,11 +64,13 @@ pub enum ViolationCode {
     KeyframeOutsideItem,
     /// A value outside its allowed range (opacity, pan, fades, Bézier control points).
     ValueOutOfRange,
+    /// Items of one link group sit in different sequences.
+    LinkGroupAcrossSequences,
 }
 
 impl ViolationCode {
     /// Every code, in declaration order.
-    pub const ALL: [Self; 15] = [
+    pub const ALL: [Self; 17] = [
         Self::DuplicateId,
         Self::UnknownReference,
         Self::AssetKindMismatch,
@@ -75,6 +79,7 @@ impl ViolationCode {
         Self::TimeOutOfRange,
         Self::EmptyItem,
         Self::OverlappingItems,
+        Self::ItemsNotSorted,
         Self::ItemNotAllowedOnTrack,
         Self::InvalidSpeed,
         Self::SourceRangeExceedsMedia,
@@ -82,6 +87,7 @@ impl ViolationCode {
         Self::KeyframesNotSorted,
         Self::KeyframeOutsideItem,
         Self::ValueOutOfRange,
+        Self::LinkGroupAcrossSequences,
     ];
 
     /// The serialized form (`OVERLAPPING_ITEMS`).
@@ -96,6 +102,7 @@ impl ViolationCode {
             Self::TimeOutOfRange => "TIME_OUT_OF_RANGE",
             Self::EmptyItem => "EMPTY_ITEM",
             Self::OverlappingItems => "OVERLAPPING_ITEMS",
+            Self::ItemsNotSorted => "ITEMS_NOT_SORTED",
             Self::ItemNotAllowedOnTrack => "ITEM_NOT_ALLOWED_ON_TRACK",
             Self::InvalidSpeed => "INVALID_SPEED",
             Self::SourceRangeExceedsMedia => "SOURCE_RANGE_EXCEEDS_MEDIA",
@@ -103,6 +110,7 @@ impl ViolationCode {
             Self::KeyframesNotSorted => "KEYFRAMES_NOT_SORTED",
             Self::KeyframeOutsideItem => "KEYFRAME_OUTSIDE_ITEM",
             Self::ValueOutOfRange => "VALUE_OUT_OF_RANGE",
+            Self::LinkGroupAcrossSequences => "LINK_GROUP_ACROSS_SEQUENCES",
         }
     }
 }

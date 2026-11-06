@@ -188,7 +188,7 @@ Module `se_domain::time` (ADR-0004).
 
 ### 5.2 Identifiers
 
-UUIDv7 newtypes over `uuid::Uuid` (`ProjectId`, `SequenceId`, `TrackId`, `ItemId`, `AssetId`, `TaskId`, `ChangesetId`, `TemplateId`, `LinkGroupId`, `MarkerId`; module `se_domain::ids`). They serialize as hyphenated lowercase strings (`string` in TypeScript); `parse` accepts only the hyphenated form of a version-7 UUID, with an actionable `IdError`. se-domain never generates ids: the `IdGenerator` port does and wraps them with `from_uuid`. Tests use `from_test_index(n)` (feature `test-support`), e.g. `00000000-0003-7000-8000-000000000000`.
+UUIDv7 newtypes over `uuid::Uuid` (`ProjectId`, `SequenceId`, `TrackId`, `ItemId`, `AssetId`, `TaskId`, `ChangesetId`, `TemplateId`, `LinkGroupId`, `MarkerId`, `TransactionId`; module `se_domain::ids`). They serialize as hyphenated lowercase strings (`string` in TypeScript); `parse` accepts only the hyphenated form of a version-7 UUID, with an actionable `IdError`. se-domain never generates ids: the `IdGenerator` port does and wraps them with `from_uuid`. Tests use `from_test_index(n)` (feature `test-support`), e.g. `00000000-0003-7000-8000-000000000000`.
 
 ### 5.3 Document model (summary — source of truth is `se-domain`)
 
@@ -232,6 +232,7 @@ Invariants. Single-value invariants are enforced by the value types (`Flicks` ra
 | `TIME_OUT_OF_RANGE` | a clip's source end stays within the flicks range |
 | `EMPTY_ITEM` | items have a positive duration |
 | `OVERLAPPING_ITEMS` | items of a track never overlap (touching is fine) |
+| `ITEMS_NOT_SORTED` | items of a track are listed by start time (operations keep them so) |
 | `ITEM_NOT_ALLOWED_ON_TRACK` | audio tracks hold only media clips; video tracks no clips of audio-only assets |
 | `INVALID_SPEED` | speed is a number > 0 |
 | `SOURCE_RANGE_EXCEEDS_MEDIA` | a clip's source range fits in its asset (when the duration is known) |
@@ -239,16 +240,35 @@ Invariants. Single-value invariants are enforced by the value types (`Flicks` ra
 | `KEYFRAMES_NOT_SORTED` | keyframe times strictly increase |
 | `KEYFRAME_OUTSIDE_ITEM` | keyframe times are in `[0, item duration]` |
 | `VALUE_OUT_OF_RANGE` | opacity in `[0, 1]`, pan in `[-1, 1]`, fades ≥ 0 and fitting the item, Bézier `x1`/`x2` in `[0, 1]` |
+| `LINK_GROUP_ACROSS_SEQUENCES` | items of a link group are in one sequence |
 
 ### 5.4 Operations, transactions, history, changesets
 
-- `Operation` is an enum of intent-level edits: `AddItem`, `RemoveItem`, `MoveItem`, `TrimItem`, `SplitItem`, `RippleDeleteRange`, `InsertGap`, `SetItemProperty`, `SetKeyframes`, `AddTrack`, `RemoveTrack`, `UpdateTrack`, `AddSequence`, `UpdateSequenceFormat`, `AddAsset`, `UpdateAsset`, `AddTemplate`, `UpdateTemplate`, `UpdateBrandKit`, …
-- `apply(project, op) -> Result<(Project, InverseOps), DomainError>` is pure.
-- A `Transaction { id, actor: Actor, label, ops }` is atomic: all ops apply or none.
-- `Actor = User | AiTask(TaskId)`.
-- **User history**: undo/redo stack of the user's transactions only.
-- **Changeset**: all transactions of one AI task. Applied live (ADR-0005). "Revert task" computes the inverse of the changeset against the current state; items modified by someone else since then are reported as conflicts and skipped. A revert is itself a user transaction (so it can be undone).
-- Every item carries a `revision`; write operations from agents may include `expected_revision` for optimistic concurrency.
+Modules `se_domain::{operation, transaction, history, changeset, error}` (ADR-0005, ADR-0016).
+
+**Operations.** `Operation` is an enum of intent-level edits, serialized with its fields next to `"kind"` (the journal format, fixed by insta snapshots in `crates/se-domain/src/snapshots/`). One file per operation (or small group) in `operation/`:
+
+| Group | Operations |
+|---|---|
+| Items | `AddItem { track, item }`, `RemoveItem { item }`, `RestoreItem { track, item }` (puts a recorded state back; the inverse of item edits), `MoveItem { item, track, start }` (any track, refuses overlaps), `TrimItem { item, edge: start\|end, to }` (adjusts `sourceStart`, stays inside the asset), `SplitItem { item, at, newItemId }`, `UpdateItem { item, patch: ItemPatch }` (one typed patch per item kind, `null` fields unchanged), `SetKeyframes { item, animation: PropertyAnimation }` (keyframes or static value of position, scale, rotation, anchor, opacity or volume), `LinkItems { items, group }`, `UnlinkItems { items }` |
+| Time | `RippleDeleteRange { sequence, range, tracks, splitIds }`, `InsertGap { sequence, at, duration, tracks, splitIds }` (`tracks: null` = every unlocked track; items crossing the edit point are split with the given ids; markers stay) |
+| Tracks | `AddTrack { sequence, index, track }`, `RemoveTrack`, `UpdateTrack { track, patch }`, `ReorderTracks { sequence, order }` |
+| Sequences | `AddSequence { index, sequence }`, `RemoveSequence`, `UpdateSequence { sequence, patch }` (name, format) |
+| Markers | `AddMarker { sequence, index, marker }`, `RemoveMarker`, `UpdateMarker { marker, patch }` |
+| Assets | `AddAsset { index, asset }`, `UpdateAsset { asset, patch }`, `RemoveAsset` (refused while used) |
+| Project | `RenameProject { name }` |
+
+Operations on one item take an optional `expectedRevision` (`REVISION_CONFLICT` when stale). Templates and the brand kit get operations with prompts 24 and 25.
+
+**`apply(&Project, &Operation) -> Result<Applied { project, inverse, touched }, DomainError>`** is pure and deterministic: ids it needs are in the operation. The result always passes `validate_project` (otherwise `INVALID_DOCUMENT` and no change); `apply` does not touch revisions, so applying the `inverse` operations in order gives back exactly the original project. Item edits are inverted by `RestoreItem` snapshots; split, ripple delete and insert gap run as primitive steps whose inverses replay backwards. Rules: no overlap on a track, items sorted by start, no edit of items on a locked track and no removal of a locked track; a trimmed edge keeps its fade (shortened to fit), a cut edge gets none; keyframes stay at their instants (those left outside are dropped, a property left without keyframes keeps the value it held). `TouchedEntities` lists the items, tracks, sequences, markers and assets added, changed or removed, for the UI patches (§5.6).
+
+**Transactions.** `Transaction { id, actor: Actor (user | aiTask { taskId }), label, ops }`. `commit(&Project, &Transaction) -> Result<Committed { project, inverse: Transaction, touched }, DomainError>` applies all operations or none, then bumps the project revision by 1 and the revision of every touched item that still exists by 1.
+
+**History.** `History` (default depth 200) keeps the user's transactions only (AI work is reverted per task). `record` stores each user transaction's inverse operations and empties the redo stack (transactions that changed nothing are skipped); `undo(&Project, TransactionId)` / `redo` commit the stored operations as a new user transaction (to journal), and keep the entry if it fails. `can_undo`, `can_redo`, `undo_label`, `redo_label` feed the menus.
+
+**Changesets.** `Changeset { id, taskId, entries: [ChangesetEntry { transaction, inverse, touchedRevisions }] }` records every transaction of an AI task with the revision each touched item had right after it. `plan_revert(&Project, &Changeset) -> RevertPlan { ops, conflicts }` dry-runs the inverses, last transaction first, against the current document. `Conflict`: `itemChanged` (the item changed or disappeared since the task's last edit: its inverses are skipped), `foreignItems` (an inverse would also affect items the task never touched, e.g. user items on a track the task created), `cannotApply` (the inverse no longer applies). The plan's operations are committed as a user transaction (`into_transaction`), so a revert can be undone; without interleaved edits the project comes back as before the task (revisions aside).
+
+**Errors.** `DomainError` (thiserror): one variant per refusal with ids, times as `HH:MM:SS.mmm` and the fix, e.g. `item 0193… would overlap item 0194… on track V1 between 00:00:51.000 and 00:00:52.500; move or trim one of them, or use another track`. `DomainError::code()` gives a stable `DomainErrorCode` (`ITEM_NOT_FOUND`, `OVERLAPPING_ITEMS`, `TRACK_LOCKED`, `REVISION_CONFLICT`, `INVALID_EDIT_POINT`, `TRIM_BEYOND_SOURCE`, `WRONG_ITEM_KIND`, `MISSING_SPLIT_ID`, `INVALID_DOCUMENT`, `NOTHING_TO_UNDO`…) for the protocol and MCP layers.
 
 ### 5.5 ProjectActor (single writer)
 
@@ -432,8 +452,8 @@ No change to MCP tools or instructions is needed.
 3. Document it in `docs/ai-tools.md`; mention it in the relevant agent instruction file if behaviour guidance is needed.
 
 **Add an operation**
-1. Add the variant to `Operation` in se-domain with `apply` + inverse.
-2. Add property tests (apply then inverse is identity; invariants hold).
+1. In se-domain, add `operation/<name>.rs` with the payload struct and its `Edit` impl (record the inverse and the touched entities; reuse `placement`, `reshape`, `run_steps`), then the variant in `Operation` and its name in `operation_payloads!` (recipe: `crates/se-domain/CLAUDE.md`).
+2. Unit-test it with `operation::testing::apply_ok` (checks validity and the exact inverse); add it to the generator of `crates/se-domain/tests/operations/` so the property tests cover it.
 3. Expose it through a se-app use case, then a protocol command and/or an MCP tool.
 
 **Add an item kind**
