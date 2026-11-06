@@ -1,0 +1,46 @@
+# Local and CI packaging (`pnpm package`). Installers are unsigned (see GUIDE-GIT.md).
+appId: com.simpleeffect.app
+productName: SimpleEffect
+directories:
+  output: release
+  buildResources: build-resources
+# Everything is bundled by electron-vite: the app ships no node_modules.
+files:
+  - out/**/*
+  - package.json
+npmRebuild: false
+publish: null
+# The workspace name "@se/desktop" would otherwise name the per-user install folder ("@sedesktop").
+extraMetadata:
+  name: simpleeffect
+
+win:
+  target: nsis
+  extraResources:
+    - from: ../../target/release/se-core.exe
+      to: bin/se-core.exe
+nsis:
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+mac:
+  target: dmg
+  identity: null
+  extraResources:
+    - from: ../../target/release/se-core
+      to: bin/se-core
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: AudioVideo
+  maintainer: SimpleEffect <clmvlt@users.noreply.github.com>
+  extraResources:
+    - from: ../../target/release/se-core
+      to: bin/se-core
+appImage:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+deb:
+  artifactName: ${productName}-${version}-${arch}.${ext}

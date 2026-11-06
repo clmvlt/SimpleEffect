@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": ".tsbuild/node",
+    "types": ["node"]
+  },
+  "include": [
+    "electron/main",
+    "electron/preload",
+    "tooling",
+    "electron.vite.config.ts",
+    "vitest.config.ts"
+  ],
+  "references": [{ "path": "./tsconfig.shared.json" }]
+}
