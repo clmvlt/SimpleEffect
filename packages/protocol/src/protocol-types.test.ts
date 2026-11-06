@@ -1,0 +1,31 @@
+import { describe, expectTypeOf, it } from 'vitest';
+
+import type { CoreInfo } from './generated';
+import type {
+  CommandKind,
+  CommandsWithoutResult,
+  CoreEventKind,
+  CoreEventOf,
+  ResultFor,
+} from './protocol-types';
+
+// These checks run at compile time (`tsc -b` in `pnpm check`): a Rust command added without a
+// result variant of the same kind breaks the build here.
+describe('derived protocol types', () => {
+  it('pairs every command with a result of the same kind', () => {
+    expectTypeOf<CommandsWithoutResult>().toBeNever();
+    expectTypeOf<CommandKind>().toEqualTypeOf<'ping' | 'getCoreInfo'>();
+  });
+
+  it('derives the result type from the command kind', () => {
+    expectTypeOf<ResultFor<'ping'>>().toEqualTypeOf<{ kind: 'ping' }>();
+    expectTypeOf<ResultFor<'getCoreInfo'>>().toExtend<CoreInfo>();
+  });
+
+  it('derives the event type from the event kind', () => {
+    expectTypeOf<CoreEventKind>().toEqualTypeOf<
+      'coreReady' | 'coreShuttingDown' | 'resyncRequired'
+    >();
+    expectTypeOf<CoreEventOf<'resyncRequired'>['missedEvents']>().toEqualTypeOf<number>();
+  });
+});
