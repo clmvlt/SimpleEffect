@@ -64,3 +64,6 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Resync** | Refetching state after missed events or a reconnection | `CoreEvent::ResyncRequired` |
 | **Core client** | The renderer's typed connection to se-core (requests, events, reconnection) | `CoreClient` |
 | **App data folder** | Per-user folder shared by the app and se-core (logs, later settings and library) | `SE_DATA_DIR`, `AppPaths` |
+| **Design token** | A named design value (colour, size, radius, duration…) defined once as a CSS variable in `packages/ui/src/tokens/` and used through Tailwind utilities | `--color-*`, `--text-*`… |
+| **Accent** | The single vivid UI colour (primary actions, selection, focus ring); variants switch with `data-accent` | `--color-accent`, `data-accent` |
+| **Primitive** | A generic, accessible `@se/ui` component wrapping a Radix primitive (Button, Select, Dialog…) | `packages/ui/src/primitives/` |

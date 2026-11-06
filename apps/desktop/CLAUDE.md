@@ -22,13 +22,14 @@ The Electron application: the main process supervises se-core and manages window
 | `electron/preload/index.ts` | `contextBridge` exposure of the bridge (built as CommonJS: required by the sandbox) |
 | `tooling/` | Build-time helpers: Content-Security-Policy builder and its Vite plugin |
 | `src/main.tsx` | Creates the single `CoreClient` and renders `<CoreClientProvider><App/></CoreClientProvider>` |
-| `src/app/` | Root layout (`App.tsx`); temporary connection screen (status + `getCoreInfo`) until prompt 04 |
+| `src/app/` | Root layout (`App.tsx`); temporary connection screen (status + `getCoreInfo`) until prompt 04; `styles.css` only imports `@se/ui/styles.css` |
 | `src/shared/core/` | The core connection: `createCoreClient(bridge)`, `CoreClientProvider`, `useCoreClient()`, `useConnectionStatus()`, `useCoreEvent(kind, handler)`, `useCoreInfo()` (logic in `watch-core-info.ts`) |
 | `src/features/<name>/` | One folder per feature (`components/`, `hooks/`, `store/`, `services/`, `api.ts`, `index.ts`) |
 | `src/i18n/` | Locales (`fr` default), from prompt 04 |
 
 ## Rules and invariants
-- Security: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`; the CSP (meta tag written by `tooling/csp-plugin.ts`) only allows connections to `127.0.0.1` in production.
+- Security: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`; the CSP (meta tag written by `tooling/csp-plugin.ts`) only allows scripts from the bundle and connections to `127.0.0.1` in production; inline `<style>` elements are allowed for Radix and sonner (ADR-0013).
+- UI: components, icons (`@se/ui/icons`) and toasts come from `@se/ui` only; ESLint rejects imports of `radix-ui`, `lucide-react`, `sonner` and `class-variance-authority` here. Style with token utilities (`bg-panel`, `text-text-muted`…): the default Tailwind palette does not exist and raw colours fail `pnpm check`.
 - The session token is never logged (the supervisor logs the URL and version only).
 - Features import each other only through their `index.ts`; `shared/` never imports features or `app/` (enforced by `eslint-plugin-boundaries` in the root `eslint.config.js`).
 - Keep hooks thin: put connection logic in plain functions taking a `CoreClient` (or a `Pick` of it) so it is testable in Node (see `watch-core-info.ts`).

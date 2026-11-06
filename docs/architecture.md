@@ -134,6 +134,8 @@ Every port has an in-memory/fake implementation in `se-app` (feature `test-suppo
 | `@se/engine` | `evaluate`, decoders, compositor, audio, export worker | import React or `@se/ui`; do any network call except to se-core |
 | `@se/ui` | presentational design system + generic editor widgets | know about the domain model or the protocol |
 
+**`@se/ui` in practice** (ADR-0009, ADR-0013): three entry points — `@se/ui` (components and `cn`), `@se/ui/icons` (lucide re-export, drawn with `Icon`) and `@se/ui/styles.css` (Tailwind v4, bundled fonts, tokens, base styles; the app imports only this stylesheet). Design tokens are CSS variables in `packages/ui/src/tokens/*.css` (`@theme`, OKLCH), the only place where colour literals may appear; `scripts/check-raw-colors.mjs` (in `pnpm check`) rejects them anywhere else in `packages/ui/src` and `apps/desktop/src`, and the default Tailwind palette is removed. Layers: `tokens/` → `primitives/` (Radix wrappers, prompt 03) → `editor/` (prompt 04). Storybook (`pnpm storybook`) documents every component; every story is checked by axe in `pnpm test`, and text tokens are tested for WCAG AA contrast.
+
 ### 4.2 Renderer app (`apps/desktop/src`)
 
 - Features depend on `@se/ui`, `@se/engine`, `@se/protocol` and `shared/`.
@@ -162,7 +164,7 @@ features/<name>/
 - `main/`: app lifecycle, windows, menus, dialogs, `CoreSupervisor` (spawn se-core, read the handshake line `{"port":…,"token":…,"version":…}` on stdout, restart on crash with exponential backoff, stop it by closing its stdin when the app quits).
 - `preload/`: exposes a minimal typed API via `contextBridge` as `window.simpleEffect` (`getCoreConnection()`; later `getPathForFile(file)`, `openDialog(...)`). Built as CommonJS because sandboxed preloads cannot be ES modules.
 - `shared/`: the bridge contract (types and IPC channel names) bundled into main, preload and renderer.
-- Security: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, no pop-ups or navigation, strict CSP written as a meta tag at build time (`tooling/`): production connects only to `127.0.0.1`.
+- Security: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, no pop-ups or navigation, strict CSP written as a meta tag at build time (`tooling/`): production connects only to `127.0.0.1`, scripts come only from the app bundle; inline `<style>` elements are allowed because Radix and sonner insert them (ADR-0013).
 
 **se-core process contract**: stdout carries exactly one handshake line; stdin stays open and its end-of-file means "shut down" (so the core dies with the app, even if the app crashes); `SE_DATA_DIR` (set by the supervisor to `app.getPath('userData')`) is the app data folder, and logs go to daily files in `<SE_DATA_DIR>/logs/` (7 kept, filter `SE_LOG`) plus stderr in debug builds. The packaged binary lives in `resources/bin/`, the development one in `target/debug/`.
 
@@ -376,7 +378,7 @@ Only `crates/se-agents/src/providers/<provider>/` knows a concrete CLI. Everythi
 - se-core listens on 127.0.0.1 only, on a random port, with a random 256-bit token (`?t=` query parameter, compared in constant time; 401 otherwise); rejects requests whose `Host` is not `127.0.0.1:<port>` or `localhost:<port>` (403, defeats DNS rebinding). The token is never logged.
 - Per-task MCP tokens are minted at task start and revoked when the run ends.
 - Agents run with `--tools ""` (no built-in tools), in an empty working directory.
-- Renderer is sandboxed; motion templates run in an isolated Worker.
+- Renderer is sandboxed, with a CSP that only allows scripts from the app bundle and connections to `127.0.0.1`; motion templates run in an isolated Worker.
 - The app never reads, stores or forwards AI CLI credentials.
 
 ## 14. Cross-platform notes
