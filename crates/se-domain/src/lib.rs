@@ -11,6 +11,7 @@
 //! - [`ids`]: one UUIDv7 newtype per entity kind ([`ItemId`], [`AssetId`]…).
 //! - [`spatial`] and [`color`]: units of positions and sizes (ADR-0015), hex colours.
 //! - [`document`]: [`Project`] and everything it contains.
+//! - [`validation`]: [`validate_project`], the cross-entity invariants.
 //!
 //! Every public type is re-exported at the crate root. Operations, history and changesets arrive
 //! with roadmap prompt 06.
@@ -26,6 +27,7 @@ pub mod spatial;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
 pub mod time;
+pub mod validation;
 
 pub use color::{Color, ColorParseError};
 pub use document::{
@@ -45,3 +47,4 @@ pub use time::{
     Flicks, FrameRate, RoundingMode, TimeError, TimeRange, TimecodeError, TimecodeErrorReason,
     format_timecode, parse_timecode,
 };
+pub use validation::{Violation, ViolationCode, validate_project};
