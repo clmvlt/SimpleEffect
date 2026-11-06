@@ -7,6 +7,7 @@ const steps = [
   ['Prettier', 'pnpm', ['exec', 'prettier', '--check', '.']],
   ['ESLint', 'pnpm', ['exec', 'eslint', '.', '--max-warnings=0']],
   ['TypeScript', 'pnpm', ['exec', 'tsc', '-b']],
+  ['Raw colours', 'node', ['scripts/check-raw-colors.mjs']],
   ['Vitest', 'pnpm', ['exec', 'vitest', 'run']],
   ['Codegen freshness', 'node', ['scripts/codegen.mjs', '--check']],
   ['cargo fmt', 'cargo', ['fmt', '--all', '--check']],

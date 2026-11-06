@@ -1,0 +1,6 @@
+/* All design tokens. Imported by `src/styles.css`, after Tailwind itself. */
+@import './colors.css';
+@import './accents.css';
+@import './typography.css';
+@import './layout.css';
+@import './motion.css';

@@ -8,6 +8,16 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 const RENDERER = 'apps/desktop/src';
+const UI = 'packages/ui';
+
+/** Libraries wrapped by @se/ui; nothing else may import them (golden rule 9). */
+const PRIMITIVE_LIBRARIES = [
+  'radix-ui',
+  '@radix-ui/*',
+  'lucide-react',
+  'sonner',
+  'class-variance-authority',
+];
 
 /**
  * Architecture rules of the renderer (docs/architecture.md §4.2–4.3):
@@ -69,6 +79,7 @@ export default defineConfig(
     '**/dist/',
     '**/release/',
     '**/.tsbuild/',
+    '**/storybook-static/',
     'target/',
     'packages/protocol/src/generated/',
   ]),
@@ -89,9 +100,27 @@ export default defineConfig(
     languageOptions: { globals: globals.node },
   },
   {
-    files: [`${RENDERER}/**/*.{ts,tsx}`],
+    files: [`${RENDERER}/**/*.{ts,tsx}`, `${UI}/**/*.{ts,tsx}`],
     extends: [reactHooks.configs.flat['recommended-latest']],
     languageOptions: { globals: globals.browser },
+  },
+  {
+    // Golden rule 9: the app gets primitives, icons and toasts from @se/ui only.
+    files: [`${RENDERER}/**/*.{ts,tsx}`],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: PRIMITIVE_LIBRARIES,
+              message:
+                'Import UI from @se/ui (icons from @se/ui/icons): primitive libraries stay inside packages/ui.',
+            },
+          ],
+        },
+      ],
+    },
   },
   rendererBoundaries,
   prettier,

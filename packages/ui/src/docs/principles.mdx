@@ -1,0 +1,52 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Foundations/Principles" />
+
+# Principles
+
+`@se/ui` is the design system of SimpleEffect, a local AI-first video editor. It follows the
+shadcn approach — component source lives in this repository, composition over configuration,
+variants with `cva`, Tailwind CSS v4 with design tokens — on top of accessible Radix primitives.
+The decision is recorded in `docs/adr/0009-design-system.md` and `docs/adr/0013-design-tokens-and-styling.md`.
+
+## Visual direction: modern, clean, dense
+
+- Dark neutral surfaces with a slight cool tint; **one** vivid accent (bright yellow, with dark
+  content on it).
+- Soft contrasts, thin borders, almost no shadows (only floating layers get `shadow-overlay`).
+- Corners of 2–8 px; `rounded-full` only for pills, switches and dots.
+- Compact controls: 24 / 28 / 32 px (`h-control-xs|sm|md`), `sm` by default.
+- Base text 13 px (`text-sm`); scale 11 / 12 / 13 / 14 / 16 / 20 px.
+- Numbers and timecodes use `timecode` (monospace, tabular numerals) so values do not jitter.
+
+## Rules for app and component code
+
+1. **Tokens only.** Colours come from `bg-*`, `text-*`, `border-*`… utilities generated from
+   `src/tokens/`. Raw colours (hex values, colour functions such as rgb or oklch) outside `tokens/` fail `pnpm check`.
+   The default Tailwind palette is removed, so `bg-neutral-900` does not exist.
+2. **Import from `@se/ui` only.** The app never imports Radix, lucide, sonner or cva; icons come
+   from `@se/ui/icons` and are drawn with `<Icon icon={…} />`.
+3. **Presentational only.** Components know nothing about projects, items or the protocol; all
+   user-visible text arrives through props (the app takes it from i18n).
+4. **Accessible by default.** Keyboard navigation works everywhere, focus is always visible
+   (`focus-visible` ring in the accent colour), text contrast is AA on every surface (tested), and
+   every story passes axe (`src/stories.a11y.test.tsx`). Icon-only controls require a `label`.
+5. **Stack in layers.** Floating elements use the z-index variables: `--z-panel` < `--z-modal` <
+   `--z-dropdown` < `--z-toast` < `--z-tooltip` (a menu opened from a dialog floats above it).
+6. **Motion is short and optional.** Animations use the duration and easing tokens and disappear
+   with `prefers-reduced-motion`.
+
+## Choosing a component
+
+| Need                                          | Use                                                     |
+| --------------------------------------------- | ------------------------------------------------------- |
+| Main action of a dialog or panel              | `Button variant="primary"`                              |
+| Toolbar action with an icon only              | `IconButton` wrapped in `Tooltip` (with its shortcut)   |
+| Labelled form control with help or error text | `Field` around `Input`, `Select`, `Textarea`…           |
+| Choice among 2–5 modes in a toolbar           | `ToggleGroup` (or `Tabs variant="segmented"` for views) |
+| Destructive confirmation                      | `AlertDialog` with a `danger` action                    |
+| Transient feedback                            | `toast()` with `<Toaster />` mounted once               |
+
+## Adding a component
+
+See `packages/ui/CLAUDE.md`: folder anatomy, story, test, export from `src/index.ts`.

@@ -3,6 +3,8 @@ packages:
   - packages/*
 
 # Dependency install scripts are opt-in. electron-winstaller only serves Squirrel installers,
-# which we do not build (NSIS is used on Windows).
+# which we do not build (NSIS is used on Windows). esbuild (pulled in by Storybook) finds its
+# platform binary through its optional dependency; its postinstall only re-checks it.
 allowBuilds:
   electron-winstaller: false
+  esbuild: false

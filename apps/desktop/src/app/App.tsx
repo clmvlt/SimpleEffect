@@ -12,16 +12,16 @@ export function App() {
   const info = useCoreInfo();
   const rows = status === 'open' && info !== null ? describeCoreInfo(info) : [];
   return (
-    <main className="flex h-screen flex-col items-center justify-center gap-6 bg-neutral-950 text-neutral-100">
+    <main className="flex h-screen flex-col items-center justify-center gap-6 bg-bg text-text">
       <p role="status" className="text-lg">
         {describeConnection(status, info)}
       </p>
       {rows.length > 0 && (
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm text-neutral-400">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm text-text-muted">
           {rows.map((row) => (
             <Fragment key={row.label}>
               <dt>{row.label}</dt>
-              <dd className="font-mono">{row.value}</dd>
+              <dd className="timecode">{row.value}</dd>
             </Fragment>
           ))}
         </dl>

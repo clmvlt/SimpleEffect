@@ -62,14 +62,14 @@ Adapters depend on `se-app` and `se-domain`, never on each other. `se-core` depe
 |---|---|
 | `pnpm install` | Install JS dependencies |
 | `pnpm dev` | Build the debug se-core, then run Electron + renderer (downloads the Electron binary on first run) |
-| `pnpm check` | Everything CI runs: format check, lint, typecheck, JS tests, `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test`, codegen freshness (`scripts/check.mjs`) |
+| `pnpm check` | Everything CI runs: format check, lint, typecheck, raw-colour guard, JS tests, codegen freshness, `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test` (`scripts/check.mjs`) |
 | `pnpm test` / `cargo test --workspace` | Tests only |
 | `pnpm lint` / `pnpm format` / `pnpm typecheck` | Single steps of `pnpm check` (`format` rewrites files) |
 | `pnpm build` | Release se-core + production bundles of the Electron app |
 | `pnpm package` | `build`, then the installer of the current platform into `apps/desktop/release/` |
 | `pnpm set-version <semver>` | Write the version into every `package.json` and `Cargo.toml` (used by the release workflow) |
 | `pnpm codegen` | Regenerate `packages/protocol/src/generated/` from Rust (`se-codegen`); `--check` fails if stale |
-| `pnpm storybook` | Design system playground — placeholder until prompt 03 |
+| `pnpm storybook` | Design system playground (`@se/ui` Storybook on http://localhost:6006, a11y addon) |
 | `pnpm fetch-binaries` | Download ffmpeg/ffprobe/whisper binaries into `resources/bin/<platform>/` (asks before downloading) — added by prompt 08 |
 
 ## Code conventions

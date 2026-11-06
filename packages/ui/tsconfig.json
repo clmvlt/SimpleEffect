@@ -3,7 +3,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": ".tsbuild",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"]
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["vite/client"]
   },
-  "include": ["src", "vitest.config.ts"]
+  "include": ["src", ".storybook/*.ts", ".storybook/*.tsx", "vitest.config.ts", "vitest.setup.ts"]
 }
