@@ -126,7 +126,7 @@ mod tests {
         let text = project.sequences[0].tracks[1].items.remove(0);
         // Make room on A2: the music [0 s, 14 s) now starts after the text [1 s, 4 s).
         project.sequences[0].tracks[4].items[0].timeline_range = range_ms(5000, 9000);
-        project.sequences[0].tracks[4].items.push(text);
+        project.sequences[0].tracks[4].items.insert(0, text);
         let violations = validate_project(&project);
         assert_eq!(violations.len(), 1, "{violations:#?}");
         assert_eq!(violations[0].code, ViolationCode::ItemNotAllowedOnTrack);

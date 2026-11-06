@@ -1,0 +1,86 @@
+---
+source: crates/se-domain/src/transaction.rs
+expression: moved.unwrap().inverse
+---
+{
+  "id": "00000000-0001-7000-8000-000000000000",
+  "actor": {
+    "kind": "user"
+  },
+  "label": "Edit",
+  "ops": [
+    {
+      "kind": "restoreItem",
+      "track": "00000000-0002-7000-8000-000000000000",
+      "item": {
+        "id": "00000000-0003-7000-8000-000000000000",
+        "revision": 1,
+        "origin": {
+          "kind": "user"
+        },
+        "timelineRange": {
+          "start": 705600000,
+          "duration": 2116800000
+        },
+        "linkGroup": null,
+        "kind": {
+          "kind": "text",
+          "content": "Bonjour",
+          "style": {
+            "fontFamily": "Inter",
+            "fontSize": 72.0,
+            "color": "#ffffff"
+          },
+          "transform": {
+            "position": {
+              "kind": "static",
+              "value": {
+                "x": 0.5,
+                "y": 0.8
+              }
+            },
+            "scale": {
+              "kind": "static",
+              "value": {
+                "x": 1.0,
+                "y": 1.0
+              }
+            },
+            "rotation": {
+              "kind": "static",
+              "value": 0.0
+            },
+            "anchor": {
+              "kind": "static",
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              }
+            },
+            "opacity": {
+              "kind": "keyframed",
+              "keyframes": [
+                {
+                  "time": 0,
+                  "value": 0.0,
+                  "easing": {
+                    "kind": "preset",
+                    "name": "easeOut"
+                  }
+                },
+                {
+                  "time": 352800000,
+                  "value": 1.0,
+                  "easing": {
+                    "kind": "preset",
+                    "name": "easeOut"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

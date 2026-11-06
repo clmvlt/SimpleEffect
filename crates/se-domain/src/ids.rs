@@ -177,6 +177,11 @@ uuid_id!(
     MarkerId,
     "marker"
 );
+uuid_id!(
+    /// Identifies a [`crate::Transaction`]: one atomic group of operations by one actor.
+    TransactionId,
+    "transaction"
+);
 
 #[cfg(test)]
 mod tests {

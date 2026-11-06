@@ -51,4 +51,15 @@ impl ItemKind {
             Self::MotionTemplate(_) | Self::Caption(_) => None,
         }
     }
+
+    /// Mutable access to the placement of a visual item; `None` for kinds that have none yet.
+    pub const fn transform_mut(&mut self) -> Option<&mut Transform2D> {
+        match self {
+            Self::MediaClip(clip) => Some(&mut clip.transform),
+            Self::Text(text) => Some(&mut text.transform),
+            Self::Shape(shape) => Some(&mut shape.transform),
+            Self::Image(image) => Some(&mut image.transform),
+            Self::MotionTemplate(_) | Self::Caption(_) => None,
+        }
+    }
 }

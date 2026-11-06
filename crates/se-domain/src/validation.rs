@@ -8,6 +8,7 @@
 mod animation_rules;
 mod identity_rules;
 mod item_rules;
+mod link_rules;
 mod media_rules;
 mod report;
 mod sequence_rules;
@@ -23,9 +24,10 @@ use report::{Path, ProjectIndex, Report};
 /// Every broken invariant of `project`; empty when the document is valid.
 ///
 /// Checked: unique ids, existing references of the right asset kind, sequence formats, times
-/// not before zero and within range, non-empty items, no overlap on a track, items allowed on
-/// their track kind, positive speeds, source ranges inside their media, keyframes present, sorted
-/// and inside their item, and value ranges (opacity, pan, fades, Bézier control points).
+/// not before zero and within range, non-empty items, no overlap on a track, items sorted by
+/// start, items allowed on their track kind, positive speeds, source ranges inside their media,
+/// keyframes present, sorted and inside their item, value ranges (opacity, pan, fades, Bézier
+/// control points) and link groups within one sequence.
 #[must_use]
 pub fn validate_project(project: &Project) -> Vec<Violation> {
     let mut report = Report::default();
@@ -49,6 +51,7 @@ pub fn validate_project(project: &Project) -> Vec<Violation> {
             }
         }
     }
+    link_rules::check(project, &mut report);
     report.into_violations()
 }
 
