@@ -7,7 +7,7 @@ Chaque fichier `NN-*.md` décrit **une** fonctionnalité, avec son contexte, son
 1. Ouvre une **nouvelle session** Claude Code à la racine du repo (un contexte neuf par prompt).
 2. Tape simplement :
    ```
-   Exécute le prompt prompts/01-bootstrap-monorepo.md
+   lance le prompt 01
    ```
 3. Claude crée une branche `feature/NN-…` depuis `dev` à jour, lit `CLAUDE.md`, la doc et le prompt, puis développe. S'il te pose une question (installation, téléchargement, choix produit), réponds-lui.
 4. À la fin, il coche le prompt ci-dessous, ajoute une entrée dans `PROGRESS.md`, pousse sa branche et la fusionne dans `dev` (sans PR).

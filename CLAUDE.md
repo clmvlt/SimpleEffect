@@ -9,7 +9,7 @@ This codebase is developed and maintained by AI agents. Optimise every change fo
 ## Before you start
 
 1. Read this file. Then read the sections of `docs/architecture.md` relevant to your task (roadmap prompts list them; read the whole file only for cross-cutting work). Look up terms in `docs/glossary.md` when needed.
-2. If you are executing a roadmap prompt (`prompts/NN-*.md`): read that prompt fully, the docs and ADRs it lists, and the latest 3 entries of `prompts/PROGRESS.md`. Do not read other prompts unless the current one references them.
+2. "Lance / exécute / fais le prompt NN" means: execute `prompts/NN-*.md` (e.g. "lance le prompt 1" → `prompts/01-bootstrap-monorepo.md`); "continue le prompt NN" means: resume it. If you are executing a roadmap prompt: read that prompt fully, the docs and ADRs it lists, and the latest 3 entries of `prompts/PROGRESS.md`. Do not read other prompts unless the current one references them.
 3. Before editing inside a crate or package, read its own `CLAUDE.md` (every crate/package has one).
 4. Set up your branch as described in **Git workflow** below before changing anything. When continuing a partial prompt, check out its existing `feature/NN-*` branch (local or from `origin`) instead of creating a new one.
 5. Do not load Postman or other API-product skills/plugins: this project has no public HTTP API; its internal RPC and MCP endpoints are covered by Rust/TS tests.
