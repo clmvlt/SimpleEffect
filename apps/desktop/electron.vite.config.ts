@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import babel from '@rolldown/plugin-babel';
@@ -8,6 +9,11 @@ import { defineConfig } from 'electron-vite';
 import { contentSecurityPolicyPlugin } from './tooling/csp-plugin';
 
 const projectRoot = import.meta.dirname;
+
+/** The app version, shown in the status bar (`__APP_VERSION__`, declared in `src/env.d.ts`). */
+const appVersion = (
+  JSON.parse(readFileSync(resolve(projectRoot, 'package.json'), 'utf8')) as { version: string }
+).version;
 
 /**
  * Three bundles: Electron main (ESM), preload (CommonJS, required by `sandbox: true`) and the
@@ -31,6 +37,7 @@ export default defineConfig({
   },
   renderer: {
     root: resolve(projectRoot, 'src'),
+    define: { __APP_VERSION__: JSON.stringify(appVersion) },
     plugins: [
       contentSecurityPolicyPlugin(),
       react(),
