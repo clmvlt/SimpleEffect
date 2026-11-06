@@ -1,0 +1,30 @@
+/*
+ * Accent shades. The default accent lives in `colors.css`; each `[data-accent]` block overrides the
+ * five accent tokens for its subtree, so a container (or `<html>`) can switch accent without
+ * touching components. The Storybook "Foundations/Theme" story shows them side by side. The user
+ * chose yellow in prompt 03 (after indigo, violet and blue candidates): `yellow` is the default.
+ * Every shade must keep `tokens/contrast.test.ts` and the gamut test green.
+ */
+[data-accent='lemon'] {
+  --color-accent: oklch(0.88 0.18 108);
+  --color-accent-hover: oklch(0.92 0.16 108);
+  --color-accent-muted: oklch(0.88 0.18 108 / 0.16);
+  --color-accent-foreground: oklch(0.2 0.03 108);
+  --color-focus-ring: oklch(0.92 0.14 108);
+}
+
+[data-accent='yellow'] {
+  --color-accent: oklch(0.87 0.175 96);
+  --color-accent-hover: oklch(0.9 0.15 96);
+  --color-accent-muted: oklch(0.87 0.175 96 / 0.16);
+  --color-accent-foreground: oklch(0.2 0.03 95);
+  --color-focus-ring: oklch(0.9 0.14 96);
+}
+
+[data-accent='gold'] {
+  --color-accent: oklch(0.84 0.155 84);
+  --color-accent-hover: oklch(0.87 0.13 84);
+  --color-accent-muted: oklch(0.84 0.155 84 / 0.16);
+  --color-accent-foreground: oklch(0.2 0.03 84);
+  --color-focus-ring: oklch(0.87 0.12 84);
+}

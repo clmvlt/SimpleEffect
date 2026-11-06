@@ -1,0 +1,85 @@
+/*
+ * Colour tokens of the dark theme (the only theme so far).
+ *
+ * Every colour of the app is defined here, in OKLCH, and nowhere else: `scripts/check-raw-colors.mjs`
+ * rejects colour literals outside `tokens/` folders. Tailwind turns each `--color-<name>` into
+ * `bg-<name>`, `text-<name>`, `border-<name>`, `ring-<name>`… and the default Tailwind palette is
+ * removed so only tokens can be used.
+ *
+ * A future light theme overrides the same variables under `[data-theme='light']` (see
+ * `packages/ui/CLAUDE.md`); components never change. `static` keeps every variable in the output even
+ * when no utility uses it, so `var(--color-…)` and the Storybook Tokens page always resolve.
+ *
+ * Surfaces carry a slight cool tint (hue 265). Text contrast is AA (≥ 4.5:1) on every surface, a
+ * property checked by `tokens/contrast.test.ts`.
+ */
+@theme static {
+  --color-*: initial;
+
+  /* Surfaces, from the window background up to floating layers. */
+  --color-bg: oklch(0.16 0.006 265);
+  --color-panel: oklch(0.185 0.007 265);
+  --color-panel-raised: oklch(0.215 0.008 265);
+  --color-overlay: oklch(0.225 0.009 265);
+  --color-input: oklch(0.165 0.006 265);
+  --color-control: oklch(0.255 0.009 265);
+  --color-control-hover: oklch(0.29 0.01 265);
+  --color-border: oklch(0.275 0.009 265);
+  --color-border-strong: oklch(0.36 0.011 265);
+  /* Translucent layers that work on any surface: hovered rows and ghost controls, modal backdrop. */
+  --color-hover: oklch(1 0 0 / 0.06);
+  --color-scrim: oklch(0.08 0.005 265 / 0.6);
+
+  /* Text. `text-subtle` is for secondary hints and placeholders; it still meets AA. */
+  --color-text: oklch(0.95 0.004 265);
+  --color-text-muted: oklch(0.77 0.01 265);
+  --color-text-subtle: oklch(0.67 0.012 265);
+  --color-text-inverted: oklch(0.17 0.006 265);
+
+  /*
+   * Accent: bright yellow, chosen by the user in prompt 03 (shades compared in `tokens/accents.css`).
+   * It is light, so content drawn on it (`accent-foreground`) is dark.
+   */
+  --color-accent: oklch(0.87 0.175 96);
+  --color-accent-hover: oklch(0.9 0.15 96);
+  --color-accent-muted: oklch(0.87 0.175 96 / 0.16);
+  --color-accent-foreground: oklch(0.2 0.03 95);
+  --color-focus-ring: oklch(0.9 0.14 96);
+
+  /*
+   * Semantic states. Solid colours read as text on panels; `-muted` are tinted backgrounds.
+   * Warning is orange, not yellow, so it never reads as the accent.
+   */
+  --color-success: oklch(0.74 0.16 155);
+  --color-success-muted: oklch(0.74 0.16 155 / 0.16);
+  --color-warning: oklch(0.78 0.15 65);
+  --color-warning-muted: oklch(0.78 0.15 65 / 0.16);
+  --color-danger: oklch(0.68 0.19 25);
+  --color-danger-muted: oklch(0.68 0.19 25 / 0.16);
+  --color-info: oklch(0.74 0.13 240);
+  --color-info-muted: oklch(0.74 0.13 240 / 0.16);
+  /* Filled danger controls (destructive buttons) need a darker red under white text. */
+  --color-danger-solid: oklch(0.53 0.2 25);
+  --color-danger-solid-hover: oklch(0.57 0.2 25);
+  --color-danger-foreground: oklch(0.99 0 0);
+
+  /*
+   * Timeline item kinds: base = clip body, muted = translucent fill, strong = border and text.
+   * Hues stay apart from each other and from the yellow accent (selection, playhead).
+   */
+  --color-item-video: oklch(0.58 0.12 250);
+  --color-item-video-muted: oklch(0.58 0.12 250 / 0.35);
+  --color-item-video-strong: oklch(0.74 0.13 250);
+  --color-item-audio: oklch(0.6 0.12 160);
+  --color-item-audio-muted: oklch(0.6 0.12 160 / 0.35);
+  --color-item-audio-strong: oklch(0.76 0.14 160);
+  --color-item-graphic: oklch(0.64 0.14 50);
+  --color-item-graphic-muted: oklch(0.64 0.14 50 / 0.35);
+  --color-item-graphic-strong: oklch(0.78 0.14 50);
+  --color-item-caption: oklch(0.64 0.13 290);
+  --color-item-caption-muted: oklch(0.64 0.13 290 / 0.35);
+  --color-item-caption-strong: oklch(0.8 0.1 290);
+  --color-ai: oklch(0.66 0.2 335);
+  --color-ai-muted: oklch(0.66 0.2 335 / 0.22);
+  --color-ai-strong: oklch(0.8 0.15 335);
+}
