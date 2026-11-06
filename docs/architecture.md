@@ -57,6 +57,7 @@ SimpleEffect/
 │  ├─ glossary.md            domain vocabulary
 │  ├─ ai-tools.md            MCP tool catalog = contract with AI agents (created in prompt 18)
 │  ├─ backlog.md             ideas not yet scheduled
+│  ├─ test-vectors/          JSON vectors shared by Rust and TypeScript tests (flicks, timecodes)
 │  └─ adr/                   architecture decision records
 ├─ prompts/                  roadmap: one prompt per feature, executed in order (French)
 ├─ apps/
@@ -113,13 +114,13 @@ se-domain  ◄── se-protocol
 
 | Crate | May depend on | Must NOT |
 |---|---|---|
-| `se-domain` | serde, thiserror, uuid, ts-rs (derive only) | do IO, use async/tokio, read the clock, spawn anything |
+| `se-domain` | serde, thiserror, uuid, ts-rs (derive only); dev: proptest, insta, serde_json | do IO, use async/tokio, read the clock, spawn anything |
 | `se-protocol` | se-domain, serde, serde_json, ts-rs | contain logic |
 | `se-app` | se-domain, se-protocol, tokio, async-trait, tracing | touch `std::fs`, `std::process`, network, concrete adapters |
 | adapters | se-app, se-domain, their IO libraries | depend on another adapter crate |
 | `se-mcp` | se-app, se-domain, rmcp, schemars | mutate documents except through se-app use cases |
 | `se-core` | everything | contain domain logic |
-| `se-codegen` | se-protocol (later se-domain), ts-rs | be depended on, ship in the app |
+| `se-codegen` | se-protocol, se-domain, ts-rs | be depended on, ship in the app |
 
 Adapters implement **ports** declared in `se-app::ports`: `ProjectRepository`, `AppLibraryRepository`, `MediaProber`, `MediaJobRunner`, `Transcriber`, `SubjectDetector`, `AgentProvider`, `Exporter`, `EventSink`, `Clock`, `IdGenerator`.
 Every port has an in-memory/fake implementation in `se-app` (feature `test-support`) so use cases are tested without IO.
@@ -174,43 +175,70 @@ features/<name>/
 
 ### 5.1 Time
 
-- `Flicks(i64)`: 705,600,000 flicks per second. Exact for all common frame rates (incl. NTSC 1001 rates) and sample rates.
-- `FrameRate { numerator, denominator }` (e.g. 30000/1001).
-- `TimeRange { start: Flicks, duration: Flicks }`.
-- `Timecode` parsing accepts `51s`, `51.5s`, `00:51`, `1:02.500`, `00:00:51:12` (frames, needs a frame rate). Formatting depends on the sequence frame rate.
-- In TypeScript flicks are a branded `number` (`type Flicks = number & { __brand: 'Flicks' }`). Exact up to ±2^53 (~147 days); the domain rejects larger values.
+Module `se_domain::time` (ADR-0004).
+
+- `Flicks(i64)`: 705,600,000 flicks per second. Exact for all common frame rates (incl. NTSC 1001 rates) and sample rates. Values stay within ±`Flicks::MAX_SAFE` = 2^53 − 1 (JavaScript's `Number.MAX_SAFE_INTEGER`, ~147 days): constructors and deserialization reject anything else. Arithmetic is checked (`checked_add`, `checked_sub`, `checked_mul`, `checked_mul_f64` for speeds), never panicking. Negative values exist (deltas); documents reject negative positions in validation.
+- Conversions: `from_seconds_f64` / `to_seconds_f64` (nearest flick, halves away from zero), `from_frames(n, rate)` / `to_frames(rate, RoundingMode::{Floor, Ceil, Nearest})` (exact).
+- `FrameRate { numerator, denominator }` (e.g. 30000/1001), stored reduced. Only rates between 1 and 1000 fps whose frame lasts a whole number of flicks are representable, so `frame_duration()` is exact (23,543,520 flicks at 29.97). Constants `FPS_23_976` … `FPS_120`, `STANDARD`, `is_ntsc()`, `nominal_fps()` (30 for 29.97).
+- `TimeRange { start, duration }`: half-open `[start, end)`, `duration ≥ 0` and an end within range enforced at construction and deserialization. `contains`, `contains_range`, `intersects` (touching ranges do not), `intersection`, `shifted`. Empty ranges intersect nothing.
+- `parse_timecode(text, Option<FrameRate>)` accepts `51s`, `51.5s` (≤ 9 decimals), `00:51`, `1:02.500`, `1:00:00`, `00:00:51:12` (SMPTE, needs a frame rate) and a leading `-`; a bare number is refused as ambiguous. SMPTE timecodes count frames at the nominal rate (non-drop: `00:00:01:00` at 29.97 is frame 30, at 1.001 s); the drop-frame notation `00:00:51;12` is accepted and read as non-drop for now. Errors quote the input: `'1:75': seconds must be < 60`. `format_timecode(time, rate)` writes `HH:MM:SS:FF` (displayed frame, i.e. rounded down; `-` prefix for negative times).
+- Shared vectors `docs/test-vectors/flicks.json` and `timecode.json` are run by the Rust tests (`crates/se-domain/tests/test_vectors.rs`) and must be run by the TypeScript helpers (prompt 10) for parity.
+- In TypeScript flicks are a branded `number` (generated: `type Flicks = number & { readonly __brand: 'Flicks' }`).
 - Conversions happen only at boundaries: UI display, MCP tool input/output, export writers.
 
 ### 5.2 Identifiers
 
-UUIDv7 strings wrapped in newtypes (`ProjectId`, `SequenceId`, `TrackId`, `ItemId`, `AssetId`, `TaskId`, `ChangesetId`, `TemplateId`). Generated through the `IdGenerator` port (deterministic in tests).
+UUIDv7 newtypes over `uuid::Uuid` (`ProjectId`, `SequenceId`, `TrackId`, `ItemId`, `AssetId`, `TaskId`, `ChangesetId`, `TemplateId`, `LinkGroupId`, `MarkerId`; module `se_domain::ids`). They serialize as hyphenated lowercase strings (`string` in TypeScript); `parse` accepts only the hyphenated form of a version-7 UUID, with an actionable `IdError`. se-domain never generates ids: the `IdGenerator` port does and wraps them with `from_uuid`. Tests use `from_test_index(n)` (feature `test-support`), e.g. `00000000-0003-7000-8000-000000000000`.
 
 ### 5.3 Document model (summary — source of truth is `se-domain`)
 
 ```
-Project { id, name, schema_version, revision, settings, assets, sequences, templates, brand_kit }
-Asset { id, original_path, kind: Video|Audio|Image, probe: MediaInfo, derived: DerivedMedia, analysis_refs }
+Project { id, name, schema_version, revision, settings: ProjectSettings { default_format }, assets, sequences, templates, brand_kit: Option<BrandKit> }
+Asset { id, original_path, relative_hint, kind: Video|Audio|Image, media_info: Option<MediaInfo>, derived: DerivedMedia, decodability, missing }
+MediaInfo { duration: Option<Flicks>, container, video_stream: Option<VideoStreamInfo>, audio_streams }
+DerivedMedia { mezzanine, proxy: Option<DerivedFile { relative_path, status: Pending|Ready|Failed{message} }> }
 Sequence { id, name, format: Format { width, height, frame_rate, sample_rate }, tracks, markers }
-Track { id, kind: Video|Audio, name, muted, solo, locked, hidden, volume, items }
-Item { id, revision, origin: Origin, timeline_range, kind: ItemKind }
-ItemKind = MediaClip { asset_id, source_start, speed, transform, opacity, volume, fades, reframe }
-         | Text { content, style, transform, animations }
-         | Shape { geometry, fill, stroke, transform }
-         | Image { asset_id, transform }
-         | MotionTemplate { template_id, params }
-         | Caption { words, style_ref }
-Animatable<T> = Static(T) | Keyframed(Vec<Keyframe<T>>)
+Track { id, kind: Video|Audio, name, muted, solo, locked, hidden, volume_db, pan, items }
+Item { id, revision, origin: Origin, timeline_range: TimeRange, link_group: Option<LinkGroupId>, kind: ItemKind }
+ItemKind = MediaClip { asset_id, source_start, speed, transform, volume_db: Animatable<f64>, fade_in, fade_out, reframe: Fit|Fill }
+         | Text(TextItem { content, style: TextStyle { font_family, font_size, color }, transform })
+         | Shape(ShapeItem { geometry: Rectangle|Ellipse, fill, transform })
+         | Image(ImageItem { asset_id, transform })
+         | MotionTemplate(TemplateItem { template_id, params: name → Text|Number|Boolean|Color })
+         | Caption(CaptionItem { text })
+Transform2D { position, scale, rotation, anchor, opacity }   (each Animatable)
+Animatable<T> = Static { value } | Keyframed { keyframes: Vec<Keyframe<T>> }
 Keyframe<T> { time: Flicks (item-relative), value: T, easing: Easing }
-Easing = Linear | Hold | CubicBezier(x1, y1, x2, y2) | Preset(name)
-Origin = User | AiTask(TaskId)
+Easing = Linear | Hold | CubicBezier { x1, y1, x2, y2 } | Preset { name: EaseIn|EaseOut|EaseInOut }
+Origin = User | AiTask { task_id }
+Marker { id, time, label, color: MarkerColor (Premiere's 8 colours) }
 ```
 
-Invariants (validated in `se-domain`, property-tested):
-- items on the same track never overlap;
-- all times ≥ 0 and within the flicks safe range;
-- a media clip's source range stays inside its asset duration;
-- keyframes are sorted and inside the item duration;
-- every referenced id exists.
+`FormatPreset` (`Hd16x9`, `Uhd16x9`, `Vertical9x16`, `Square1x1`, `Portrait4x5`, `Custom`) maps to dimensions; `Format::preset()` detects it. Text styles, shapes, captions, templates and brand kits are minimal skeletons completed by prompts 15, 23, 24 and 25 (`TODO(prompt-NN)` in code).
+
+Serialization (`project.json` and the protocol): `camelCase` fields, enums with data internally tagged by `kind` (an item is `{ …, "kind": { "kind": "mediaClip", "assetId": … } }`), unit enums as `camelCase` strings, flicks as JSON numbers, ids and colours (`#rrggbb[aa]`) as strings, `None` as `null`. The insta snapshot in `crates/se-domain/src/document/snapshots/` of `test_support::example_project()` fixes the format: changing it is a document format change.
+
+Spatial units (ADR-0015): positions normalised in the sequence frame (`(0,0)` top-left, `(1,1)` bottom-right), anchors normalised in the item's box, relative scales, clockwise degrees, opacity in `[0, 1]`; sizes in design pixels, i.e. pixels of a frame whose shorter side is 1080 (`Format::design_scale()` = shorter side / 1080).
+
+Invariants. Single-value invariants are enforced by the value types (`Flicks` range, `TimeRange` duration, `FrameRate`, UUIDv7 ids, hex colours). Cross-entity invariants are reported by `validate_project(&Project) -> Vec<Violation { code, path, message }>`, which never stops at the first problem. Paths use JSON names with element ids (`sequences[<id>].tracks[<id>].items[<id>].kind.speed`; keyframes by index). Codes:
+
+| Code | Rule |
+|---|---|
+| `DUPLICATE_ID` | ids unique per entity kind across the project |
+| `UNKNOWN_REFERENCE` | asset and template references exist |
+| `ASSET_KIND_MISMATCH` | media clips use video/audio assets, image items use image assets |
+| `INVALID_FORMAT` | even dimensions in 2..=16384; sample duration a whole number of flicks |
+| `NEGATIVE_TIME` | item start, source start and marker time ≥ 0 |
+| `TIME_OUT_OF_RANGE` | a clip's source end stays within the flicks range |
+| `EMPTY_ITEM` | items have a positive duration |
+| `OVERLAPPING_ITEMS` | items of a track never overlap (touching is fine) |
+| `ITEM_NOT_ALLOWED_ON_TRACK` | audio tracks hold only media clips; video tracks no clips of audio-only assets |
+| `INVALID_SPEED` | speed is a number > 0 |
+| `SOURCE_RANGE_EXCEEDS_MEDIA` | a clip's source range fits in its asset (when the duration is known) |
+| `EMPTY_KEYFRAMES` | keyframed properties have at least one keyframe |
+| `KEYFRAMES_NOT_SORTED` | keyframe times strictly increase |
+| `KEYFRAME_OUTSIDE_ITEM` | keyframe times are in `[0, item duration]` |
+| `VALUE_OUT_OF_RANGE` | opacity in `[0, 1]`, pan in `[-1, 1]`, fades ≥ 0 and fitting the item, Bézier `x1`/`x2` in `[0, 1]` |
 
 ### 5.4 Operations, transactions, history, changesets
 

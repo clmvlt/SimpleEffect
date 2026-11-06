@@ -1,0 +1,95 @@
+{
+  "description": "Shared flicks vectors (ADR-0004). Read by the Rust tests of se-domain (crates/se-domain/tests/test_vectors.rs) and by the TypeScript time helpers (prompt 10) so both sides convert identically. Frame rates are written like the serialized FrameRate. Rounding modes: floor (toward -infinity), ceil (toward +infinity), nearest (halves away from zero). Error codes name the Rust TimeError variants in camelCase.",
+  "flicksPerSecond": 705600000,
+  "maxSafe": 9007199254740991,
+  "frameDurations": [
+    { "frameRate": { "numerator": 24000, "denominator": 1001 }, "flicks": 29429400 },
+    { "frameRate": { "numerator": 24, "denominator": 1 }, "flicks": 29400000 },
+    { "frameRate": { "numerator": 25, "denominator": 1 }, "flicks": 28224000 },
+    { "frameRate": { "numerator": 30000, "denominator": 1001 }, "flicks": 23543520 },
+    { "frameRate": { "numerator": 30, "denominator": 1 }, "flicks": 23520000 },
+    { "frameRate": { "numerator": 50, "denominator": 1 }, "flicks": 14112000 },
+    { "frameRate": { "numerator": 60000, "denominator": 1001 }, "flicks": 11771760 },
+    { "frameRate": { "numerator": 60, "denominator": 1 }, "flicks": 11760000 },
+    { "frameRate": { "numerator": 120, "denominator": 1 }, "flicks": 5880000 }
+  ],
+  "reducedFrameRates": [
+    {
+      "input": { "numerator": 60, "denominator": 2 },
+      "reduced": { "numerator": 30, "denominator": 1 }
+    },
+    {
+      "input": { "numerator": 48000, "denominator": 2002 },
+      "reduced": { "numerator": 24000, "denominator": 1001 }
+    }
+  ],
+  "invalidFrameRates": [
+    { "frameRate": { "numerator": 0, "denominator": 1 }, "error": "zeroFrameRate" },
+    { "frameRate": { "numerator": 30, "denominator": 0 }, "error": "zeroFrameRate" },
+    { "frameRate": { "numerator": 1, "denominator": 2 }, "error": "frameRateOutOfRange" },
+    { "frameRate": { "numerator": 1001, "denominator": 1 }, "error": "frameRateOutOfRange" },
+    { "frameRate": { "numerator": 47, "denominator": 2 }, "error": "inexactFrameRate" }
+  ],
+  "framesToFlicks": [
+    { "frameRate": { "numerator": 30000, "denominator": 1001 }, "frames": 1, "flicks": 23543520 },
+    { "frameRate": { "numerator": 24000, "denominator": 1001 }, "frames": 24, "flicks": 706305600 },
+    { "frameRate": { "numerator": 25, "denominator": 1 }, "frames": 25, "flicks": 705600000 },
+    { "frameRate": { "numerator": 60000, "denominator": 1001 }, "frames": 60, "flicks": 706305600 },
+    { "frameRate": { "numerator": 120, "denominator": 1 }, "frames": -3, "flicks": -17640000 },
+    { "frameRate": { "numerator": 30, "denominator": 1 }, "frames": 0, "flicks": 0 },
+    {
+      "frameRate": { "numerator": 50, "denominator": 1 },
+      "frames": 180000,
+      "flicks": 2540160000000
+    }
+  ],
+  "flicksToFrames": [
+    {
+      "frameRate": { "numerator": 30000, "denominator": 1001 },
+      "flicks": 23543519,
+      "frames": { "floor": 0, "ceil": 1, "nearest": 1 }
+    },
+    {
+      "frameRate": { "numerator": 30000, "denominator": 1001 },
+      "flicks": 11771760,
+      "frames": { "floor": 0, "ceil": 1, "nearest": 1 }
+    },
+    {
+      "frameRate": { "numerator": 30000, "denominator": 1001 },
+      "flicks": 11771759,
+      "frames": { "floor": 0, "ceil": 1, "nearest": 0 }
+    },
+    {
+      "frameRate": { "numerator": 30000, "denominator": 1001 },
+      "flicks": -11771760,
+      "frames": { "floor": -1, "ceil": 0, "nearest": -1 }
+    },
+    {
+      "frameRate": { "numerator": 25, "denominator": 1 },
+      "flicks": 705600000,
+      "frames": { "floor": 25, "ceil": 25, "nearest": 25 }
+    },
+    {
+      "frameRate": { "numerator": 24000, "denominator": 1001 },
+      "flicks": 2540160000000,
+      "frames": { "floor": 86313, "ceil": 86314, "nearest": 86314 }
+    },
+    {
+      "frameRate": { "numerator": 60, "denominator": 1 },
+      "flicks": -1,
+      "frames": { "floor": -1, "ceil": 0, "nearest": 0 }
+    }
+  ],
+  "secondsToFlicks": [
+    { "seconds": 1, "flicks": 705600000 },
+    { "seconds": 1.5, "flicks": 1058400000 },
+    { "seconds": -1.5, "flicks": -1058400000 },
+    { "seconds": 0.04, "flicks": 28224000 },
+    { "seconds": 1e-9, "flicks": 1 },
+    { "seconds": 12765305, "flicks": 9007199208000000 }
+  ],
+  "secondsToFlicksErrors": [
+    { "seconds": 12765306, "error": "outOfRange" },
+    { "seconds": -12765306, "error": "outOfRange" }
+  ]
+}

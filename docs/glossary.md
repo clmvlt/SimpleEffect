@@ -8,30 +8,44 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Document** | The serialized state of a project (`project.json`) | `Project` |
 | **Revision** | Monotonic counter of committed transactions (project-wide and per item) | `revision` |
 | **Asset** | A media file imported into a project (video, audio, image), referenced by path | `Asset` |
-| **Original** | The user's source file of an asset | `DerivedMedia::original` |
+| **Media info** | What probing an asset revealed: duration, container, video and audio streams | `MediaInfo` |
+| **Decodability** | Whether the renderer can decode an asset's original with WebCodecs, or needs its mezzanine | `Decodability` |
+| **Original** | The user's source file of an asset | `Asset::original_path` |
 | **Mezzanine** | High-quality, WebCodecs-decodable copy of an asset whose codec Chromium cannot decode | `DerivedMedia::mezzanine` |
 | **Proxy** | Low-resolution copy of an asset for smooth playback | `DerivedMedia::proxy` |
 | **Sequence** | A timeline with a format (resolution, frame rate, sample rate) and tracks. A project may contain several | `Sequence` |
-| **Format** | Width, height, frame rate and sample rate of a sequence; presets 16:9, 9:16, 1:1, 4:5 | `Format` |
+| **Format** | Width, height, frame rate and sample rate of a sequence | `Format` |
+| **Format preset** | A named format size: 16:9 HD and UHD, 9:16, 1:1, 4:5, or custom | `FormatPreset` |
+| **Frame rate** | Frames per second as a reduced fraction (30000/1001); only rates with a whole number of flicks per frame exist | `FrameRate` |
+| **Nominal frame rate** | The frame rate rounded up (30 for 29.97): frames per second counted by SMPTE timecodes | `FrameRate::nominal_fps` |
 | **Track** | A horizontal lane of a sequence holding non-overlapping items; kind video or audio | `Track` |
 | **Item** | Anything placed on a track over a time range | `Item` |
+| **Link group** | Items that move and trim together, like a clip's picture and its sound | `LinkGroupId` |
+| **Marker** | A labelled instant of a sequence, with one of Premiere's eight colours | `Marker` |
 | **Media clip** | An item showing/playing part of an asset | `ItemKind::MediaClip` |
 | **Text / Shape / Image item** | Declarative graphic items | `ItemKind::Text`, `Shape`, `Image` |
 | **Motion template** | AI-authored, parameterised render module (code + params schema) | `MotionTemplate` |
-| **Template item** | An item instantiating a motion template with parameter values | `ItemKind::MotionTemplate` |
+| **Template item** | An item instantiating a motion template with parameter values | `ItemKind::MotionTemplate`, `TemplateItem` |
 | **Caption** | Subtitle item built from transcript words, styled by a caption style | `ItemKind::Caption` |
 | **Brand kit** | Fonts, colours, logo and default caption style reused by the user and agents | `BrandKit` |
 | **Gap** | Empty time on a track between items (implicit, not stored) | — |
 | **Source range** | The part of an asset used by a media clip (`source_start` + duration) | `source_start` |
 | **Timeline range** | Where an item sits in its sequence (`start` + `duration`) | `timeline_range` |
+| **Time range** | A half-open interval `[start, start + duration)` with a non-negative duration | `TimeRange` |
 | **Flicks** | Time unit: 1/705,600,000 s, stored as i64 | `Flicks` |
-| **Timecode** | Human representation of a time (`00:00:51:12`, `51s`, `1:02.5`) | `Timecode` |
+| **Timecode** | Human representation of a time (`00:00:51:12`, `51s`, `1:02.5`) | `parse_timecode`, `format_timecode` |
+| **Test vectors** | JSON input → expected output tables in `docs/test-vectors/`, run by both the Rust and the TypeScript tests | — |
 | **Keyframe** | A value of an animatable property at an item-relative time, with an easing to the next | `Keyframe<T>` |
 | **Animatable** | A property that is either static or keyframed | `Animatable<T>` |
 | **Easing** | Interpolation curve between keyframes | `Easing` |
 | **Animation preset** | Named, reusable set of keyframes (fade in, slide, pop, typewriter…) | `AnimationPreset` |
 | **Reframe** | How a clip fits a sequence format (fit, fill, custom crop/position, keyframed tracking) | `Reframe` |
+| **Transform** | Position, scale, rotation, anchor and opacity of a visual item, each animatable | `Transform2D` |
+| **Normalised position** | A point in the sequence frame where `(0, 0)` is the top-left and `(1, 1)` the bottom-right corner, whatever the format | `Vec2` |
+| **Design pixel** | Size unit: a pixel of a frame whose shorter side is 1080, so 1 design px = 1 px in 1080-class formats, 2 px in 4K (ADR-0015) | `DesignPixels` |
 | **Safe area** | Platform UI zones to keep clear (TikTok, Reels, Shorts, YouTube) | `SafeAreaPreset` |
+| **Schema version** | Version of the `project.json` format a document was written with | `schema_version`, `CURRENT_SCHEMA_VERSION` |
+| **Violation** | A broken document invariant found by validation, with a stable code, a path and a message | `Violation`, `ViolationCode` |
 | **Operation** | One intent-level edit of the document, with a computable inverse | `Operation` |
 | **Transaction** | Atomic group of operations by one actor | `Transaction` |
 | **Actor** | Who performed a transaction: the user or an AI task | `Actor` |

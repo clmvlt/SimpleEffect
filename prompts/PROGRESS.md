@@ -26,6 +26,48 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-06 — Prompt 05: Domaine : temps et modèle de document — Done
+
+**Branch**: `feature/05-domain-model`, merged into `dev` at `<merge>`
+
+**Done**
+- `se-domain::time`: `Flicks` (±`MAX_SAFE` = 2^53 − 1, checked `add/sub/mul/mul_f64`, `from/to_seconds_f64` nearest-flick, `from_frames`/`to_frames` with `RoundingMode` Floor/Ceil/Nearest, validating `Deserialize`), `FrameRate` (reduced fraction, 1–1000 fps, exact `frame_duration`, 9 standard constants, `is_ntsc`, `nominal_fps`, `Display` like `29.97`), `TimeRange` (half-open, duration ≥ 0 and end in range enforced at construction and deserialization, `contains`, `contains_range`, `intersects`, `intersection`, `shifted`), `parse_timecode` (`51s`, `51.5s`, `00:51`, `1:02.500`, `1:00:00`, `HH:MM:SS:FF`, `;FF` read as non-drop, leading `-`, bare numbers refused; errors `'1:75': seconds must be < 60`) and `format_timecode` (`HH:MM:SS:FF`, nominal-rate frame counting).
+- Shared vectors `docs/test-vectors/flicks.json` and `timecode.json` (values cross-checked with an independent BigInt computation), run by `crates/se-domain/tests/test_vectors.rs`; proptest in `tests/time_properties.rs` (frames ↔ flicks at every standard rate with all roundings, floor containment, SMPTE round trip, `TimeRange` commutativity/containment/shift).
+- `ids`: 10 UUIDv7 newtypes (`…, LinkGroupId, MarkerId`) over `uuid::Uuid` (`Copy`), strict hyphenated v7 parsing (`IdError`), string serde, `from_uuid`, `from_test_index` (feature `test-support`).
+- `spatial` (`Vec2`, `DesignPixels`, `design_scale`), `color` (`Color`, `#rrggbb[aa]`).
+- `document`: `Project`, `ProjectSettings`, `Asset`/`AssetKind`/`Decodability`, `MediaInfo`/`VideoStreamInfo`/`AudioStreamInfo`, `DerivedMedia`/`DerivedFile`/`DerivedStatus`, `Sequence`, `Format`/`FormatPreset`, `Track`/`TrackKind`, `Item`/`Origin`, `ItemKind` (`MediaClip` with `Reframe`, `TextItem`/`TextStyle`, `ShapeItem`/`ShapeGeometry`, `ImageItem`, `TemplateItem`/`TemplateParamValue`, `CaptionItem`), `Transform2D`, `Animatable`/`Keyframe`, `Easing`/`EasingPreset`, `Marker`/`MarkerColor`, `MotionTemplate`, `BrandKit`; `CURRENT_SCHEMA_VERSION = 1`.
+- `validation`: `validate_project` → `Vec<Violation { code, path, message }>`, 15 `ViolationCode`s (table in `docs/architecture.md` §5.3), paths like `sequences[<id>].tracks[<id>].items[<id>].kind.speed`, at least one test per code.
+- `test_support` (feature `test-support`): `example_project()` (valid, every item kind, keyframes, link group, AI origin, marker, template, brand kit), `example_ids`, `millis`, `range_ms`, `item`, `track`. insta snapshot of its JSON fixes the document format.
+- `se-codegen` exports `Project`, `Violation`, `FormatPreset` roots (69 generated files); `Flicks` is `number & { readonly __brand: 'Flicks' }`, ids are `string`. `packages/protocol/src/document-types.test.ts` adds compile-time checks.
+- Docs: ADR-0015 (spatial units) + index, `docs/architecture.md` §2/§3/§5.1–5.3, glossary (14 terms), backlog (drop-frame timecodes), CLAUDE.md of `se-domain`, `se-codegen`, `@se/protocol`.
+
+**Deviations from the prompt**
+- ADR number: the prompt asked for « ADR 0012 Spatial units », but 0012 was already taken (RPC conventions, prompt 02): it is **ADR-0015**.
+- Design pixels are measured on the **shorter side** = 1080, not the height (user's choice, recorded in ADR-0015): 1 design px = 1 px in 16:9, 9:16, 1:1 and 4:5 at 1080, 2 px in 4K.
+- `MAX_SAFE` is 2^53 − 1 (JavaScript's `Number.MAX_SAFE_INTEGER`) rather than 2^53, which JS cannot distinguish from 2^53 + 1.
+- `MediaClip` has no separate `opacity`: it lives in `Transform2D` (the prompt listed both). Volume is `volume_db: Animatable<f64>` so automation is keyframes.
+- Single-value invariants (flicks range, `TimeRange` duration ≥ 0, frame rates, ids, colours) are enforced by the types, including at deserialization; `validate_project` checks only cross-entity rules. Hence no violation code for « negative duration ».
+- `FrameRate` only represents rates of 1–1000 fps with a whole number of flicks per frame; `VideoStreamInfo::frame_rate` is `None` for others (variable-frame-rate footage goes through a mezzanine).
+- Extra validation codes beyond the prompt's list: `DUPLICATE_ID`, `ASSET_KIND_MISMATCH`, `INVALID_FORMAT`, `EMPTY_ITEM`, `EMPTY_KEYFRAMES`, `VALUE_OUT_OF_RANGE`.
+- `Easing::Preset` holds an `EasingPreset` enum (ease-in/out/in-out) instead of a free string, so the engine never meets an unknown name. `Reframe` is a `kind`-tagged enum (`{"kind":"fit"}`) so prompt 26 can add a variant with data without changing the format.
+- Timecode API is `parse_timecode` / `format_timecode` (functions), not a `Timecode` type; ADR-0004's mention of `Timecode::parse` predates this.
+- `MediaInfo` has `video_stream: Option<…>` and `audio_streams: Vec<…>` (several audio streams in pro files) and `duration: Option<Flicks>` (images).
+- Template parameter values cover text, number, boolean and colour; enum, font and asset parameters wait for prompt 24.
+
+**Follow-ups**
+- Prompt 06: operations must keep track items sorted by start (documented on `Track::items`, not validated), bump `Item::revision` and `Project::revision`, and run `validate_project` on the result.
+- Prompt 07: `schema_version` migrations; `Asset::relative_hint` relinking; `missing` flag on open.
+- Prompt 08: fill `MediaInfo`/`Decodability` (`TODO(prompt-08)` on per-stream decodability).
+- Prompt 10: TypeScript flicks/timecode helpers must run `docs/test-vectors/*.json` (same error codes, camelCase variant names).
+- Prompts 15, 23, 24, 25, 26: complete `TextStyle`/`ShapeItem`/easing presets, `CaptionItem`, `MotionTemplate`/params, `BrandKit`, `Reframe` (`TODO(prompt-NN)` in code).
+- Link groups are not validated (e.g. members on different sequences): add a rule when operations create them (prompt 06/11).
+
+**Notes for the next agent**
+- ts-rs 12 (`serde-compat`) prints fake « failed to parse serde attribute » warnings for `#[serde(try_from)]`, `transparent`…: validated types implement `Deserialize` by hand (private `Raw…` struct + constructor) instead. Container-level `#[ts(type = "…")]` gives custom TS types (`Flicks`, ids, `Color`).
+- Internally tagged enums need struct variants (`Static { value }`), not newtype variants around primitives; add `rename_all_fields = "camelCase"` for multi-word variant fields.
+- Accept a changed snapshot with `INSTA_UPDATE=always cargo test -p se-domain` after reviewing the `.snap.new` (ignored by Git).
+- clippy: `UUIDv7` is in `doc-valid-idents`; test files outside `#[test]` functions need `#![allow(clippy::unwrap_used/expect_used)]` (see `tests/*.rs`); `case_sensitive_file_extension_comparisons` fires on `ends_with(".pan")`.
+
 ## 2026-11-06 — Prompt 04: Design system : composants montage, shell, i18n — Done
 
 **Branch**: `feature/04-design-system-editeur-shell`, merged into `dev` at `bf5f752`

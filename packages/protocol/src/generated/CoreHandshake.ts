@@ -1,5 +1,5 @@
-// GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol).
-// Regenerate with `pnpm codegen`.
+// GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
+// crates/se-domain). Regenerate with `pnpm codegen`.
 
 /**
  * Connection details announced by `se-core` on stdout at startup, read by the Electron supervisor.

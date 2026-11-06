@@ -1,0 +1,318 @@
+//! [`example_project`]: a valid document using every item kind, built from deterministic ids.
+
+#![allow(
+    clippy::expect_used,
+    reason = "the example is built from constant, known-valid values; a failure is a bug here"
+)]
+
+use std::collections::BTreeMap;
+
+use super::{item, millis, range_ms, track};
+use crate::{
+    Animatable, Asset, AssetKind, AudioStreamInfo, BrandKit, CURRENT_SCHEMA_VERSION, CaptionItem,
+    Color, Decodability, DerivedFile, DerivedMedia, DerivedStatus, DesignPixels, Easing,
+    EasingPreset, Format, FormatPreset, FrameRate, ImageItem, Item, ItemKind, Keyframe,
+    LinkGroupId, Marker, MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin,
+    Project, ProjectId, ProjectSettings, Sequence, SequenceId, ShapeGeometry, ShapeItem, TaskId,
+    TemplateItem, TemplateParamValue, TextItem, TextStyle, Track, TrackKind, Transform2D, Vec2,
+    VideoStreamInfo,
+};
+
+/// Ids of [`example_project`] that tests refer to: its three assets and its template.
+pub mod example_ids {
+    use crate::{AssetId, TemplateId};
+
+    /// `interview.mp4`, 60 s, 1080p 29.97 with stereo sound.
+    pub const VIDEO_ASSET: AssetId = AssetId::from_test_index(1);
+    /// `music.wav`, 120 s.
+    pub const AUDIO_ASSET: AssetId = AssetId::from_test_index(2);
+    /// `logo.png`, 512 × 512.
+    pub const IMAGE_ASSET: AssetId = AssetId::from_test_index(3);
+    /// The project's only motion template.
+    pub const TEMPLATE: TemplateId = TemplateId::from_test_index(1);
+}
+
+/// A valid project (`validate_project` finds nothing) with every item kind, keyframes, a link
+/// group, an AI-created item, a marker, a template and a brand kit.
+///
+/// Sequence `Main edit`, 1080p at 29.97 fps. Tracks, bottom to top: V1 (two interview clips, the
+/// second at 2× speed), V2 (a keyframed text and the logo), V3 (a template, a shape and a
+/// caption), A1 (the interview's sound, linked to the first clip), A2 (music with volume
+/// automation).
+///
+/// # Panics
+/// Never: every value is a valid constant.
+#[must_use]
+pub fn example_project() -> Project {
+    let format = Format::from_preset(FormatPreset::Hd16x9, FrameRate::FPS_29_97)
+        .expect("named presets have dimensions");
+    Project {
+        id: ProjectId::from_test_index(1),
+        name: "Example".to_owned(),
+        schema_version: CURRENT_SCHEMA_VERSION,
+        revision: 42,
+        settings: ProjectSettings {
+            default_format: format,
+        },
+        assets: example_assets(),
+        sequences: vec![Sequence {
+            id: SequenceId::from_test_index(1),
+            name: "Main edit".to_owned(),
+            format,
+            tracks: example_tracks(),
+            markers: vec![Marker {
+                id: MarkerId::from_test_index(1),
+                time: millis(3000),
+                label: "Intro ends".to_owned(),
+                color: MarkerColor::Yellow,
+            }],
+        }],
+        templates: vec![MotionTemplate {
+            id: example_ids::TEMPLATE,
+            name: "Lower third".to_owned(),
+        }],
+        brand_kit: Some(BrandKit {
+            colors: vec![
+                Color::opaque(0xff, 0xcc, 0x00),
+                Color::opaque(0x1a, 0x1a, 0x1a),
+            ],
+            fonts: vec!["Inter".to_owned()],
+        }),
+    }
+}
+
+fn example_assets() -> Vec<Asset> {
+    let asset = |id, name: &str, kind, media_info| Asset {
+        id,
+        original_path: format!("/home/demo/media/{name}"),
+        relative_hint: Some(format!("media/{name}")),
+        kind,
+        media_info: Some(media_info),
+        derived: DerivedMedia::default(),
+        decodability: Decodability::Decodable,
+        missing: false,
+    };
+    let stereo = |codec: &str| AudioStreamInfo {
+        codec: codec.to_owned(),
+        channels: 2,
+        sample_rate: 48_000,
+    };
+    let mut video = asset(
+        example_ids::VIDEO_ASSET,
+        "interview.mp4",
+        AssetKind::Video,
+        MediaInfo {
+            duration: Some(millis(60_000)),
+            container: "mov,mp4,m4a,3gp,3g2,mj2".to_owned(),
+            video_stream: Some(picture("h264", 1920, 1080, Some(FrameRate::FPS_29_97))),
+            audio_streams: vec![stereo("aac")],
+        },
+    );
+    video.derived.proxy = Some(DerivedFile {
+        relative_path: format!("cache/proxies/{}.mp4", example_ids::VIDEO_ASSET),
+        status: DerivedStatus::Ready,
+    });
+    let music = asset(
+        example_ids::AUDIO_ASSET,
+        "music.wav",
+        AssetKind::Audio,
+        MediaInfo {
+            duration: Some(millis(120_000)),
+            container: "wav".to_owned(),
+            video_stream: None,
+            audio_streams: vec![stereo("pcm_s24le")],
+        },
+    );
+    let logo = asset(
+        example_ids::IMAGE_ASSET,
+        "logo.png",
+        AssetKind::Image,
+        MediaInfo {
+            duration: None,
+            container: "png_pipe".to_owned(),
+            video_stream: Some(picture("png", 512, 512, None)),
+            audio_streams: Vec::new(),
+        },
+    );
+    vec![video, music, logo]
+}
+
+fn picture(codec: &str, width: u32, height: u32, frame_rate: Option<FrameRate>) -> VideoStreamInfo {
+    VideoStreamInfo {
+        codec: codec.to_owned(),
+        profile: frame_rate.map(|_| "High".to_owned()),
+        bit_depth: Some(8),
+        chroma_subsampling: frame_rate.map(|_| "4:2:0".to_owned()),
+        width,
+        height,
+        frame_rate,
+        rotation: 0,
+    }
+}
+
+fn example_tracks() -> Vec<Track> {
+    vec![
+        track(1, TrackKind::Video, "V1", interview_clips()),
+        track(2, TrackKind::Video, "V2", vec![title_text(), logo_image()]),
+        track(
+            3,
+            TrackKind::Video,
+            "V3",
+            vec![lower_third(), backdrop_shape(), caption()],
+        ),
+        track(4, TrackKind::Audio, "A1", vec![interview_sound()]),
+        track(5, TrackKind::Audio, "A2", vec![music()]),
+    ]
+}
+
+fn interview_clips() -> Vec<Item> {
+    let mut first = item(
+        1,
+        range_ms(0, 10_000),
+        ItemKind::MediaClip(interview_clip()),
+    );
+    first.link_group = Some(LinkGroupId::from_test_index(1));
+    let mut fast = interview_clip();
+    fast.source_start = millis(20_000);
+    fast.speed = 2.0;
+    let mut second = item(2, range_ms(10_000, 4000), ItemKind::MediaClip(fast));
+    second.origin = Origin::AiTask {
+        task_id: TaskId::from_test_index(1),
+    };
+    vec![first, second]
+}
+
+fn interview_clip() -> MediaClip {
+    MediaClip {
+        source_start: millis(5000),
+        fade_in: millis(500),
+        ..MediaClip::new(example_ids::VIDEO_ASSET)
+    }
+}
+
+fn interview_sound() -> Item {
+    let mut sound = item(
+        8,
+        range_ms(0, 10_000),
+        ItemKind::MediaClip(interview_clip()),
+    );
+    sound.link_group = Some(LinkGroupId::from_test_index(1));
+    sound
+}
+
+fn title_text() -> Item {
+    let transform = Transform2D {
+        opacity: keyframed(
+            &[(0, 0.0), (500, 1.0)],
+            Easing::Preset {
+                name: EasingPreset::EaseOut,
+            },
+        ),
+        position: Animatable::constant(Vec2::new(0.5, 0.8)),
+        ..Transform2D::default()
+    };
+    let text = TextItem {
+        content: "Bonjour".to_owned(),
+        style: TextStyle {
+            font_family: "Inter".to_owned(),
+            font_size: DesignPixels(72.0),
+            color: Color::WHITE,
+        },
+        transform,
+    };
+    item(3, range_ms(1000, 3000), ItemKind::Text(text))
+}
+
+fn logo_image() -> Item {
+    let image = ImageItem {
+        asset_id: example_ids::IMAGE_ASSET,
+        transform: Transform2D {
+            position: Animatable::constant(Vec2::new(0.9, 0.1)),
+            scale: Animatable::constant(Vec2::splat(0.25)),
+            ..Transform2D::default()
+        },
+    };
+    item(4, range_ms(5000, 2000), ItemKind::Image(image))
+}
+
+fn lower_third() -> Item {
+    let params = BTreeMap::from([
+        (
+            "title".to_owned(),
+            TemplateParamValue::Text {
+                value: "Jane Doe".to_owned(),
+            },
+        ),
+        (
+            "accent".to_owned(),
+            TemplateParamValue::Color {
+                value: Color::opaque(0xff, 0xcc, 0x00),
+            },
+        ),
+        (
+            "slideIn".to_owned(),
+            TemplateParamValue::Boolean { value: true },
+        ),
+        (
+            "lineWidth".to_owned(),
+            TemplateParamValue::Number { value: 4.0 },
+        ),
+    ]);
+    let template = TemplateItem {
+        template_id: example_ids::TEMPLATE,
+        params,
+    };
+    item(5, range_ms(2000, 3000), ItemKind::MotionTemplate(template))
+}
+
+fn backdrop_shape() -> Item {
+    let shape = ShapeItem {
+        geometry: ShapeGeometry::Rectangle {
+            width: DesignPixels(600.0),
+            height: DesignPixels(120.0),
+            corner_radius: DesignPixels(16.0),
+        },
+        fill: Color {
+            alpha: 0xcc,
+            ..Color::BLACK
+        },
+        transform: Transform2D::default(),
+    };
+    item(6, range_ms(6000, 2000), ItemKind::Shape(shape))
+}
+
+fn caption() -> Item {
+    let caption = CaptionItem {
+        text: "Merci d'être là".to_owned(),
+    };
+    item(7, range_ms(8000, 2000), ItemKind::Caption(caption))
+}
+
+fn music() -> Item {
+    let ducking = Easing::CubicBezier {
+        x1: 0.42,
+        y1: 0.0,
+        x2: 0.58,
+        y2: 1.0,
+    };
+    let clip = MediaClip {
+        volume_db: keyframed(&[(0, -6.0), (2000, -20.0)], ducking),
+        fade_out: millis(1000),
+        ..MediaClip::new(example_ids::AUDIO_ASSET)
+    };
+    item(9, range_ms(0, 14_000), ItemKind::MediaClip(clip))
+}
+
+/// A keyframed number: `(time in ms, value)` pairs, all with `easing`.
+fn keyframed(points: &[(i64, f64)], easing: Easing) -> Animatable<f64> {
+    Animatable::Keyframed {
+        keyframes: points
+            .iter()
+            .map(|&(time_ms, value)| Keyframe {
+                time: millis(time_ms),
+                value,
+                easing,
+            })
+            .collect(),
+    }
+}
