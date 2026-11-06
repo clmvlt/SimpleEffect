@@ -13,7 +13,9 @@ Dépôt : https://github.com/clmvlt/SimpleEffect (public : les releases sont té
 
 Flux : `feature/*` → `dev` → `recette` → `main`.
 
-Claude part toujours d'un `dev` à jour, crée une branche `feature/…`, la pousse puis la fusionne dans `dev`, sans PR. Il ne touche jamais `recette` ni `main` et ne crée jamais de tag.
+Claude part toujours d'un `dev` à jour, crée une branche `feature/…`, la pousse puis la fusionne dans `dev`, sans PR. Il ne touche jamais `recette` ni `main`, n'ouvre jamais de pull request et ne crée jamais de tag.
+
+> Les bandeaux jaunes « *dev had recent pushes* — **Compare & pull request** » sur la page GitHub ne sont **pas** des PR : GitHub les propose automatiquement après chaque push sur une branche autre que `main`. Ignore-les ou ferme-les (✕) ; ils disparaissent seuls au bout d'environ une heure.
 
 ## Voir ce qui va être promu
 

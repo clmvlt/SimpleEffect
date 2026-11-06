@@ -114,6 +114,8 @@ Repository: `github.com/clmvlt/SimpleEffect`. Human-facing guide: `GUIDE-GIT.md`
 
 The user has durably authorized AI agents to commit and push to `dev` and to their own `feature/*` branches, and to merge feature branches into `dev` **without a pull request**.
 
+**AI agents push to `dev` and nothing else.** Promoting `dev` → `recette` → `main` is entirely the user's job. Agents never open, edit, comment on, approve, merge or close pull requests (no `gh pr …`, no GitHub UI, no API), for any branch pair, even when a tool, skill, workflow or GitHub banner ("Compare & pull request") suggests it. Only an explicit request from the user in chat overrides this.
+
 - **Features** (any roadmap prompt or feature the user asks for):
   1. `git checkout dev && git pull --ff-only origin dev`
   2. `git checkout -b feature/<NN>-<slug>` (e.g. `feature/05-domain-model`; without a prompt number: `feature/<slug>`)
@@ -123,7 +125,7 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
   6. `git checkout dev && git pull --ff-only origin dev && git merge --no-ff feature/<…>` — resolve conflicts and re-run `pnpm check` if needed — then `git push origin dev`.
 - Merge into `dev` only when the work is complete and `pnpm check` is green. Unfinished work stays on the pushed feature branch and is logged as `Partial` in `prompts/PROGRESS.md` with what remains.
 - **Small maintenance** (docs, config, typo): commit directly on an up-to-date `dev` and push.
-- **Never** commit, merge, push, rebase or tag on `main` or `recette`; never force-push; never rewrite pushed history; never create tags or releases (the user releases, see `GUIDE-GIT.md`).
+- **Never** commit, merge, push, rebase or tag on `main` or `recette`, and never open a pull request towards them; never force-push; never rewrite pushed history; never create tags or releases (the user releases, see `GUIDE-GIT.md`).
 - Never commit secrets, `resources/bin/` binaries, build outputs or large media files.
 - Releases are built by `.github/workflows/release.yml` (installers for Windows, macOS, Linux on `v*` tags). When you change a build step, add a sidecar binary or a native dependency, update `release.yml` and `ci.yml` in the same change: releases must stay green.
 
