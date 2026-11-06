@@ -31,3 +31,7 @@ Thumbs.db
 # Local environment
 .env
 .env.*
+
+# Pending snapshots of insta (review, then accept with `INSTA_UPDATE=always` or cargo-insta)
+*.snap.new
+*.pending-snap

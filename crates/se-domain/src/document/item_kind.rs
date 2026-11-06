@@ -1,0 +1,54 @@
+//! [`ItemKind`]: the content of an item.
+
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
+
+use super::{CaptionItem, ImageItem, MediaClip, ShapeItem, TemplateItem, TextItem, Transform2D};
+
+/// What an item shows or plays. Serialized with its fields next to `"kind"`.
+///
+/// Only media clips may sit on audio tracks (playing the sound of their asset); every kind may
+/// sit on a video track except a clip of an audio-only asset.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum ItemKind {
+    /// Part of a video or audio asset.
+    MediaClip(MediaClip),
+    /// Styled text.
+    Text(TextItem),
+    /// A vector shape.
+    Shape(ShapeItem),
+    /// A still image asset.
+    Image(ImageItem),
+    /// An instance of a motion template.
+    MotionTemplate(TemplateItem),
+    /// A subtitle built from transcript words.
+    Caption(CaptionItem),
+}
+
+impl ItemKind {
+    /// Human name of the kind, for messages (`media clip`, `text`…).
+    #[must_use]
+    pub const fn label(&self) -> &'static str {
+        match self {
+            Self::MediaClip(_) => "media clip",
+            Self::Text(_) => "text",
+            Self::Shape(_) => "shape",
+            Self::Image(_) => "image",
+            Self::MotionTemplate(_) => "motion template",
+            Self::Caption(_) => "caption",
+        }
+    }
+
+    /// The placement of a visual item; `None` for kinds that have none yet.
+    #[must_use]
+    pub const fn transform(&self) -> Option<&Transform2D> {
+        match self {
+            Self::MediaClip(clip) => Some(&clip.transform),
+            Self::Text(text) => Some(&text.transform),
+            Self::Shape(shape) => Some(&shape.transform),
+            Self::Image(image) => Some(&image.transform),
+            Self::MotionTemplate(_) | Self::Caption(_) => None,
+        }
+    }
+}
