@@ -1,0 +1,13 @@
+[package]
+name = "se-domain"
+description = "Pure document model of SimpleEffect: time, identifiers, items, operations and validation."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

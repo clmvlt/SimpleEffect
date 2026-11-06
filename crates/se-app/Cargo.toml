@@ -1,0 +1,15 @@
+[package]
+name = "se-app"
+description = "Use cases, ports, ProjectActor, JobQueue and TaskScheduler of SimpleEffect."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+repository.workspace = true
+
+[dependencies]
+se-domain = { workspace = true }
+se-protocol = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,7 @@
+# Tests may unwrap/expect/panic: a failing assertion must fail loudly.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+
+# Product and technology names that are not code identifiers ("..", keeps clippy's defaults).
+doc-valid-idents = ["SimpleEffect", "WebSocket", "WebCodecs", "PixiJS", "FFmpeg", ".."]
