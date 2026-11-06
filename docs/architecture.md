@@ -134,14 +134,16 @@ Every port has an in-memory/fake implementation in `se-app` (feature `test-suppo
 | `@se/engine` | `evaluate`, decoders, compositor, audio, export worker | import React or `@se/ui`; do any network call except to se-core |
 | `@se/ui` | presentational design system + generic editor widgets | know about the domain model or the protocol |
 
-**`@se/ui` in practice** (ADR-0009, ADR-0013): three entry points — `@se/ui` (components and `cn`), `@se/ui/icons` (lucide re-export, drawn with `Icon`) and `@se/ui/styles.css` (Tailwind v4, bundled fonts, tokens, base styles; the app imports only this stylesheet). Design tokens are CSS variables in `packages/ui/src/tokens/*.css` (`@theme`, OKLCH), the only place where colour literals may appear; `scripts/check-raw-colors.mjs` (in `pnpm check`) rejects them anywhere else in `packages/ui/src` and `apps/desktop/src`, and the default Tailwind palette is removed. Layers: `tokens/` → `primitives/` (Radix wrappers, prompt 03) → `editor/` (prompt 04). Storybook (`pnpm storybook`) documents every component; every story is checked by axe in `pnpm test`, and text tokens are tested for WCAG AA contrast.
+**`@se/ui` in practice** (ADR-0009, ADR-0013): three entry points — `@se/ui` (components and `cn`), `@se/ui/icons` (lucide re-export, drawn with `Icon`) and `@se/ui/styles.css` (Tailwind v4, bundled fonts, tokens, base styles; the app imports only this stylesheet). Design tokens are CSS variables in `packages/ui/src/tokens/*.css` (`@theme`, OKLCH), the only place where colour literals may appear; `scripts/check-raw-colors.mjs` (in `pnpm check`) rejects them anywhere else in `packages/ui/src` and `apps/desktop/src`, and the default Tailwind palette is removed. Layers: `tokens/` → `primitives/` (Radix wrappers, prompt 03) → `editor/` (domain-agnostic editor widgets, prompt 04: Panel, Dock, Toolbar, PropertyGroup/Row, ScrubInput, Timecode, ColorField, KeyframeButton, EasingCurveEditor, TransportBar, Meter, AspectRatioPicker, StatusDot, EmptyState, KeyboardShortcut, AiTaskCard, PromptComposer). Widgets take every label as a prop (English defaults for generic accessible names) and follow the **gesture commit** rule: `onChange` while a value moves, `onCommit` once per gesture, so one gesture is one undo step (ADR-0014). Storybook (`pnpm storybook`) documents every component; every story is checked by axe in `pnpm test`, and text tokens are tested for WCAG AA contrast.
 
 ### 4.2 Renderer app (`apps/desktop/src`)
 
 - Features depend on `@se/ui`, `@se/engine`, `@se/protocol` and `shared/`.
 - A feature imports another feature **only through its `index.ts`** (enforced by ESLint boundaries).
 - Components contain no business logic: logic lives in hooks, stores and services inside the feature.
-- All user-visible strings come from i18n keys (French default).
+- All user-visible strings come from i18n keys (French default): i18next + react-i18next, resources bundled in `src/i18n/locales/fr.json`, keys typed for `t()`; `eslint-plugin-i18next` rejects literal JSX text and user-visible attributes (ADR-0014).
+- `app/` is the composition root and the shell: `main.tsx` creates the core client, the i18n instance and a **hash router** (React Router, library mode) from `createAppRoutes()`: `/` home (`features/projects`), `/project/:projectId` editor. The editor layout (`app/editor/EditorPage.tsx`) nests `Dock`s around the feature panels — media left, viewer centre, inspector and AI tabs right, timeline bottom — and the status bar shows the core connection, AI availability and version.
+- Panel sizes are machine preferences saved in `localStorage` under `se.ui.` (`shared/storage/`), never in projects.
 
 ### 4.3 Features
 

@@ -36,7 +36,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | [x] | 01 | [Bootstrap du monorepo](01-bootstrap-monorepo.md) | — | — |
 | [x] | 02 | [Protocole typé et couche RPC](02-protocole-rpc.md) | 01 | 03, 05 |
 | [x] | 03 | [Design system : fondations](03-design-system-fondations.md) | 01 | 02, 05, 06 |
-| [ ] | 04 | [Design system : composants montage, shell, i18n](04-design-system-editeur-shell.md) | 02, 03 | 05, 06 |
+| [x] | 04 | [Design system : composants montage, shell, i18n](04-design-system-editeur-shell.md) | 02, 03 | 05, 06 |
 | **Phase 1 — Domaine et projets** |||||
 | [ ] | 05 | [Domaine : temps et modèle de document](05-domaine-modele.md) | 01 | 02, 03, 04 |
 | [ ] | 06 | [Domaine : opérations, historique, changesets](06-domaine-operations.md) ⚠️ | 05 | 03, 04 |

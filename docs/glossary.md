@@ -67,3 +67,9 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Design token** | A named design value (colour, size, radius, duration…) defined once as a CSS variable in `packages/ui/src/tokens/` and used through Tailwind utilities | `--color-*`, `--text-*`… |
 | **Accent** | The single vivid UI colour (primary actions, selection, focus ring); variants switch with `data-accent` | `--color-accent`, `data-accent` |
 | **Primitive** | A generic, accessible `@se/ui` component wrapping a Radix primitive (Button, Select, Dialog…) | `packages/ui/src/primitives/` |
+| **Editor widget** | A domain-agnostic `@se/ui` component specific to video editing (ScrubInput, Dock, TransportBar, Meter…) | `packages/ui/src/editor/` |
+| **Panel / Dock** | A docked area of the editor (Médias, Viewer…) / the group of resizable panels it sits in, whose sizes are remembered | `Panel`, `Dock` |
+| **Layout id** | Stable name under which a dock saves its panel sizes (`editor.columns`) | `layoutId` |
+| **Gesture commit** | The single `onCommit` an editor widget emits at the end of a drag, key press or pick (live updates go through `onChange`), so one gesture is one undo step | `onCommit` |
+| **Shell** | The renderer's frame: routes (home, editor), editor layout and status bar | `apps/desktop/src/app/` |
+| **Translation key** | Dotted id of a UI string in `src/i18n/locales/fr.json` (`home.newProject`), typed for `t()` | `t('…')` |
