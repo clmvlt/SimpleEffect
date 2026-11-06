@@ -19,8 +19,14 @@ describe('buildContentSecurityPolicy', () => {
   it('forbids inline scripts outside the dev server', () => {
     const policy = buildContentSecurityPolicy({ devServer: false });
     expect(directive(policy, 'script-src')).toBe("'self'");
-    expect(policy).not.toContain('unsafe-inline');
+    expect(policy).not.toContain('unsafe-eval');
     expect(policy).not.toContain('localhost');
+  });
+
+  it('allows the inline <style> elements inserted by Radix and sonner', () => {
+    const policy = buildContentSecurityPolicy({ devServer: false });
+    expect(directive(policy, 'style-src')).toBe("'self' 'unsafe-inline'");
+    expect(directive(policy, 'font-src')).toBe("'self'");
   });
 
   it('relaxes only what Vite Fast Refresh needs in development', () => {

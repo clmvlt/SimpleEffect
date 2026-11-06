@@ -1,1 +1,2 @@
-@import 'tailwindcss';
+/* The design system brings Tailwind, the bundled fonts, the tokens and the base styles. */
+@import '@se/ui/styles.css';

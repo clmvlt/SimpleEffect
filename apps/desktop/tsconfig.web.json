@@ -8,5 +8,15 @@
     "types": ["vite/client"]
   },
   "include": ["src"],
-  "references": [{ "path": "./tsconfig.shared.json" }, { "path": "../../packages/protocol" }]
+  "references": [
+    {
+      "path": "./tsconfig.shared.json"
+    },
+    {
+      "path": "../../packages/protocol"
+    },
+    {
+      "path": "../../packages/ui"
+    }
+  ]
 }

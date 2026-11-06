@@ -18,6 +18,7 @@
     "@babel/core": "7.29.13",
     "@rolldown/plugin-babel": "0.3.0",
     "@se/protocol": "workspace:*",
+    "@se/ui": "workspace:*",
     "@tailwindcss/vite": "4.3.4",
     "@types/babel__core": "7.20.5",
     "@types/react": "19.3.0",
