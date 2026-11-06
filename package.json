@@ -29,6 +29,7 @@
     "eslint-config-prettier": "10.1.8",
     "eslint-import-resolver-typescript": "4.4.5",
     "eslint-plugin-boundaries": "7.4.2",
+    "eslint-plugin-i18next": "6.1.5",
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.14.0",
     "prettier": "3.9.10",
