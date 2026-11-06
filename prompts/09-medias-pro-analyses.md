@@ -28,7 +28,7 @@ Les fichiers de caméras pro (ProRes, DNxHR, 10 bits 4:2:2…) deviennent montab
 - H.264 basse résolution (540p ou 720p, réglable), `-tune fastdecode`, GOP très court (ex. 15) pour le scrub.
 - Génération auto pour les médias > 1080p ou non décodables (réglable), et action manuelle « Générer un proxy » dans le panneau Médias.
 
-### Réglages (`features/settings`, section Médias)
+### Réglages (`features/settings`, section Médias — crée la feature et l'écran de réglages s'ils n'existent pas encore)
 Qualité mezzanine, résolution des proxies, génération automatique, emplacement et taille du cache, bouton « Nettoyer le cache du projet ».
 
 ### Analyses

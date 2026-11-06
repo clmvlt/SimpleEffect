@@ -48,7 +48,7 @@ Avec l'accord de l'utilisateur (cela consomme un peu de quota), dans un dossier 
 `ReplayProvider` : rejoue une fixture avec des délais simulés ; utilisé par tous les tests de `TaskScheduler` et plus tard de l'UX.
 
 ### UI
-- `features/settings` section « IA » : CLI détecté (chemin, version), état de connexion avec bouton « Actualiser », chemin personnalisé, modèle par défaut (alias des capacités), effort par défaut, nombre max de tâches simultanées.
+- `features/settings` (crée la feature et l'écran de réglages s'ils n'existent pas encore) section « IA » : CLI détecté (chemin, version), état de connexion avec bouton « Actualiser », chemin personnalisé, modèle par défaut (alias des capacités), effort par défaut, nombre max de tâches simultanées.
 - Barre d'état : pastille IA verte (connecté), orange (déconnecté — infobulle « Ouvre un terminal, lance `claude`, puis tape `/login` »), grise (non installé — lien vers l'aide).
 - Écran de développement caché (dev uniquement) « Tester une tâche » qui envoie un prompt simple et affiche le flux d'événements.
 

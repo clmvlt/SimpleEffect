@@ -25,7 +25,7 @@ Implémenter dans `se-domain` (pur, sans IO) la représentation du temps et le m
 - `FrameRate { numerator: u32, denominator: u32 }` avec constantes (23.976, 24, 25, 29.97, 30, 50, 59.94, 60, 120), `frame_duration()` exacte en flicks, `is_ntsc()`.
 - `TimeRange { start, duration }` : `end`, `contains`, `intersects`, `intersection`, `shifted`, invariants (durée ≥ 0).
 - `Timecode` : parsing de `51s`, `51.5s`, `00:51`, `1:02.500`, `00:00:51:12` (frames, exige une cadence), `00:00:51;12` (drop-frame noté mais rendu non-drop pour l'instant, documenté) ; formatage selon la cadence ; erreurs explicites (`"'1:75' : les secondes doivent être < 60"`… message en anglais).
-- **Vecteurs de test partagés** : `docs/test-vectors/timecode.json` et `docs/test-vectors/flicks.json` (entrées → sorties attendues) utilisés par les tests Rust ici et par les tests TS plus tard (prompt 10), pour garantir la parité.
+- **Vecteurs de test partagés** : crée `docs/test-vectors/timecode.json` et `docs/test-vectors/flicks.json` (entrées → sorties attendues), utilisés par les tests Rust ici et par les tests TS plus tard (prompt 10), pour garantir la parité.
 
 ### Identifiants (`ids.rs`)
 Newtypes sur UUIDv7 (chaîne) : `ProjectId`, `SequenceId`, `TrackId`, `ItemId`, `AssetId`, `TaskId`, `ChangesetId`, `TemplateId`, `LinkGroupId`, `MarkerId`. Aucune génération ici (port `IdGenerator` dans se-app) : seulement parsing/validation.

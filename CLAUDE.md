@@ -8,11 +8,12 @@ This codebase is developed and maintained by AI agents. Optimise every change fo
 
 ## Before you start
 
-1. Read this file, then `docs/architecture.md`. Skim `docs/glossary.md` for vocabulary.
-2. If you are executing a roadmap prompt (`prompts/NN-*.md`): read the whole prompt, the docs and ADRs it lists, and the latest entries of `prompts/PROGRESS.md`.
+1. Read this file. Then read the sections of `docs/architecture.md` relevant to your task (roadmap prompts list them; read the whole file only for cross-cutting work). Look up terms in `docs/glossary.md` when needed.
+2. If you are executing a roadmap prompt (`prompts/NN-*.md`): read that prompt fully, the docs and ADRs it lists, and the latest 3 entries of `prompts/PROGRESS.md`. Do not read other prompts unless the current one references them.
 3. Before editing inside a crate or package, read its own `CLAUDE.md` (every crate/package has one).
-4. Set up your branch as described in **Git workflow** below before changing anything.
-5. Talk to the user in **French**. Write code, comments, docs, ADRs, commit messages and `CLAUDE.md` files in **English**.
+4. Set up your branch as described in **Git workflow** below before changing anything. When continuing a partial prompt, check out its existing `feature/NN-*` branch (local or from `origin`) instead of creating a new one.
+5. Do not load Postman or other API-product skills/plugins: this project has no public HTTP API; its internal RPC and MCP endpoints are covered by Rust/TS tests.
+6. Talk to the user in **French**. Write code, comments, docs, ADRs, commit messages and `CLAUDE.md` files in **English**.
 
 ## Golden rules (non-negotiable)
 
@@ -115,6 +116,7 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
   4. `pnpm check` green.
   5. `git push -u origin feature/<…>`
   6. `git checkout dev && git pull --ff-only origin dev && git merge --no-ff feature/<…>` — resolve conflicts and re-run `pnpm check` if needed — then `git push origin dev`.
+- Merge into `dev` only when the work is complete and `pnpm check` is green. Unfinished work stays on the pushed feature branch and is logged as `Partial` in `prompts/PROGRESS.md` with what remains.
 - **Small maintenance** (docs, config, typo): commit directly on an up-to-date `dev` and push.
 - **Never** commit, merge, push, rebase or tag on `main` or `recette`; never force-push; never rewrite pushed history; never create tags or releases (the user releases, see `GUIDE-GIT.md`).
 - Never commit secrets, `resources/bin/` binaries, build outputs or large media files.

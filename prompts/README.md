@@ -15,7 +15,14 @@ Chaque fichier `NN-*.md` décrit **une** fonctionnalité, avec son contexte, son
 
 **Si un prompt est trop gros pour une session**, Claude s'arrête à un point cohérent et note ce qui reste dans `PROGRESS.md`. Relance alors : `Continue le prompt prompts/NN-....md`.
 
-**Conseil modèle** : utilise le modèle le plus capable, avec un effort élevé, pour les prompts marqués ⚠️ (les plus délicats).
+## Conseils
+
+- **Modèle** : le plus capable (effort élevé) pour les fondations **01, 05, 06, 07** et les prompts marqués ⚠️ ; un modèle plus économique suffit pour les autres. Une erreur dans les fondations coûte cher plus tard.
+- **Reste présent** sur les prompts qui te demanderont quelque chose : 01 (installation de Rust), 03 (choix de la couleur d'accent), 08 (téléchargement de ffmpeg), 17 (vrais appels `claude -p`, qui consomment un peu de quota), 21 (binaires et modèle Whisper), 26 (modèle de détection de visages), 28 (test d'import dans Premiere).
+- **Teste entre deux prompts** : `pnpm dev` et deux minutes de clic. Un bug repéré tout de suite coûte bien moins de tokens qu'un bug découvert trois prompts plus tard.
+- **Reste séquentiel** : deux sessions en parallèle modifient toutes les deux ce fichier et `PROGRESS.md`, d'où des conflits de fusion.
+- **Jalons pour une pré-release** (promotion vers `recette` puis tag `-rc`, voir `GUIDE-GIT.md`) : après 04 (shell visible), 13 (lecture vidéo), 16 (montage de base complet), 20 (IA utilisable), 28 (exports).
+- **Session coupée ou contexte saturé** : relance `Continue le prompt prompts/NN-….md`. Claude reprend la branche `feature/NN-…` et lit `PROGRESS.md`.
 
 ## Ajouter une fonctionnalité plus tard
 
