@@ -2,6 +2,7 @@
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import boundaries from 'eslint-plugin-boundaries';
+import i18next from 'eslint-plugin-i18next';
 import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
@@ -73,6 +74,45 @@ const rendererBoundaries = {
   },
 };
 
+/**
+ * No hard-coded UI text in the renderer (docs/architecture.md §4.2): JSX text and the attributes
+ * that users see or hear must come from `t()`. Exceptions: tests (they assert on rendered text),
+ * strings made only of digits/punctuation or written in CAPITALS (the plugin's defaults), and every
+ * attribute not listed below (class names, ids, routes, variants…).
+ */
+const rendererLiteralStrings = {
+  files: [`${RENDERER}/**/*.tsx`],
+  ignores: [`${RENDERER}/**/*.test.tsx`],
+  plugins: { i18next },
+  rules: {
+    'i18next/no-literal-string': [
+      'error',
+      {
+        mode: 'jsx-only',
+        'jsx-attributes': {
+          include: [
+            'alt',
+            'aria-label',
+            'aria-description',
+            'aria-placeholder',
+            'aria-roledescription',
+            'aria-valuetext',
+            'content',
+            'description',
+            'label',
+            'placeholder',
+            'title',
+            '.+Label',
+          ],
+          exclude: ['.*'],
+        },
+        message:
+          'User-visible text must come from i18n: add a key to src/i18n/locales/fr.json and use t().',
+      },
+    ],
+  },
+};
+
 export default defineConfig(
   globalIgnores([
     '**/node_modules/',
@@ -124,5 +164,6 @@ export default defineConfig(
     },
   },
   rendererBoundaries,
+  rendererLiteralStrings,
   prettier,
 );
