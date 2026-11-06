@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 25ca80ab8bd7f8fa4e700ab46559c155d5cc0a3ca6779586aea1334a23cbd5d1 # shrinks to seeds = [Seed { kind: 9, pick: 0, choice: 0, offset_ms: 7000 }]
