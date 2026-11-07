@@ -34,6 +34,21 @@ impl ProtocolError {
             ..self
         }
     }
+
+    /// The same error with the string field `key` added to its object `details` (created when
+    /// absent; non-object details are replaced).
+    #[must_use]
+    pub fn with_detail(self, key: &str, value: impl Into<String>) -> Self {
+        let mut fields = match self.details {
+            Some(serde_json::Value::Object(fields)) => fields,
+            _ => serde_json::Map::new(),
+        };
+        fields.insert(key.to_owned(), serde_json::Value::String(value.into()));
+        Self {
+            details: Some(serde_json::Value::Object(fields)),
+            ..self
+        }
+    }
 }
 
 /// Stable error codes (`SCREAMING_SNAKE_CASE` on the wire). Never rename or reuse a code: clients
@@ -54,6 +69,27 @@ pub enum ErrorCode {
     ConnectionLost,
     /// The client was closed by its owner before the response arrived. Raised by clients.
     ClientClosed,
+    /// No project folder (with a `project.json`) at the given path.
+    ProjectNotFound,
+    /// The project is open in another SimpleEffect process (or another copy of it is open here).
+    ProjectLocked,
+    /// The project was saved by a newer SimpleEffect: update the app to open it.
+    SchemaTooNew,
+    /// The project's files cannot be read (invalid JSON, broken journal, invalid document).
+    ProjectCorrupted,
+    /// A project folder with that name already exists in the chosen location.
+    ProjectAlreadyExists,
+    /// The command names a project that is not open in this core: open it first.
+    ProjectNotOpen,
+    /// Reading or writing project or library files failed (disk full, permissions…).
+    StorageFailed,
+    /// The document refused the edit (overlap, locked track, stale revision…); `details.domainCode`
+    /// holds the domain's code.
+    EditRejected,
+    /// There is no user transaction to undo.
+    NothingToUndo,
+    /// There is no undone transaction to redo.
+    NothingToRedo,
 }
 
 #[cfg(test)]
@@ -77,6 +113,17 @@ mod tests {
         assert_eq!(
             serde_json::from_str::<ProtocolError>(&json).unwrap(),
             detailed
+        );
+    }
+
+    #[test]
+    fn with_detail_adds_string_fields() {
+        let error = ProtocolError::new(ErrorCode::EditRejected, "no")
+            .with_detail("domainCode", "TRACK_LOCKED")
+            .with_detail("item", "x");
+        assert_eq!(
+            error.details,
+            Some(serde_json::json!({ "domainCode": "TRACK_LOCKED", "item": "x" }))
         );
     }
 

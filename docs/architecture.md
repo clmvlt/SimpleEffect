@@ -122,7 +122,7 @@ se-domain  ◄── se-protocol
 | `se-core` | everything | contain domain logic |
 | `se-codegen` | se-protocol, se-domain, ts-rs | be depended on, ship in the app |
 
-Adapters implement **ports** declared in `se-app::ports`: `ProjectRepository`, `AppLibraryRepository`, `MediaProber`, `MediaJobRunner`, `Transcriber`, `SubjectDetector`, `AgentProvider`, `Exporter`, `EventSink`, `Clock`, `IdGenerator`.
+Adapters implement **ports** declared in `se-app::ports`: `ProjectRepository` (+ `ProjectStore`, one open and locked project), `AppLibraryRepository`, `MediaProber`, `MediaJobRunner`, `Transcriber`, `SubjectDetector`, `AgentProvider`, `Exporter`, `EventSink`, `Clock`, `IdGenerator`. Small ports with no adapter crate (`Clock`, `IdGenerator`, `EventSink` over the event bus) are implemented in se-core (`system_ports.rs`).
 Every port has an in-memory/fake implementation in `se-app` (feature `test-support`) so use cases are tested without IO.
 
 ## 4. TypeScript packages and rules
@@ -145,6 +145,8 @@ Every port has an in-memory/fake implementation in `se-app` (feature `test-suppo
 - All user-visible strings come from i18n keys (French default): i18next + react-i18next, resources bundled in `src/i18n/locales/fr.json`, keys typed for `t()`; `eslint-plugin-i18next` rejects literal JSX text and user-visible attributes (ADR-0014).
 - `app/` is the composition root and the shell: `main.tsx` creates the core client, the i18n instance and a **hash router** (React Router, library mode) from `createAppRoutes()`: `/` home (`features/projects`), `/project/:projectId` editor. The editor layout (`app/editor/EditorPage.tsx`) nests `Dock`s around the feature panels — media left, viewer centre, inspector and AI tabs right, timeline bottom — and the status bar shows the core connection, AI availability and version.
 - Panel sizes are machine preferences saved in `localStorage` under `se.ui.` (`shared/storage/`), never in projects.
+- `shared/` modules created by prompt 07: `project-store/` (read-only Zustand mirror of the open project, fed by the core, §5.6), `shortcuts/` (global key bindings: `useShortcut('mod+z', run)`, ignored in text fields), `desktop/` (the Electron bridge through context: folder picker, reveal in folder), `routing/` (screen paths), `errors/` (one translation key per protocol error code, `errors.<CODE>` in `fr.json`).
+- The editor (`app/editor/`) loads the project named by `/project/:projectId` (`getProjectSnapshot`, or reopens it from the recent list after a reload or a core restart), shows its name and active sequence, binds Ctrl/⌘+Z and Ctrl/⌘+Maj+Z to `undo`/`redo`, and closes the project when the user goes back home.
 
 ### 4.3 Features
 
@@ -165,7 +167,7 @@ features/<name>/
 ### 4.4 Electron (`apps/desktop/electron`)
 
 - `main/`: app lifecycle, windows, menus, dialogs, `CoreSupervisor` (spawn se-core, read the handshake line `{"port":…,"token":…,"version":…}` on stdout, restart on crash with exponential backoff, stop it by closing its stdin when the app quits).
-- `preload/`: exposes a minimal typed API via `contextBridge` as `window.simpleEffect` (`getCoreConnection()`; later `getPathForFile(file)`, `openDialog(...)`). Built as CommonJS because sandboxed preloads cannot be ES modules.
+- `preload/`: exposes a minimal typed API via `contextBridge` as `window.simpleEffect`: `getCoreConnection()`, `chooseFolder({ title, buttonLabel, defaultPath? })` (native folder picker), `showInFolder(path)` (later `getPathForFile(file)`). Main validates every IPC argument (`ipc-arguments.ts`). Built as CommonJS because sandboxed preloads cannot be ES modules.
 - `shared/`: the bridge contract (types and IPC channel names) bundled into main, preload and renderer.
 - Security: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, no pop-ups or navigation, strict CSP written as a meta tag at build time (`tooling/`): production connects only to `127.0.0.1`, scripts come only from the app bundle; inline `<style>` elements are allowed because Radix and sonner insert them (ADR-0013).
 
@@ -272,17 +274,19 @@ Operations on one item take an optional `expectedRevision` (`REVISION_CONFLICT` 
 
 ### 5.5 ProjectActor (single writer)
 
-- One tokio task per open project, owning the `Project`.
-- Inbox messages: `Apply(Transaction)`, `Undo`, `Redo`, `RevertChangeset(id)`, `Snapshot` (query).
-- On commit: validate → apply → append to journal (SQLite) → bump `revision` → emit `ProjectPatched` event → schedule debounced snapshot save.
-- Readers get an `Arc<Project>` snapshot; no locks are held across awaits.
+Module `se_app::project_actor` (ADR-0005, ADR-0017).
+
+- One tokio task per open project, owning the `Project`, its undo `History` and its `ProjectStore` (the locked folder). `ProjectActorHandle` sends messages: `Apply(Transaction)`, `Undo`, `Redo`, `Snapshot` (query → `ProjectView { project: Arc<Project>, history }`), `Close`; `RevertChangeset(id)` arrives with prompt 19. Dropping every handle closes the project too.
+- On commit: `se_domain::commit` on a draft (validation included) → append the transaction to the journal (durable) → install the new state, record history → publish `projectPatched` then `historyChanged` → schedule the snapshot. A journal failure changes nothing.
+- The snapshot is saved 2 s after the last commit (`DEFAULT_SAVE_DELAY`, a tokio timer) and on close; a failed save is retried later (the journal keeps every commit).
+- `ProjectService` (`se_app::project_service`) holds the registry of open actors and the use cases behind the protocol: create (default sequence with tracks V1, V2, A1, A2), open (journal replay, then the recovered snapshot is saved), close, recent list, rename, duplicate, trash, create sequence, undo, redo. Operations on a closed project use a temporary actor whose events are discarded.
 
 ### 5.6 UI synchronisation
 
-- On open, the renderer receives a full `ProjectSnapshot`.
-- Each commit emits `ProjectPatched { revision, upserts, deletes }` with **whole entities** (items, tracks, sequences, assets…) replaced by id. The renderer never re-implements operation logic.
+- On open, the renderer receives a `ProjectSession { path, snapshot: ProjectSnapshot, history }`. The snapshot is **normalised**: `ProjectHeader` plus lists of `SequenceEntity { trackIds, markerIds }`, `TrackEntity { sequenceId, itemIds }`, `ItemEntity` (an item + `trackId`), `MarkerEntity` (a marker + `sequenceId`) and assets (`se_app::project_view` builds them).
+- Each commit emits `projectPatched { projectId, revision, upserts, deletes }` with **whole entities** replaced by id; parents are refreshed with their children (a moved item also upserts its old and new tracks). Then `historyChanged { projectId, history }`. The renderer never re-implements operation logic.
+- The renderer's `shared/project-store` applies a patch only if it is the next revision; on a gap, on `resyncRequired` and after a reconnection it reloads the snapshot (`getProjectSnapshot`); if the core restarted (`PROJECT_NOT_OPEN`) it reopens the project from its folder. Features read it through `useProjectSelector(selector)`.
 - Drags and trims use local ephemeral state in the timeline feature; the command is sent on drop, and the ephemeral state clears when the patch arrives.
-- If a patch revision gap is detected, the client requests a fresh snapshot.
 
 ## 6. Protocol (`se-protocol` → `@se/protocol`)
 
@@ -295,7 +299,9 @@ Conventions and their rationale: ADR-0010 and ADR-0012.
 - `pnpm codegen` runs the `se-codegen` binary (ts-rs) into `packages/protocol/src/generated/`; `pnpm codegen --check` (part of `pnpm check`) fails when the committed files are stale; `tsc -b` checks they compile.
 - se-core side (`crates/se-core/src/rpc/`): `RpcRouter` parses a frame (`INVALID_REQUEST` / `UNKNOWN_COMMAND` with actionable messages), dispatches to one handler per command group (`rpc/handlers/`), encodes the response. `EventBus` (bounded `broadcast`) fans events out; a slow connection never blocks the others.
 - Client side: `CoreClient` (`@se/protocol`) correlates ids, times requests out (30 s default), reconnects with a capped exponential backoff (re-resolving the endpoint each time), queues requests while disconnected and fails in-flight ones with `CONNECTION_LOST`. The renderer creates one client in `src/shared/core/` and exposes it through React context and hooks.
-- Errors carry a stable `code` (`ErrorCode`, e.g. `UNKNOWN_COMMAND`, later `PROJECT_NOT_FOUND`, `REVISION_CONFLICT`, `OUT_OF_SCOPE`) and a human/agent-readable message. Codes raised by clients (`TIMEOUT`, `CONNECTION_LOST`, `CLIENT_CLOSED`) are part of the same enum.
+- Project commands (prompt 07): `getNewProjectDefaults`, `createProject`, `openProject { path }`, `closeProject { projectId }`, `listRecentProjects`, `renameProject { path, name }`, `duplicateProject { path, name }`, `trashProject { path }`, `getProjectSnapshot { projectId }`, `createSequence { projectId, name, format? }`, `undo`, `redo`. Events: `projectOpened` (session), `projectPatched`, `projectClosed`, `historyChanged`. Paths are absolute strings.
+- se-core runs every request in its own task: a slow command never delays events or other requests, and requests of one client may complete in any order (ADR-0017).
+- Errors carry a stable `code` (`ErrorCode`) and a human/agent-readable message: `INVALID_REQUEST`, `UNKNOWN_COMMAND`, `INTERNAL`, project codes `PROJECT_NOT_FOUND`, `PROJECT_LOCKED`, `SCHEMA_TOO_NEW`, `PROJECT_CORRUPTED`, `PROJECT_ALREADY_EXISTS`, `PROJECT_NOT_OPEN`, `STORAGE_FAILED`, edit codes `EDIT_REJECTED` (`details.domainCode` holds the `DomainErrorCode`), `NOTHING_TO_UNDO`, `NOTHING_TO_REDO`; later `REVISION_CONFLICT`, `OUT_OF_SCOPE`. Codes raised by clients (`TIMEOUT`, `CONNECTION_LOST`, `CLIENT_CLOSED`) are part of the same enum. The renderer translates every code (`errors.<CODE>`).
 
 ## 7. Media pipeline (`se-media`)
 
@@ -406,16 +412,20 @@ Only `crates/se-agents/src/providers/<provider>/` knows a concrete CLI. Everythi
 
 ```
 <Name>.seproj/
-├─ project.json   canonical document (schema_version, revision), atomic write (tmp + fsync + rename)
-├─ project.db     SQLite (WAL): op_journal, tasks, task_events, transcripts (FTS5), analyses
-├─ cache/         regenerable derived files (mezzanines, proxies, thumbnails, peaks, overlay renders)
+├─ project.json       canonical document (schemaVersion, revision), pretty JSON, atomic write (tmp + fsync + rename)
+├─ project.json.bak.1 previous snapshots (.bak.1 newest … .bak.3)
+├─ project.db         SQLite (WAL, synchronous=FULL): op_journal, tasks, task_events, transcripts + transcript_search (FTS5), analyses
+├─ .lock              held with an OS file lock while the project is open (never deleted)
+├─ cache/             regenerable derived files (mezzanines, proxies, thumbnails, peaks, overlay renders)
 └─ exports/
 ```
 
-- Migrations: `schema_version` + ordered pure functions `migrate_vN_to_vN+1(serde_json::Value)`; covered by fixture tests.
-- Crash recovery: on open, load `project.json` then replay journal entries with `revision > snapshot.revision`.
-- Snapshots are written on a debounce (e.g. 2 s after the last commit) and on close; the journal is truncated after a successful snapshot.
-- App data dir (via `dirs`): `library.db` (recent projects, settings, provider config), `templates/`, `brand-kits/`, `models/`, `logs/`.
+- Implemented by `se-store` (`FsProjectRepository`, `FsProjectStore`, `SqliteAppLibrary`); decisions in ADR-0017. The folder name comes from the project name (characters Windows refuses become `-`); renaming a project changes its document, not its folder; duplicates get `<Name> 2.seproj`… next to the source.
+- Migrations: `schemaVersion` + ordered pure functions `migrate_vN_to_vN+1(serde_json::Value)` (`se-store/src/document_migrations.rs`, v1 is the base format), covered by `tests/fixtures/project-v1.json`. SQLite schemas: `PRAGMA user_version` + append-only SQL migrations. Journal rows carry the `Transaction` JSON and a `format_version`. Anything newer than this build is refused (`SCHEMA_TOO_NEW`).
+- Crash recovery: on open, load `project.json` then replay journal entries with `revision > snapshot.revision` (`se_app::recovery::replay`); the recovered state is saved as the new snapshot.
+- Snapshots are written 2 s after the last commit and on close (also when the core shuts down); the journal is truncated after a successful snapshot.
+- Trash: the OS trash through the `trash` crate (NSFileManager on macOS, no automation prompt); never a permanent deletion.
+- App data dir (`SE_DATA_DIR`, i.e. Electron's `userData`): `library.db` (recent projects, settings such as `projects.lastParentDir`; later provider config), `templates/`, `brand-kits/`, `models/`, `logs/`. New projects are proposed in `<Documents>/SimpleEffect`.
 
 ## 12. Export (`se-export`)
 

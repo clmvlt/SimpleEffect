@@ -55,6 +55,10 @@ pub struct ResponseEnvelope {
 /// Outcome of a request.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "an outcome is built once per request and serialised right away"
+)]
 pub enum ResponseOutcome {
     /// The command succeeded.
     Result(CommandResult),
@@ -63,7 +67,7 @@ pub enum ResponseOutcome {
 }
 
 /// An event pushed by the core.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 pub struct EventEnvelope {
     /// The event.
     pub event: CoreEvent,

@@ -18,6 +18,8 @@ mod envelope;
 mod error;
 mod event;
 mod handshake;
+mod project_entities;
+mod project_session;
 
 pub use command::Command;
 pub use command_result::{CommandResult, CoreInfo};
@@ -28,3 +30,11 @@ pub use envelope::{
 pub use error::{ErrorCode, ProtocolError};
 pub use event::CoreEvent;
 pub use handshake::CoreHandshake;
+pub use project_entities::{
+    EntityDeletes, EntityUpserts, ItemEntity, MarkerEntity, ProjectHeader, ProjectPatch,
+    ProjectSnapshot, SequenceEntity, TrackEntity,
+};
+pub use project_session::{
+    CreateProjectRequest, FormatPresetDimensions, HistoryState, NewProjectDefaults, ProjectHistory,
+    ProjectSession, RecentProject,
+};

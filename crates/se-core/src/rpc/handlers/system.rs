@@ -23,19 +23,14 @@ pub fn get_core_info(context: &HandlerContext) -> CommandResult {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
     use super::*;
-    use crate::app_paths::AppPaths;
+    use crate::rpc::router::testing::context;
 
     #[test]
     fn core_info_reports_the_version_platform_and_folders() {
         let context = HandlerContext {
             version: "9.9.9",
-            paths: AppPaths {
-                data_dir: PathBuf::from("data"),
-                logs_dir: PathBuf::from("data").join("logs"),
-            },
+            ..context()
         };
         let CommandResult::GetCoreInfo(info) = get_core_info(&context) else {
             panic!("getCoreInfo must answer with a getCoreInfo result");

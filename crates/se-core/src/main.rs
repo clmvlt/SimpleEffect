@@ -22,6 +22,7 @@ mod logging;
 mod rpc;
 mod server;
 mod shutdown;
+mod system_ports;
 
 /// Version of this binary, reported in the handshake, `coreReady` and `getCoreInfo`.
 const CORE_VERSION: &str = env!("CARGO_PKG_VERSION");

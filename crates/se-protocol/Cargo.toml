@@ -13,5 +13,9 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 ts-rs = { workspace = true }
 
+[dev-dependencies]
+# Example project and deterministic ids for JSON-shape tests.
+se-domain = { workspace = true, features = ["test-support"] }
+
 [lints]
 workspace = true

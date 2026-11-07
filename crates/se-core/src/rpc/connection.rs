@@ -1,8 +1,10 @@
 //! One `/rpc` connection: answers requests and forwards events until the client or the core stops.
 
+use std::sync::Arc;
+
 use axum::extract::ws::{Message, WebSocket};
 use se_protocol::CoreEvent;
-use tokio::sync::{broadcast, watch};
+use tokio::sync::{broadcast, mpsc, watch};
 use tracing::Instrument;
 
 use super::{RpcState, encode::event_frame, event_bus::event_to_forward};
@@ -42,14 +44,19 @@ async fn serve_until_done(
     events: &mut broadcast::Receiver<CoreEvent>,
     stopping: &mut watch::Receiver<bool>,
 ) {
+    // Each request runs in its own task and sends its response frame here.
+    let (replies, mut finished) = mpsc::unbounded_channel::<String>();
     loop {
         // `biased`: pending events (notably `coreShuttingDown`, published just before `stopping`
-        // flips) are forwarded before the shutdown branch can win.
+        // flips, and the patch a command published before answering) are forwarded first.
         let flow = tokio::select! {
             biased;
             received = events.recv() => forward_event(socket, event_to_forward(received)).await,
+            Some(reply) = finished.recv() => {
+                if send(socket, reply).await { Flow::Continue } else { Flow::Stop }
+            }
             incoming = socket.recv() => match incoming {
-                Some(Ok(message)) => answer(socket, state, message).await,
+                Some(Ok(message)) => answer(state, message, &replies),
                 Some(Err(_)) | None => Flow::Stop,
             },
             () = stop_requested(stopping) => Flow::Stop,
@@ -79,15 +86,19 @@ async fn forward_event(socket: &mut WebSocket, event: Option<CoreEvent>) -> Flow
     }
 }
 
-async fn answer(socket: &mut WebSocket, state: &RpcState, message: Message) -> Flow {
+/// Starts answering a text frame in its own task, so a slow command blocks nothing else.
+fn answer(state: &RpcState, message: Message, replies: &mpsc::UnboundedSender<String>) -> Flow {
     match message {
         Message::Text(text) => {
-            let reply = state.router.handle_text(text.as_str());
-            if send(socket, reply).await {
-                Flow::Continue
-            } else {
-                Flow::Stop
-            }
+            let router = Arc::clone(&state.router);
+            let replies = replies.clone();
+            let request = async move {
+                let reply = router.handle_text(text.as_str()).await;
+                // The connection may have closed meanwhile: the answer is then dropped.
+                let _ = replies.send(reply);
+            };
+            tokio::spawn(request.instrument(tracing::Span::current()));
+            Flow::Continue
         }
         Message::Close(_) => Flow::Stop,
         // Axum answers pings itself; binary frames are not part of the protocol.

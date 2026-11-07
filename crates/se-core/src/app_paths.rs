@@ -18,6 +18,12 @@ const APP_DIR_NAME: &str = "SimpleEffect";
 /// Name of the log folder inside the app data folder.
 const LOGS_DIR_NAME: &str = "logs";
 
+/// File name of the app library (recent projects, settings) inside the app data folder.
+const LIBRARY_FILE_NAME: &str = "library.db";
+
+/// Folder proposed for new projects, inside the user's documents folder.
+const PROJECTS_DIR_NAME: &str = "SimpleEffect";
+
 /// Absolute folders used by the core.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AppPaths {
@@ -47,6 +53,27 @@ impl AppPaths {
                 .ok_or(CoreError::NoDataDir)?,
         };
         Ok(Self::under(&data_dir))
+    }
+
+    /// The app library database: `<data_dir>/library.db`.
+    pub fn library_db(&self) -> PathBuf {
+        self.data_dir.join(LIBRARY_FILE_NAME)
+    }
+
+    /// Folder proposed for new projects: `<Documents>/SimpleEffect`, or `<data_dir>/projects`
+    /// when the OS has no documents folder.
+    pub fn default_projects_dir(&self) -> PathBuf {
+        let documents = directories::UserDirs::new()
+            .and_then(|dirs| dirs.document_dir().map(Path::to_path_buf));
+        self.projects_dir_in(documents)
+    }
+
+    /// Pure rule of [`AppPaths::default_projects_dir`], separated from the environment for tests.
+    fn projects_dir_in(&self, documents: Option<PathBuf>) -> PathBuf {
+        match documents {
+            Some(documents) => documents.join(PROJECTS_DIR_NAME),
+            None => self.data_dir.join("projects"),
+        }
     }
 
     fn under(data_dir: &Path) -> Self {
@@ -85,6 +112,20 @@ mod tests {
         let os_dir = std::env::temp_dir();
         let paths = AppPaths::resolve(Some(OsString::new()), Some(os_dir.clone())).unwrap();
         assert_eq!(paths.data_dir, os_dir.join("SimpleEffect"));
+    }
+
+    #[test]
+    fn projects_go_to_the_documents_folder_or_the_data_folder() {
+        let paths = AppPaths::under(Path::new("/data"));
+        assert_eq!(paths.library_db(), Path::new("/data").join("library.db"));
+        assert_eq!(
+            paths.projects_dir_in(Some(PathBuf::from("/docs"))),
+            Path::new("/docs").join("SimpleEffect")
+        );
+        assert_eq!(
+            paths.projects_dir_in(None),
+            Path::new("/data").join("projects")
+        );
     }
 
     #[test]

@@ -39,20 +39,25 @@ se-export = { path = "crates/se-export" }
 
 # Third-party crates.
 anyhow = "1.0.104"
+async-trait = "0.1.92"
 axum = { version = "0.8.9", features = ["ws"] }
 directories = "6.0.0"
+dunce = "1.0.5"
 futures-util = "0.3.34"
 hex = "0.4.3"
 # Snapshot tests (`json`: `assert_json_snapshot!` of serialized documents).
 insta = { version = "1.49.0", features = ["json"] }
 proptest = "1.12.0"
 rand = "0.10.3"
+# SQLite compiled in (`bundled` enables FTS5), so every platform gets the same engine.
+rusqlite = { version = "0.41.1", features = ["bundled"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 tempfile = "3.27.0"
 thiserror = "2.0.21"
 tokio = "1.54.1"
 tokio-tungstenite = "0.30.0"
+trash = "5.3.0"
 tracing = "0.1.44"
 tracing-appender = "0.2.5"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }

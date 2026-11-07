@@ -4,12 +4,21 @@
   },
   "home": {
     "title": "Accueil",
+    "heading": "Projets récents",
     "empty": {
       "title": "Aucun projet",
       "description": "Créez un projet pour importer vos médias et commencer à monter."
     },
+    "noMatch": {
+      "title": "Aucun projet trouvé",
+      "description": "Aucun projet récent ne correspond à « {{query}} »."
+    },
+    "search": "Rechercher un projet",
     "newProject": "Nouveau projet",
-    "openEditorPreview": "Ouvrir l’éditeur (aperçu de développement)"
+    "openProject": "Ouvrir un projet",
+    "loading": "Chargement des projets récents…",
+    "loadFailed": "Impossible de charger les projets récents.",
+    "retry": "Réessayer"
   },
   "editor": {
     "resize": {
@@ -52,6 +61,27 @@
         "title": "Timeline vide",
         "description": "Ajoutez des médias à une séquence pour commencer le montage."
       }
+    },
+    "loading": "Ouverture du projet…",
+    "loadFailed": {
+      "title": "Impossible d’ouvrir le projet"
+    },
+    "closed": {
+      "title": "Projet fermé",
+      "description": "Ce projet a été fermé. Revenez à l’accueil pour le rouvrir."
+    },
+    "backHome": "Accueil",
+    "header": {
+      "label": "Projet",
+      "sequence": "Séquence {{name}}",
+      "undo": "Annuler",
+      "redo": "Rétablir",
+      "undoNamed": "Annuler : {{label}}",
+      "redoNamed": "Rétablir : {{label}}"
+    },
+    "history": {
+      "createSequence": "Création de séquence",
+      "renameProject": "Renommage du projet"
     }
   },
   "statusBar": {
@@ -66,6 +96,91 @@
       "notConfigured": "IA non configurée"
     },
     "version": "Version {{version}}"
+  },
+  "projects": {
+    "card": {
+      "openedAt": "Ouvert le {{date}}",
+      "unavailable": "Introuvable",
+      "actions": "Actions du projet {{name}}"
+    },
+    "actions": {
+      "open": "Ouvrir",
+      "rename": "Renommer…",
+      "duplicate": "Dupliquer",
+      "trash": "Mettre à la corbeille…",
+      "showInFolder": "Afficher dans le dossier"
+    },
+    "duplicateName": "{{name}} (copie)",
+    "openDialog": {
+      "title": "Ouvrir un projet SimpleEffect",
+      "button": "Ouvrir"
+    },
+    "locationDialog": {
+      "title": "Emplacement du projet",
+      "button": "Choisir"
+    },
+    "newDialog": {
+      "title": "Nouveau projet",
+      "description": "Le projet est un dossier .seproj créé dans l’emplacement choisi.",
+      "name": "Nom",
+      "namePlaceholder": "Mon film",
+      "location": "Emplacement",
+      "chooseLocation": "Choisir…",
+      "format": "Format",
+      "customRatio": "Personnalisé",
+      "ratioWidth": "Largeur du ratio",
+      "ratioHeight": "Hauteur du ratio",
+      "resolution": "Résolution",
+      "customResolution": "Personnalisée",
+      "width": "Largeur (px)",
+      "height": "Hauteur (px)",
+      "frameRate": "Cadence",
+      "frameRateValue": "{{value}} i/s",
+      "create": "Créer le projet",
+      "cancel": "Annuler",
+      "errors": {
+        "nameRequired": "Donnez un nom au projet.",
+        "locationRequired": "Choisissez un emplacement.",
+        "invalidSize": "Largeur et hauteur doivent être des nombres pairs entre 2 et 16 384."
+      }
+    },
+    "renameDialog": {
+      "title": "Renommer le projet",
+      "name": "Nouveau nom",
+      "confirm": "Renommer",
+      "cancel": "Annuler",
+      "nameRequired": "Donnez un nom au projet."
+    },
+    "trashDialog": {
+      "title": "Mettre « {{name}} » à la corbeille ?",
+      "description": "Le dossier du projet est déplacé dans la corbeille de votre système : vous pourrez l’y récupérer.",
+      "confirm": "Mettre à la corbeille",
+      "cancel": "Annuler"
+    },
+    "toasts": {
+      "renamed": "Projet renommé",
+      "duplicated": "« {{name}} » créé",
+      "trashed": "« {{name}} » mis à la corbeille"
+    }
+  },
+  "errors": {
+    "INVALID_REQUEST": "La demande est invalide : vérifiez les valeurs saisies.",
+    "UNKNOWN_COMMAND": "Le cœur ne reconnaît pas cette commande : mettez l’application à jour.",
+    "INTERNAL": "Erreur interne du cœur. Réessayez ; si elle persiste, signalez-la avec les journaux.",
+    "TIMEOUT": "Le cœur n’a pas répondu à temps. Réessayez.",
+    "CONNECTION_LOST": "La connexion au cœur a été perdue : vérifiez l’état du projet avant de réessayer.",
+    "CLIENT_CLOSED": "La connexion au cœur est fermée. Redémarrez l’application.",
+    "PROJECT_NOT_FOUND": "Aucun projet SimpleEffect à cet emplacement : choisissez un dossier .seproj.",
+    "PROJECT_LOCKED": "Ce projet est déjà ouvert dans une autre fenêtre de SimpleEffect. Fermez-le avant de l’ouvrir ici.",
+    "SCHEMA_TOO_NEW": "Ce projet a été enregistré par une version plus récente de SimpleEffect. Mettez l’application à jour pour l’ouvrir.",
+    "PROJECT_CORRUPTED": "Les fichiers du projet sont illisibles. Les versions précédentes sont dans son dossier (project.json.bak.1 à 3).",
+    "PROJECT_ALREADY_EXISTS": "Un dossier porte déjà ce nom à cet emplacement : choisissez un autre nom ou un autre emplacement.",
+    "PROJECT_NOT_OPEN": "Ce projet n’est plus ouvert. Rouvrez-le depuis l’accueil.",
+    "STORAGE_FAILED": "Impossible de lire ou d’écrire les fichiers du projet (disque plein ou droits insuffisants ?).",
+    "EDIT_REJECTED": "Cette modification est impossible dans l’état actuel du projet.",
+    "NOTHING_TO_UNDO": "Rien à annuler.",
+    "NOTHING_TO_REDO": "Rien à rétablir.",
+    "unknown": "Une erreur inattendue est survenue. Réessayez."
   },
   "common": {
     "notifications": "Notifications",

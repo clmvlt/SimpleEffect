@@ -1,16 +1,53 @@
 //! Successful results of commands.
 
+use se_domain::SequenceId;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use crate::{NewProjectDefaults, ProjectSession, RecentProject};
+
 /// The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
-#[serde(tag = "kind", rename_all = "camelCase")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum CommandResult {
     /// Answer to [`crate::Command::Ping`]: the core is alive and reading requests.
     Ping,
     /// Answer to [`crate::Command::GetCoreInfo`].
     GetCoreInfo(CoreInfo),
+    /// Answer to [`crate::Command::GetNewProjectDefaults`].
+    GetNewProjectDefaults(NewProjectDefaults),
+    /// Answer to [`crate::Command::CreateProject`]: the new project, open.
+    CreateProject(ProjectSession),
+    /// Answer to [`crate::Command::OpenProject`].
+    OpenProject(ProjectSession),
+    /// Answer to [`crate::Command::CloseProject`]: saved and closed.
+    CloseProject,
+    /// Answer to [`crate::Command::ListRecentProjects`].
+    ListRecentProjects {
+        /// Most recently opened first.
+        projects: Vec<RecentProject>,
+    },
+    /// Answer to [`crate::Command::RenameProject`]: the project as listed after renaming.
+    RenameProject(RecentProject),
+    /// Answer to [`crate::Command::DuplicateProject`]: the copy, now first in the recent list.
+    DuplicateProject(RecentProject),
+    /// Answer to [`crate::Command::TrashProject`]: the folder is in the OS trash.
+    TrashProject,
+    /// Answer to [`crate::Command::GetProjectSnapshot`].
+    GetProjectSnapshot(ProjectSession),
+    /// Answer to [`crate::Command::CreateSequence`].
+    CreateSequence {
+        /// Id of the new sequence.
+        sequence_id: SequenceId,
+    },
+    /// Answer to [`crate::Command::Undo`]: committed (the patch arrives as an event).
+    Undo,
+    /// Answer to [`crate::Command::Redo`]: committed (the patch arrives as an event).
+    Redo,
 }
 
 /// Facts about the running core, shown in the UI and useful in bug reports.
@@ -50,6 +87,17 @@ mod tests {
         assert_eq!(
             serde_json::from_str::<CommandResult>(&json).unwrap(),
             result
+        );
+    }
+
+    #[test]
+    fn struct_result_fields_are_camel_case() {
+        let result = CommandResult::CreateSequence {
+            sequence_id: SequenceId::from_test_index(2),
+        };
+        assert_eq!(
+            serde_json::to_string(&result).unwrap(),
+            r#"{"kind":"createSequence","sequenceId":"00000000-0002-7000-8000-000000000000"}"#
         );
     }
 

@@ -4,7 +4,7 @@
 TypeScript side of the se-core protocol: the types generated from the Rust crates (ts-rs, `pnpm codegen`), types derived from them, and the typed `CoreClient` used by the renderer. No React, no rendering code (ADR-0010, ADR-0012).
 
 ## Public API (`src/index.ts`)
-- **Generated types** (`src/generated/`): protocol (`Command`, `CommandResult`, `CoreEvent`, `ErrorCode`, `ProtocolError`, `CoreInfo`, `CoreHandshake`, envelopes, `JsonValue`…) and document model from se-domain (`Project`, `Sequence`, `Track`, `Item`, `ItemKind`, `Animatable<T>`, `Flicks` — a branded `number` —, ids as `string`, `Violation`, `ViolationCode`, `FormatPreset`…, see `docs/architecture.md` §5.3).
+- **Generated types** (`src/generated/`): protocol (`Command`, `CommandResult`, `CoreEvent`, `ErrorCode`, `ProtocolError`, `CoreInfo`, `CoreHandshake`, envelopes, `JsonValue`, project DTOs `ProjectSession`, `ProjectSnapshot`, `ProjectPatch`, entities, `RecentProject`, `NewProjectDefaults`…) and document model from se-domain (`Project`, `Sequence`, `Track`, `Item`, `ItemKind`, `Animatable<T>`, `Flicks` — a branded `number` —, ids as `string`, `Violation`, `ViolationCode`, `FormatPreset`…, see `docs/architecture.md` §5.3).
 - **Derived types** (`protocol-types.ts`): `CommandKind`, `CommandOf<K>`, `ResultFor<K>` (`Extract<CommandResult, { kind: K }>`), `CoreEventKind`, `CoreEventOf<K>`, `CommandsWithoutResult` (must stay `never`).
 - **`CoreClient`** (`core-client.ts`):
   - `CoreClient.connect(source, options?)`: `source` is `{ url, token }` or `() => Promise<{ url, token }>` (called before every attempt). Options: `requestTimeoutMs` (30 s), `reconnectDelay` (250 ms doubling, 5 s cap), `openSocket` (fake in tests), `logger`.
@@ -34,4 +34,4 @@ No workspace package, no runtime dependency. See `docs/architecture.md` §4.1.
 
 ## How to test
 - `pnpm vitest run --project protocol` (or `pnpm test` at the root).
-- `core-client.test.ts` drives `CoreClient` with `FakeWebSocket` and fake timers (correlation, queueing, timeouts, reconnection backoff, events, close). `protocol-types.test.ts` and `document-types.test.ts` hold compile-time checks (run by `tsc -b`).
+- `core-client.test.ts` drives `CoreClient` with `FakeWebSocket` and fake timers (correlation, queueing, timeouts, reconnection backoff, events, close). `protocol-types.test.ts` (lists every command and event kind: update it when adding one) and `document-types.test.ts` hold compile-time checks (run by `tsc -b`).
