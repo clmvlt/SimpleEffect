@@ -12,7 +12,7 @@ import type { MediaLocator, PreviewPlayback } from '@se/engine/preview';
 
 import { setPlaybackRate } from '../../../shared/playback';
 import { playheadStore, playheadTimeOf, setPlayheadTime } from '../../timeline';
-import type { AudioEngineFactory } from './audio-engine-factory';
+import { AudioUnsupportedError, type AudioEngineFactory } from './audio-engine-factory';
 import type { PlaybackScene } from './viewer-scene';
 
 /** Silence on both channels (playback without an audio engine). */
@@ -53,6 +53,7 @@ export class PlaybackSession {
   private audio: AudioEngine | null = null;
   private target: PlaybackTarget | null = null;
   private scene: PlaybackScene | null = null;
+  private contentEnd = 0 as Flicks;
   private locator: MediaLocator = () => null;
   private state: PlaybackState = { rate: 0, looping: false };
   private scrubAudio = true;
@@ -98,7 +99,12 @@ export class PlaybackSession {
         if (generation === this.generation) this.adoptAudio(engine);
         else engine.destroy();
       },
-      () => undefined,
+      (error: unknown) => {
+        // Without Web Audio (tests) playback is silent by design; anything else is worth a trace.
+        if (!(error instanceof AudioUnsupportedError)) {
+          console.warn('[viewer] the audio engine could not start: playback is silent', error);
+        }
+      },
     );
   }
 
@@ -135,6 +141,7 @@ export class PlaybackSession {
   /** The scene played and where its content ends. */
   setScene(scene: PlaybackScene | null, contentEnd: Flicks): void {
     this.scene = scene;
+    this.contentEnd = contentEnd;
     this.audio?.setScene(scene);
     this.controller.setContentEnd(contentEnd);
   }
@@ -187,8 +194,9 @@ export class PlaybackSession {
     this.moveTo(0 as Flicks);
   }
 
+  /** To the end of the content (not of the loop span). */
   goToEnd(): void {
-    this.moveTo(this.controller.getTransport().bounds.span.end);
+    this.moveTo(this.contentEnd);
   }
 
   getState = (): PlaybackState => this.state;

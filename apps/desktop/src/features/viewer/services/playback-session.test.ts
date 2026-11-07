@@ -7,7 +7,7 @@ import { playbackStatusStore } from '../../../shared/playback';
 import { IDS } from '../../../shared/project-store/testing/session-fixture';
 import { playheadStore, playheadTimeOf, setPlayheadTime } from '../../timeline';
 import { fakeAudioFactory, type FakeAudioEngine } from '../testing/fake-audio-engine';
-import type { AudioEngineFactory } from './audio-engine-factory';
+import { AudioUnsupportedError, type AudioEngineFactory } from './audio-engine-factory';
 import { PlaybackSession } from './playback-session';
 
 const SECOND = 705_600_000 as Flicks;
@@ -105,6 +105,8 @@ describe('PlaybackSession', () => {
     refresh();
     session.stopPlayback();
     expect(playhead()).toBe(0.2 * SECOND);
+    session.setLoopRange({ start: SECOND, end: (2 * SECOND) as Flicks });
+    session.setLooping(true);
     session.goToEnd();
     expect(playhead()).toBe(10 * SECOND);
     session.goToStart();
@@ -112,7 +114,7 @@ describe('PlaybackSession', () => {
   });
 
   it('plays silent on the fallback clock without audio, and restarts after a stop', async () => {
-    const failing: AudioEngineFactory = () => Promise.reject(new Error('no Web Audio'));
+    const failing: AudioEngineFactory = () => Promise.reject(new AudioUnsupportedError());
     const { session } = setup(failing);
     await Promise.resolve();
     expect(session.levels().peakDb).toEqual([-Infinity, -Infinity]);
