@@ -1,0 +1,24 @@
+[package]
+name = "se-devtools"
+description = "Development tools (never shipped): generates large test projects for timeline and performance work."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "generate-test-project"
+path = "src/main.rs"
+
+[dependencies]
+se-app = { workspace = true }
+se-domain = { workspace = true }
+se-media = { workspace = true }
+se-store = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt"] }
+uuid = { workspace = true, features = ["v7"] }
+
+[lints]
+workspace = true

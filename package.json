@@ -20,6 +20,7 @@
     "typecheck": "tsc -b",
     "codegen": "node scripts/codegen.mjs",
     "fetch-binaries": "node scripts/fetch-binaries.mjs",
+    "generate-test-project": "cargo run -q -p se-devtools --",
     "storybook": "pnpm --filter @se/ui storybook",
     "set-version": "node scripts/set-version.mjs"
   },
