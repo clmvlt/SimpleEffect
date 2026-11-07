@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-07 — Prompt 13: Moteur B : lecture temps réel, audio, synchro A/V — Done
 
-**Branch**: `feature/13-moteur-lecture`, merged into `dev` at `MERGE_SHA`
+**Branch**: `feature/13-moteur-lecture`, merged into `dev` at `e81ea72`
 
 **Done**
 - `@se/engine/playback` (pure, ADR-0023): `Transport` (anchor + rate; `transportPosition` never accumulates, so no drift; loops wrap, non-looping playback stops at the edges), `playbackSegments` (clock windows split at loop wraps), `nextShuttleRate` (JKL 1/2/4× each way), frame pacing (`frameIndexAt`, `skippedFrames`), `PlaybackStatsCounter` (real fps, dropped frames), `RefreshPeriod` (presentation lead: the frame for the next display refresh), `PlaybackController` (play/pause, stop back to the run's start, shuttle, step, seek, loop span, content end, anchors set `leadTime` ahead so sound starts on its first sample).
