@@ -22,6 +22,12 @@ export const ERROR_CODES = [
   'EDIT_REJECTED',
   'NOTHING_TO_UNDO',
   'NOTHING_TO_REDO',
+  'ASSET_NOT_FOUND',
+  'MEDIA_NOT_FOUND',
+  'MEDIA_UNSUPPORTED',
+  'MEDIA_KIND_MISMATCH',
+  'MEDIA_TOOLS_MISSING',
+  'JOB_NOT_FOUND',
 ] as const satisfies readonly ErrorCode[];
 
 /** `true` only when {@link ERROR_CODES} lists every `ErrorCode`. */

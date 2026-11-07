@@ -7,5 +7,6 @@ export { CoreClientProvider } from './CoreClientProvider';
 export type { CoreClientProviderProps } from './CoreClientProvider';
 export { useConnectionStatus } from './use-connection-status';
 export { useCoreClient } from './use-core-client';
+export { useCoreEndpoint } from './use-core-endpoint';
 export { useCoreEvent } from './use-core-event';
 export { useCoreInfo } from './use-core-info';

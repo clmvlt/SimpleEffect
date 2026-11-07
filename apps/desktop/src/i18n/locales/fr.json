@@ -31,7 +31,110 @@
       "title": "Médias",
       "empty": {
         "title": "Aucun média",
-        "description": "Les vidéos, sons et images importés dans le projet apparaîtront ici."
+        "description": "Importez des vidéos, des sons ou des images, ou déposez-les ici depuis l’explorateur.",
+        "action": "Importer des médias…"
+      },
+      "noMatch": {
+        "title": "Aucun résultat",
+        "description": "Aucun média ne correspond à la recherche ou au filtre."
+      },
+      "toolbar": {
+        "label": "Outils des médias",
+        "import": "Importer des médias…",
+        "view": "Affichage",
+        "grid": "Grille",
+        "list": "Liste",
+        "filter": "Type de média",
+        "search": "Rechercher un média"
+      },
+      "kinds": {
+        "all": "Tous",
+        "video": "Vidéo",
+        "audio": "Son",
+        "image": "Image"
+      },
+      "dialog": {
+        "title": "Importer des médias",
+        "button": "Importer",
+        "filter": "Médias",
+        "allFiles": "Tous les fichiers"
+      },
+      "relinkDialog": {
+        "title": "Relier « {{name}} »",
+        "button": "Relier"
+      },
+      "drop": {
+        "title": "Déposez vos fichiers pour les importer",
+        "description": "Vidéos, sons et images"
+      },
+      "toasts": {
+        "imported_one": "{{count}} média importé",
+        "imported_other": "{{count}} médias importés",
+        "duplicates_one": "{{count}} média déjà présent dans le projet",
+        "duplicates_other": "{{count}} médias déjà présents dans le projet",
+        "failed": "« {{name}} » n’a pas pu être importé",
+        "relinked": "« {{name}} » est relié",
+        "removed": "« {{name}} » a été retiré du projet"
+      },
+      "card": {
+        "missing": "Manquant",
+        "duration": "Durée {{duration}}",
+        "open": "Ouvrir les détails de {{name}}",
+        "actions": "Actions pour {{name}}"
+      },
+      "jobs": {
+        "thumbnails": "Miniatures",
+        "waveformPeaks": "Forme d’onde",
+        "queued": "En attente",
+        "running": "{{task}} : {{percent}} %",
+        "runningUnknown": "{{task}} en cours",
+        "failed": "{{task}} : échec — {{message}}",
+        "progressLabel": "Préparation de {{name}}"
+      },
+      "menu": {
+        "relink": "Relier…",
+        "reveal": "Afficher dans le dossier",
+        "remove": "Retirer du projet",
+        "details": "Détails"
+      },
+      "relinkConfirm": {
+        "title": "Le contenu est différent",
+        "description": "« {{file}} » ne contient pas le même média que celui importé à l’origine. Le relier quand même ?",
+        "confirm": "Relier quand même",
+        "cancel": "Annuler"
+      },
+      "info": {
+        "title": "Détails",
+        "close": "Fermer les détails",
+        "file": "Fichier",
+        "path": "Emplacement",
+        "kind": "Type",
+        "duration": "Durée",
+        "container": "Conteneur",
+        "video": "Vidéo",
+        "codec": "Codec",
+        "resolution": "Résolution",
+        "frameRate": "Cadence",
+        "depth": "Échantillonnage",
+        "audio": "Son",
+        "audioStream": "Piste {{index}}",
+        "channels_one": "{{count}} canal",
+        "channels_other": "{{count}} canaux",
+        "decodability": "Lecture directe",
+        "resolutionValue": "{{width}} × {{height}}",
+        "rotated": "{{width}} × {{height}} (pivotée de {{degrees}}°)",
+        "frameRateValue": "{{fps}} i/s",
+        "variableFrameRate": "Variable",
+        "depthValue": "{{bits}} bits {{chroma}}",
+        "sampleRate": "{{rate}} kHz",
+        "unknown": "Inconnu",
+        "missingPath": "Introuvable : {{path}}",
+        "decodable": {
+          "unknown": "Vérification…",
+          "decodable": "Oui",
+          "undecodable": "Non (une version compatible sera préparée)",
+          "noStream": "—"
+        }
       }
     },
     "viewer": {
@@ -81,7 +184,10 @@
     },
     "history": {
       "createSequence": "Création de séquence",
-      "renameProject": "Renommage du projet"
+      "renameProject": "Renommage du projet",
+      "importMedia": "Import de médias",
+      "relinkMedia": "Reliaison d’un média",
+      "removeMedia": "Retrait d’un média"
     }
   },
   "statusBar": {
@@ -180,6 +286,12 @@
     "EDIT_REJECTED": "Cette modification est impossible dans l’état actuel du projet.",
     "NOTHING_TO_UNDO": "Rien à annuler.",
     "NOTHING_TO_REDO": "Rien à rétablir.",
+    "ASSET_NOT_FOUND": "Ce média n’existe plus dans le projet. Actualisez le panneau Médias.",
+    "MEDIA_NOT_FOUND": "Le fichier est introuvable. Vérifiez qu’il n’a pas été déplacé ou supprimé.",
+    "MEDIA_UNSUPPORTED": "Ce fichier n’est pas une vidéo, un son ou une image lisible.",
+    "MEDIA_KIND_MISMATCH": "Ce fichier n’est pas du même type que le média à relier (vidéo, son ou image).",
+    "MEDIA_TOOLS_MISSING": "ffmpeg est introuvable. Réinstallez l’application (en développement : pnpm fetch-binaries).",
+    "JOB_NOT_FOUND": "Cette tâche est déjà terminée.",
     "unknown": "Une erreur inattendue est survenue. Réessayez."
   },
   "common": {

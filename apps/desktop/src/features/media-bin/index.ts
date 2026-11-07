@@ -1,2 +1,5 @@
-/** Media bin feature: the project's imported media (prompt 08). */
+/**
+ * Media bin feature: import (dialog or drop), previews with thumbnails and waveforms, job
+ * progress, details, missing media and relinking (prompt 08).
+ */
 export { MediaBinPanel } from './components/MediaBinPanel';
