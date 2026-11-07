@@ -216,6 +216,7 @@ mod tests {
         );
         let mut project = project;
         items_of(&mut project, V1).remove(0);
+        project.sequences[0].tracks[0].transitions.clear();
         let applied = apply_ok(&project, trim(2, ItemEdge::Start, 8000));
         assert_eq!(clip(find(&applied.project, 2)).source_start, Flicks::ZERO);
         // Source 4 s + 2 × duration ≤ 60 s: the end can reach 10 s + 28 s.

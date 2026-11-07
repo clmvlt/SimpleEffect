@@ -51,6 +51,16 @@ pub fn clip(index: u64, start: i64, end: i64, group: Option<u64>) -> Item {
     clip
 }
 
+/// A clip like [`clip`] playing its media from `source_start` seconds (so it has a handle of
+/// that length before its start).
+pub fn clip_from(index: u64, start: i64, end: i64, source_start: i64) -> Item {
+    let mut item = clip(index, start, end, None);
+    if let ItemKind::MediaClip(clip) = &mut item.kind {
+        clip.source_start = secs(source_start);
+    }
+    item
+}
+
 /// The example project reduced to one sequence with tracks V1, V2, A1 holding these items.
 pub fn project_with(video1: Vec<Item>, video2: Vec<Item>, audio1: Vec<Item>) -> Project {
     let mut project = example_project();
@@ -141,6 +151,18 @@ impl Opened {
             .find(|entity| entity.item.id == id)
             .unwrap()
             .item
+    }
+
+    /// The transitions of a track.
+    pub async fn transitions(&self, track: TrackId) -> Vec<se_domain::Transition> {
+        self.session()
+            .await
+            .snapshot
+            .tracks
+            .into_iter()
+            .find(|entity| entity.id == track)
+            .unwrap()
+            .transitions
     }
 
     /// The label `undo` would revert.

@@ -31,6 +31,7 @@ export const ERROR_CODES = [
   'DERIVED_NOT_APPLICABLE',
   'MEDIA_TIME_OUT_OF_RANGE',
   'RIPPLE_BLOCKED',
+  'TRANSITION_NO_ROOM',
 ] as const satisfies readonly ErrorCode[];
 
 /**

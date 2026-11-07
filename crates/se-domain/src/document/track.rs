@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::Item;
+use super::{Item, Transition};
 use crate::ids::TrackId;
 
 /// A horizontal lane of a sequence. Its items never overlap in time.
@@ -37,6 +37,10 @@ pub struct Track {
     pub pan: f64,
     /// The items, in any order (operations keep them sorted by start).
     pub items: Vec<Item>,
+    /// Cross-fades between adjacent items of this track, in any order. Empty when absent, so
+    /// documents written before schema version 4 still read.
+    #[serde(default)]
+    pub transitions: Vec<Transition>,
 }
 
 /// Whether a track holds pictures or sound.

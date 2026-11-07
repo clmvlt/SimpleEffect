@@ -9,13 +9,13 @@ Implemented progressively: capabilities (prompt 08), playback sources (09), eval
 | Entry | What | Loads |
 |---|---|---|
 | `@se/engine` (`src/index.ts`) | `animation/` + `evaluate/` + `FLICKS_PER_SECOND` | nothing (pure) |
-| `@se/engine/animation` | `easedProgress(easing, p)`, `cubicBezierProgress`, `EASING_PRESET_CURVES` (CSS ease-in/out/in-out), `valueAt(animatable, localTime, interpolator, fallback)`, `keyframesValueAt`, `interpolateNumber`/`interpolateVec2`/`interpolateColor` (OKLab, premultiplied alpha), `parseColor`/`formatColor`/`rgbaToOklab`/`oklabToRgba`/`mixColors` | — |
-| `@se/engine/evaluate` | `evaluate(sequence, assets, time) → FrameGraph`; `Evaluable{Sequence,Track,Item}` (structural: a domain `Sequence` or mirror entities fit); layer types; `designScale`, `assetDisplaySize`, `reframedBox`, `shapeBox`, `clipSourceTime`, `fadeFactor`, `resolveTransform` | — |
+| `@se/engine/animation` | `easedProgress(easing, p)`, `cubicBezierProgress`, `EASING_PRESET_CURVES` (CSS ease-in/out/in-out), `fadeCurve(shape, p)`, `constantPowerWeights(p)`, `valueAt(animatable, localTime, interpolator, fallback)`, `keyframesValueAt`, `interpolateNumber`/`interpolateVec2`/`interpolateColor` (OKLab, premultiplied alpha), `parseColor`/`formatColor`/`rgbaToOklab`/`oklabToRgba`/`mixColors` | — |
+| `@se/engine/evaluate` | `evaluate(sequence, assets, time) → FrameGraph`; `Evaluable{Sequence,Track,Item,Transition}` (structural: a domain `Sequence` or mirror entities fit); layer types with `DissolveRole`, `DISSOLVE_COMPOSITING`; `designScale`, `assetDisplaySize`, `reframedBox`, `shapeBox`, `clipSourceTime`, `fadeFactor`, `resolveTransform`; transitions `transitionExtent`, `transitionSpan`, `transitionProgress`, `trackTransitionSpans`, `playExtensions` | — |
 | `@se/engine/composite` | `Compositor` interface, `createPixiCompositor({ canvas, width, height, renderer?, background?, preserveDrawingBuffer? })`, pure `layerPlacement`/`pictureFit`/`outputScale` | PixiJS |
 | `@se/engine/decode` | `DecoderPool`, `PictureLease`, `FrameTracker`/`pictureTracker`/`openPictureCounts`, `chooseVariant`, `MediaLocator`, `MediabunnyVideoSource`, `fetchImageBitmap`, `DecodeError` | Mediabunny |
 | `@se/engine/preview` | `createPreviewEngine(options) → PreviewEngine` (viewer engine: `setPlayback(rate, frameRate)` switches to playback decoding; `stats()` → `PreviewStats`), `createEngineWith(compositor, pool, locator, schedule?, now?)`, `FrameRenderer`, `PreviewState`, `MediaIssue`, `prefetchSpans` | PixiJS + Mediabunny: **import lazily** from UI code |
 | `@se/engine/playback` | `PlaybackController` (play/pause/stop, JKL `shuttle`, `step`, `seek`, loop span, content end; `PlaybackClock` with `leadTime`, `FrameTicker`), `transportPosition`, `playbackSegments`, `nextShuttleRate`, `frameIndexAt`/`frameStart`/`skippedFrames`, `PlaybackStatsCounter` | — (pure) |
-| `@se/engine/audio` | `createAudioEngine({ locator, context? }) → AudioEngine` (`clock`, `setScene`, `setLocator`, `setTransport`, `scrub`, `resume`, `levels`, `stats`, `destroy`), `createAudioEngineWith(parts)`, `audioContextClock`, `AudioGraph`, `AudioScheduler`, `AudioMeter`, `audioClipsOf`, `stripSettings`, `dbToGain`/`gainToDb`, `MediabunnyAudioSource` | Mediabunny + the meter worklet: **import lazily** from UI code |
+| `@se/engine/audio` | `createAudioEngine({ locator, context? }) → AudioEngine` (`clock`, `setScene`, `setLocator`, `setTransport`, `scrub`, `resume`, `levels`, `stats`, `destroy`), `createAudioEngineWith(parts)`, `audioContextClock`, `AudioGraph`, `AudioScheduler`, `AudioMeter`, `audioClipsOf` (clips extended through sound cross-fades), `clipGainAt`, `gainEnvelope`, `GAIN_STEP_SECONDS`, `scheduleVoiceGain`, `stripSettings`, `dbToGain`/`gainToDb`, `MediabunnyAudioSource` | Mediabunny + the meter worklet: **import lazily** from UI code |
 | `@se/engine/capabilities` | `videoCodecString`/`audioCodecString`, `checkDecodability(kind, MediaInfo, support)`, `checkDecoderCapabilities(support)` (prompts 08–09) | — |
 | `@se/engine/sources` | `playbackSource(asset)` → `original` / `mezzanine` / `preparing` / `unavailable`, `isPlayable` | — |
 
@@ -23,9 +23,10 @@ Implemented progressively: capabilities (prompt 08), playback sources (09), eval
 ```
 src/
 ├─ time/flicks.ts          FLICKS_PER_SECOND, roundToFlicks
-├─ animation/              easing.ts, cubic-bezier.ts, color.ts (OKLab), interpolate.ts
-├─ evaluate/               evaluate.ts (tracks → layers), item-layer.ts (per item kind),
-│                          transform.ts, timing.ts (source time, fades), geometry.ts (boxes), frame-graph.ts (types)
+├─ animation/              easing.ts, cubic-bezier.ts, color.ts (OKLab), interpolate.ts, fade-curve.ts
+├─ evaluate/               evaluate.ts (tracks → layers, dissolves), item-layer.ts (per item kind),
+│                          transform.ts, timing.ts (source time, fades), geometry.ts (boxes), frame-graph.ts (types),
+│                          transitions.ts (spans, extents, play extensions)
 ├─ composite/              compositor.ts (interface, Picture), layout.ts (pure geometry),
 │                          pixi/pixi-compositor.ts, pixi/layer-nodes.ts (PictureNode, ShapeNode, TextNode)
 ├─ decode/                 decoder-pool.ts, frame-cache.ts (LRU + leases), decode-queue.ts, frame-tracker.ts,
@@ -37,7 +38,7 @@ src/
 ├─ playback/               transport.ts (anchor → position, segments), playback-controller.ts, shuttle.ts (JKL),
 │                          frame-pacing.ts, refresh-period.ts (presentation lead), playback-stats.ts
 ├─ audio/                  audio-engine.ts (façade), create-audio-engine.ts (AudioContext + worklet URL),
-│                          audio-clock.ts, audio-graph.ts, mix.ts, audio-clips.ts, audio-plan.ts (planPieces),
+│                          audio-clock.ts, audio-graph.ts, mix.ts, audio-clips.ts, clip-gain.ts (gain envelopes), audio-plan.ts (planPieces),
 │                          audio-scheduler.ts, audio-chunk.ts (assembly, placements), audio-chunk-pool.ts,
 │                          audio-source.ts (Mediabunny), meter/ (level-math.ts, meter-processor.ts worklet, audio-meter.ts)
 ├─ capabilities/, sources/ prompts 08–09
@@ -67,6 +68,8 @@ Playback flow (ADR-0023): display refresh → `PlaybackController` reads the mas
 - **Playback decoding.** Sequential readers are bounded by a read-ahead budget in frames **and bytes** (`DecoderPool.readAheadBudget`), and forward playback closes passed frames (`FrameCache.dropBefore`): open frames stall hardware decoders, and a 1080p frame is 8 MB of a 256 MiB cache. Readers stop when no longer requested (`prefetch([])` on pause).
 - **Scheduling.** Audio is scheduled from a 25 ms timer, 200 ms ahead (`SCHEDULE_AHEAD_SECONDS`); a piece is scheduled in the window where it starts and plays to its end (never cut mid-chunk); start times are computed from the segment anchor (sample-exact over any duration); any transport change stops all voices and plans again; unchanged clips (`sameClips`) keep scheduled sound. Sound plays at rate 1 only.
 - **Chunks.** One second of media time per chunk; buffers placed contiguously unless a real gap shows; each chunk continues the previous chunk's placement (decoded in order per file); media time 0 of the sound is the first video frame when the file has video. Audio reads the original or the mezzanine, never the proxy.
+- **Fades and levels** (ADR-0024). `fadeCurve` is the only implementation of the domain's fade shapes, used for picture opacity and sound gain; levels beyond an item's edges hold the edge value. Volume is interpolated in decibels, then converted (`dbToGain`). Each voice gets a `gainEnvelope` (one point when constant, else points every 10 ms) that the graph only ramps between: compute levels in pure code, never in the graph.
+- **Dissolves.** `evaluate` lists the two sides of a cross dissolve one after the other with their `dissolve` role and weighted opacities; a compositor must draw them as one isolated group with the incoming side added (`DISSOLVE_COMPOSITING`), never as two ordinary layers.
 - **Meter worklet.** `meter-processor.ts` runs in the AudioWorklet scope: pure imports only (it is bundled alone with `?worker&url`), no allocation per block. A failed `addModule` leaves the meter silent, never the sound.
 
 ## Allowed dependencies
@@ -78,6 +81,7 @@ Playback flow (ADR-0023): display refresh → `PlaybackController` reads the mas
   - `frame-accuracy.browser.test.ts`: reads back the frame number encoded in the fixtures (29.97 fps H.264 with B-frames, 25 fps VP9, proxy, rotated phone clip, offsets and speeds).
   - `scenes.browser.test.ts`: compares scenes with `test/golden/references/<name>.png` (`expectGolden`, tolerance 16 levels / 0.5 % of pixels); a mismatch writes `<name>.actual.png` and `<name>.diff.png` next to it (gitignored).
   - `decoder-leaks.browser.test.ts`: intensive scrub with cancellations on real WebCodecs, zero open frames after destroy.
+  - `dissolve.browser.test.ts`: a video dissolving into a picture equals the pixel blend of both renders at the progress (reference `cross-dissolve-midway.png`), and a dissolve on V2 never lets V1 show through halfway.
   - Rewrite references after an intended visual change: `SE_UPDATE_GOLDEN=1 pnpm vitest run --project engine-browser`, then **look at every changed PNG** before committing.
   - Fixtures are committed; regenerate them with `node scripts/generate-golden-fixtures.mjs` (needs `pnpm fetch-binaries`), then rewrite the references.
 - Browser-mode file commands (`commands.readFile/writeFile`) resolve paths from the package root (`./test/golden/…`), not from the test file.
@@ -89,4 +93,4 @@ Playback flow (ADR-0023): display refresh → `PlaybackController` reads the mas
 - Sound plays only at 1× forward; JKL 2×/4× and reverse are silent; clip speed changes pitch.
 - Timers are throttled in a hidden or minimised window: playback stutters there (backlog).
 - Reverse playback reads chunks of the window before the playhead: long-GOP footage skips frames.
-- Volume keyframes are sampled once per audio piece and fades are not applied to sound yet (prompt 14).
+- Volume curves, fades and cross-fades are heard at 1× only (like all sound).

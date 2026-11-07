@@ -178,9 +178,16 @@ fn check_fades(clip: &MediaClip, context: &ItemContext<'_>, path: &Path, report:
 mod tests {
     use crate::{
         AssetId, Flicks, ItemKind, Project, TemplateId, ViolationCode,
-        test_support::{example_project, millis, range_ms},
+        test_support::{millis, range_ms},
         validate_project,
     };
+
+    /// The example without the dissolve of V1, whose items these tests reshape.
+    fn example_project() -> Project {
+        let mut project = crate::test_support::example_project();
+        project.sequences[0].tracks[0].transitions.clear();
+        project
+    }
 
     fn codes(project: &Project) -> Vec<ViolationCode> {
         validate_project(project)

@@ -75,11 +75,14 @@ fn check_overlaps(items: &[Item], items_path: &Path, report: &mut Report) {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        ViolationCode,
-        test_support::{example_project, range_ms},
-        validate_project,
-    };
+    use crate::{Project, ViolationCode, test_support::range_ms, validate_project};
+
+    /// The example without the dissolve of V1, whose items these tests reshape.
+    fn example_project() -> Project {
+        let mut project = crate::test_support::example_project();
+        project.sequences[0].tracks[0].transitions.clear();
+        project
+    }
 
     #[test]
     fn reports_overlapping_items_on_one_track() {

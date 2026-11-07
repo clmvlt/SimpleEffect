@@ -164,6 +164,11 @@ pub enum AppError {
         /// Its end.
         end: Flicks,
     },
+    /// No listed cut has media to cross-fade.
+    #[error(
+        "there is no media to cross-fade at this cut: both items need media beyond their edges          (trim them to free some), must last long enough, and the cut must not already have a          transition"
+    )]
+    TransitionNoRoom,
     /// A bug: an invariant of the application itself was broken.
     #[error("internal error: {0}; please report it")]
     Internal(String),
@@ -196,6 +201,7 @@ impl AppError {
             Self::JobNotFound { .. } => ErrorCode::JobNotFound,
             Self::InvalidEdit { .. } => ErrorCode::EditRejected,
             Self::RippleBlocked { .. } => ErrorCode::RippleBlocked,
+            Self::TransitionNoRoom => ErrorCode::TransitionNoRoom,
             Self::Internal(_) => ErrorCode::Internal,
         }
     }

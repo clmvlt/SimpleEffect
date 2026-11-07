@@ -9,13 +9,16 @@ use super::{
     effect::run_steps,
     lookup::find_item,
     reshape::cut_pieces,
+    transition_upkeep::{TransitionSnapshot, restore_transitions},
 };
 use crate::{DomainError, Flicks, ItemId, Project};
 
 /// Cuts an item at `at`: the item keeps `[start, at)` and its fade-in; a new item `new_item_id`
 /// takes `[at, end)` and the fade-out, with the same content, origin and source continuity
 /// (keyframes stay at their instants). The new item is in no link group: to split a linked pair,
-/// split each item and link the new parts. Inverse: remove the new part, restore the item.
+/// split each item and link the new parts. A transition after the item moves to the new part;
+/// one before it stays, shortened if the left part is too short for it. Inverse: remove the new
+/// part, restore the item.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct SplitItem {
@@ -50,7 +53,9 @@ impl Edit for SplitItem {
             RestoreItem { track, item: left }.into(),
             AddItem { track, item: right }.into(),
         ];
-        run_steps(project, &steps, effect)
+        let before = TransitionSnapshot::of(project);
+        run_steps(project, &steps, effect)?;
+        restore_transitions(project, &before, &[(self.item, self.new_item_id)], effect)
     }
 }
 

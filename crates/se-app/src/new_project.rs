@@ -69,6 +69,7 @@ pub fn empty_track(ids: NewIds<'_>, name: &str, kind: TrackKind) -> Result<Track
         volume_db: 0.0,
         pan: 0.0,
         items: Vec::new(),
+        transitions: Vec::new(),
     })
 }
 

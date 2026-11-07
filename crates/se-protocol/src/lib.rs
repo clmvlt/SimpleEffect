@@ -12,6 +12,7 @@
 //! Allowed workspace dependencies: `se-domain` (see `docs/architecture.md` §3 and §6).
 //! DTOs only: no logic beyond (de)serialisation.
 
+mod audio_editing;
 mod command;
 mod command_result;
 mod editing;
@@ -25,6 +26,7 @@ mod media_settings;
 mod project_entities;
 mod project_session;
 
+pub use audio_editing::{ItemUpdate, NewTransition};
 pub use command::Command;
 pub use command_result::{CommandResult, CoreInfo};
 pub use editing::{

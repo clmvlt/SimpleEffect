@@ -94,3 +94,13 @@ pub async fn generate_derived_media(
     context.media.generate_derived(request).await?;
     Ok(CommandResult::GenerateDerivedMedia)
 }
+
+/// `getAudioSilences`.
+pub async fn get_audio_silences(
+    context: &HandlerContext,
+    project_id: ProjectId,
+    asset_id: AssetId,
+) -> Result<CommandResult, ProtocolError> {
+    let silences = context.media.audio_silences(project_id, asset_id).await?;
+    Ok(CommandResult::GetAudioSilences { silences })
+}

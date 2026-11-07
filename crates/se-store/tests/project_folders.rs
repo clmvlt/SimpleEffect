@@ -167,10 +167,29 @@ async fn load_fixture(name: &str) -> se_domain::Project {
     store.load_snapshot().await.unwrap()
 }
 
+/// The example project as the version-3 fixture holds it: no transitions, linear fades.
+fn example_project_v3() -> se_domain::Project {
+    let mut project = example_project();
+    for track in project
+        .sequences
+        .iter_mut()
+        .flat_map(|sequence| &mut sequence.tracks)
+    {
+        track.transitions.clear();
+        for item in &mut track.items {
+            if let se_domain::ItemKind::MediaClip(clip) = &mut item.kind {
+                clip.fade_in_shape = se_domain::FadeShape::Linear;
+                clip.fade_out_shape = se_domain::FadeShape::Linear;
+            }
+        }
+    }
+    project
+}
+
 /// The example project as the version-2 fixture holds it: no analysis summaries, and the proxy
 /// path the example used then.
 fn example_project_v2() -> se_domain::Project {
-    let mut project = example_project();
+    let mut project = example_project_v3();
     for asset in &mut project.assets {
         asset.analysis = se_domain::AssetAnalysis::default();
         if let Some(proxy) = asset.derived.proxy.as_mut() {
@@ -205,8 +224,13 @@ async fn version_2_documents_load_through_the_migrations() {
 }
 
 #[tokio::test]
-async fn version_3_documents_load_as_they_are() {
-    assert_eq!(load_fixture("project-v3.json").await, example_project());
+async fn version_3_documents_load_through_the_migrations() {
+    assert_eq!(load_fixture("project-v3.json").await, example_project_v3());
+}
+
+#[tokio::test]
+async fn version_4_documents_load_as_they_are() {
+    assert_eq!(load_fixture("project-v4.json").await, example_project());
 }
 
 #[tokio::test]

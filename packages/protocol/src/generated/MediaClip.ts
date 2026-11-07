@@ -2,6 +2,7 @@
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { Animatable } from "./Animatable";
 import type { AssetId } from "./AssetId";
+import type { FadeShape } from "./FadeShape";
 import type { Flicks } from "./Flicks";
 import type { Reframe } from "./Reframe";
 import type { Transform2D } from "./Transform2D";
@@ -30,7 +31,8 @@ speed: number,
  */
 transform: Transform2D, 
 /**
- * Gain in decibels (0 = unchanged); keyframes make volume automation.
+ * Gain in decibels (0 = unchanged, within [`Self::MIN_VOLUME_DB`]..=[`Self::MAX_VOLUME_DB`]);
+ * keyframes make the volume curve (automation).
  */
 volumeDb: Animatable<number>, 
 /**
@@ -41,6 +43,15 @@ fadeIn: Flicks,
  * Fade to black/silence at the end (≥ 0).
  */
 fadeOut: Flicks, 
+/**
+ * Curve of the fade-in. Linear when absent, so documents written before schema version 4
+ * still read.
+ */
+fadeInShape: FadeShape, 
+/**
+ * Curve of the fade-out (linear when absent).
+ */
+fadeOutShape: FadeShape, 
 /**
  * How the picture fits the sequence frame before the transform applies.
  */

@@ -79,7 +79,7 @@ impl ProjectService {
         label: &str,
         plan: EditPlan<'_>,
     ) -> Result<(), AppError> {
-        let ops = plan.into_ops();
+        let ops = plan.finish()?;
         if ops.is_empty() {
             return Ok(());
         }

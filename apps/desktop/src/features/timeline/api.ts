@@ -1,9 +1,11 @@
 import type {
+  AssetId,
   CoreClient,
   Flicks,
   ItemId,
   ItemPlacement,
   ItemTrim,
+  ItemUpdate,
   LinkGroupId,
   MarkerColor,
   MarkerId,
@@ -11,10 +13,15 @@ import type {
   PastedItem,
   PlaceMediaRequest,
   PlacementMode,
+  NewTransition,
+  PropertyAnimation,
   SequenceId,
+  TimeRange,
   TrackId,
   TrackKind,
   TrackPatch,
+  TransitionId,
+  TransitionPatch,
 } from '@se/protocol';
 
 /** A gap to resize: its track and bounds. */
@@ -60,6 +67,13 @@ export interface TimelineApi {
   readonly linkItems: (itemIds: readonly ItemId[]) => Promise<LinkGroupId>;
   readonly unlinkItems: (itemIds: readonly ItemId[]) => Promise<void>;
   readonly resizeGap: (gap: GapBounds, duration: Flicks) => Promise<void>;
+  readonly updateItems: (updates: readonly ItemUpdate[]) => Promise<void>;
+  readonly setItemAnimation: (itemId: ItemId, animation: PropertyAnimation) => Promise<void>;
+  readonly addTransitions: (transitions: readonly NewTransition[]) => Promise<TransitionId[]>;
+  readonly updateTransition: (transitionId: TransitionId, patch: TransitionPatch) => Promise<void>;
+  readonly removeTransitions: (transitionIds: readonly TransitionId[]) => Promise<void>;
+  /** The silences of an asset's sound in source time, `null` while it is not analysed. */
+  readonly getAudioSilences: (assetId: AssetId) => Promise<TimeRange[] | null>;
 }
 
 /** The timeline calls for project `projectId` over `client`. */
@@ -112,5 +126,26 @@ export function timelineApi(client: Pick<CoreClient, 'send'>, projectId: string)
     resizeGap: async ({ trackId, start, end }, duration) => {
       await client.send({ kind: 'resizeGap', projectId, trackId, start, end, duration });
     },
+    updateItems: async (updates) => {
+      await client.send({ kind: 'updateItems', projectId, updates: [...updates] });
+    },
+    setItemAnimation: async (itemId, animation) => {
+      await client.send({ kind: 'setItemAnimation', projectId, itemId, animation });
+    },
+    addTransitions: async (transitions) =>
+      (await client.send({ kind: 'addTransitions', projectId, transitions: [...transitions] }))
+        .transitionIds,
+    updateTransition: async (transitionId, patch) => {
+      await client.send({ kind: 'updateTransition', projectId, transitionId, patch });
+    },
+    removeTransitions: async (transitionIds) => {
+      await client.send({
+        kind: 'removeTransitions',
+        projectId,
+        transitionIds: [...transitionIds],
+      });
+    },
+    getAudioSilences: async (assetId) =>
+      (await client.send({ kind: 'getAudioSilences', projectId, assetId })).silences,
   };
 }

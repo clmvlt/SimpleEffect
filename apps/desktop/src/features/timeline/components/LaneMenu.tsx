@@ -1,21 +1,29 @@
-import type { Flicks, ItemEntity } from '@se/protocol';
+import type { Flicks, ItemEntity, TransitionAlignment, TransitionId } from '@se/protocol';
 import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '@se/ui';
 import { useTranslation } from 'react-i18next';
 
 import type { EditActions } from '../hooks/use-edit-actions';
+import type { TransitionActions } from '../hooks/use-transition-actions';
 import type { Gap } from '../services/gaps';
 import { canLink, canUnlink, crosses } from '../services/item-edits';
+import { TransitionMenu } from './TransitionMenu';
 
 /** What a right click in the lanes landed on. */
 export type LaneMenuTarget =
   | { readonly kind: 'item'; readonly item: ItemEntity; readonly time: Flicks }
   | { readonly kind: 'gap'; readonly gap: Gap }
+  | {
+      readonly kind: 'transition';
+      readonly transitionId: TransitionId;
+      readonly alignment: TransitionAlignment;
+    }
   | { readonly kind: 'empty' };
 
 /** Props of {@link LaneMenu}. */
 export interface LaneMenuProps {
   readonly target: LaneMenuTarget;
   readonly actions: EditActions;
+  readonly transitionActions: TransitionActions;
   /** Whether the clipboard holds items of this project. */
   readonly canPaste: boolean;
 }
@@ -25,9 +33,18 @@ function assetOf(item: ItemEntity): string | null {
   return item.kind.kind === 'mediaClip' || item.kind.kind === 'image' ? item.kind.assetId : null;
 }
 
-/** The context menu of the lanes: item actions, closing a gap, or pasting. */
-export function LaneMenu({ target, actions, canPaste }: LaneMenuProps) {
+/** The context menu of the lanes: item actions, closing a gap, a transition's, or pasting. */
+export function LaneMenu({ target, actions, transitionActions, canPaste }: LaneMenuProps) {
   const { t } = useTranslation();
+  if (target.kind === 'transition') {
+    return (
+      <TransitionMenu
+        transitionId={target.transitionId}
+        alignment={target.alignment}
+        actions={transitionActions}
+      />
+    );
+  }
   if (target.kind === 'gap') {
     return (
       <ContextMenuContent>

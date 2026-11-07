@@ -63,7 +63,7 @@ pub(crate) fn sequence_entity(sequence: &Sequence) -> SequenceEntity {
     }
 }
 
-/// A track header and the ids of its items, pointing back to its sequence.
+/// A track header, the ids of its items and its transitions, pointing back to its sequence.
 pub(crate) fn track_entity(sequence: &Sequence, track: &Track) -> TrackEntity {
     TrackEntity {
         id: track.id,
@@ -77,6 +77,7 @@ pub(crate) fn track_entity(sequence: &Sequence, track: &Track) -> TrackEntity {
         volume_db: track.volume_db,
         pan: track.pan,
         item_ids: track.items.iter().map(|item| item.id).collect(),
+        transitions: track.transitions.clone(),
     }
 }
 

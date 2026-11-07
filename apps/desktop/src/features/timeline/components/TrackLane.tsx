@@ -1,4 +1,6 @@
 import type { Asset, ItemEntity, ItemId, MotionTemplate } from '@se/protocol';
+
+import type { ClipEdit } from '../services/preview';
 import { cn } from '@se/ui';
 
 import { itemBox } from '../services/item-geometry';
@@ -18,6 +20,10 @@ export interface TrackLaneProps {
   readonly selected: ReadonlySet<ItemId>;
   /** Items a gesture draws elsewhere for now. */
   readonly hidden: ReadonlySet<ItemId>;
+  /** Fades and volumes a gesture is dragging. */
+  readonly edits?: ReadonlyMap<ItemId, ClipEdit> | undefined;
+  /** Hatch the silences of audio clips. */
+  readonly showSilences?: boolean | undefined;
 }
 
 /** The row of one track: its items in view, faded when the track is hidden or muted. */
@@ -29,6 +35,8 @@ export function TrackLane({
   templates,
   selected,
   hidden,
+  edits,
+  showSilences,
 }: TrackLaneProps) {
   const { track } = row;
   const dimmed = track.kind === 'video' ? track.hidden : track.muted;
@@ -53,6 +61,9 @@ export function TrackLane({
           dimmed={dimmed}
           hidden={hidden.has(item.id)}
           editable={!track.locked}
+          trackKind={track.kind}
+          edit={edits?.get(item.id)}
+          showSilences={showSilences}
         />
       ))}
     </div>

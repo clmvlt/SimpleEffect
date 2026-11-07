@@ -4,6 +4,7 @@ import type { ItemId } from "./ItemId";
 import type { SequenceId } from "./SequenceId";
 import type { TrackId } from "./TrackId";
 import type { TrackKind } from "./TrackKind";
+import type { Transition } from "./Transition";
 
 /**
  * A track header and the ids of its items.
@@ -52,4 +53,9 @@ pan: number,
 /**
  * Its items, sorted by start time.
  */
-itemIds: Array<ItemId>, };
+itemIds: Array<ItemId>, 
+/**
+ * Its cross-fades (small values, sent whole with the track: a transition change upserts
+ * its track).
+ */
+transitions: Array<Transition>, };

@@ -178,6 +178,11 @@ uuid_id!(
     "marker"
 );
 uuid_id!(
+    /// Identifies a [`crate::Transition`] within its project.
+    TransitionId,
+    "transition"
+);
+uuid_id!(
     /// Identifies a [`crate::Transaction`]: one atomic group of operations by one actor.
     TransactionId,
     "transaction"

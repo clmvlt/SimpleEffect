@@ -7,23 +7,27 @@ use std::collections::BTreeMap;
 
 use proptest::prelude::*;
 use se_domain::{
-    AddAsset, AddItem, AddMarker, AddSequence, AddTrack, Animatable, AssetId, AssetPatch, Assign,
-    CaptionPatch, Color, Decodability, DerivedFile, DerivedStatus, Easing, Flicks, Format,
-    FormatPreset, FrameRate, InsertGap, Item, ItemEdge, ItemId, ItemKind, ItemPatch, Keyframe,
-    LinkGroupId, LinkItems, Marker, MarkerColor, MarkerId, MarkerPatch, MediaClipPatch, MoveItem,
-    Operation, Project, PropertyAnimation, RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence,
-    RemoveTrack, RenameProject, ReorderTracks, RippleDeleteRange, SceneSummary, Sequence,
-    SequenceId, SequencePatch, SetKeyframes, ShapePatch, SplitItem, StreamDecodability,
-    TemplateParamValue, TemplatePatch, TextPatch, TimeRange, TrackId, TrackKind, TrackPatch,
-    TrimItem, UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack,
+    AddAsset, AddItem, AddMarker, AddSequence, AddTrack, AddTransition, Animatable, AssetId,
+    AssetPatch, Assign, CaptionPatch, Color, Decodability, DerivedFile, DerivedStatus, Easing,
+    FadeShape, Flicks, Format, FormatPreset, FrameRate, InsertGap, Item, ItemEdge, ItemId,
+    ItemKind, ItemPatch, Keyframe, LinkGroupId, LinkItems, Marker, MarkerColor, MarkerId,
+    MarkerPatch, MediaClipPatch, MoveItem, Operation, Project, PropertyAnimation, RemoveAsset,
+    RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack, RemoveTransition, RenameProject,
+    ReorderTracks, RippleDeleteRange, SceneSummary, Sequence, SequenceId, SequencePatch,
+    SetKeyframes, ShapePatch, SplitItem, StreamDecodability, TemplateParamValue, TemplatePatch,
+    TextPatch, TimeRange, TrackId, TrackKind, TrackPatch, Transition, TransitionAlignment,
+    TransitionId, TransitionKind, TransitionPatch, TrimItem, UnlinkItems, UpdateAsset, UpdateItem,
+    UpdateMarker, UpdateSequence, UpdateTrack, UpdateTransition,
     test_support::{millis, track},
 };
 
-use crate::picking::{items, pick, sequence_tracks, sequences, shape, shift, tracks, video_tracks};
+use crate::picking::{
+    cuts, items, pick, sequence_tracks, sequences, shape, shift, tracks, transitions, video_tracks,
+};
 
 /// Number of operation kinds the generator produces (every operation but `RestoreItem`, which
 /// the inverses exercise).
-pub const KINDS: u8 = 25;
+pub const KINDS: u8 = 28;
 
 /// Random numbers from which one operation is built.
 #[derive(Debug, Clone, Copy)]
@@ -71,7 +75,8 @@ impl Generator {
         match seed.kind {
             0..=10 => self.item_operation(project, seed),
             11..=17 => self.structure_operation(project, seed),
-            _ => self.other_operation(project, seed),
+            18..=24 => self.other_operation(project, seed),
+            _ => self.transition_operation(project, seed),
         }
     }
 
@@ -360,6 +365,61 @@ impl Generator {
     }
 }
 
+impl Generator {
+    /// Adds a transition on a cut (now and then of the wrong kind or too long), resizes or
+    /// realigns one, or removes one.
+    fn transition_operation(&mut self, project: &Project, seed: Seed) -> Option<Operation> {
+        let alignment = match seed.choice % 3 {
+            0 => TransitionAlignment::Center,
+            1 => TransitionAlignment::Start,
+            _ => TransitionAlignment::End,
+        };
+        let duration = millis(i64::from(50 + seed.choice % 4000));
+        Some(match seed.kind {
+            25 => {
+                let (track, track_kind, left_item, right_item) = *pick(&cuts(project), seed.pick)?;
+                let kind = if seed.choice.is_multiple_of(11) {
+                    TransitionKind::for_track(match track_kind {
+                        TrackKind::Video => TrackKind::Audio,
+                        TrackKind::Audio => TrackKind::Video,
+                    })
+                } else {
+                    TransitionKind::for_track(track_kind)
+                };
+                let transition = Transition {
+                    id: TransitionId::from_test_index(self.fresh()),
+                    kind,
+                    left_item,
+                    right_item,
+                    duration,
+                    alignment,
+                };
+                AddTransition {
+                    track,
+                    index: None,
+                    transition,
+                }
+                .into()
+            }
+            26 => {
+                let patch = TransitionPatch {
+                    duration: seed.choice.is_multiple_of(2).then_some(duration),
+                    alignment: seed.choice.is_multiple_of(3).then_some(alignment),
+                };
+                UpdateTransition {
+                    transition: *pick(&transitions(project), seed.pick)?,
+                    patch,
+                }
+                .into()
+            }
+            _ => RemoveTransition {
+                transition: *pick(&transitions(project), seed.pick)?,
+            }
+            .into(),
+        })
+    }
+}
+
 fn trim(item: &Item, seed: Seed) -> Operation {
     let range = item.timeline_range;
     let (edge, position) = if seed.choice.is_multiple_of(2) {
@@ -381,6 +441,10 @@ fn update(item: &Item, seed: Seed) -> Operation {
         ItemKind::MediaClip(_) => ItemPatch::MediaClip(MediaClipPatch {
             fade_in: Some(millis(i64::from(seed.choice % 1500))),
             speed: (seed.choice.is_multiple_of(4)).then_some(f64::from(seed.choice % 3 + 1) * 0.5),
+            fade_out_shape: seed
+                .choice
+                .is_multiple_of(3)
+                .then_some(FadeShape::Logarithmic),
             ..MediaClipPatch::default()
         }),
         ItemKind::Shape(_) | ItemKind::Image(_) | ItemKind::MotionTemplate(_)

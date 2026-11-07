@@ -55,6 +55,7 @@ export function testTrack(
     volumeDb: 0,
     pan: 0,
     itemIds,
+    transitions: [],
     ...overrides,
   };
 }

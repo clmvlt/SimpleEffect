@@ -10,12 +10,14 @@ use super::{
     effect::run_steps,
     lookup::{edited_tracks, find_sequence},
     reshape::{cut_pieces, shifted},
+    transition_upkeep::{TransitionSnapshot, restore_transitions},
 };
 use crate::{DomainError, Flicks, ItemId, Project, SequenceId, Track, TrackId};
 
 /// Opens `duration` of empty time at `at` on tracks of a sequence: items starting at or after
 /// `at` move right; an item crossing `at` is split there (new right part id from `split_ids`,
-/// like [`super::SplitItem`]) and its right part moves right. Markers do not move.
+/// like [`super::SplitItem`]) and its right part moves right. Markers do not move. A transition
+/// on a cut at `at` is removed (its items no longer touch); others follow their items.
 /// Inverse: the reverse steps.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
@@ -46,7 +48,14 @@ impl Edit for InsertGap {
                 steps.extend(self.track_steps(track)?);
             }
         }
-        run_steps(project, &steps, effect)
+        let before = TransitionSnapshot::of(project);
+        run_steps(project, &steps, effect)?;
+        let renamed: Vec<_> = self
+            .split_ids
+            .iter()
+            .map(|(cut, part)| (*cut, *part))
+            .collect();
+        restore_transitions(project, &before, &renamed, effect)
     }
 }
 

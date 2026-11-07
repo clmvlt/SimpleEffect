@@ -48,5 +48,11 @@ export function useTimelineCommands(projectId: string): TimelineCommands {
     linkItems: guard(api.linkItems),
     unlinkItems: guard(api.unlinkItems),
     resizeGap: guard(api.resizeGap),
+    updateItems: guard(api.updateItems),
+    setItemAnimation: guard(api.setItemAnimation),
+    addTransitions: guard(api.addTransitions),
+    updateTransition: guard(api.updateTransition),
+    removeTransitions: guard(api.removeTransitions),
+    getAudioSilences: guard(api.getAudioSilences),
   };
 }

@@ -1,6 +1,6 @@
 //! Successful results of commands.
 
-use se_domain::{ItemId, LinkGroupId, MarkerId, SequenceId, TrackId};
+use se_domain::{ItemId, LinkGroupId, MarkerId, SequenceId, TimeRange, TrackId, TransitionId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -106,6 +106,20 @@ pub enum CommandResult {
     UnlinkItems,
     /// Answer to [`crate::Command::ResizeGap`]: committed (nothing when the length is unchanged).
     ResizeGap,
+    /// Answer to [`crate::Command::UpdateItems`]: committed.
+    UpdateItems,
+    /// Answer to [`crate::Command::SetItemAnimation`]: committed.
+    SetItemAnimation,
+    /// Answer to [`crate::Command::AddTransitions`].
+    AddTransitions {
+        /// Ids of the transitions added, in the order of the request (cuts without room left
+        /// out).
+        transition_ids: Vec<TransitionId>,
+    },
+    /// Answer to [`crate::Command::UpdateTransition`]: committed.
+    UpdateTransition,
+    /// Answer to [`crate::Command::RemoveTransitions`]: committed.
+    RemoveTransitions,
     /// Answer to [`crate::Command::ImportMedia`].
     ImportMedia(ImportReport),
     /// Answer to [`crate::Command::RelinkAsset`].
@@ -143,6 +157,11 @@ pub enum CommandResult {
     GetMediaToolsStatus {
         /// Tools found and hardware encoders.
         status: MediaToolsStatus,
+    },
+    /// Answer to [`crate::Command::GetAudioSilences`].
+    GetAudioSilences {
+        /// The silences in source time, in order; `null` while the sound is not analysed.
+        silences: Option<Vec<TimeRange>>,
     },
     /// Answer to [`crate::Command::GetProjectCache`].
     GetProjectCache {

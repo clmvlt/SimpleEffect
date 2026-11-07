@@ -1,10 +1,14 @@
 import { cn, EmptyState, Panel, PanelBody, PanelHeader, PanelTitle } from '@se/ui';
 import { GalleryHorizontal } from '@se/ui/icons';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ShortcutRegion, useActiveShortcutContext } from '../../../shared/shortcuts';
 import { useEditActions } from '../hooks/use-edit-actions';
 import { useEditShortcuts } from '../hooks/use-edit-shortcuts';
+import { useTransitionActions } from '../hooks/use-transition-actions';
+import { connectEditPreferences } from '../store/edit-preferences-store';
+import { uiPreferencesStorage } from '../../../shared/storage';
 import { inOutControls } from '../hooks/use-in-out';
 import { usePlayheadControls } from '../hooks/use-playhead-controls';
 import { usePlayheadFollow } from '../hooks/use-playhead-follow';
@@ -60,6 +64,8 @@ function TimelineEditor({ model }: { readonly model: TimelineModel }) {
   useTimelineShortcuts({ model, viewport: api, playhead, inOut, commands });
   const actions = useEditActions(model, commands, playhead.time);
   useEditShortcuts(actions);
+  const transitionActions = useTransitionActions(model, commands, playhead.time);
+  useEffect(() => connectEditPreferences(uiPreferencesStorage()), []);
   const active = useActiveShortcutContext() === 'timeline';
   return (
     <ShortcutRegion context="timeline" claimOnMount className="size-full">
@@ -108,6 +114,7 @@ function TimelineEditor({ model }: { readonly model: TimelineModel }) {
             inOut={inOut}
             commands={commands}
             actions={actions}
+            transitionActions={transitionActions}
           />
         </PanelBody>
       </Panel>

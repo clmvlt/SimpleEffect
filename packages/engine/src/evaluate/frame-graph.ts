@@ -1,4 +1,4 @@
-import type { AssetId, Flicks, ItemId, Vec2 } from '@se/protocol';
+import type { AssetId, Flicks, ItemId, TransitionId, Vec2 } from '@se/protocol';
 
 import type { Rgba } from '../animation/color';
 
@@ -21,10 +21,30 @@ export interface ResolvedTransform {
   readonly opacity: number;
 }
 
+/**
+ * A layer's part in a cross dissolve: the outgoing and incoming layers of one transition are
+ * listed one after the other and composited as one group (`DISSOLVE_COMPOSITING`), their opacities
+ * already weighted by the dissolve's progress (`1 − p` and `p`).
+ */
+export interface DissolveRole {
+  readonly transitionId: TransitionId;
+  readonly side: 'outgoing' | 'incoming';
+}
+
+/**
+ * How a compositor draws a dissolve group: alone in an empty layer (isolated), the outgoing layer
+ * normally and the incoming one added (premultiplied `src + dst`), then the group over what lies
+ * below. With weights `1 − p` and `p` this gives exactly `(1 − p)·(A over below) + p·(B over
+ * below)`: no dip to the lower tracks halfway.
+ */
+export const DISSOLVE_COMPOSITING = 'isolated-additive' as const;
+
 interface LayerBase {
   /** The item drawn by this layer. */
   readonly itemId: ItemId;
   readonly transform: ResolvedTransform;
+  /** Set when the layer is a side of a cross dissolve. */
+  readonly dissolve?: DissolveRole;
 }
 
 /** A frame of a video asset. */

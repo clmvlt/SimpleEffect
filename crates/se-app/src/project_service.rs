@@ -7,6 +7,7 @@
 //! events are discarded.
 
 mod editing;
+mod item_properties;
 mod items;
 mod library;
 mod lifecycle;
@@ -15,12 +16,14 @@ mod markers;
 mod observer;
 mod placed_media;
 mod tracks;
+mod transitions;
 mod trims;
 
 pub use items::labels as item_labels;
 pub use markers::labels as marker_labels;
 pub use observer::ProjectObserver;
 pub use tracks::labels as track_labels;
+pub use transitions::labels as transition_labels;
 
 use std::{path::PathBuf, sync::Arc, time::Duration};
 

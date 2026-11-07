@@ -2,7 +2,7 @@
 // the renderer's Content-Security-Policy forbids `unsafe-eval`.
 import 'pixi.js/unsafe-eval';
 
-import { autoDetectRenderer, Container, type Renderer } from 'pixi.js';
+import { AlphaFilter, autoDetectRenderer, Container, type Renderer } from 'pixi.js';
 
 import type { FrameGraph, Layer } from '../../evaluate/frame-graph';
 import type { Compositor, CompositorBackground, PictureSet, RenderCanvas } from '../compositor';
@@ -30,6 +30,8 @@ class PixiCompositor implements Compositor {
   private readonly stage = new Container();
   private readonly frameRoot = new Container();
   private nodes = new Map<string, LayerNode>();
+  /** One isolated group per cross dissolve on screen, by transition id. */
+  private groups = new Map<string, Container>();
   private destroyed = false;
 
   constructor(private readonly renderer: Renderer) {
@@ -50,18 +52,44 @@ class PixiCompositor implements Compositor {
     const scale = outputScale(graph.frame, this.renderer.screen);
     this.frameRoot.scale.set(scale.x, scale.y);
     const used = new Map<string, LayerNode>();
+    const usedGroups = new Map<string, Container>();
     this.frameRoot.removeChildren();
+    for (const group of this.groups.values()) group.removeChildren();
     for (const layer of graph.layers) {
       const node = this.nodeFor(layer);
       used.set(layer.itemId, node);
       this.updateNode(node, layer, graph, pictures, Math.max(1, scale.x));
-      this.frameRoot.addChild(node.root);
+      node.root.blendMode = layer.dissolve?.side === 'incoming' ? 'add' : 'inherit';
+      this.parentOf(layer, usedGroups).addChild(node.root);
     }
     for (const [itemId, node] of this.nodes) {
       if (used.get(itemId) !== node) node.destroy();
     }
+    for (const [transitionId, group] of this.groups) {
+      if (!usedGroups.has(transitionId)) destroyGroup(group);
+    }
     this.nodes = used;
+    this.groups = usedGroups;
     this.renderer.render({ container: this.stage });
+  }
+
+  /**
+   * Where a layer's node goes: the frame, or the isolated group of its dissolve (added to the
+   * frame where its first layer comes). The group's alpha filter only isolates (alpha 1): the
+   * sides are drawn into an empty layer, the incoming one added (`DISSOLVE_COMPOSITING`).
+   */
+  private parentOf(layer: Layer, usedGroups: Map<string, Container>): Container {
+    if (layer.dissolve === undefined) return this.frameRoot;
+    const transitionId = layer.dissolve.transitionId;
+    let group = usedGroups.get(transitionId);
+    if (group === undefined) {
+      group =
+        this.groups.get(transitionId) ??
+        new Container({ filters: [new AlphaFilter({ alpha: 1 })] });
+      usedGroups.set(transitionId, group);
+      this.frameRoot.addChild(group);
+    }
+    return group;
   }
 
   destroy(): void {
@@ -69,6 +97,8 @@ class PixiCompositor implements Compositor {
     this.destroyed = true;
     for (const node of this.nodes.values()) node.destroy();
     this.nodes.clear();
+    for (const group of this.groups.values()) destroyGroup(group);
+    this.groups.clear();
     this.stage.destroy({ children: true });
     this.renderer.destroy();
   }
@@ -103,6 +133,13 @@ class PixiCompositor implements Compositor {
       node.update(layer, graph.frame, textResolution);
     }
   }
+}
+
+/** Frees a dissolve group and its filter (its layer nodes are owned and freed elsewhere). */
+function destroyGroup(group: Container): void {
+  const filters = [...group.filters];
+  group.destroy();
+  for (const filter of filters) filter.destroy();
 }
 
 /**

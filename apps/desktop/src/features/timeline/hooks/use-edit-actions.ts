@@ -23,7 +23,10 @@ export interface EditActions {
   readonly splitAt: (time: Flicks, itemIds?: readonly ItemId[]) => void;
   /** Cuts at the playhead (`S`, Ctrl/⌘+K). */
   readonly splitAtPlayhead: () => void;
-  /** Deletes the selected items (with `ripple`, closing their time) or closes the selected gap. */
+  /**
+   * Deletes the selected items (with `ripple`, closing their time), closes the selected gap or
+   * removes the selected transition.
+   */
   readonly deleteSelection: (ripple: boolean) => void;
   readonly copySelection: () => void;
   readonly cutSelection: () => void;
@@ -67,7 +70,13 @@ export function useEditActions(
   };
 
   const deleteSelection = (ripple: boolean) => {
-    const { gap } = selectionStore.getState();
+    const { gap, transitionId } = selectionStore.getState();
+    if (transitionId !== null) {
+      void commands.removeTransitions([transitionId]).then((done) => {
+        if (done !== null) clearSelection();
+      });
+      return;
+    }
     if (gap !== null) {
       if (!isGapOf(model.itemsByTrack.get(gap.trackId) ?? [], gap)) return;
       void commands.resizeGap(gap, 0 as Flicks).then((done) => {

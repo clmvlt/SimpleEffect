@@ -10,6 +10,7 @@ use super::{
     effect::run_steps,
     lookup::{edited_tracks, find_sequence},
     reshape::{Reshape, cut_pieces, reshape, shifted},
+    transition_upkeep::{TransitionSnapshot, restore_transitions},
 };
 use crate::{DomainError, Flicks, Item, ItemId, Project, SequenceId, TimeRange, Track, TrackId};
 
@@ -18,7 +19,8 @@ use crate::{DomainError, Flicks, Item, ItemId, Project, SequenceId, TimeRange, T
 /// On each edited track: items inside the range are removed; items crossing one of its edges are
 /// trimmed to it (keeping their fades); an item spanning the whole range keeps its left part and
 /// gets a new right part (id from `split_ids`), like [`super::SplitItem`]; later items move left.
-/// Markers do not move. Inverse: the reverse steps (restore, re-add, remove the new parts).
+/// Markers do not move. Transitions whose items are adjacent again afterwards are kept (shortened
+/// to fit). Inverse: the reverse steps (restore, re-add, remove the new parts).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct RippleDeleteRange {
@@ -47,7 +49,14 @@ impl Edit for RippleDeleteRange {
                 steps.extend(self.track_steps(track)?);
             }
         }
-        run_steps(project, &steps, effect)
+        let before = TransitionSnapshot::of(project);
+        run_steps(project, &steps, effect)?;
+        let renamed: Vec<_> = self
+            .split_ids
+            .iter()
+            .map(|(cut, part)| (*cut, *part))
+            .collect();
+        restore_transitions(project, &before, &renamed, effect)
     }
 }
 

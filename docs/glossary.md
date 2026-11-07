@@ -187,3 +187,15 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Shortcut action** | A named command with default keys per OS, contexts and repeat policy, in one table | `SHORTCUT_ACTIONS`, `useShortcutAction` |
 | **Shortcut context** | Where a shortcut applies: `global`, or the region (timeline, viewer) last clicked or focused | `ShortcutContext`, `ShortcutRegion` |
 | **Test project** | A large generated project (500 items by default) for timeline and performance work | `pnpm generate-test-project`, `se-devtools` |
+| **Transition** | A cross-fade on the cut between two adjacent items of one track, stored on the track; removed when its items no longer touch, kept (shortened if needed) when they move together | `Transition`, `Track.transitions` |
+| **Cut** | Where one item of a track ends and the next one starts; an *open cut* has no transition yet (the timeline shows a handle there) | `Cut`, `openCuts` |
+| **Cross dissolve** | A picture transition: the outgoing picture fades out as the incoming one fades in, composited as one isolated group so lower tracks never show through | `TransitionKind::CrossDissolve`, `DissolveRole` |
+| **Audio cross-fade** | A sound transition at constant power (`cos`/`sin` weights) | `TransitionKind::AudioCrossfade`, `constantPowerWeights` |
+| **Transition alignment** | Where a transition's span sits on its cut: centred, starting at the cut, ending at the cut | `TransitionAlignment`, `Transition::extent` |
+| **Handle** | Media available beyond an item's edges (in timeline time, speed applied), which a transition plays | `item_handles`, `Handles` |
+| **Transition room** | The longest transition a cut allows (handles, item lengths, neighbouring transitions); requested durations are shortened to it | `transition_room`, `fitted_transition` |
+| **Transition upkeep** | The domain rule keeping transitions in step with their items: item moves drop the ones they break, composite edits and edit plans put back those whose items touch again | `drop_broken_transitions`, `TransitionSnapshot` |
+| **Fade shape** | The curve of a clip fade (linear, constant power, logarithmic = even in decibels over 60 dB), shared by sound gain and picture opacity | `FadeShape`, `fadeCurve` |
+| **Volume line (rubber band)** | A clip's volume drawn over its waveform (−60 to +6 dB): dragged to move the whole curve, Ctrl/⌘+click adds a keyframe, Alt+click removes one | `VolumeLine`, `volume-line.ts` |
+| **Gain envelope** | The linear gain of a scheduled voice as points (every 10 ms when it varies) that Web Audio ramps between: volume curve × fades × cross-fade weight | `gainEnvelope`, `clipGainAt`, `GainPoint` |
+| **Silence (display)** | A silent stretch found by the audio analysis, hatched on audio clips (toolbar toggle) | `getAudioSilences`, `useAssetSilences` |

@@ -11,11 +11,12 @@ use super::{item, millis, range_ms, track};
 use crate::{
     Animatable, Asset, AssetAnalysis, AssetKind, AudioStreamInfo, AudioSummary, BrandKit,
     CURRENT_SCHEMA_VERSION, CaptionItem, Color, ContentFingerprint, Decodability, DerivedFile,
-    DerivedMedia, DerivedStatus, DesignPixels, Easing, EasingPreset, Format, FormatPreset,
-    FrameRate, ImageItem, Item, ItemKind, Keyframe, LinkGroupId, Marker, MarkerColor, MarkerId,
-    MediaClip, MediaInfo, MotionTemplate, Origin, Project, ProjectId, ProjectSettings,
-    SceneSummary, Sequence, SequenceId, ShapeGeometry, ShapeItem, StreamDecodability, TaskId,
-    TemplateItem, TemplateParamValue, TextItem, TextStyle, Track, TrackKind, Transform2D, Vec2,
+    DerivedMedia, DerivedStatus, DesignPixels, Easing, EasingPreset, FadeShape, Format,
+    FormatPreset, FrameRate, ImageItem, Item, ItemId, ItemKind, Keyframe, LinkGroupId, Marker,
+    MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin, Project, ProjectId,
+    ProjectSettings, SceneSummary, Sequence, SequenceId, ShapeGeometry, ShapeItem,
+    StreamDecodability, TaskId, TemplateItem, TemplateParamValue, TextItem, TextStyle, Track,
+    TrackKind, Transform2D, Transition, TransitionAlignment, TransitionId, TransitionKind, Vec2,
     VideoStreamInfo,
 };
 
@@ -197,7 +198,10 @@ fn picture(codec: &str, width: u32, height: u32, frame_rate: Option<FrameRate>) 
 
 fn example_tracks() -> Vec<Track> {
     vec![
-        track(1, TrackKind::Video, "V1", interview_clips()),
+        Track {
+            transitions: vec![interview_dissolve()],
+            ..track(1, TrackKind::Video, "V1", interview_clips())
+        },
         track(2, TrackKind::Video, "V2", vec![title_text(), logo_image()]),
         track(
             3,
@@ -225,6 +229,18 @@ fn interview_clips() -> Vec<Item> {
         task_id: TaskId::from_test_index(1),
     };
     vec![first, second]
+}
+
+/// A centred one-second dissolve on the cut between the two interview clips of V1, at 10 s.
+fn interview_dissolve() -> Transition {
+    Transition {
+        id: TransitionId::from_test_index(1),
+        kind: TransitionKind::CrossDissolve,
+        left_item: ItemId::from_test_index(1),
+        right_item: ItemId::from_test_index(2),
+        duration: millis(1000),
+        alignment: TransitionAlignment::Center,
+    }
 }
 
 fn interview_clip() -> MediaClip {
@@ -343,6 +359,7 @@ fn music() -> Item {
     let clip = MediaClip {
         volume_db: keyframed(&[(0, -6.0), (2000, -20.0)], ducking),
         fade_out: millis(1000),
+        fade_out_shape: FadeShape::ConstantPower,
         ..MediaClip::new(example_ids::AUDIO_ASSET)
     };
     item(9, range_ms(0, 14_000), ItemKind::MediaClip(clip))

@@ -242,6 +242,7 @@ fn empty_track(ids: &Ids, name: &str, kind: TrackKind) -> Result<Track, DevError
         volume_db: 0.0,
         pan: 0.0,
         items: Vec::new(),
+        transitions: Vec::new(),
     })
 }
 

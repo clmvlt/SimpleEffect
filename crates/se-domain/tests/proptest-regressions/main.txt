@@ -5,3 +5,4 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 25ca80ab8bd7f8fa4e700ab46559c155d5cc0a3ca6779586aea1334a23cbd5d1 # shrinks to seeds = [Seed { kind: 9, pick: 0, choice: 0, offset_ms: 7000 }]
+cc 76340f4d9e49916cd1660f4584d7e319abf2cca0e0859825120133d08f9b3feb # shrinks to seeds = [Seed { kind: 9, pick: 0, choice: 955345006, offset_ms: 1978 }, Seed { kind: 25, pick: 2428300842, choice: 1696485915, offset_ms: 0 }, Seed { kind: 9, pick: 0, choice: 2383142865, offset_ms: 1979 }]

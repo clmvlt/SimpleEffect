@@ -64,6 +64,7 @@ export const SHORTCUT_ACTIONS = {
   selectAll: { contexts: ['timeline'], keys: ['mod+a'] },
   deselectAll: { contexts: ['timeline'], keys: ['mod+shift+a'] },
   splitAtPlayhead: { contexts: ['timeline'], keys: ['s', 'mod+k'] },
+  addTransition: { contexts: ['timeline'], keys: ['mod+t'] },
   deleteSelection: { contexts: ['timeline'], keys: ['delete', 'backspace'] },
   rippleDelete: { contexts: ['timeline'], keys: ['shift+delete', 'shift+backspace'] },
   copy: { contexts: ['timeline'], keys: ['mod+c'] },

@@ -1,9 +1,14 @@
-import type { ItemEntity } from '@se/protocol';
+import type { ItemEntity, TrackKind } from '@se/protocol';
 import { ClipBadge, ClipShell, cn } from '@se/ui';
 import { useTranslation } from 'react-i18next';
 
+import { useAssetSilences } from '../hooks/use-asset-silences';
+import { mediaClipOf, silencesInItem } from '../services/audio-edits';
 import type { ItemBox } from '../services/item-geometry';
 import { isAiMade, type ItemDisplay } from '../services/item-display';
+import type { ClipEdit } from '../services/preview';
+import { LABEL_BAR_HEIGHT } from '../services/volume-line';
+import { ClipOverlay } from './ClipOverlay';
 import { ThumbnailStrip } from './ThumbnailStrip';
 import { WaveformCanvas } from './WaveformCanvas';
 
@@ -22,10 +27,13 @@ export interface TimelineItemProps {
   readonly hidden: boolean;
   /** Its edges can be dragged (the track is not locked). */
   readonly editable: boolean;
+  /** Kind of its track: audio clips show their volume line and silences. */
+  readonly trackKind: TrackKind;
+  /** Fades or volume a gesture is dragging. */
+  readonly edit?: ClipEdit | undefined;
+  /** Hatch the silences of its sound (audio tracks). */
+  readonly showSilences?: boolean | undefined;
 }
-
-/** Height of the clip's label bar plus its borders: the waveform is drawn below it. */
-const LABEL_BAR_HEIGHT = 18;
 
 /** Narrower clips draw no pictures: nothing would be legible, and zoomed out there are many. */
 const MIN_PICTURE_WIDTH = 8;
@@ -42,8 +50,9 @@ function sourceOf(item: ItemEntity) {
 
 /**
  * One item in a lane: a `ClipShell` positioned on its visible part, with its thumbnails or
- * waveform, its name, the AI badge when an AI task made it, and trim handles on its edges. The
- * lanes handle the pointer (`data-item-id`, `data-trim-edge`).
+ * waveform, its name, the AI badge when an AI task made it, trim handles on its edges and, for
+ * media clips, its fades, volume line and silences (`ClipOverlay`). The lanes handle the pointer
+ * (`data-item-id`, `data-trim-edge`, `data-fade-handle`, `data-volume-*`).
  */
 export function TimelineItem({
   item,
@@ -55,8 +64,16 @@ export function TimelineItem({
   dimmed,
   hidden,
   editable,
+  trackKind,
+  edit,
+  showSilences = false,
 }: TimelineItemProps) {
   const { t } = useTranslation();
+  const clip = mediaClipOf(item);
+  const silences = useAssetSilences(
+    clip === null ? null : display.asset,
+    showSilences && trackKind === 'audio',
+  );
   const label = display.label ?? t(`editor.timeline.items.${display.fallback}`);
   const { sourceStart, speed } = sourceOf(item);
   const asset = box.width >= MIN_PICTURE_WIDTH ? display.asset : null;
@@ -98,6 +115,19 @@ export function TimelineItem({
           <WaveformCanvas asset={asset} {...picture} height={height - LABEL_BAR_HEIGHT} />
         )}
       </ClipShell>
+      {clip !== null && (
+        <ClipOverlay
+          item={item}
+          clip={clip}
+          trackKind={trackKind}
+          box={box}
+          height={height}
+          pixelsPerSecond={pixelsPerSecond}
+          editable={editable}
+          edit={edit}
+          silences={silencesInItem(item, silences)}
+        />
+      )}
       {trimmable && box.startVisible && <TrimHandle edge="start" />}
       {trimmable && box.endVisible && <TrimHandle edge="end" />}
     </div>

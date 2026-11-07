@@ -1,7 +1,7 @@
 import type { AssetId, Flicks } from '@se/protocol';
 import { describe, expect, it } from 'vitest';
 
-import { clip, item, seconds, still } from '../testing/document';
+import { clip, crossFade, item, seconds, still } from '../testing/document';
 import type { PlaybackBounds, Transport } from '../playback/transport';
 import type { AudioChunk } from './audio-chunk';
 import { audioClipsOf } from './audio-clips';
@@ -208,8 +208,52 @@ describe('AudioScheduler', () => {
     const voices = output.live().length;
     scheduler.setClips(sceneClips());
     expect(output.live()).toHaveLength(voices);
-    scheduler.setClips(sceneClips({ volumeDb: still(-6) } as never));
-    expect(output.live()).toHaveLength(voices);
+  });
+
+  it('restarts with the new levels when the volume changes', () => {
+    const { scheduler, output, run } = setup();
+    scheduler.setTransport(playFrom(0 as Flicks, 10), BOUNDS);
+    run(0.05);
+    expect(output.live()[0]?.gain).toEqual([{ at: 0, gain: 1 }]);
+    scheduler.setClips(sceneClips({ volumeDb: still(-20) }));
+    expect(output.live()).toHaveLength(0);
+    run(0.05);
+    expect(output.live()[0]?.gain[0]?.gain).toBeCloseTo(0.1, 9);
+  });
+
+  it('plays a sound cross-fade: the incoming clip starts early, rising, as the other falls', () => {
+    const outgoing = item(0 as Flicks, seconds(2), clip(ASSET));
+    const incoming = item(seconds(2), seconds(2), clip(ASSET, { sourceStart: seconds(5) }));
+    const fade = crossFade(outgoing, incoming, seconds(1), { kind: 'audioCrossfade' });
+    const clips = audioClipsOf({
+      tracks: [
+        {
+          id: 'a1',
+          kind: 'audio',
+          muted: false,
+          solo: false,
+          volumeDb: 0,
+          pan: 0,
+          hidden: false,
+          items: [outgoing, incoming],
+          transitions: [fade],
+        },
+      ],
+    });
+    const { scheduler, output, run } = setup(clips);
+    scheduler.setTransport(playFrom(0 as Flicks, 10), BOUNDS);
+    run(2.5);
+    const at = (when: number) => output.live().find((voice) => Math.abs(voice.when - when) < 1e-9);
+    // The incoming clip from 1.5 s (media 4.5 s), the outgoing one until 2.5 s (media 2.5 s).
+    const rising = at(11.5);
+    expect(rising?.offset).toBeCloseTo(0.5, 9);
+    expect(rising?.gain[0]?.gain).toBe(0);
+    // Its first piece ends with media chunk 4, at the cut: halfway through the cross-fade.
+    expect(rising?.gain.at(-1)?.gain).toBeCloseTo(Math.SQRT1_2, 9);
+    const falling = at(12);
+    expect(falling?.duration).toBeCloseTo(0.5, 9);
+    expect(falling?.gain[0]?.gain).toBeCloseTo(Math.SQRT1_2, 9);
+    expect(falling?.gain.at(-1)?.gain).toBeCloseTo(0, 9);
   });
 
   it('does not drift over ten minutes: every chunk starts on its anchor-derived time', () => {

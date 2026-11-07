@@ -1,9 +1,10 @@
 /**
  * Keyframe interpolation shared by preview and export: easing curves (linear, hold, cubic Bézier,
- * presets) and blending of numbers, vectors and colours (OKLab).
+ * presets), fade curves and blending of numbers, vectors and colours (OKLab).
  */
 export { cubicBezierProgress, type CubicBezierCurve } from './cubic-bezier';
 export { EASING_PRESET_CURVES, easedProgress } from './easing';
+export { LOGARITHMIC_FADE_FLOOR_DB, constantPowerWeights, fadeCurve } from './fade-curve';
 export {
   BLACK,
   formatColor,

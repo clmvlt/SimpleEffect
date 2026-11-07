@@ -6,7 +6,9 @@ export {
   type EvaluableTrack,
 } from './evaluate';
 export {
+  DISSOLVE_COMPOSITING,
   isPictureLayer,
+  type DissolveRole,
   type FrameGraph,
   type ImageLayer,
   type Layer,
@@ -27,3 +29,13 @@ export {
 export type { AssetTable } from './item-layer';
 export { clipSourceTime, fadeFactor } from './timing';
 export { isInvisible, resolveTransform } from './transform';
+export {
+  playExtensions,
+  trackTransitionSpans,
+  transitionExtent,
+  transitionProgress,
+  transitionSpan,
+  type EvaluableTransition,
+  type PlayExtension,
+  type TransitionSpan,
+} from './transitions';

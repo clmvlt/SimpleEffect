@@ -1,4 +1,4 @@
-import type { Asset, CoreEndpoint } from '@se/protocol';
+import type { Asset, CoreEndpoint, Flicks, Transition } from '@se/protocol';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -61,6 +61,24 @@ describe('sceneOf', () => {
       [false, 2],
       [true, 0],
     ]);
+  });
+
+  it('keeps the transitions of each track for the engines', () => {
+    const dissolve: Transition = {
+      id: 't1',
+      kind: 'crossDissolve',
+      leftItem: 'a',
+      rightItem: 'b',
+      duration: 1000 as Flicks,
+      alignment: 'center',
+    };
+    const scene = sceneOf({
+      sequence: sequence(['v1']),
+      tracks: { v1: { ...videoTrack('v1', ['a', 'b']), transitions: [dissolve] } },
+      items: { a: captionItem('a', 'v1', 0), b: captionItem('b', 'v1', 5000) },
+      assets: {},
+    });
+    expect(scene.sequence.tracks[0]?.transitions).toEqual([dissolve]);
   });
 });
 

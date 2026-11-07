@@ -4,6 +4,7 @@ import { useStore } from 'zustand';
 
 import type { GestureContext } from '../hooks/gestures/gesture-context';
 import type { EditActions } from '../hooks/use-edit-actions';
+import type { TransitionActions } from '../hooks/use-transition-actions';
 import { useInOutPoints } from '../hooks/use-in-out';
 import type { InOutControls } from '../hooks/use-in-out';
 import type { PlayheadControls } from '../hooks/use-playhead-controls';
@@ -30,6 +31,7 @@ export interface TimelineViewProps {
   readonly inOut: InOutControls;
   readonly commands: TimelineCommands;
   readonly actions: EditActions;
+  readonly transitionActions: TransitionActions;
 }
 
 /** Free space below the last track: dropping media there adds a track. */
@@ -47,6 +49,7 @@ export function TimelineView({
   inOut,
   commands,
   actions,
+  transitionActions,
 }: TimelineViewProps) {
   const root = useRef<HTMLDivElement>(null);
   const lanesId = useId();
@@ -114,6 +117,7 @@ export function TimelineView({
             id={lanesId}
             context={gestureContext}
             actions={actions}
+            transitionActions={transitionActions}
             selected={new Set(selectedIds)}
             span={span}
           />

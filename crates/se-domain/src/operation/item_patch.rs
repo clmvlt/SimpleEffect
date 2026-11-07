@@ -11,7 +11,7 @@ use ts_rs::TS;
 
 use super::checks::swap_field;
 use crate::{
-    AssetId, Color, DesignPixels, Flicks, ItemKind, Reframe, ShapeGeometry, TemplateId,
+    AssetId, Color, DesignPixels, FadeShape, Flicks, ItemKind, Reframe, ShapeGeometry, TemplateId,
     TemplateParamValue,
 };
 
@@ -33,9 +33,10 @@ pub enum ItemPatch {
     Caption(CaptionPatch),
 }
 
-/// Changes of a [`crate::MediaClip`].
+/// Changes of a [`crate::MediaClip`] (clients may omit unchanged fields).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[serde(default, rename_all = "camelCase")]
+#[ts(optional_fields)]
 pub struct MediaClipPatch {
     /// Another video or audio asset.
     pub asset_id: Option<AssetId>,
@@ -47,6 +48,10 @@ pub struct MediaClipPatch {
     pub fade_in: Option<Flicks>,
     /// Another fade-out length.
     pub fade_out: Option<Flicks>,
+    /// Another fade-in curve.
+    pub fade_in_shape: Option<FadeShape>,
+    /// Another fade-out curve.
+    pub fade_out_shape: Option<FadeShape>,
     /// Another way to fit the frame.
     pub reframe: Option<Reframe>,
 }
@@ -127,6 +132,8 @@ impl ItemPatch {
                 swap_field(&mut clip.speed, patch.speed.as_ref());
                 swap_field(&mut clip.fade_in, patch.fade_in.as_ref());
                 swap_field(&mut clip.fade_out, patch.fade_out.as_ref());
+                swap_field(&mut clip.fade_in_shape, patch.fade_in_shape.as_ref());
+                swap_field(&mut clip.fade_out_shape, patch.fade_out_shape.as_ref());
                 swap_field(&mut clip.reframe, patch.reframe.as_ref());
             }
             (Self::Text(patch), ItemKind::Text(text)) => {
