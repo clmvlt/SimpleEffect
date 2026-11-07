@@ -1,6 +1,6 @@
 //! Successful results of commands.
 
-use se_domain::{ItemId, LinkGroupId, MarkerId, SequenceId, TrackId, TransitionId};
+use se_domain::{ItemId, LinkGroupId, MarkerId, SequenceId, TimeRange, TrackId, TransitionId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -157,6 +157,11 @@ pub enum CommandResult {
     GetMediaToolsStatus {
         /// Tools found and hardware encoders.
         status: MediaToolsStatus,
+    },
+    /// Answer to [`crate::Command::GetAudioSilences`].
+    GetAudioSilences {
+        /// The silences in source time, in order; `null` while the sound is not analysed.
+        silences: Option<Vec<TimeRange>>,
     },
     /// Answer to [`crate::Command::GetProjectCache`].
     GetProjectCache {

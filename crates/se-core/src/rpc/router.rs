@@ -219,6 +219,10 @@ impl RpcRouter {
                 media_settings::update_media_settings(context, settings).await
             }
             Command::GetMediaToolsStatus => media_settings::get_media_tools_status(context).await,
+            Command::GetAudioSilences {
+                project_id,
+                asset_id,
+            } => media::get_audio_silences(context, *project_id, *asset_id).await,
             Command::GetProjectCache { project_id } => {
                 media_settings::get_project_cache(context, *project_id).await
             }
@@ -377,6 +381,7 @@ mod tests {
             format!(
                 r#"{{"kind":"removeTransitions","projectId":"{project}","transitionIds":["{item}"]}}"#
             ),
+            format!(r#"{{"kind":"getAudioSilences","projectId":"{project}","assetId":"{item}"}}"#),
         ] {
             let answer = reply(&format!(
                 r#"{{"type":"request","id":1,"command":{command}}}"#

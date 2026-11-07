@@ -308,6 +308,12 @@ async fn analyses_are_stored_once_per_content_with_a_summary_in_the_asset() {
             .values()
             .all(|analysis| analysis.content_key == fingerprint(1).cache_key())
     );
+    let silences = testbed
+        .media
+        .audio_silences(project_id, asset_id)
+        .await
+        .unwrap();
+    assert_eq!(silences.map(|silences| silences.len()), Some(1));
 
     testbed.projects.close_project(project_id).await.unwrap();
     testbed

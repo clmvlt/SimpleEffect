@@ -18,6 +18,7 @@ mod opening;
 mod relink;
 mod scheduling;
 pub mod settings;
+mod silences;
 
 use std::{
     collections::HashMap,

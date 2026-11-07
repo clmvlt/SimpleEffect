@@ -14,6 +14,7 @@ import type { ProjectSession } from "./ProjectSession";
 import type { RecentProject } from "./RecentProject";
 import type { RelinkOutcome } from "./RelinkOutcome";
 import type { SequenceId } from "./SequenceId";
+import type { TimeRange } from "./TimeRange";
 import type { TrackId } from "./TrackId";
 import type { TransitionId } from "./TransitionId";
 
@@ -81,7 +82,11 @@ settings: MediaSettings, } | { "kind": "getMediaToolsStatus",
 /**
  * Tools found and hardware encoders.
  */
-status: MediaToolsStatus, } | { "kind": "getProjectCache", 
+status: MediaToolsStatus, } | { "kind": "getAudioSilences", 
+/**
+ * The silences in source time, in order; `null` while the sound is not analysed.
+ */
+silences: Array<TimeRange> | null, } | { "kind": "getProjectCache", 
 /**
  * The cache folder and its size.
  */

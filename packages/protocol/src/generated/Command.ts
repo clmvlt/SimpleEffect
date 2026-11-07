@@ -353,7 +353,15 @@ projectId: ProjectId, } | { "kind": "cancelJob",
 /**
  * The job.
  */
-jobId: JobId, } | { "kind": "reportDecodability" } & DecodabilityReport | { "kind": "reportDecoderCapabilities" } & DecoderCapabilities | { "kind": "generateDerivedMedia" } & GenerateDerivedRequest | { "kind": "getMediaSettings" } | { "kind": "updateMediaSettings" } & MediaSettings | { "kind": "getMediaToolsStatus" } | { "kind": "getProjectCache", 
+jobId: JobId, } | { "kind": "reportDecodability" } & DecodabilityReport | { "kind": "reportDecoderCapabilities" } & DecoderCapabilities | { "kind": "generateDerivedMedia" } & GenerateDerivedRequest | { "kind": "getMediaSettings" } | { "kind": "updateMediaSettings" } & MediaSettings | { "kind": "getMediaToolsStatus" } | { "kind": "getAudioSilences", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The asset.
+ */
+assetId: AssetId, } | { "kind": "getProjectCache", 
 /**
  * The open project.
  */

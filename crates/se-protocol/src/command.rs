@@ -359,6 +359,14 @@ pub enum Command {
     /// Which ffmpeg/ffprobe are used and which hardware encoders work. Answered by
     /// [`crate::CommandResult::GetMediaToolsStatus`].
     GetMediaToolsStatus,
+    /// The silent stretches of an asset's sound, from its audio analysis (shown on its clips).
+    /// Answered by [`crate::CommandResult::GetAudioSilences`].
+    GetAudioSilences {
+        /// The open project.
+        project_id: ProjectId,
+        /// The asset.
+        asset_id: AssetId,
+    },
     /// The cache folder of an open project and its size. Answered by
     /// [`crate::CommandResult::GetProjectCache`].
     GetProjectCache {

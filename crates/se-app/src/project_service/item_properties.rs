@@ -107,7 +107,10 @@ mod tests {
             fade_out_shape: Some(FadeShape::ConstantPower),
             ..MediaClipPatch::default()
         }));
-        assert_eq!(update_label(std::slice::from_ref(&fades)), labels::CHANGE_FADES);
+        assert_eq!(
+            update_label(std::slice::from_ref(&fades)),
+            labels::CHANGE_FADES
+        );
         let speed = update(ItemPatch::MediaClip(MediaClipPatch {
             speed: Some(2.0),
             ..MediaClipPatch::default()

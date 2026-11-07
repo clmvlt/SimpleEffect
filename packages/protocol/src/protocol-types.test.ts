@@ -62,6 +62,7 @@ describe('derived protocol types', () => {
       | 'getMediaSettings'
       | 'updateMediaSettings'
       | 'getMediaToolsStatus'
+      | 'getAudioSilences'
       | 'getProjectCache'
       | 'clearProjectCache'
     >();
