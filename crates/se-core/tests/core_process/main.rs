@@ -10,4 +10,5 @@ mod running_core;
 mod access;
 mod commands;
 mod events;
+mod projects;
 mod shutdown_and_logs;

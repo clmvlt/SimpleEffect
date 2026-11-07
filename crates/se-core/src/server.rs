@@ -3,7 +3,9 @@
 use std::{net::Ipv4Addr, sync::Arc, time::Duration};
 
 use axum::{Router, middleware, routing::get};
+use se_app::{DEFAULT_SAVE_DELAY, ProjectService, ProjectServiceConfig, ProjectServiceDeps};
 use se_protocol::{CoreEvent, CoreHandshake};
+use se_store::{FsProjectRepository, SqliteAppLibrary};
 use tokio::{net::TcpListener, sync::watch};
 
 use crate::{
@@ -13,6 +15,7 @@ use crate::{
     error::CoreError,
     handshake,
     rpc::{self, EventBus, HandlerContext, RpcRouter, RpcState},
+    system_ports::{SystemClock, UuidV7Ids},
 };
 
 /// How long open connections get to close after shutdown starts before the process exits anyway.
@@ -42,15 +45,19 @@ pub async fn run(
     );
 
     let events = EventBus::new();
+    let projects = Arc::new(project_service(&paths, &events)?);
     let (stopping_sender, stopping) = watch::channel(false);
     let router = RpcRouter::new(HandlerContext {
         version: CORE_VERSION,
         paths,
+        projects: Arc::clone(&projects),
     });
     let state = RpcState::new(router, events.clone(), stopping.clone());
     let server = axum::serve(listener, routes(guard, state)).with_graceful_shutdown(async move {
         shutdown.await;
-        // Tell every client first, then close the sockets (see `rpc::connection`).
+        // Save every open project, then tell every client, then close the sockets (see
+        // `rpc::connection`).
+        projects.close_all().await;
         events.publish(CoreEvent::CoreShuttingDown);
         stopping_sender.send_replace(true);
     });
@@ -62,6 +69,23 @@ pub async fn run(
             Ok(())
         }
     }
+}
+
+/// Wires the project use cases to the file system, the app library and the event bus.
+fn project_service(paths: &AppPaths, events: &EventBus) -> Result<ProjectService, CoreError> {
+    let library = SqliteAppLibrary::open(&paths.library_db()).map_err(CoreError::Library)?;
+    let deps = ProjectServiceDeps {
+        repository: Arc::new(FsProjectRepository),
+        library: Arc::new(library),
+        events: Arc::new(events.clone()),
+        clock: Arc::new(SystemClock),
+        ids: Arc::new(UuidV7Ids),
+    };
+    let config = ProjectServiceConfig {
+        default_parent_dir: paths.default_projects_dir(),
+        save_delay: DEFAULT_SAVE_DELAY,
+    };
+    Ok(ProjectService::new(deps, config))
 }
 
 fn routes(guard: Arc<AccessGuard>, state: RpcState) -> Router {

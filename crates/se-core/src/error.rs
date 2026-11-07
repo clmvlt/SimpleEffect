@@ -19,6 +19,9 @@ pub enum CoreError {
     /// The handshake line could not be written to stdout.
     #[error("cannot write the handshake line to stdout (is the parent process gone?): {0}")]
     Handshake(#[source] io::Error),
+    /// The app library (`library.db`) cannot be opened.
+    #[error("cannot open the app library: {0}")]
+    Library(#[source] se_app::ports::StorageError),
     /// The HTTP server stopped with an IO error.
     #[error("the HTTP server stopped unexpectedly: {0}")]
     Serve(#[source] io::Error),

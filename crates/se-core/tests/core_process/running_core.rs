@@ -1,7 +1,7 @@
 //! Spawns `se-core`, reads its handshake and talks to `/rpc`.
 
 use std::{
-    path::Path,
+    path::{Path, PathBuf},
     process::{ExitStatus, Stdio},
     time::Duration,
 };
@@ -25,19 +25,43 @@ pub const EXIT_TIMEOUT: Duration = Duration::from_secs(10);
 /// A client socket on `/rpc`.
 pub type RpcSocket = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
+/// The data folder of a test core: its own temporary folder, or one shared between cores.
+enum DataDir {
+    Owned(TempDir),
+    Shared(PathBuf),
+}
+
+impl DataDir {
+    fn path(&self) -> &Path {
+        match self {
+            Self::Owned(folder) => folder.path(),
+            Self::Shared(path) => path,
+        }
+    }
+}
+
 /// A running core and the connection details it announced.
 pub struct RunningCore {
     pub child: Child,
     pub port: u16,
     pub token: String,
     pub version: String,
-    data_dir: TempDir,
+    data_dir: DataDir,
 }
 
 impl RunningCore {
     /// Spawns the core with a fresh data folder and waits for its handshake.
     pub async fn start() -> Self {
         let data_dir = tempfile::tempdir().expect("temporary data folder");
+        Self::spawn(DataDir::Owned(data_dir)).await
+    }
+
+    /// Spawns the core on an existing data folder (e.g. to restart after a crash).
+    pub async fn start_in(data_dir: &Path) -> Self {
+        Self::spawn(DataDir::Shared(data_dir.to_path_buf())).await
+    }
+
+    async fn spawn(data_dir: DataDir) -> Self {
         let mut child = Command::new(env!("CARGO_BIN_EXE_se-core"))
             .env("SE_DATA_DIR", data_dir.path())
             .env("SE_LOG", "debug")
@@ -92,6 +116,24 @@ impl RunningCore {
             .await
             .expect("se-core exits after stdin closes")
             .expect("exit status")
+    }
+}
+
+/// Sends a request and returns its response frame, skipping and collecting the events pushed
+/// before it.
+pub async fn call(socket: &mut RpcSocket, id: u64, command: Value) -> (Value, Vec<Value>) {
+    let frame = serde_json::json!({ "type": "request", "id": id, "command": command });
+    socket
+        .send(Message::text(frame.to_string()))
+        .await
+        .expect("send request");
+    let mut events = Vec::new();
+    loop {
+        let message = next_json(socket).await;
+        if message["type"] == "response" && message["id"] == id {
+            return (message, events);
+        }
+        events.push(message);
     }
 }
 
