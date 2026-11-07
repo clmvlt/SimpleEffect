@@ -81,7 +81,16 @@ impl Sidecar {
     ///
     /// # Errors
     /// [`MediaError::Failed`] with its exit status and the end of its stderr when it fails.
-    pub async fn finish(mut self) -> Result<(), MediaError> {
+    pub async fn finish(self) -> Result<(), MediaError> {
+        self.wait_with_stderr().await.map(drop)
+    }
+
+    /// Waits for the process to exit and returns everything it wrote to stderr (ffmpeg filters
+    /// such as `showinfo` log there).
+    ///
+    /// # Errors
+    /// See [`Sidecar::finish`].
+    pub async fn wait_with_stderr(mut self) -> Result<String, MediaError> {
         let status = self.child.wait().await;
         self.exited = true;
         let stderr = match self.stderr.take() {
@@ -89,7 +98,7 @@ impl Sidecar {
             None => String::new(),
         };
         match status {
-            Ok(status) if status.success() => Ok(()),
+            Ok(status) if status.success() => Ok(stderr),
             Ok(status) => Err(MediaError::Failed(format!(
                 "{} failed ({status}): {}",
                 self.name,
@@ -122,14 +131,25 @@ impl Sidecar {
     ///
     /// # Errors
     /// See [`Sidecar::finish`].
-    pub async fn run_with_lines(mut self, mut on_line: impl FnMut(&str)) -> Result<(), MediaError> {
+    pub async fn run_with_lines(self, on_line: impl FnMut(&str)) -> Result<(), MediaError> {
+        self.run_with_lines_keeping_stderr(on_line).await.map(drop)
+    }
+
+    /// Like [`Sidecar::run_with_lines`], returning stderr.
+    ///
+    /// # Errors
+    /// See [`Sidecar::finish`].
+    pub async fn run_with_lines_keeping_stderr(
+        mut self,
+        mut on_line: impl FnMut(&str),
+    ) -> Result<String, MediaError> {
         if let Some(pipe) = self.take_stdout() {
             let mut lines = BufReader::new(pipe).lines();
             while let Ok(Some(line)) = lines.next_line().await {
                 on_line(&line);
             }
         }
-        self.finish().await
+        self.wait_with_stderr().await
     }
 }
 

@@ -4,7 +4,10 @@
 //! `resources/bin/`, next to se-core) → `resources/bin/<platform>/` in an ancestor of that folder
 //! (development: the repository, filled by `pnpm fetch-binaries`) → the `PATH`.
 
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, PoisonError, RwLock},
+};
 
 use se_app::ports::MediaError;
 
@@ -31,29 +34,56 @@ impl Tool {
 }
 
 /// Where to look for the tools. Looked up on every use, so binaries fetched while the app runs are
-/// found without a restart.
+/// found without a restart. Clones share the user's folder: changing it in the settings affects
+/// every component holding a clone.
 #[derive(Debug, Clone, Default)]
 pub struct ToolLocator {
     /// Folder chosen by the user (setting `media.toolsDir`), searched first.
-    pub override_dir: Option<PathBuf>,
+    override_dir: Arc<RwLock<Option<PathBuf>>>,
     /// Folder of the running executable.
-    pub exe_dir: Option<PathBuf>,
+    exe_dir: Option<PathBuf>,
     /// Whether to search the `PATH` last (off in tests).
-    pub search_path: bool,
+    search_path: bool,
 }
 
 impl ToolLocator {
-    /// The locator of the running process: no override, the executable's folder, the `PATH`.
+    /// A locator searching `override_dir`, then `exe_dir` and its ancestors' `resources/bin`, then
+    /// the `PATH` when `search_path`.
+    #[must_use]
+    pub fn new(override_dir: Option<PathBuf>, exe_dir: Option<PathBuf>, search_path: bool) -> Self {
+        Self {
+            override_dir: Arc::new(RwLock::new(override_dir)),
+            exe_dir,
+            search_path,
+        }
+    }
+
+    /// The locator of the running process: the user's folder, the executable's folder, the
+    /// `PATH`.
     #[must_use]
     pub fn for_current_exe(override_dir: Option<PathBuf>) -> Self {
         let exe_dir = std::env::current_exe()
             .ok()
             .and_then(|exe| exe.parent().map(Path::to_path_buf));
-        Self {
-            override_dir,
-            exe_dir,
-            search_path: true,
-        }
+        Self::new(override_dir, exe_dir, true)
+    }
+
+    /// The folder chosen by the user, if any.
+    #[must_use]
+    pub fn override_dir(&self) -> Option<PathBuf> {
+        // A poisoned lock still holds a valid path.
+        self.override_dir
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    /// Searches `dir` first from now on (every clone), or no user folder when `None`.
+    pub fn set_override_dir(&self, dir: Option<PathBuf>) {
+        *self
+            .override_dir
+            .write()
+            .unwrap_or_else(PoisonError::into_inner) = dir;
     }
 
     /// The candidate files for `tool`, in search order (the `PATH` excluded).
@@ -61,7 +91,7 @@ impl ToolLocator {
     pub fn candidates(&self, tool: Tool) -> Vec<PathBuf> {
         let file = executable_name(tool.name());
         let mut candidates = Vec::new();
-        if let Some(dir) = &self.override_dir {
+        if let Some(dir) = self.override_dir() {
             candidates.push(dir.join(&file));
         }
         if let Some(dir) = &self.exe_dir {
@@ -97,7 +127,7 @@ impl ToolLocator {
             return Ok(found);
         }
         let mut searched: Vec<String> = Vec::new();
-        if let Some(dir) = &self.override_dir {
+        if let Some(dir) = self.override_dir() {
             searched.push(dir.display().to_string());
         }
         searched.push(format!("resources/bin/{PLATFORM_DIR}"));
@@ -117,11 +147,11 @@ mod tests {
 
     #[test]
     fn the_user_folder_comes_first_then_the_executable_folder_then_resources() {
-        let locator = ToolLocator {
-            override_dir: Some(PathBuf::from("custom")),
-            exe_dir: Some(Path::new("repo").join("target").join("debug")),
-            search_path: false,
-        };
+        let locator = ToolLocator::new(
+            Some(PathBuf::from("custom")),
+            Some(Path::new("repo").join("target").join("debug")),
+            false,
+        );
         let candidates = locator.candidates(Tool::Ffmpeg);
         let file = executable_name("ffmpeg");
         assert_eq!(candidates[0], Path::new("custom").join(&file));
@@ -141,12 +171,20 @@ mod tests {
     }
 
     #[test]
+    fn changing_the_user_folder_affects_every_clone() {
+        let locator = ToolLocator::new(None, None, false);
+        let clone = locator.clone();
+        locator.set_override_dir(Some(PathBuf::from("chosen")));
+        assert_eq!(clone.override_dir(), Some(PathBuf::from("chosen")));
+        assert_eq!(
+            clone.candidates(Tool::Ffmpeg)[0],
+            Path::new("chosen").join(executable_name("ffmpeg"))
+        );
+    }
+
+    #[test]
     fn a_missing_tool_names_where_it_was_searched() {
-        let locator = ToolLocator {
-            override_dir: Some(PathBuf::from("nowhere-at-all")),
-            exe_dir: None,
-            search_path: false,
-        };
+        let locator = ToolLocator::new(Some(PathBuf::from("nowhere-at-all")), None, false);
         let error = locator.locate(Tool::Ffprobe).unwrap_err();
         let message = error.to_string();
         assert!(message.contains("ffprobe was not found"), "{message}");

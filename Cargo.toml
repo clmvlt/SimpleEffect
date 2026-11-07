@@ -43,6 +43,8 @@ async-trait = "0.1.92"
 axum = { version = "0.8.9", features = ["ws"] }
 directories = "6.0.0"
 dunce = "1.0.5"
+# EBU R128 loudness (integrated, short-term, range, true peak) of analysed sound.
+ebur128 = "0.1.11"
 futures-util = "0.3.34"
 hex = "0.4.3"
 # Sidecar processes in a job object (Windows) or process group (Unix): the whole tree dies on
@@ -77,6 +79,8 @@ ts-rs = { version = "12.0.1", features = ["serde-json-impl"] }
 uuid = "1.29.0"
 # Windows process creation flags (no console window for sidecars); same version as process-wrap.
 windows = { version = "0.62.2", features = ["Win32_System_Threading"] }
+# Windows: se-core puts itself in a kill-on-close job, so no sidecar outlives it (safe API).
+win32job = "2.0.3"
 # Finds ffmpeg/ffprobe on the PATH (PATHEXT aware on Windows).
 which = "8.0.6"
 # Content fingerprints of media files (xxh3 of their first and last MiB).
