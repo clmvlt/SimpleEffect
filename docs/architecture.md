@@ -78,6 +78,7 @@ SimpleEffect/
 │  ├─ se-media/              ffprobe/ffmpeg adapter: probe, jobs, analysis
 │  ├─ se-transcribe/         whisper.cpp adapter
 │  ├─ se-vision/             ONNX Runtime adapter: face/subject detection
+│  ├─ se-fonts/              font catalogue adapter: bundled fonts (embedded) + installed fonts (fontdb)
 │  ├─ se-agents/             AI CLI providers (claude_code first), stream parsing
 │  ├─ se-mcp/                MCP server: tool definitions → use cases
 │  ├─ se-export/             FCP7 XML, OTIO, SRT, render orchestration
@@ -106,6 +107,7 @@ se-domain  ◄── se-protocol
     ├── se-media   │
     ├── se-transcribe
     ├── se-vision  │
+    ├── se-fonts   │
     ├── se-agents  │
     ├── se-export  │
     └── se-mcp ────┘
@@ -115,7 +117,7 @@ se-domain  ◄── se-protocol
 
 | Crate | May depend on | Must NOT |
 |---|---|---|
-| `se-domain` | serde, thiserror, uuid, ts-rs (derive only); dev: proptest, insta, serde_json | do IO, use async/tokio, read the clock, spawn anything |
+| `se-domain` | serde, serde_json (embedded preset library, lenient `Animatable` reads), thiserror, uuid, ts-rs (derive only); dev: proptest, insta | do IO, use async/tokio, read the clock, spawn anything |
 | `se-protocol` | se-domain, serde, serde_json, ts-rs | contain logic |
 | `se-app` | se-domain, se-protocol, tokio, async-trait, tracing | touch `std::fs`, `std::process`, network, concrete adapters |
 | adapters | se-app, se-domain, se-protocol (DTOs they write, e.g. `ThumbnailSheet`), their IO libraries | depend on another adapter crate |
@@ -124,7 +126,7 @@ se-domain  ◄── se-protocol
 | `se-codegen` | se-protocol, se-domain, ts-rs | be depended on, ship in the app |
 | `se-devtools` | se-domain, se-app, se-store, se-media, tokio, uuid | be depended on, ship in the app |
 
-Adapters implement **ports** declared in `se-app::ports`: `ProjectRepository` (+ `ProjectStore`, one open and locked project, and its `AnalysisStore`), `AppLibraryRepository`, `MediaProber`, `MediaFiles` (existence, fingerprints, folder size and removal), `MediaJobRunner`, `FrameExtractor`, `MediaTools` (ffmpeg folder, version, hardware encoders), `Transcriber`, `SubjectDetector`, `AgentProvider`, `Exporter`, `EventSink`, `Clock`, `IdGenerator`. Small ports with no adapter crate (`Clock`, `IdGenerator`, `EventSink` over the event bus) are implemented in se-core (`system_ports.rs`).
+Adapters implement **ports** declared in `se-app::ports`: `ProjectRepository` (+ `ProjectStore`, one open and locked project, and its `AnalysisStore`), `AppLibraryRepository`, `MediaProber`, `MediaFiles` (existence, fingerprints, folder size and removal), `MediaJobRunner`, `FrameExtractor`, `MediaTools` (ffmpeg folder, version, hardware encoders), `FontCatalog` (bundled and installed fonts, se-fonts), `Transcriber`, `SubjectDetector`, `AgentProvider`, `Exporter`, `EventSink`, `Clock`, `IdGenerator`. Small ports with no adapter crate (`Clock`, `IdGenerator`, `EventSink` over the event bus) are implemented in se-core (`system_ports.rs`).
 Every port has an in-memory/fake implementation in `se-app` (feature `test-support`) so use cases are tested without IO.
 
 ## 4. TypeScript packages and rules
@@ -211,12 +213,14 @@ Track { id, kind: Video|Audio, name, muted, solo, locked, hidden, volume_db, pan
 Transition { id, kind: CrossDissolve|AudioCrossfade, left_item, right_item, duration, alignment: Center|Start|End }
 Item { id, revision, origin: Origin, timeline_range: TimeRange, link_group: Option<LinkGroupId>, kind: ItemKind }
 ItemKind = MediaClip { asset_id, source_start, speed, transform, volume_db: Animatable<f64>, fade_in, fade_out, fade_in_shape, fade_out_shape: Linear|ConstantPower|Logarithmic, reframe: Fit|Fill }
-         | Text(TextItem { content, style: TextStyle { font_family, font_size, color }, transform })
-         | Shape(ShapeItem { geometry: Rectangle|Ellipse, fill, transform })
-         | Image(ImageItem { asset_id, transform })
+         | Text(TextItem { content, style: TextStyle, transform, reveal: Animatable<f64> })
+         | Shape(ShapeItem { geometry: Rectangle { width, height, corner_radius } | Ellipse { width, height } | Line { length, thickness }, fill: Animatable<Color>, stroke: Stroke, cover_frame, transform })
+         | Image(ImageItem { asset_id, fit: Fit|Fill|Natural, transform })
          | MotionTemplate(TemplateItem { template_id, params: name → Text|Number|Boolean|Color })
          | Caption(CaptionItem { text })
-Transform2D { position, scale, rotation, anchor, opacity }   (each Animatable)
+TextStyle { font_family, font_weight (1–1000), italic, font_size: Animatable<px>, color: Animatable<Color>, stroke: Stroke, shadow: TextShadow { enabled, color, blur, offset }, background: TextBackground { enabled, color, padding, corner_radius }, letter_spacing: Animatable<px>, line_height, align: Left|Center|Right, max_width: Option<px>, text_case: Normal|Uppercase }
+Stroke { enabled, color: Animatable<Color>, width: Animatable<px> }   (visible width outside the glyphs or edge)
+Transform2D { position, scale, rotation, anchor, opacity, blur }   (each Animatable)
 Animatable<T> = Static { value } | Keyframed { keyframes: Vec<Keyframe<T>> }
 Keyframe<T> { time: Flicks (item-relative), value: T, easing: Easing }
 Easing = Linear | Hold | CubicBezier { x1, y1, x2, y2 } | Preset { name: EaseIn|EaseOut|EaseInOut }
@@ -224,7 +228,11 @@ Origin = User | AiTask { task_id }
 Marker { id, time, label, color: MarkerColor (Premiere's 8 colours) }
 ```
 
-`FormatPreset` (`Hd16x9`, `Uhd16x9`, `Vertical9x16`, `Square1x1`, `Portrait4x5`, `Custom`) maps to dimensions; `Format::preset()` detects it. Text styles, shapes, captions, templates and brand kits are minimal skeletons completed by prompts 15, 23, 24 and 25 (`TODO(prompt-NN)` in code).
+`FormatPreset` (`Hd16x9`, `Uhd16x9`, `Vertical9x16`, `Square1x1`, `Portrait4x5`, `Custom`) maps to dimensions; `Format::preset()` detects it. Captions, templates and brand kits are minimal skeletons completed by prompts 23, 24 and 25 (`TODO(prompt-NN)` in code).
+
+**Animatable properties** (ADR-0025): `AnimatableProperty` lists the 17 properties keyframes can drive — position, scale, rotation, anchor, opacity, blur (visual items), volumeDb (media clips), fontSize, fillColor (text colour or shape fill), letterSpacing, reveal, strokeColor, strokeWidth (texts and shapes), shadowColor, shadowBlur, shadowOffset, backgroundColor (texts). `ItemKind::property(p)` / `property_mut(p)` give a typed slot (`PropertyRef`/`PropertyMut`: number, design pixels, pair, colour) or `None` when the kind lacks it; `SetKeyframes`, presets and validation use it. Disabled outlines, shadows and plates keep their values. `Animatable` reads a bare value as static (journals written before properties became animatable).
+
+**Animation presets** (`se_domain::animation_preset`, ADR-0025): data in `crates/se-domain/assets/animation-presets.json` (format in `crates/se-domain/CLAUDE.md`), expanded into ordinary keyframes by `expand_preset` / the `ApplyAnimationPreset` operation; `preset_samples` gives each preset's expansion on a reference text for previews.
 
 Serialization (`project.json` and the protocol): `camelCase` fields, enums with data internally tagged by `kind` (an item is `{ …, "kind": { "kind": "mediaClip", "assetId": … } }`), unit enums as `camelCase` strings, flicks as JSON numbers, ids and colours (`#rrggbb[aa]`) as strings, `None` as `null`. The insta snapshot in `crates/se-domain/src/document/snapshots/` of `test_support::example_project()` fixes the format: changing it is a document format change.
 
@@ -249,7 +257,7 @@ Invariants. Single-value invariants are enforced by the value types (`Flicks` ra
 | `EMPTY_KEYFRAMES` | keyframed properties have at least one keyframe |
 | `KEYFRAMES_NOT_SORTED` | keyframe times strictly increase |
 | `KEYFRAME_OUTSIDE_ITEM` | keyframe times are in `[0, item duration]` |
-| `VALUE_OUT_OF_RANGE` | opacity in `[0, 1]`, clip volume in `[-96, 24]` dB, pan in `[-1, 1]`, fades ≥ 0 and fitting the item, Bézier `x1`/`x2` in `[0, 1]` |
+| `VALUE_OUT_OF_RANGE` | opacity and reveal in `[0, 1]`, clip volume in `[-96, 24]` dB, font size > 0, blur, outline width and shadow blur ≥ 0, pan in `[-1, 1]`, fades ≥ 0 and fitting the item, Bézier `x1`/`x2` in `[0, 1]`; static styles: a non-empty font family, weight 1–1000, line height in `(0, 10]`, wrapping width, shape extents > 0, paddings and corner radii ≥ 0 |
 | `LINK_GROUP_ACROSS_SEQUENCES` | items of a link group are in one sequence |
 | `INVALID_TRANSITION` | a transition joins two adjacent items of its own track, matches the track kind, has a positive duration and a span inside both items, and shares no item edge nor overlaps another transition inside a shared item |
 | `INSUFFICIENT_HANDLES` | the items of a transition have enough media beyond their edges for its span (`item_handles`) |
@@ -262,7 +270,7 @@ Modules `se_domain::{operation, transaction, history, changeset, error}` (ADR-00
 
 | Group | Operations |
 |---|---|
-| Items | `AddItem { track, item }`, `RemoveItem { item }`, `RestoreItem { track, item }` (puts a recorded state back; the inverse of item edits), `MoveItem { item, track, start }` (any track, refuses overlaps), `TrimItem { item, edge: start\|end, to }` (adjusts `sourceStart`, stays inside the asset), `SplitItem { item, at, newItemId }`, `UpdateItem { item, patch: ItemPatch }` (one typed patch per item kind, `null` fields unchanged), `SetKeyframes { item, animation: PropertyAnimation }` (keyframes or static value of position, scale, rotation, anchor, opacity or volume), `LinkItems { items, group }`, `UnlinkItems { items }` |
+| Items | `AddItem { track, item }`, `RemoveItem { item }`, `RestoreItem { track, item }` (puts a recorded state back; the inverse of item edits), `MoveItem { item, track, start }` (any track, refuses overlaps), `TrimItem { item, edge: start\|end, to }` (adjusts `sourceStart`, stays inside the asset), `SplitItem { item, at, newItemId }`, `UpdateItem { item, patch: ItemPatch }` (one typed patch per item kind, `null` fields unchanged), `SetKeyframes { item, animation: PropertyAnimation }` (keyframes or static value of any animatable property), `ApplyAnimationPreset { item, preset, phase: in \| out \| emphasis, duration, start }` (a preset expanded into keyframes), `LinkItems { items, group }`, `UnlinkItems { items }` |
 | Time | `RippleDeleteRange { sequence, range, tracks, splitIds }`, `InsertGap { sequence, at, duration, tracks, splitIds }` (`tracks: null` = every unlocked track; items crossing the edit point are split with the given ids; markers stay) |
 | Tracks | `AddTrack { sequence, index, track }`, `RemoveTrack`, `UpdateTrack { track, patch }`, `ReorderTracks { sequence, order }` |
 | Sequences | `AddSequence { index, sequence }`, `RemoveSequence`, `UpdateSequence { sequence, patch }` (name, format) |
@@ -317,6 +325,7 @@ Conventions and their rationale: ADR-0010 and ADR-0012.
 - Timeline commands (prompt 10), one undoable user transaction each: `addTrack { projectId, sequenceId, trackKind, index }` → `trackId` (named after the next free `V<n>`/`A<n>`), `removeTrack`, `updateTrack { trackId, patch: TrackPatch }`, `reorderTracks { sequenceId, order }`, `addMarker { sequenceId, time, label, color }` → `markerId`, `updateMarker { markerId, patch: MarkerPatch }`, `removeMarker`. Labels say what changed (`Mute track`, `Rename marker`…, translated by the renderer). Patch fields are optional in TypeScript.
 - Item commands (prompt 11, ADR-0021), one undoable user transaction each, planned by `se_app::edit_plan::EditPlan` (operations applied to a draft, committed together): `placeMedia(PlaceMediaRequest { sequenceId, assetIds, start, videoTrack, audioTrack: TrackTarget (existing | new), mode })` → `itemIds` (clips one after the other, a video with sound as two linked items, images `DEFAULT_IMAGE_DURATION`), `moveItems { moves: [ItemPlacement { itemId, trackId, start }], mode }`, `duplicateItems { copies, mode }` → `itemIds`, `pasteItems { items: [PastedItem { trackId, item }], mode }` → `itemIds`, `trimItems { trims: [ItemTrim { itemId, edge, to }], ripple }`, `splitItems { itemIds, at }` → right parts (linked parts stay linked), `deleteItems { itemIds, ripple }`, `linkItems` → `linkGroup`, `unlinkItems`, `resizeGap { trackId, start, end, duration }` (0 closes). `PlacementMode`: `overwrite` (placed items replace what they cover on their tracks) or `insert` (time opens at the block's start). Ripple edits shift the **concerned tracks**: the edited tracks plus every unlocked track holding items linked to what moves; removing time over other content of a concerned track fails with `RIPPLE_BLOCKED`. Labels `Add clips`, `Move items`, `Ripple trim`, `Close gap`… (`se_app::item_labels`, translated by the renderer).
 - Sound and transition commands (prompt 14, ADR-0024), one undoable user transaction each: `updateItems { updates: [ItemUpdate { itemId, patch: ItemPatch }] }` (fades and shapes, speed…; planned like item edits; label `Change fades` when only fades change, else `Edit items`), `setItemAnimation { itemId, animation: PropertyAnimation }` (keyframes or static value of one property; `Change volume` / `Change keyframes`), `addTransitions { transitions: [NewTransition { trackId, leftItemId, rightItemId, duration, alignment }] }` → `transitionIds` (kind from the track, durations shortened to each cut's room, cuts without room skipped, `TRANSITION_NO_ROOM` when none fits), `updateTransition { transitionId, patch }` (duration capped by the cut), `removeTransitions { transitionIds }`; `getAudioSilences { assetId }` → `silences` (source time, `null` while not analysed). `TrackEntity` carries its `transitions`.
+- Graphics commands (prompt 15, ADR-0025), one undoable user transaction each: `addGraphicItem(AddGraphicRequest { sequenceId, at, duration, graphic: text { content } | shape { shape } | image { assetId } })` → `PlacedGraphic { itemId, trackId }` (highest unlocked, visible video track free over the span with nothing above it, or a new video track on top; labels `Add text`/`Add shape`/`Add image`), `setItemAnimations { animations: [ItemAnimation { itemId, animation }] }` (several properties of several items; `Transform items` for placement only, `Change keyframes` when keyframes are written, else `Edit items`), `applyAnimationPreset { itemIds, preset, phase, duration, start }` (`Apply animation`); `listAnimationPresets` → `AnimationPresetInfo { id, name, description, phases, defaultDuration, properties, samples }`; `listFonts` → `FontFamily { name, source: bundled | system, faces: [FontFace { id, weightMin, weightMax, italic, unicodeRange, format }] }` (bundled first). Text, shape and image patches (`updateItems`) carry the static style fields.
 - Media commands (prompt 09): `reportDecoderCapabilities { hevcMain10, h264High, aac, flac }`, `generateDerivedMedia { projectId, assetId, derived: mezzanine | proxy }`, `getMediaSettings` / `updateMediaSettings(MediaSettings { mezzanineQuality, proxyResolution: 540p | 720p, autoProxies, toolsDir })`, `getMediaToolsStatus` → `MediaToolsStatus { ffmpegPath, ffprobePath, ffmpegVersion, hardwareEncoders, problem }`, `getProjectCache { projectId }` / `clearProjectCache { projectId }` → `ProjectCacheInfo { path, sizeBytes }`. Job kinds gain `mezzanine`, `proxy`, `audioAnalysis`, `sceneDetection`; codes `DERIVED_NOT_APPLICABLE`, `MEDIA_TIME_OUT_OF_RANGE`.
 - Media commands (prompt 08): `importMedia { projectId, paths }` → `ImportReport { imported, duplicates, failures }` (one user transaction `Import media`; per-file failures carry a code), `relinkAsset { projectId, assetId, path, force }` → `outcome: relinked | contentDiffers`, `removeAsset`, `listJobs { projectId }`, `cancelJob { jobId }`, `reportDecodability { projectId, assetId, video, audio }`. Events: `jobQueued { job }`, `jobProgress { jobId, projectId, assetId, progress }`, `jobCompleted { job }`, `jobFailed { job }`, `jobCancelled { job }` (`JobSnapshot { id, projectId, assetId, kind, state, attempt }`).
 - Errors carry a stable `code` (`ErrorCode`) and a human/agent-readable message: `INVALID_REQUEST`, `UNKNOWN_COMMAND`, `INTERNAL`, project codes `PROJECT_NOT_FOUND`, `PROJECT_LOCKED`, `SCHEMA_TOO_NEW`, `PROJECT_CORRUPTED`, `PROJECT_ALREADY_EXISTS`, `PROJECT_NOT_OPEN`, `STORAGE_FAILED`, edit codes `EDIT_REJECTED` (`details.domainCode` holds the `DomainErrorCode`), `NOTHING_TO_UNDO`, `NOTHING_TO_REDO`, media codes `ASSET_NOT_FOUND`, `MEDIA_NOT_FOUND`, `MEDIA_UNSUPPORTED`, `MEDIA_KIND_MISMATCH`, `MEDIA_TOOLS_MISSING`, `JOB_NOT_FOUND`, `RIPPLE_BLOCKED` (prompt 11); later `REVISION_CONFLICT`, `OUT_OF_SCOPE`. The renderer gives the most common `EDIT_REJECTED` domain codes their own message (`errors.edit.<DOMAIN_CODE>`). Codes raised by clients (`TIMEOUT`, `CONNECTION_LOST`, `CLIENT_CLOSED`) are part of the same enum. The renderer translates every code (`errors.<CODE>`).
@@ -342,6 +351,7 @@ Decisions: ADR-0007 (sidecars, mezzanines), ADR-0018 (import, jobs, cache) and A
 - **Cache**: `<project>/cache/media/<cache key>/` (key = `<hash>-<size>-<mtime>`), files written under temporary names then renamed; thumbnails, peaks and frames are not recorded in the document (regenerated when missing), mezzanines and proxies are (`DerivedMedia`). The settings screen shows the project cache's location and size and cleans it (`clearProjectCache`).
 - **Settings** (`library.db`, `MediaService::media_settings` / `update_media_settings`): `media.mezzanineQuality` (CRF 8–28, default 14), `media.proxyResolution`, `media.autoProxies`, `media.toolsDir` (applied at once to the shared `ToolLocator`), `media.decoders.*` (capabilities).
 - Decode source selection (prompts 12/13): `playbackSource` (original or mezzanine); preview may switch to the proxy.
+- **`/media/fonts/{id}`** (se-core, ADR-0025): a face of the font catalogue (bundled faces from memory, installed ones through `ServeFile`), 404 for unknown ids.
 - **`/media` routes** (se-core, token as `?t=`): `/media/assets/{id}/original`, `/thumbnails` (JSON), `/thumbnails/sheet`, `/thumbnails/poster`, `/peaks/{256|1024|4096}`, `/mezzanine`, `/proxy` (ready ones only); Range (206/416), `HEAD`, conditional requests, `Cache-Control: no-cache`; 404 for unknown assets and outputs not generated yet. Later: `/media/renders/{job}` (upload of rendered chunks).
 
 ## 8. Rendering engine (`@se/engine`)
@@ -368,6 +378,8 @@ display refresh ─► PlaybackController ──(frame start)──► playhead 
    audio clock ◄──── AudioEngine: AudioScheduler (25 ms ticks, 200 ms ahead) ─► chunks ─► voices ─► gains ─► master ─► meter worklet
 ```
 - Planned: `ExportWorker` (prompt 27: same evaluate + compositor on `OffscreenCanvas`, `VideoEncoder`/`AudioEncoder`, Mediabunny muxer; ffmpeg through se-core for ProRes/DNxHR), `MotionTemplateRuntime` (§10).
+- **Graphics** (prompt 15, ADR-0025): text layers carry their whole style in sequence pixels (font request, colour, letter spacing, line height, alignment, wrapping width, outline, shadow, plate, reveal, letter case applied); shape layers an outline and a `line` geometry (capsule), covering shapes the frame's box; images their fit; every layer a blur radius (a Pixi blur filter, only while visible). The Pixi text node measures the whole text once without outline or shadow and draws it line by line at aligned places, so a reveal, an outline or a shadow never moves it. `Compositor.render` returns each layer's box; `FrameRenderer` returns a `FrameLayout` and the fonts missing from the catalogue, and `PreviewEngine` publishes the layout after every drawn frame (`getLayout`, `subscribeLayout`) for the viewer's transform handles.
+- **Fonts** (`@se/engine/fonts`): `FontRegistry` registers the catalogue's faces (`listFonts` + `/media/fonts/{id}` URLs) as `FontFace`s and loads a family's faces the first time a frame's text uses it; `FrameRenderer` waits for them (`FONT_LOAD_TIMEOUT_MS`, 4 s) before drawing, so preview and export draw the same glyphs; families the catalogue lacks fall back to Inter and are reported (`PreviewState.missingFonts`).
 - **Golden frames** (`packages/engine/test/golden/`, Vitest browser mode in headless Chromium via Playwright, project `engine-browser`): committed fixtures from `scripts/generate-golden-fixtures.mjs` (videos encoding their frame number in binary, a proxy, a rotated copy, VP9, colour bars, an alpha disc) and reference PNGs compared with a tolerance; WebGL runs on SwiftShader and decoding prefers software so references match on every OS. `SE_UPDATE_GOLDEN=1` rewrites them.
 
 ## 9. AI architecture

@@ -11,7 +11,11 @@
         {
           "property": "opacity",
           "keyframes": [
-            { "at": 0, "value": { "absolute": 0 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            {
+              "at": 0,
+              "value": { "absolute": 0 },
+              "easing": { "kind": "preset", "name": "easeOut" }
+            },
             { "at": 1, "value": "base" }
           ]
         }
@@ -27,14 +31,22 @@
         {
           "property": "position",
           "keyframes": [
-            { "at": 0, "value": { "offset": [-0.1, 0] }, "easing": { "kind": "cubicBezier", "x1": 0.16, "y1": 1, "x2": 0.3, "y2": 1 } },
+            {
+              "at": 0,
+              "value": { "offset": [-0.1, 0] },
+              "easing": { "kind": "cubicBezier", "x1": 0.16, "y1": 1, "x2": 0.3, "y2": 1 }
+            },
             { "at": 1, "value": "base" }
           ]
         },
         {
           "property": "opacity",
           "keyframes": [
-            { "at": 0, "value": { "absolute": 0 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            {
+              "at": 0,
+              "value": { "absolute": 0 },
+              "easing": { "kind": "preset", "name": "easeOut" }
+            },
             { "at": 0.6, "value": "base" }
           ]
         }
@@ -50,14 +62,22 @@
         {
           "property": "position",
           "keyframes": [
-            { "at": 0, "value": { "offset": [0.1, 0] }, "easing": { "kind": "cubicBezier", "x1": 0.16, "y1": 1, "x2": 0.3, "y2": 1 } },
+            {
+              "at": 0,
+              "value": { "offset": [0.1, 0] },
+              "easing": { "kind": "cubicBezier", "x1": 0.16, "y1": 1, "x2": 0.3, "y2": 1 }
+            },
             { "at": 1, "value": "base" }
           ]
         },
         {
           "property": "opacity",
           "keyframes": [
-            { "at": 0, "value": { "absolute": 0 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            {
+              "at": 0,
+              "value": { "absolute": 0 },
+              "easing": { "kind": "preset", "name": "easeOut" }
+            },
             { "at": 0.6, "value": "base" }
           ]
         }
@@ -73,14 +93,22 @@
         {
           "property": "position",
           "keyframes": [
-            { "at": 0, "value": { "offset": [0, -0.1] }, "easing": { "kind": "cubicBezier", "x1": 0.16, "y1": 1, "x2": 0.3, "y2": 1 } },
+            {
+              "at": 0,
+              "value": { "offset": [0, -0.1] },
+              "easing": { "kind": "cubicBezier", "x1": 0.16, "y1": 1, "x2": 0.3, "y2": 1 }
+            },
             { "at": 1, "value": "base" }
           ]
         },
         {
           "property": "opacity",
           "keyframes": [
-            { "at": 0, "value": { "absolute": 0 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            {
+              "at": 0,
+              "value": { "absolute": 0 },
+              "easing": { "kind": "preset", "name": "easeOut" }
+            },
             { "at": 0.6, "value": "base" }
           ]
         }
@@ -96,14 +124,22 @@
         {
           "property": "position",
           "keyframes": [
-            { "at": 0, "value": { "offset": [0, 0.1] }, "easing": { "kind": "cubicBezier", "x1": 0.16, "y1": 1, "x2": 0.3, "y2": 1 } },
+            {
+              "at": 0,
+              "value": { "offset": [0, 0.1] },
+              "easing": { "kind": "cubicBezier", "x1": 0.16, "y1": 1, "x2": 0.3, "y2": 1 }
+            },
             { "at": 1, "value": "base" }
           ]
         },
         {
           "property": "opacity",
           "keyframes": [
-            { "at": 0, "value": { "absolute": 0 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            {
+              "at": 0,
+              "value": { "absolute": 0 },
+              "easing": { "kind": "preset", "name": "easeOut" }
+            },
             { "at": 0.6, "value": "base" }
           ]
         }
@@ -119,7 +155,11 @@
         {
           "property": "scale",
           "keyframes": [
-            { "at": 0, "value": { "factor": 0 }, "easing": { "kind": "cubicBezier", "x1": 0.34, "y1": 1.56, "x2": 0.64, "y2": 1 } },
+            {
+              "at": 0,
+              "value": { "factor": 0 },
+              "easing": { "kind": "cubicBezier", "x1": 0.34, "y1": 1.56, "x2": 0.64, "y2": 1 }
+            },
             { "at": 1, "value": "base" }
           ]
         },
@@ -142,14 +182,22 @@
         {
           "property": "blur",
           "keyframes": [
-            { "at": 0, "value": { "absolute": 40 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            {
+              "at": 0,
+              "value": { "absolute": 40 },
+              "easing": { "kind": "preset", "name": "easeOut" }
+            },
             { "at": 1, "value": "base" }
           ]
         },
         {
           "property": "opacity",
           "keyframes": [
-            { "at": 0, "value": { "absolute": 0 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            {
+              "at": 0,
+              "value": { "absolute": 0 },
+              "easing": { "kind": "preset", "name": "easeOut" }
+            },
             { "at": 0.5, "value": "base" }
           ]
         }
@@ -182,11 +230,23 @@
           "property": "position",
           "keyframes": [
             { "at": 0, "value": "base", "easing": { "kind": "preset", "name": "easeOut" } },
-            { "at": 0.25, "value": { "offset": [0, -0.05] }, "easing": { "kind": "preset", "name": "easeIn" } },
+            {
+              "at": 0.25,
+              "value": { "offset": [0, -0.05] },
+              "easing": { "kind": "preset", "name": "easeIn" }
+            },
             { "at": 0.5, "value": "base", "easing": { "kind": "preset", "name": "easeOut" } },
-            { "at": 0.7, "value": { "offset": [0, -0.02] }, "easing": { "kind": "preset", "name": "easeIn" } },
+            {
+              "at": 0.7,
+              "value": { "offset": [0, -0.02] },
+              "easing": { "kind": "preset", "name": "easeIn" }
+            },
             { "at": 0.85, "value": "base", "easing": { "kind": "preset", "name": "easeOut" } },
-            { "at": 0.93, "value": { "offset": [0, -0.006] }, "easing": { "kind": "preset", "name": "easeIn" } },
+            {
+              "at": 0.93,
+              "value": { "offset": [0, -0.006] },
+              "easing": { "kind": "preset", "name": "easeIn" }
+            },
             { "at": 1, "value": "base" }
           ]
         }
@@ -203,11 +263,31 @@
           "property": "position",
           "keyframes": [
             { "at": 0, "value": "base", "easing": { "kind": "preset", "name": "easeInOut" } },
-            { "at": 0.1, "value": { "offset": [-0.012, 0] }, "easing": { "kind": "preset", "name": "easeInOut" } },
-            { "at": 0.3, "value": { "offset": [0.012, 0] }, "easing": { "kind": "preset", "name": "easeInOut" } },
-            { "at": 0.5, "value": { "offset": [-0.009, 0] }, "easing": { "kind": "preset", "name": "easeInOut" } },
-            { "at": 0.7, "value": { "offset": [0.006, 0] }, "easing": { "kind": "preset", "name": "easeInOut" } },
-            { "at": 0.9, "value": { "offset": [-0.003, 0] }, "easing": { "kind": "preset", "name": "easeInOut" } },
+            {
+              "at": 0.1,
+              "value": { "offset": [-0.012, 0] },
+              "easing": { "kind": "preset", "name": "easeInOut" }
+            },
+            {
+              "at": 0.3,
+              "value": { "offset": [0.012, 0] },
+              "easing": { "kind": "preset", "name": "easeInOut" }
+            },
+            {
+              "at": 0.5,
+              "value": { "offset": [-0.009, 0] },
+              "easing": { "kind": "preset", "name": "easeInOut" }
+            },
+            {
+              "at": 0.7,
+              "value": { "offset": [0.006, 0] },
+              "easing": { "kind": "preset", "name": "easeInOut" }
+            },
+            {
+              "at": 0.9,
+              "value": { "offset": [-0.003, 0] },
+              "easing": { "kind": "preset", "name": "easeInOut" }
+            },
             { "at": 1, "value": "base" }
           ]
         }
@@ -224,7 +304,11 @@
           "property": "scale",
           "keyframes": [
             { "at": 0, "value": "base", "easing": { "kind": "preset", "name": "easeInOut" } },
-            { "at": 0.5, "value": { "factor": 1.12 }, "easing": { "kind": "preset", "name": "easeInOut" } },
+            {
+              "at": 0.5,
+              "value": { "factor": 1.12 },
+              "easing": { "kind": "preset", "name": "easeInOut" }
+            },
             { "at": 1, "value": "base" }
           ]
         }
