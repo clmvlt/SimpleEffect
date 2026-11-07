@@ -26,6 +26,45 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-07 — Prompt 07: Persistance et gestion des projets — Done
+
+**Branch**: `feature/07-persistance-projets`, merged into `dev`
+
+**Done**
+- `se-protocol`: commands `getNewProjectDefaults`, `createProject`, `openProject`, `closeProject`, `listRecentProjects`, `renameProject`, `duplicateProject`, `trashProject`, `getProjectSnapshot`, `createSequence`, `undo`, `redo`; events `projectOpened` (session), `projectPatched`, `projectClosed`, `historyChanged`; normalised DTOs (`ProjectSnapshot`, `ProjectHeader`, `SequenceEntity { trackIds, markerIds }`, `TrackEntity { sequenceId, itemIds }`, `ItemEntity`/`MarkerEntity` with the domain type flattened, `ProjectPatch { upserts, deletes }`, `ProjectSession`, `HistoryState`, `RecentProject`, `NewProjectDefaults`); error codes `PROJECT_NOT_FOUND`, `PROJECT_LOCKED`, `SCHEMA_TOO_NEW`, `PROJECT_CORRUPTED`, `PROJECT_ALREADY_EXISTS`, `PROJECT_NOT_OPEN`, `STORAGE_FAILED`, `EDIT_REJECTED` (`details.domainCode`), `NOTHING_TO_UNDO`, `NOTHING_TO_REDO`.
+- `se-app`: ports `ProjectRepository` + `ProjectStore`, `AppLibraryRepository`, `EventSink`, `Clock`, `IdGenerator` (+ `StorageError`, `JournalEntry`) with in-memory fakes (`test-support`); `ProjectActorHandle` (commit on a draft → journal → install → `projectPatched` + `historyChanged`; 2 s debounced snapshot, retried on failure, saved on close or when every handle drops); `ProjectService` (create with V1/V2/A1/A2, open with journal replay + immediate recovered snapshot, idempotent re-open, same-id copy refused, close, close all, recent list with availability, rename/duplicate through temporary silent actors, trash, create sequence, undo, redo); `project_view` (snapshot and patch builders refreshing parents), `recovery::replay`, `AppError` → protocol codes.
+- `se-store`: `FsProjectRepository`/`FsProjectStore` (`<Name>.seproj/`: atomic pretty `project.json` with 3 rotating backups, `project.db` WAL + `synchronous=FULL` with schema v1 `op_journal`, `tasks`, `task_events`, `transcripts`, `transcript_search` FTS5, `analyses`; `.lock` held with `File::try_lock`; `cache/`, `exports/`), document migrations (`migrate_document`, v1 base, `tests/fixtures/project-v1.json`), SQLite `user_version` migrations, journal `format_version`, duplication by `VACUUM INTO` without journal, OS trash (NSFileManager on macOS), `SqliteAppLibrary` (`library.db`: recent projects, settings).
+- `se-core`: async router, one task per request, project handlers (`rpc/handlers/projects.rs`, `editing.rs`), `SystemClock`/`UuidV7Ids`/`EventSink` for the bus, `library.db` in `SE_DATA_DIR`, projects proposed in `<Documents>/SimpleEffect`, every open project saved before `coreShuttingDown`. Process tests: commit events, a commit surviving `kill`, the lock between two cores, the shutdown save.
+- Renderer: `shared/project-store` (Zustand mirror, `applyPatch` with stale/gap/foreign outcomes, `connectProjectSync`: resync on gap, `resyncRequired` and reconnection, reopen after a core restart), `shared/shortcuts` (registry, provider, `useShortcut`), `shared/desktop` (bridge by context), `shared/routing`, `shared/errors` (every code translated, compile-time exhaustiveness); `features/projects` home screen (recent grid, accent-insensitive search, context and « ⋯ » menus: open, rename, duplicate, reveal, trash with confirmation; « Nouveau projet » dialog with name, location + native picker, `AspectRatioPicker`, resolutions per ratio or custom, frame rates from the core; « Ouvrir un projet »); editor loads the URL's project (or reopens it from the recent list), header with project and sequence names, undo/redo buttons and Ctrl/⌘+Z, Ctrl/⌘+Maj+Z; going home closes the project. Electron: `chooseFolder`, `showInFolder` with validated IPC arguments. The dev preview link is gone.
+- Tests: se-protocol 23, se-app 31 (actor with paused clock, service), se-store 22 (+1 ignored real-trash test, run once by hand), se-core 30 unit + 15 process, desktop 83 (mirror, sync, shortcuts, errors, form services, dialog validation, editor loading, shell).
+- Verified in the built app (macOS, isolated profile, CDP): create → editor; undo/redo by keyboard after a commit; snapshot written after 2 s with backups; home grid with badge and date; duplicate, rename (context menu), trash (folder in the macOS Trash); renderer reload restores the project and its undo state; closing the window saves and stops the core cleanly.
+- Docs: ADR-0017, `docs/architecture.md` §3/§4.2/§4.4/§5.5/§5.6/§6/§11, glossary (14 terms), backlog (Projects section), CLAUDE.md of se-app, se-store, se-core, se-protocol, `@se/protocol`, desktop.
+
+**Deviations from the prompt**
+- The repository port is split: `ProjectRepository` (folders: locate, create, duplicate, open, trash) and `ProjectStore` (one open, locked project: load snapshot, read/append journal, save snapshot, close), so nothing writes a project it has not locked (ADR-0017).
+- `library.db` lives in `SE_DATA_DIR` (Electron's `userData`), not a `dirs` location; `dirs` is not used.
+- Extra command `getNewProjectDefaults` (proposed folder = last used, presets, `FrameRate::STANDARD`): the dialog takes the domain's lists from the core.
+- The default sequence is named after the project; renaming changes the document name, not the folder; a copy is named by the renderer (« X (copie) ») and its folder numbered (`X 2.seproj`); trashing a project whose folder is gone only forgets it.
+- Undo history is in memory (lost on close). Labels of core-made transactions are English identifiers translated by the renderer (`history-label.ts`).
+- The `Asset::relative_hint` relinking and `missing` flag on open (prompt 05 follow-up) are left to prompt 08: there are no assets yet.
+- Killing se-core inside the running app was not done by hand (the sandbox refused `kill`); the scenario is covered by the process test `a_commit_survives_killing_the_core` (kill right after a commit, restart on the same data folder, journal replayed).
+- zustand 5.0.16 (5.1.0 was less than a day old). The editor header also got undo/redo buttons.
+
+**Follow-ups**
+- Prompt 08: relink missing assets on open (`missing`); media import as transactions through `ProjectService`/actor.
+- Prompt 10: enrich `shared/shortcuts` (scopes, listing in the UI); the timeline reads the mirror with `useProjectSelector`.
+- Prompt 11: a generic « apply transaction » use case/command for timeline edits, with UI-provided labels.
+- Prompt 16: choose the active sequence (`selectActiveSequence` is the first one, `TODO(prompt-16)`).
+- Prompts 09/17/21: refine `analyses`, `tasks`/`task_events`, `transcripts` through new `project.db` migrations.
+- Backlog: persistent history, corrupt `library.db` recovery, non-UTF-8 paths, folder rename, single-instance app.
+
+**Notes for the next agent**
+- Commit flow and recovery invariants: journal before install; `se_app::recovery::replay` uses `commit` (deterministic); a snapshot truncates the journal. Use `InMemoryProjectRepository::folder(path)` to inspect what an actor wrote, and `fail_journal_appends`/`fail_snapshot_saves` to inject failures.
+- clippy (toolchain 1.99) flags `assert!(x.is_empty())` (`assert_is_empty`): write `assert_eq!(x, [])`.
+- `RunningCore::start_in(dir)` restarts a test core on the same data folder; `call()` returns a response plus the events pushed before it (events usually precede the response).
+- The built-app recipe (CDP on port 9223, reload with `ignoreCache`) is in `apps/desktop/CLAUDE.md`. Prettier formats JSON fixtures under `crates/` too.
+- The previous session had left the prompt 06 merge unpushed on local `dev` (6 commits); it was pushed with this merge.
+
 ## 2026-11-07 — Prompt 06: Domaine : opérations, transactions, historique, changesets — Done
 
 **Branch**: `feature/06-domain-operations`, merged into `dev` at `792f0b1`

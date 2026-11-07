@@ -6,6 +6,20 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 |---|---|---|
 | **Project** | A folder `<Name>.seproj/` containing one document, its database and caches | `Project` |
 | **Document** | The serialized state of a project (`project.json`) | `Project` |
+| **Project folder** | A `<Name>.seproj/` folder: `project.json`, its backups, `project.db`, `.lock`, `cache/`, `exports/` | `ProjectLayout` |
+| **Snapshot (file)** | The document saved in `project.json`; written 2 s after the last commit and on close, keeping 3 backups (`project.json.bak.N`) | `ProjectStore::save_snapshot` |
+| **Journal** | Transactions committed since the last snapshot, in `project.db` (`op_journal`), replayed after a crash | `JournalEntry` |
+| **Project lock** | The OS file lock on `.lock` held while a project is open; released by the OS if the process dies | `ProjectLock` |
+| **Project store (core)** | One open, locked project folder, owned by its actor | `ProjectStore` |
+| **Project session** | What a client gets for an open project: its path, snapshot of entities and undo state | `ProjectSession` |
+| **Project snapshot (protocol)** | Every entity of an open project at one revision, normalised by id | `ProjectSnapshot` |
+| **Entity** | A whole sequence, track, item, marker or asset as sent to clients, with its parent and children ids | `SequenceEntity`, `TrackEntity`, `ItemEntity`… |
+| **Patch** | The entities a commit added or changed (whole) and the ids it removed, for one revision | `ProjectPatch` |
+| **Project mirror** | The renderer's read-only copy of the open project, kept current by patches | `ProjectMirror`, `shared/project-store` |
+| **Resync** | Reloading the snapshot after a missed patch, a dropped-events notice or a reconnection | `ProjectSync::resync` |
+| **Recent projects** | The home screen's list of projects, most recently opened first, kept in `library.db` | `RecentProject`, `RecentProjectRecord` |
+| **App library** | The app's own data shared by all projects (`library.db`: recent projects, settings) | `AppLibraryRepository` |
+| **Temporary actor** | An actor started to change a closed project (rename) and closed right after; its events are discarded | `ProjectService::with_project` |
 | **Revision** | Monotonic counter bumped once per committed transaction: for the project, and for each item the transaction touched | `revision` |
 | **Asset** | A media file imported into a project (video, audio, image), referenced by path | `Asset` |
 | **Media info** | What probing an asset revealed: duration, container, video and audio streams | `MediaInfo` |

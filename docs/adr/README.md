@@ -21,6 +21,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0014](0014-renderer-shell-i18n-and-editor-widgets.md) | Renderer shell, i18n and editor widget conventions | Accepted |
 | [0015](0015-spatial-units.md) | Spatial units: normalised positions, design pixels on the shorter side | Accepted |
 | [0016](0016-operation-inverses-and-revert-semantics.md) | Operation inverses, revisions and changeset revert semantics | Accepted |
+| [0017](0017-project-persistence-and-synchronisation.md) | Project persistence, locking and UI synchronisation | Accepted |
 
 ## Template
 

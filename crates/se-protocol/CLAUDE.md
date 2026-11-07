@@ -8,10 +8,12 @@ Data transfer objects exchanged between `se-core` and its clients: the startup h
 |---|---|
 | `handshake.rs` | `CoreHandshake { port, token, version }`: the single stdout line of `se-core`. `Debug` redacts the token |
 | `envelope.rs` | `ClientMessage::Request(RequestEnvelope { id, command })`; `ServerMessage::Response(ResponseEnvelope { id, outcome })` / `ServerMessage::Event(EventEnvelope { event })`; `ResponseOutcome` (`result` \| `error`); `RequestId` (`u64`, exported as `number`) |
-| `command.rs` | `Command` (`ping`, `getCoreInfo`) |
-| `command_result.rs` | `CommandResult` (`ping`, `getCoreInfo(CoreInfo)`), `CoreInfo { version, os, arch, appDataDir, logsDir }` |
-| `event.rs` | `CoreEvent` (`coreReady { version }`, `coreShuttingDown`, `resyncRequired { missedEvents }`) |
-| `error.rs` | `ProtocolError { code, message, details? }`, `ErrorCode` |
+| `command.rs` | `Command`: `ping`, `getCoreInfo`, project commands (`getNewProjectDefaults`, `createProject(CreateProjectRequest)`, `openProject`, `closeProject`, `listRecentProjects`, `renameProject`, `duplicateProject`, `trashProject`, `getProjectSnapshot`, `createSequence`, `undo`, `redo`) |
+| `command_result.rs` | `CommandResult` (same kinds; sessions, recent projects, defaults…), `CoreInfo { version, os, arch, appDataDir, logsDir }` |
+| `event.rs` | `CoreEvent`: `coreReady { version }`, `coreShuttingDown`, `resyncRequired { missedEvents }`, `projectOpened(ProjectSession)`, `projectPatched(ProjectPatch)`, `projectClosed { projectId }`, `historyChanged(ProjectHistory)` |
+| `project_entities.rs` | `ProjectSnapshot { revision, project: ProjectHeader, sequences, tracks, items, markers, assets }`, `SequenceEntity`, `TrackEntity`, `ItemEntity` / `MarkerEntity` (domain type `#[serde(flatten)]` + parent id), `ProjectPatch { projectId, revision, upserts: EntityUpserts, deletes: EntityDeletes }` |
+| `project_session.rs` | `ProjectSession { path, snapshot, history }`, `HistoryState`, `ProjectHistory`, `RecentProject`, `NewProjectDefaults`, `FormatPresetDimensions`, `CreateProjectRequest` |
+| `error.rs` | `ProtocolError { code, message, details? }` (+ `with_detail(key, value)`), `ErrorCode` (incl. project codes `PROJECT_NOT_FOUND`, `PROJECT_LOCKED`, `SCHEMA_TOO_NEW`, `PROJECT_CORRUPTED`, `PROJECT_ALREADY_EXISTS`, `PROJECT_NOT_OPEN`, `STORAGE_FAILED`, `EDIT_REJECTED`, `NOTHING_TO_UNDO`, `NOTHING_TO_REDO`) |
 
 Wire format (`docs/architecture.md` §6):
 ```json
@@ -25,7 +27,10 @@ Wire format (`docs/architecture.md` §6):
 - Enums are internally tagged: `type` for messages, `kind` (camelCase) for commands, results and events. Struct-variant fields are camelCase (`rename_all_fields`).
 - **Every `Command` variant has a `CommandResult` variant with the same name** (same wire `kind`): the TypeScript client derives result types from it. Put a non-trivial payload in its own struct (`GetCoreInfo(CoreInfo)`).
 - Error codes are stable (`SCREAMING_SNAKE_CASE`): never rename or reuse one. Messages are actionable (read by users and AI agents). `TIMEOUT`, `CONNECTION_LOST`, `CLIENT_CLOSED` are raised by clients, never sent by `se-core`.
-- Integers that can exceed 2^53 must not appear in DTOs: `u64`/`i64` are exported as `number`.
+- Integers that can exceed 2^53 must not appear in DTOs: `u64`/`i64` are exported as `number` (revisions, millisecond dates).
+- Entities sent to clients are whole and normalised (ADR-0017): parents list children ids, children carry their parent id. A new entity kind goes in `ProjectSnapshot`, `EntityUpserts`/`EntityDeletes`, se-app's patch builder and the renderer's mirror.
+- Paths travel as absolute strings. Commands/results/events that carry no `Eq` type (floats in items) derive `PartialEq` only.
+- Adding an error code: add it here, then to `ERROR_CODES` and `fr.json` (`errors.<CODE>`) in the renderer (a type test fails otherwise).
 - Optional fields that may be omitted on the wire use `#[serde(default, skip_serializing_if = "Option::is_none")]` + `#[ts(optional)]`.
 - Never log a `CoreHandshake` token or any session token.
 - After **any** change here: `pnpm codegen`, then commit `packages/protocol/src/generated/` (`pnpm check` fails otherwise).
@@ -41,7 +46,7 @@ Wire format (`docs/architecture.md` §6):
 Adding an event: add the variant to `CoreEvent`, publish it with `EventBus::publish` in se-core, run `pnpm codegen`; clients subscribe with `client.on('<kind>', handler)`.
 
 ## Allowed dependencies
-`se-domain`, `serde`, `serde_json` (for `details`), `ts-rs`. Nothing else; see `docs/architecture.md` §3.
+`se-domain`, `serde`, `serde_json` (for `details`), `ts-rs`. Dev: `se-domain` with `test-support`. Nothing else; see `docs/architecture.md` §3.
 
 ## How to test
 - `cargo test -p se-protocol`

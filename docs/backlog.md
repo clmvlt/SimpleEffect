@@ -33,6 +33,13 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Proprietary RAW support (Blackmagic RAW SDK, RED SDK).
 - Master render path through ffmpeg from originals for 10-bit deliverables.
 
+## Projects
+- Keep the undo history of a project across closing and reopening (stored in `project.db`; ADR-0017).
+- Recover from a corrupt `library.db` (move it aside and start a new one) instead of refusing to start.
+- Non-UTF-8 folder paths (Linux): paths travel as UTF-8 strings in the protocol and `library.db`.
+- Rename the project folder along with the project (today only the document's name changes).
+- Single-instance app (`app.requestSingleInstanceLock`), or several windows each with their project.
+
 ## Platform
 - Light theme.
 - Additional UI languages (English first).
