@@ -27,6 +27,7 @@
 //! - No concrete IO: no `std::fs`, `std::process` or network access. IO lives behind ports.
 //! - Every port gets an in-memory fake in [`test_support`] (feature `test-support`).
 
+mod edit_plan;
 mod error;
 pub mod jobs;
 pub mod media_policy;
@@ -41,11 +42,12 @@ pub mod recovery;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
 
+pub use edit_plan::DEFAULT_IMAGE_DURATION;
 pub use error::AppError;
 pub use jobs::{JobAttempt, JobPriority, JobQueue, JobQueueConfig, JobRequest, JobWork};
 pub use media_service::{AssetFiles, MediaService, MediaServiceDeps};
 pub use project_actor::{ActorDeps, DEFAULT_SAVE_DELAY, ProjectActorHandle, ProjectView};
 pub use project_service::{
-    ProjectObserver, ProjectService, ProjectServiceConfig, ProjectServiceDeps, marker_labels,
-    track_labels,
+    ProjectObserver, ProjectService, ProjectServiceConfig, ProjectServiceDeps, item_labels,
+    marker_labels, track_labels,
 };

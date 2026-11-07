@@ -141,6 +141,29 @@ pub enum AppError {
         /// What is accepted.
         reason: String,
     },
+    /// An item edit that cannot be done as asked (nothing listed, several sequences, a gap that
+    /// is not there any more…).
+    #[error("{reason}")]
+    InvalidEdit {
+        /// What is wrong and what to do instead.
+        reason: String,
+    },
+    /// A ripple edit would cut content of a track it must shift.
+    #[error(
+        "this ripple edit would also cut what track {track_name} holds between {:.3} s and \
+         {:.3} s (tracks holding linked items shift together so they stay in sync): move or trim \
+         that content first, or lock track {track_name} to leave it out of ripple edits",
+        start.to_seconds_f64(),
+        end.to_seconds_f64()
+    )]
+    RippleBlocked {
+        /// Name of the track.
+        track_name: String,
+        /// Start of the content that would be cut.
+        start: Flicks,
+        /// Its end.
+        end: Flicks,
+    },
     /// A bug: an invariant of the application itself was broken.
     #[error("internal error: {0}; please report it")]
     Internal(String),
@@ -171,6 +194,8 @@ impl AppError {
             Self::AssetNotFound { .. } => ErrorCode::AssetNotFound,
             Self::MediaKindMismatch { .. } => ErrorCode::MediaKindMismatch,
             Self::JobNotFound { .. } => ErrorCode::JobNotFound,
+            Self::InvalidEdit { .. } => ErrorCode::EditRejected,
+            Self::RippleBlocked { .. } => ErrorCode::RippleBlocked,
             Self::Internal(_) => ErrorCode::Internal,
         }
     }

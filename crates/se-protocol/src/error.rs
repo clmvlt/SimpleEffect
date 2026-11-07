@@ -108,6 +108,9 @@ pub enum ErrorCode {
     DerivedNotApplicable,
     /// The requested time is outside the media (before 0 or after its end).
     MediaTimeOutOfRange,
+    /// A ripple edit would cut content of a track it must shift (to keep linked items in sync):
+    /// lock that track to leave it out, or move that content first.
+    RippleBlocked,
 }
 
 #[cfg(test)]

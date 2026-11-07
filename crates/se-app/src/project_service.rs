@@ -1,5 +1,5 @@
 //! [`ProjectService`]: the project use cases behind the protocol commands (create, open, close,
-//! recent list, rename, duplicate, trash, sequences, tracks, markers, undo/redo).
+//! recent list, rename, duplicate, trash, sequences, tracks, markers, item edits, undo/redo).
 //!
 //! It keeps the registry of open projects (one [`ProjectActorHandle`] each) and never mutates a
 //! document itself: every change is a transaction sent to the project's actor. Operations on a
@@ -7,13 +7,16 @@
 //! events are discarded.
 
 mod editing;
+mod items;
 mod library;
 mod lifecycle;
 mod loading;
 mod markers;
 mod observer;
 mod tracks;
+mod trims;
 
+pub use items::labels as item_labels;
 pub use markers::labels as marker_labels;
 pub use observer::ProjectObserver;
 pub use tracks::labels as track_labels;
@@ -25,6 +28,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     AppError,
+    new_ids::NewIds,
     ports::{AppLibraryRepository, Clock, EventSink, IdGenerator, ProjectRepository},
     project_actor::ProjectActorHandle,
 };
@@ -85,6 +89,11 @@ impl ProjectService {
             .find(|handle| handle.project_id() == project_id)
             .cloned()
             .ok_or(AppError::ProjectNotOpen { project_id })
+    }
+
+    /// Typed ids from the service's generator.
+    fn new_ids(&self) -> NewIds<'_> {
+        NewIds(self.deps.ids.as_ref())
     }
 }
 
