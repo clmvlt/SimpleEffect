@@ -6,11 +6,20 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./animation": "./src/animation/index.ts",
     "./capabilities": "./src/capabilities/index.ts",
+    "./composite": "./src/composite/index.ts",
+    "./decode": "./src/decode/index.ts",
+    "./evaluate": "./src/evaluate/index.ts",
+    "./preview": "./src/preview/index.ts",
     "./sources": "./src/sources/index.ts"
   },
   "scripts": {
     "test": "vitest run"
+  },
+  "dependencies": {
+    "mediabunny": "1.65.2",
+    "pixi.js": "8.22.0"
   },
   "devDependencies": {
     "@se/protocol": "workspace:*"
