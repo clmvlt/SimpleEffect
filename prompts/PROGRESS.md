@@ -64,6 +64,8 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 - `RunningCore::start_in(dir)` restarts a test core on the same data folder; `call()` returns a response plus the events pushed before it (events usually precede the response).
 - The built-app recipe (CDP on port 9223, reload with `ignoreCache`) is in `apps/desktop/CLAUDE.md`. Prettier formats JSON fixtures under `crates/` too.
 - The previous session had left the prompt 06 merge unpushed on local `dev` (6 commits); it was pushed with this merge.
+- Windows CI caught two things macOS/Linux cannot (fixed on `dev` after the merge, `9bc27ae` and `1c612e6`): compare paths as `Path`s in tests (`Path::join` writes `\`), and code under `#[cfg(not(unix))]` is only linted on Windows (clippy pedantic `unnecessary_wraps` on a stub returning `Ok(())`).
+- Pushing from an agent shell needs the GitHub token in the macOS keychain (`osxkeychain`), reachable only with the sandbox disabled; the user typed it once in their own terminal.
 
 ## 2026-11-07 — Prompt 06: Domaine : opérations, transactions, historique, changesets — Done
 
