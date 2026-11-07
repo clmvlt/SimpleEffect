@@ -12,7 +12,7 @@ use std::{
 
 use async_trait::async_trait;
 use se_app::{
-    JobPriority, JobQueue, JobQueueConfig, JobRequest, JobWork,
+    JobAttempt, JobPriority, JobQueue, JobQueueConfig, JobRequest, JobWork,
     ports::ProgressSink,
     test_support::{RecordingEventSink, SequentialIds},
 };
@@ -40,7 +40,7 @@ impl Drop for RunningGuard {
 
 #[async_trait]
 impl JobWork for ScriptedWork {
-    async fn run(&self, progress: &dyn ProgressSink) -> Result<(), String> {
+    async fn run(&self, progress: &dyn ProgressSink, _attempt: JobAttempt) -> Result<(), String> {
         self.log.lock().unwrap().push(self.name);
         let guard = RunningGuard(Arc::clone(&self.dropped_while_running));
         progress.report(0.001);

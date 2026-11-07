@@ -4,12 +4,15 @@
 //! takes its lock and yields a [`ProjectStore`], the only way to read and write that project's
 //! snapshot and journal; the lock lasts until [`ProjectStore::close`] (or until the process dies).
 
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use async_trait::async_trait;
 use se_domain::{Project, Transaction};
 
-use super::StorageError;
+use super::{AnalysisStore, StorageError};
 
 /// Project folders on disk (implemented by se-store).
 #[async_trait]
@@ -82,6 +85,9 @@ pub trait ProjectStore: Send + Sync {
     /// # Errors
     /// IO errors; the previous snapshot and the journal are then left intact.
     async fn save_snapshot(&self, project: &Project) -> Result<(), StorageError>;
+
+    /// The analyses of this project's assets (same database, shareable outside the actor).
+    fn analyses(&self) -> Arc<dyn AnalysisStore>;
 
     /// Releases the lock. The store must not be used afterwards.
     ///

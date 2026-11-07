@@ -1,10 +1,11 @@
-//! Media commands: import, relink, remove, jobs and decodability reports.
+//! Media commands: import, relink, remove, jobs, decodability reports and derived copies.
 
 use std::path::PathBuf;
 
 use se_domain::{AssetId, JobId, ProjectId};
 use se_protocol::{
-    CommandResult, DecodabilityReport, ImportMediaRequest, ProtocolError, RelinkAssetRequest,
+    CommandResult, DecodabilityReport, DecoderCapabilities, GenerateDerivedRequest,
+    ImportMediaRequest, ProtocolError, RelinkAssetRequest,
 };
 
 use super::{HandlerContext, absolute_path};
@@ -71,4 +72,25 @@ pub async fn report_decodability(
 ) -> Result<CommandResult, ProtocolError> {
     context.media.report_decodability(report).await?;
     Ok(CommandResult::ReportDecodability)
+}
+
+/// `reportDecoderCapabilities`.
+pub async fn report_decoder_capabilities(
+    context: &HandlerContext,
+    capabilities: DecoderCapabilities,
+) -> Result<CommandResult, ProtocolError> {
+    context
+        .media
+        .report_decoder_capabilities(capabilities)
+        .await?;
+    Ok(CommandResult::ReportDecoderCapabilities)
+}
+
+/// `generateDerivedMedia`.
+pub async fn generate_derived_media(
+    context: &HandlerContext,
+    request: &GenerateDerivedRequest,
+) -> Result<CommandResult, ProtocolError> {
+    context.media.generate_derived(request).await?;
+    Ok(CommandResult::GenerateDerivedMedia)
 }

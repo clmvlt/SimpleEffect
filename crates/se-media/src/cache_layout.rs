@@ -25,22 +25,32 @@ pub fn peaks_file(samples_per_peak: u32) -> String {
     format!("peaks-{samples_per_peak}.sepk")
 }
 
-/// Files whose presence means a job of `kind` completed.
+/// Files whose presence means a cache job of `kind` completed; `None` for jobs whose outputs are
+/// not cache files (mezzanines and proxies are tracked by the document, analyses by the project
+/// database).
 #[must_use]
-pub fn completion_files(kind: JobKind) -> Vec<String> {
+pub fn completion_files(kind: JobKind) -> Option<Vec<String>> {
     match kind {
-        JobKind::Thumbnails => vec![
+        JobKind::Thumbnails => Some(vec![
             THUMBNAIL_SHEET.to_owned(),
             THUMBNAIL_POSTER.to_owned(),
             THUMBNAIL_INFO.to_owned(),
-        ],
-        JobKind::WaveformPeaks => PEAK_LEVELS.iter().map(|level| peaks_file(*level)).collect(),
+        ]),
+        JobKind::WaveformPeaks => {
+            Some(PEAK_LEVELS.iter().map(|level| peaks_file(*level)).collect())
+        }
+        JobKind::Mezzanine | JobKind::Proxy | JobKind::AudioAnalysis | JobKind::SceneDetection => {
+            None
+        }
     }
 }
 
-/// Whether every output of a `kind` job exists in `dir`.
+/// Whether every output of a cache job of `kind` exists in `dir` (always `false` for other kinds).
 pub async fn outputs_ready(kind: JobKind, dir: &Path) -> bool {
-    for file in completion_files(kind) {
+    let Some(files) = completion_files(kind) else {
+        return false;
+    };
+    for file in files {
         if !tokio::fs::try_exists(dir.join(file)).await.unwrap_or(false) {
             return false;
         }
@@ -80,6 +90,7 @@ mod tests {
         }
         assert!(outputs_ready(JobKind::WaveformPeaks, dir.path()).await);
         assert!(!outputs_ready(JobKind::Thumbnails, dir.path()).await);
+        assert!(!outputs_ready(JobKind::Mezzanine, dir.path()).await);
         assert!(!dir.path().join("peaks-256.sepk.part").exists());
     }
 }

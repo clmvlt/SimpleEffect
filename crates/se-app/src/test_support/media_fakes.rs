@@ -1,29 +1,29 @@
-//! Fakes of the media ports: files and probes from in-memory tables, and a job runner whose runs
-//! are recorded and can be held, failed or completed on demand.
+//! Fakes of the file ports: media files and probes from in-memory tables, plus the files jobs
+//! write (mezzanines, proxies, frames).
 
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
-    sync::{Arc, Mutex},
+    sync::Mutex,
 };
 
 use async_trait::async_trait;
 use se_domain::{AssetKind, AudioStreamInfo, ContentFingerprint, MediaInfo, VideoStreamInfo};
-use se_protocol::JobKind;
-use tokio::sync::Notify;
 
 use super::lock;
-use crate::ports::{
-    MediaError, MediaFiles, MediaJobRunner, MediaJobSpec, MediaProber, ProbedMedia, ProgressSink,
-};
+use crate::ports::{MediaError, MediaFiles, MediaProber, ProbedMedia};
 
 /// A fake file: its fingerprint and what probing it gives.
 type FakeFile = (ContentFingerprint, Result<ProbedMedia, MediaError>);
 
-/// Files that exist, with their fingerprints and probe results.
+/// Size every fake file reports, in bytes.
+pub const FAKE_FILE_BYTES: u64 = 1000;
+
+/// Files that exist, with their fingerprints and probe results, and files written by jobs.
 #[derive(Debug, Default)]
 pub struct FakeMedia {
     files: Mutex<BTreeMap<PathBuf, FakeFile>>,
+    written: Mutex<BTreeSet<PathBuf>>,
 }
 
 impl FakeMedia {
@@ -43,9 +43,20 @@ impl FakeMedia {
         lock(&self.files).insert(path, (fingerprint(content), Err(error)));
     }
 
+    /// Adds a file written by a job (not media to import).
+    pub fn add_written(&self, path: impl Into<PathBuf>) {
+        lock(&self.written).insert(path.into());
+    }
+
+    /// Files written by jobs, in path order.
+    pub fn written(&self) -> Vec<PathBuf> {
+        lock(&self.written).iter().cloned().collect()
+    }
+
     /// Removes a file (renamed or deleted by the user).
     pub fn remove(&self, path: &Path) {
         lock(&self.files).remove(path);
+        lock(&self.written).remove(path);
     }
 
     fn entry(&self, path: &Path) -> Option<FakeFile> {
@@ -63,7 +74,7 @@ pub fn fingerprint(content: u64) -> ContentFingerprint {
 #[async_trait]
 impl MediaFiles for FakeMedia {
     async fn is_file(&self, path: &Path) -> bool {
-        self.entry(path).is_some()
+        self.entry(path).is_some() || lock(&self.written).contains(path)
     }
 
     async fn fingerprint(&self, path: &Path) -> Result<ContentFingerprint, MediaError> {
@@ -72,6 +83,24 @@ impl MediaFiles for FakeMedia {
             .ok_or_else(|| MediaError::NotFound {
                 path: path.to_path_buf(),
             })
+    }
+
+    async fn directory_size(&self, dir: &Path) -> u64 {
+        let files = lock(&self.files)
+            .keys()
+            .filter(|path| path.starts_with(dir))
+            .count();
+        let written = lock(&self.written)
+            .iter()
+            .filter(|path| path.starts_with(dir))
+            .count();
+        u64::try_from(files + written).unwrap_or(u64::MAX) * FAKE_FILE_BYTES
+    }
+
+    async fn remove_directory(&self, dir: &Path) -> Result<(), MediaError> {
+        lock(&self.files).retain(|path, _| !path.starts_with(dir));
+        lock(&self.written).retain(|path| !path.starts_with(dir));
+        Ok(())
     }
 }
 
@@ -89,7 +118,7 @@ impl MediaProber for FakeMedia {
     }
 }
 
-/// A probed video with stereo sound (10 s, 1080p).
+/// A probed video with stereo sound (10 s, 1080p H.264 + AAC).
 #[must_use]
 pub fn probed_video() -> ProbedMedia {
     ProbedMedia {
@@ -110,9 +139,27 @@ pub fn probed_video() -> ProbedMedia {
                 frame_rate: Some(se_domain::FrameRate::FPS_30),
                 rotation: 0,
             }),
-            audio_streams: vec![stereo()],
+            audio_streams: vec![stereo("aac", Some("LC"))],
         },
     }
+}
+
+/// A probed ProRes 422 HQ video (10 bits 4:2:2, 1080p) with PCM sound.
+#[must_use]
+pub fn probed_prores() -> ProbedMedia {
+    let mut probed = probed_video();
+    "mov,mp4,m4a,3gp,3g2,mj2".clone_into(&mut probed.info.container);
+    if let Some(video) = probed.info.video_stream.as_mut() {
+        "prores".clone_into(&mut video.codec);
+        video.profile = Some("HQ".to_owned());
+        video.level = None;
+        video.codec_tag = Some("apch".to_owned());
+        video.pixel_format = Some("yuv422p10le".to_owned());
+        video.bit_depth = Some(10);
+        video.chroma_subsampling = Some("4:2:2".to_owned());
+    }
+    probed.info.audio_streams = vec![stereo("pcm_s16le", None)];
+    probed
 }
 
 /// A probed sound file (10 s, stereo).
@@ -125,89 +172,11 @@ pub fn probed_audio() -> ProbedMedia {
     probed
 }
 
-fn stereo() -> AudioStreamInfo {
+fn stereo(codec: &str, profile: Option<&str>) -> AudioStreamInfo {
     AudioStreamInfo {
-        codec: "aac".to_owned(),
-        profile: Some("LC".to_owned()),
+        codec: codec.to_owned(),
+        profile: profile.map(str::to_owned),
         channels: 2,
         sample_rate: 48_000,
-    }
-}
-
-/// Records runs; by default every run succeeds at once and writes its outputs (see
-/// [`FakeJobRunner::outputs_ready`]). [`FakeJobRunner::hold`] makes runs wait for
-/// [`FakeJobRunner::release`]; [`FakeJobRunner::fail_next`] makes the next runs fail.
-#[derive(Debug, Default)]
-pub struct FakeJobRunner {
-    state: Mutex<RunnerState>,
-    released: Arc<Notify>,
-}
-
-#[derive(Debug, Default)]
-struct RunnerState {
-    runs: Vec<MediaJobSpec>,
-    outputs: BTreeSet<(JobKind, PathBuf)>,
-    held: bool,
-    failures_left: usize,
-}
-
-impl FakeJobRunner {
-    /// Specs of every run started so far.
-    pub fn runs(&self) -> Vec<MediaJobSpec> {
-        lock(&self.state).runs.clone()
-    }
-
-    /// Makes later runs wait for [`FakeJobRunner::release`].
-    pub fn hold(&self) {
-        lock(&self.state).held = true;
-    }
-
-    /// Lets held runs (and later ones) finish.
-    pub fn release(&self) {
-        lock(&self.state).held = false;
-        self.released.notify_waiters();
-    }
-
-    /// Makes the next `count` runs fail.
-    pub fn fail_next(&self, count: usize) {
-        lock(&self.state).failures_left = count;
-    }
-
-    /// Marks the outputs of a `kind` job in `dir` as cached.
-    pub fn add_output(&self, kind: JobKind, dir: &Path) {
-        lock(&self.state).outputs.insert((kind, dir.to_path_buf()));
-    }
-}
-
-#[async_trait]
-impl MediaJobRunner for FakeJobRunner {
-    async fn outputs_ready(&self, kind: JobKind, output_dir: &Path) -> bool {
-        lock(&self.state)
-            .outputs
-            .contains(&(kind, output_dir.to_path_buf()))
-    }
-
-    async fn run(
-        &self,
-        spec: &MediaJobSpec,
-        progress: &dyn ProgressSink,
-    ) -> Result<(), MediaError> {
-        let released = self.released.notified();
-        let held = {
-            let mut state = lock(&self.state);
-            state.runs.push(spec.clone());
-            state.held
-        };
-        progress.report(0.5);
-        if held {
-            released.await;
-        }
-        let mut state = lock(&self.state);
-        if state.failures_left > 0 {
-            state.failures_left -= 1;
-            return Err(MediaError::Failed("ffmpeg exited with status 1".to_owned()));
-        }
-        state.outputs.insert((spec.kind, spec.output_dir.clone()));
-        Ok(())
     }
 }

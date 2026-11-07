@@ -7,11 +7,14 @@ import {
 } from '@se/ui';
 import { useTranslation } from 'react-i18next';
 
+import { canGenerateProxy } from '../services/derived-display';
+
 /** What the asset menus do. */
 export interface AssetMenuHandlers {
   readonly onDetails: (asset: Asset) => void;
   readonly onRelink: (asset: Asset) => void;
   readonly onReveal: (asset: Asset) => void;
+  readonly onGenerateProxy: (asset: Asset) => void;
   readonly onRemove: (asset: Asset) => void;
 }
 
@@ -51,6 +54,16 @@ export function AssetMenuItems({ asset, menu, ...handlers }: AssetMenuItemsProps
       >
         {t('editor.media.menu.reveal')}
       </Item>
+      {asset.kind === 'video' && (
+        <Item
+          disabled={!canGenerateProxy(asset)}
+          onSelect={() => {
+            handlers.onGenerateProxy(asset);
+          }}
+        >
+          {t('editor.media.menu.generateProxy')}
+        </Item>
+      )}
       <Separator />
       <Item
         variant="danger"

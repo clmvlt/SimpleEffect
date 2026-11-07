@@ -56,6 +56,7 @@ export function MediaBinPanel() {
     },
     onRelink: (asset) => void actions.relink(asset),
     onReveal: actions.reveal,
+    onGenerateProxy: (asset) => void actions.generateDerived(asset, 'proxy'),
     onRemove: (asset) => void actions.remove(asset),
   };
   const importLabel = t('editor.media.toolbar.import');
@@ -124,6 +125,7 @@ export function MediaBinPanel() {
               updateMediaBin({ selectedAssetId: null });
             }}
             onRelink={handlers.onRelink}
+            onRetryDerived={(asset, derived) => void actions.generateDerived(asset, derived)}
           />
         )}
       </MediaDropZone>

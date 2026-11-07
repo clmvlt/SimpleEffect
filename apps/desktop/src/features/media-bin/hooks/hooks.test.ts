@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { clearJobs, jobsStore } from '../store/jobs-store';
 import { testAsset } from '../testing/assets';
-import { reportDecodabilityOf } from './decodability-reporter';
+import { reportCapabilitiesOf, reportDecodabilityOf } from './decodability-reporter';
 import { connectJobsSync, type JobsSyncClient } from './jobs-sync';
 
 const job = (id: string, state: JobSnapshot['state']): JobSnapshot => ({
@@ -52,6 +52,15 @@ describe('connectJobsSync', () => {
     expect(Object.keys(jobsStore.getState().jobs)).toEqual(['j1']);
     stop();
     expect(handlers.size).toBe(0);
+  });
+});
+
+describe('reportCapabilitiesOf', () => {
+  it('reports what this machine decodes among mezzanine and proxy codecs', async () => {
+    const send = vi.fn(() => Promise.resolve({ kind: 'reportDecoderCapabilities' }));
+    const capabilities = { hevcMain10: true, h264High: true, aac: true, flac: false };
+    await reportCapabilitiesOf({ send } as never, () => Promise.resolve(capabilities));
+    expect(send).toHaveBeenCalledWith({ kind: 'reportDecoderCapabilities', ...capabilities });
   });
 });
 

@@ -1,5 +1,6 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
+import type { AssetAnalysis } from "./AssetAnalysis";
 import type { AssetId } from "./AssetId";
 import type { AssetKind } from "./AssetKind";
 import type { ContentFingerprint } from "./ContentFingerprint";
@@ -41,6 +42,11 @@ fingerprint: ContentFingerprint | null,
  * Mezzanine and proxy copies generated for this asset.
  */
 derived: DerivedMedia, 
+/**
+ * Summaries of the analyses of its current content (full results: project database).
+ * Empty when absent, so journal entries written before schema version 3 still replay.
+ */
+analysis: AssetAnalysis, 
 /**
  * Whether the renderer can decode each stream of the original with WebCodecs.
  */

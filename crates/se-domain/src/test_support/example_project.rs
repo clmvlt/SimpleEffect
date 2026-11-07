@@ -9,13 +9,14 @@ use std::collections::BTreeMap;
 
 use super::{item, millis, range_ms, track};
 use crate::{
-    Animatable, Asset, AssetKind, AudioStreamInfo, BrandKit, CURRENT_SCHEMA_VERSION, CaptionItem,
-    Color, ContentFingerprint, Decodability, DerivedFile, DerivedMedia, DerivedStatus,
-    DesignPixels, Easing, EasingPreset, Format, FormatPreset, FrameRate, ImageItem, Item, ItemKind,
-    Keyframe, LinkGroupId, Marker, MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate,
-    Origin, Project, ProjectId, ProjectSettings, Sequence, SequenceId, ShapeGeometry, ShapeItem,
-    StreamDecodability, TaskId, TemplateItem, TemplateParamValue, TextItem, TextStyle, Track,
-    TrackKind, Transform2D, Vec2, VideoStreamInfo,
+    Animatable, Asset, AssetAnalysis, AssetKind, AudioStreamInfo, AudioSummary, BrandKit,
+    CURRENT_SCHEMA_VERSION, CaptionItem, Color, ContentFingerprint, Decodability, DerivedFile,
+    DerivedMedia, DerivedStatus, DesignPixels, Easing, EasingPreset, Format, FormatPreset,
+    FrameRate, ImageItem, Item, ItemKind, Keyframe, LinkGroupId, Marker, MarkerColor, MarkerId,
+    MediaClip, MediaInfo, MotionTemplate, Origin, Project, ProjectId, ProjectSettings,
+    SceneSummary, Sequence, SequenceId, ShapeGeometry, ShapeItem, StreamDecodability, TaskId,
+    TemplateItem, TemplateParamValue, TextItem, TextStyle, Track, TrackKind, Transform2D, Vec2,
+    VideoStreamInfo,
 };
 
 /// Ids of [`example_project`] that tests refer to: its three assets and its template.
@@ -102,6 +103,7 @@ fn example_assets() -> Vec<Asset> {
         media_info: Some(media_info),
         fingerprint: Some(fingerprint(name)),
         derived: DerivedMedia::default(),
+        analysis: AssetAnalysis::default(),
         missing: false,
     };
     let stereo = |codec: &str| AudioStreamInfo {
@@ -122,9 +124,22 @@ fn example_assets() -> Vec<Asset> {
         },
     );
     video.derived.proxy = Some(DerivedFile {
-        relative_path: format!("cache/proxies/{}.mp4", example_ids::VIDEO_ASSET),
+        relative_path: format!(
+            "cache/media/{}/proxy-540.mp4",
+            fingerprint("interview.mp4").cache_key()
+        ),
         status: DerivedStatus::Ready,
     });
+    video.analysis = AssetAnalysis {
+        audio: Some(AudioSummary {
+            integrated_lufs: Some(-16.5),
+            loudness_range_lu: Some(5.5),
+            true_peak_dbtp: Some(-1.0),
+            silence_count: 3,
+            silence_duration: millis(2_250),
+        }),
+        scenes: Some(SceneSummary { change_count: 4 }),
+    };
     let music = asset(
         example_ids::AUDIO_ASSET,
         "music.wav",

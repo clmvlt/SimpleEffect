@@ -20,6 +20,7 @@ mod event;
 mod handshake;
 mod jobs;
 mod media;
+mod media_settings;
 mod project_entities;
 mod project_session;
 
@@ -36,6 +37,10 @@ pub use jobs::{JobKind, JobProgress, JobSnapshot, JobState};
 pub use media::{
     DecodabilityReport, DuplicateMedia, ImportFailure, ImportMediaRequest, ImportReport,
     RelinkAssetRequest, RelinkOutcome, ThumbnailSheet,
+};
+pub use media_settings::{
+    DecoderCapabilities, DerivedKind, GenerateDerivedRequest, MediaSettings, MediaToolsStatus,
+    ProjectCacheInfo, ProxyResolution,
 };
 pub use project_entities::{
     EntityDeletes, EntityUpserts, ItemEntity, MarkerEntity, ProjectHeader, ProjectPatch,

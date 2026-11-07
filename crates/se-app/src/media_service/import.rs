@@ -7,13 +7,13 @@ use std::{
 };
 
 use se_domain::{
-    Actor, AddAsset, Asset, AssetId, ContentFingerprint, Decodability, DerivedMedia, Project,
-    ProjectId, Transaction,
+    Actor, AddAsset, Asset, AssetAnalysis, AssetId, ContentFingerprint, Decodability, DerivedMedia,
+    Project, ProjectId, Transaction,
 };
 use se_protocol::{DuplicateMedia, ImportFailure, ImportReport};
 use tokio::task::JoinSet;
 
-use super::{MediaService, labels, media_paths::relative_hint};
+use super::{MediaService, labels, media_paths::relative_hint, scheduling::Trigger};
 use crate::{
     AppError,
     error::media_code,
@@ -42,8 +42,8 @@ struct Sorted {
 impl MediaService {
     /// Imports `paths` into an open project (absolute paths, in bin order). Contents the project
     /// already has (or that appear twice) are reported as duplicates; unreadable files as
-    /// failures. The new assets form one undoable transaction, then their thumbnails and peaks
-    /// are queued.
+    /// failures. The new assets form one undoable transaction, then their thumbnails, peaks,
+    /// analyses and (when needed) proxies are queued.
     ///
     /// # Errors
     /// [`AppError::ProjectNotOpen`], or the commit error (nothing is imported then).
@@ -101,9 +101,11 @@ impl MediaService {
                 .collect(),
         };
         handle.apply(transaction).await?;
+        let project = handle.view().await?.project;
         for asset in &assets {
             report.imported.push(asset.id);
-            self.schedule_jobs(handle.path(), project_id, asset).await;
+            self.schedule_asset(&handle, &project, asset, Trigger::Change)
+                .await;
         }
         Ok(report)
     }
@@ -209,6 +211,7 @@ fn new_asset(id: AssetId, candidate: &Candidate, project_dir: &Path, probed: Pro
         media_info: Some(probed.info),
         fingerprint: Some(candidate.fingerprint.clone()),
         derived: DerivedMedia::default(),
+        analysis: AssetAnalysis::default(),
         missing: false,
     }
 }

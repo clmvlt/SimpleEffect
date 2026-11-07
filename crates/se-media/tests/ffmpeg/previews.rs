@@ -1,64 +1,17 @@
-//! The adapter against real ffmpeg and ffprobe: media are generated with `testsrc2` and `sine`.
-//! Every test is skipped (with a message) when the binaries are not installed
-//! (`pnpm fetch-binaries`).
+//! Thumbnails and waveform peaks (prompt 08), and cancellation by dropping a job.
 
-#![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
+use std::time::Duration;
 
-use std::{
-    path::{Path, PathBuf},
-    sync::Mutex,
-    time::Duration,
-};
-
-use se_app::ports::{MediaJobRunner, MediaJobSpec, MediaProber, ProgressSink};
+use se_app::ports::{MediaJobRunner, MediaJobSpec, MediaProber, MediaTask};
 use se_domain::AssetKind;
 use se_media::{
-    FfmpegJobRunner, FfprobeProber, Tool, ToolLocator,
+    FfprobeProber,
     cache_layout::{THUMBNAIL_INFO, THUMBNAIL_POSTER, THUMBNAIL_SHEET, peaks_file},
     peaks::{PEAK_LEVELS, Peaks},
-    process::Sidecar,
 };
 use se_protocol::{JobKind, ThumbnailSheet};
 
-/// The repository's tools (`resources/bin/<platform>/`), or `None` with a message.
-fn tools() -> Option<ToolLocator> {
-    let locator = ToolLocator {
-        override_dir: None,
-        exe_dir: Some(PathBuf::from(env!("CARGO_MANIFEST_DIR"))),
-        search_path: false,
-    };
-    if locator.locate(Tool::Ffmpeg).is_err() || locator.locate(Tool::Ffprobe).is_err() {
-        eprintln!("skipped: ffmpeg/ffprobe not installed (run `pnpm fetch-binaries`)");
-        return None;
-    }
-    Some(locator)
-}
-
-/// Generates a media file with ffmpeg's lavfi sources.
-async fn generate(tools: &ToolLocator, dir: &Path, name: &str, args: &[&str]) -> PathBuf {
-    let output = dir.join(name);
-    let ffmpeg = tools.locate(Tool::Ffmpeg).unwrap();
-    let mut all: Vec<String> = ["-hide_banner", "-v", "error", "-y"]
-        .map(str::to_owned)
-        .to_vec();
-    all.extend(args.iter().map(|arg| (*arg).to_owned()));
-    all.push(output.to_string_lossy().into_owned());
-    Sidecar::spawn(&ffmpeg, &all, None)
-        .unwrap()
-        .finish()
-        .await
-        .unwrap();
-    output
-}
-
-#[derive(Default)]
-struct Progress(Mutex<Vec<f64>>);
-
-impl ProgressSink for Progress {
-    fn report(&self, fraction: f64) {
-        self.0.lock().unwrap().push(fraction);
-    }
-}
+use crate::support::{Progress, generate, runner, tools};
 
 #[tokio::test]
 async fn a_video_gets_a_thumbnail_sheet_a_poster_and_peaks() {
@@ -94,11 +47,12 @@ async fn a_video_gets_a_thumbnail_sheet_a_poster_and_peaks() {
         .await
         .unwrap();
     assert_eq!(probed.kind, AssetKind::Video);
-    let runner = FfmpegJobRunner::new(tools);
+    let runner = runner(&tools);
     let cache = dir.path().join("cache");
-    for kind in [JobKind::Thumbnails, JobKind::WaveformPeaks] {
+    for task in [MediaTask::Thumbnails, MediaTask::WaveformPeaks] {
+        let kind = task.kind();
         let spec = MediaJobSpec {
-            kind,
+            task,
             input: input.clone(),
             output_dir: cache.clone(),
             asset_kind: probed.kind,
@@ -107,7 +61,7 @@ async fn a_video_gets_a_thumbnail_sheet_a_poster_and_peaks() {
         let progress = Progress::default();
         runner.run(&spec, &progress).await.unwrap();
         assert!(runner.outputs_ready(kind, &cache).await, "{kind:?} outputs");
-        assert_eq!(progress.0.lock().unwrap().last(), Some(&1.0));
+        assert_eq!(progress.last(), Some(1.0));
     }
     let sheet: ThumbnailSheet =
         serde_json::from_slice(&std::fs::read(cache.join(THUMBNAIL_INFO)).unwrap()).unwrap();
@@ -155,13 +109,13 @@ async fn images_get_one_tile_and_files_that_are_not_media_are_refused() {
     let probed = ffprobe.probe(&image).await.unwrap();
     assert_eq!(probed.kind, AssetKind::Image);
     let spec = MediaJobSpec {
-        kind: JobKind::Thumbnails,
+        task: MediaTask::Thumbnails,
         input: image,
         output_dir: dir.path().join("cache"),
         asset_kind: probed.kind,
         media_info: probed.info,
     };
-    FfmpegJobRunner::new(tools)
+    runner(&tools)
         .run(&spec, &Progress::default())
         .await
         .unwrap();
@@ -207,13 +161,13 @@ async fn dropping_a_job_stops_ffmpeg_and_leaves_nothing_complete() {
         .await
         .unwrap();
     let spec = MediaJobSpec {
-        kind: JobKind::Thumbnails,
+        task: MediaTask::Thumbnails,
         input,
         output_dir: dir.path().join("cache"),
         asset_kind: probed.kind,
         media_info: probed.info,
     };
-    let runner = FfmpegJobRunner::new(tools);
+    let runner = runner(&tools);
     let progress = Progress::default();
     let outcome =
         tokio::time::timeout(Duration::from_millis(300), runner.run(&spec, &progress)).await;

@@ -28,6 +28,8 @@ export const ERROR_CODES = [
   'MEDIA_KIND_MISMATCH',
   'MEDIA_TOOLS_MISSING',
   'JOB_NOT_FOUND',
+  'DERIVED_NOT_APPLICABLE',
+  'MEDIA_TIME_OUT_OF_RANGE',
 ] as const satisfies readonly ErrorCode[];
 
 /** `true` only when {@link ERROR_CODES} lists every `ErrorCode`. */

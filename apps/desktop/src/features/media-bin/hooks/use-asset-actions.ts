@@ -1,4 +1,4 @@
-import type { Asset } from '@se/protocol';
+import type { Asset, DerivedKind } from '@se/protocol';
 import { toast } from '@se/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useCoreClient } from '../../../shared/core';
 import { useDesktopBridge } from '../../../shared/desktop';
 import { errorMessageKey } from '../../../shared/errors';
-import { relinkAsset, removeAsset } from '../api';
+import { generateDerivedMedia, relinkAsset, removeAsset } from '../api';
 import { assetName } from '../services/asset-list';
 import { MEDIA_EXTENSIONS } from '../services/media-extensions';
 
@@ -16,7 +16,10 @@ export interface PendingRelink {
   readonly path: string;
 }
 
-/** What can be done with an asset: relink (with confirmation for other content), remove, reveal. */
+/**
+ * What can be done with an asset: relink (with confirmation for other content), remove, reveal,
+ * generate a proxy or retry a failed mezzanine or proxy.
+ */
 export function useAssetActions(projectId: string | null) {
   const client = useCoreClient();
   const bridge = useDesktopBridge();
@@ -73,6 +76,15 @@ export function useAssetActions(projectId: string | null) {
     },
     reveal: (asset: Asset): void => {
       void bridge.showInFolder(asset.originalPath).catch(fail);
+    },
+    generateDerived: async (asset: Asset, derived: DerivedKind): Promise<void> => {
+      if (projectId === null) return;
+      try {
+        await generateDerivedMedia(client, { projectId, assetId: asset.id, derived });
+        toast.success(t(`editor.media.toasts.${derived}Queued`, { name: assetName(asset) }));
+      } catch (error) {
+        fail(error);
+      }
     },
   };
 }

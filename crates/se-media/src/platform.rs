@@ -1,7 +1,22 @@
 //! Everything that differs between operating systems (golden rule 10): binary folder names,
-//! executable names and how a sidecar process is isolated so its whole tree can be stopped.
+//! executable names, how a sidecar process is isolated so its whole tree can be stopped, and
+//! which hardware encoders exist.
 
 use process_wrap::tokio::CommandWrap;
+
+use crate::encoders::HardwareEncoder;
+
+/// Hardware encoder families tried on this OS, in order of preference.
+pub const HARDWARE_ENCODER_CANDIDATES: &[HardwareEncoder] = if cfg!(target_os = "macos") {
+    &[HardwareEncoder::VideoToolbox]
+} else if cfg!(windows) {
+    &[HardwareEncoder::Nvenc]
+} else {
+    &[HardwareEncoder::Nvenc, HardwareEncoder::Vaapi]
+};
+
+/// The VA-API render device (Linux; the first GPU).
+pub const VAAPI_DEVICE: &str = "/dev/dri/renderD128";
 
 /// Folder of this platform's binaries under `resources/bin/` (`docs/architecture.md` §2).
 pub const PLATFORM_DIR: &str = if cfg!(all(windows, target_arch = "x86_64")) {

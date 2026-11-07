@@ -3,7 +3,10 @@
 import type { CoreInfo } from "./CoreInfo";
 import type { ImportReport } from "./ImportReport";
 import type { JobSnapshot } from "./JobSnapshot";
+import type { MediaSettings } from "./MediaSettings";
+import type { MediaToolsStatus } from "./MediaToolsStatus";
 import type { NewProjectDefaults } from "./NewProjectDefaults";
+import type { ProjectCacheInfo } from "./ProjectCacheInfo";
 import type { ProjectSession } from "./ProjectSession";
 import type { RecentProject } from "./RecentProject";
 import type { RelinkOutcome } from "./RelinkOutcome";
@@ -28,4 +31,24 @@ outcome: RelinkOutcome, } | { "kind": "removeAsset" } | { "kind": "listJobs",
 /**
  * Oldest first.
  */
-jobs: Array<JobSnapshot>, } | { "kind": "cancelJob" } | { "kind": "reportDecodability" };
+jobs: Array<JobSnapshot>, } | { "kind": "cancelJob" } | { "kind": "reportDecodability" } | { "kind": "reportDecoderCapabilities" } | { "kind": "generateDerivedMedia" } | { "kind": "getMediaSettings", 
+/**
+ * The current settings.
+ */
+settings: MediaSettings, } | { "kind": "updateMediaSettings", 
+/**
+ * The settings as saved.
+ */
+settings: MediaSettings, } | { "kind": "getMediaToolsStatus", 
+/**
+ * Tools found and hardware encoders.
+ */
+status: MediaToolsStatus, } | { "kind": "getProjectCache", 
+/**
+ * The cache folder and its size.
+ */
+cache: ProjectCacheInfo, } | { "kind": "clearProjectCache", 
+/**
+ * The cache folder and what is left in it (files in use cannot be deleted).
+ */
+cache: ProjectCacheInfo, };

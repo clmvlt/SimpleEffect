@@ -4,7 +4,10 @@ use se_domain::{AssetId, Format, JobId, ProjectId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{CreateProjectRequest, DecodabilityReport, ImportMediaRequest, RelinkAssetRequest};
+use crate::{
+    CreateProjectRequest, DecodabilityReport, DecoderCapabilities, GenerateDerivedRequest,
+    ImportMediaRequest, MediaSettings, RelinkAssetRequest,
+};
 
 /// A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
 ///
@@ -124,6 +127,34 @@ pub enum Command {
     /// renderer after `isConfigSupported`). Answered by
     /// [`crate::CommandResult::ReportDecodability`].
     ReportDecodability(DecodabilityReport),
+    /// Records what this machine's WebCodecs decodes (sent by the renderer once per connection,
+    /// before decodability reports): decides mezzanine and proxy codecs. Answered by
+    /// [`crate::CommandResult::ReportDecoderCapabilities`].
+    ReportDecoderCapabilities(DecoderCapabilities),
+    /// Queues a mezzanine or proxy of an asset (a proxy on request, or a new attempt after a
+    /// failure). Answered by [`crate::CommandResult::GenerateDerivedMedia`].
+    GenerateDerivedMedia(GenerateDerivedRequest),
+    /// The media settings. Answered by [`crate::CommandResult::GetMediaSettings`].
+    GetMediaSettings,
+    /// Replaces the media settings (new mezzanines and proxies use them). Answered by
+    /// [`crate::CommandResult::UpdateMediaSettings`].
+    UpdateMediaSettings(MediaSettings),
+    /// Which ffmpeg/ffprobe are used and which hardware encoders work. Answered by
+    /// [`crate::CommandResult::GetMediaToolsStatus`].
+    GetMediaToolsStatus,
+    /// The cache folder of an open project and its size. Answered by
+    /// [`crate::CommandResult::GetProjectCache`].
+    GetProjectCache {
+        /// The open project.
+        project_id: ProjectId,
+    },
+    /// Stops the project's jobs, deletes its cache (thumbnails, peaks, mezzanines, proxies) and
+    /// queues what is needed again. Analyses are kept. Answered by
+    /// [`crate::CommandResult::ClearProjectCache`].
+    ClearProjectCache {
+        /// The open project.
+        project_id: ProjectId,
+    },
 }
 
 #[cfg(test)]

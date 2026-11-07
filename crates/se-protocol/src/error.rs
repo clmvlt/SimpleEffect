@@ -103,6 +103,11 @@ pub enum ErrorCode {
     MediaToolsMissing,
     /// No job with that id is queued or running.
     JobNotFound,
+    /// The derived copy does not apply to this asset (a proxy of a sound file, a mezzanine of
+    /// media WebCodecs already decodes).
+    DerivedNotApplicable,
+    /// The requested time is outside the media (before 0 or after its end).
+    MediaTimeOutOfRange,
 }
 
 #[cfg(test)]

@@ -2,7 +2,10 @@
 //! one automatic retry (`docs/architecture.md` §7, ADR-0018).
 //!
 //! The queue knows nothing about media: a job is a [`JobWork`] (what to run) plus its kind,
-//! priority, project and asset. Each running job is a tokio task; cancelling aborts the task,
+//! priority, project and asset. A job starts when its kind has a free slot and fewer than
+//! [`JobQueueConfig::max_running`] jobs run in all, so priorities also order different kinds
+//! (thumbnails before proxies before analyses). Each running job is a tokio task; cancelling
+//! aborts the task,
 //! which drops the work's future (adapters stop their processes on drop). Every change is
 //! published as an event (`jobQueued`, `jobProgress`, `jobCompleted`, `jobFailed`,
 //! `jobCancelled`). The jobs of a project stop when it closes ([`JobQueue::cancel_project`]).
@@ -37,7 +40,9 @@ const CANCEL_GRACE: Duration = Duration::from_secs(5);
 /// Order in which queued jobs start (higher first; equal priorities start oldest first).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum JobPriority {
-    /// Work nobody waits for.
+    /// Work done when nothing else waits (mezzanines of media no clip uses yet).
+    Idle,
+    /// Work nobody waits for (analyses).
     Low,
     /// The default.
     Normal,
@@ -45,11 +50,21 @@ pub enum JobPriority {
     High,
 }
 
+/// Which attempt of a job is running.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct JobAttempt {
+    /// From 1.
+    pub number: u8,
+    /// Whether a failure of this attempt fails the job (no retry left).
+    pub last: bool,
+}
+
 /// What a job does. Dropping the future returned by `run` must stop the work.
 #[async_trait]
 pub trait JobWork: Send + Sync {
     /// Runs the work, reporting progress; an error message makes the job retry once, then fail.
-    async fn run(&self, progress: &dyn ProgressSink) -> Result<(), String>;
+    /// On the `last` attempt, the work records its own failure (if it must) before returning it.
+    async fn run(&self, progress: &dyn ProgressSink, attempt: JobAttempt) -> Result<(), String>;
 }
 
 /// A job to queue.
@@ -71,6 +86,8 @@ pub struct JobRequest {
 pub struct JobQueueConfig {
     /// Jobs of a kind running at once (1 for kinds not listed).
     pub concurrency: BTreeMap<JobKind, usize>,
+    /// Jobs running at once, all kinds together.
+    pub max_running: usize,
     /// Attempts per job, the first included (2: one automatic retry).
     pub max_attempts: u8,
     /// Finished jobs remembered for `listJobs`.
@@ -80,7 +97,15 @@ pub struct JobQueueConfig {
 impl Default for JobQueueConfig {
     fn default() -> Self {
         Self {
-            concurrency: BTreeMap::from([(JobKind::Thumbnails, 2), (JobKind::WaveformPeaks, 2)]),
+            concurrency: BTreeMap::from([
+                (JobKind::Thumbnails, 2),
+                (JobKind::WaveformPeaks, 2),
+                (JobKind::Mezzanine, 1),
+                (JobKind::Proxy, 1),
+                (JobKind::AudioAnalysis, 2),
+                (JobKind::SceneDetection, 1),
+            ]),
+            max_running: 4,
             max_attempts: 2,
             finished_kept: 500,
         }
@@ -236,13 +261,18 @@ impl JobQueue {
 
     /// Starts queued jobs while their kinds have free slots.
     fn dispatch(&self, state: &mut QueueState) {
-        while let Some(index) = state.next_runnable(|kind| self.shared.limit(kind)) {
+        let max_running = self.shared.config.max_running.max(1);
+        while let Some(index) = state.next_runnable(|kind| self.shared.limit(kind), max_running) {
             let entry = &mut state.entries[index];
             entry.snapshot.state = JobState::Running { progress: None };
             let snapshot = entry.snapshot.clone();
             let work = Arc::clone(&entry.work);
             let reporter = Reporter::new(Arc::clone(&self.shared), &snapshot);
-            let worker = tokio::spawn(async move { work.run(&reporter).await });
+            let attempt = JobAttempt {
+                number: snapshot.attempt,
+                last: snapshot.attempt >= self.shared.config.max_attempts,
+            };
+            let worker = tokio::spawn(async move { work.run(&reporter, attempt).await });
             let (terminated_sender, terminated) = oneshot::channel::<()>();
             entry.phase = Phase::Running {
                 abort: worker.abort_handle(),

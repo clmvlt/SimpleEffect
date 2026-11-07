@@ -12,6 +12,14 @@ pub enum JobKind {
     Thumbnails,
     /// Minimum and maximum sample values per channel at several zoom levels (sound).
     WaveformPeaks,
+    /// A high-quality copy WebCodecs decodes, for originals it cannot decode.
+    Mezzanine,
+    /// A low-resolution copy for smooth playback.
+    Proxy,
+    /// Silences, loudness and peaks of the sound.
+    AudioAnalysis,
+    /// Shot changes of the picture.
+    SceneDetection,
 }
 
 /// Where a job stands.

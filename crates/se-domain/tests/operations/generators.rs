@@ -8,14 +8,14 @@ use std::collections::BTreeMap;
 use proptest::prelude::*;
 use se_domain::{
     AddAsset, AddItem, AddMarker, AddSequence, AddTrack, Animatable, AssetId, AssetPatch, Assign,
-    CaptionPatch, Color, Decodability, Easing, Flicks, Format, FormatPreset, FrameRate, InsertGap,
-    Item, ItemEdge, ItemId, ItemKind, ItemPatch, Keyframe, LinkGroupId, LinkItems, Marker,
-    MarkerColor, MarkerId, MarkerPatch, MediaClipPatch, MoveItem, Operation, Project,
-    PropertyAnimation, RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack,
-    RenameProject, ReorderTracks, RippleDeleteRange, Sequence, SequenceId, SequencePatch,
-    SetKeyframes, ShapePatch, SplitItem, StreamDecodability, TemplateParamValue, TemplatePatch,
-    TextPatch, TimeRange, TrackId, TrackKind, TrackPatch, TrimItem, UnlinkItems, UpdateAsset,
-    UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack,
+    CaptionPatch, Color, Decodability, DerivedFile, DerivedStatus, Easing, Flicks, Format,
+    FormatPreset, FrameRate, InsertGap, Item, ItemEdge, ItemId, ItemKind, ItemPatch, Keyframe,
+    LinkGroupId, LinkItems, Marker, MarkerColor, MarkerId, MarkerPatch, MediaClipPatch, MoveItem,
+    Operation, Project, PropertyAnimation, RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence,
+    RemoveTrack, RenameProject, ReorderTracks, RippleDeleteRange, SceneSummary, Sequence,
+    SequenceId, SequencePatch, SetKeyframes, ShapePatch, SplitItem, StreamDecodability,
+    TemplateParamValue, TemplatePatch, TextPatch, TimeRange, TrackId, TrackKind, TrackPatch,
+    TrimItem, UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack,
     test_support::{millis, track},
 };
 
@@ -326,6 +326,19 @@ impl Generator {
                     decodability: seed.choice.is_multiple_of(5).then_some(Decodability {
                         video: StreamDecodability::Undecodable,
                         audio: StreamDecodability::Decodable,
+                    }),
+                    mezzanine: seed.choice.is_multiple_of(7).then(|| Assign {
+                        value: Some(DerivedFile {
+                            relative_path: "cache/media/key/mezzanine.mp4".to_owned(),
+                            status: DerivedStatus::Pending,
+                        }),
+                    }),
+                    proxy: seed
+                        .choice
+                        .is_multiple_of(11)
+                        .then_some(Assign { value: None }),
+                    scene_detection: seed.choice.is_multiple_of(13).then_some(Assign {
+                        value: Some(SceneSummary { change_count: 2 }),
                     }),
                     ..AssetPatch::default()
                 };

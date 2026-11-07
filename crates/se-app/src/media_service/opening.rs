@@ -1,9 +1,12 @@
 //! When a project opens: flag originals that are missing (relinking those found through their
-//! relative hint), then queue the derived files that are not cached.
+//! relative hint), then queue what assets still need (cache files, analyses, pending or failed
+//! mezzanines and proxies).
 
 use se_domain::{Actor, Asset, AssetPatch, Operation, UpdateAsset};
 
-use super::{MediaService, import::display, labels, media_paths::resolve_hint};
+use super::{
+    MediaService, import::display, labels, media_paths::resolve_hint, scheduling::Trigger,
+};
 use crate::project_actor::ProjectActorHandle;
 
 impl MediaService {
@@ -47,7 +50,8 @@ impl MediaService {
             }
         };
         for asset in &project.assets {
-            self.schedule_jobs(handle.path(), project.id, asset).await;
+            self.schedule_asset(handle, &project, asset, Trigger::Opening)
+                .await;
         }
     }
 

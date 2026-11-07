@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useCoreClient } from '../../../shared/core';
+import { SettingsButton } from '../../settings';
 import { useDesktopBridge } from '../../../shared/desktop';
 import { errorMessageKey } from '../../../shared/errors';
 import { getNewProjectDefaults } from '../api';
@@ -61,6 +62,7 @@ export function HomePage() {
           <Icon icon={Plus} size="md" />
           {t('home.newProject')}
         </Button>
+        <SettingsButton projectId={null} />
       </header>
       <section className="min-h-0 flex-1 overflow-auto p-6">
         <RecentProjectsContent

@@ -5,7 +5,7 @@ expression: example_project()
 {
   "id": "00000000-0001-7000-8000-000000000000",
   "name": "Example",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "revision": 42,
   "settings": {
     "defaultFormat": {
@@ -60,10 +60,22 @@ expression: example_project()
       "derived": {
         "mezzanine": null,
         "proxy": {
-          "relativePath": "cache/proxies/00000000-0001-7000-8000-000000000000.mp4",
+          "relativePath": "cache/media/0000000000c667fc-13000000-1700000000000/proxy-540.mp4",
           "status": {
             "kind": "ready"
           }
+        }
+      },
+      "analysis": {
+        "audio": {
+          "integratedLufs": -16.5,
+          "loudnessRangeLu": 5.5,
+          "truePeakDbtp": -1.0,
+          "silenceCount": 3,
+          "silenceDuration": 1587600000
+        },
+        "scenes": {
+          "changeCount": 4
         }
       },
       "decodability": {
@@ -98,6 +110,10 @@ expression: example_project()
       "derived": {
         "mezzanine": null,
         "proxy": null
+      },
+      "analysis": {
+        "audio": null,
+        "scenes": null
       },
       "decodability": {
         "video": "noStream",
@@ -136,6 +152,10 @@ expression: example_project()
       "derived": {
         "mezzanine": null,
         "proxy": null
+      },
+      "analysis": {
+        "audio": null,
+        "scenes": null
       },
       "decodability": {
         "video": "decodable",

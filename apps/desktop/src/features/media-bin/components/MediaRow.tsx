@@ -1,4 +1,4 @@
-import { Badge, ContextMenu, ContextMenuContent, ContextMenuTrigger, cn, focusRing } from '@se/ui';
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger, cn, focusRing } from '@se/ui';
 import { useTranslation } from 'react-i18next';
 
 import { formatDuration } from '../../../shared/time';
@@ -7,6 +7,7 @@ import { AssetMenuItems } from './AssetMenuItems';
 import { AssetPreview } from './AssetPreview';
 import { JobIndicator } from './JobIndicator';
 import type { MediaItemProps } from './MediaCard';
+import { PlaybackBadge } from './PlaybackBadge';
 
 /** An asset in the list view: small preview, name, kind, duration and state. */
 export function MediaRow({ asset, selected, ...handlers }: MediaItemProps) {
@@ -40,11 +41,7 @@ export function MediaRow({ asset, selected, ...handlers }: MediaItemProps) {
               <span className="flex items-center gap-1 text-2xs text-text-muted">
                 {t(`editor.media.kinds.${asset.kind}`)}
                 {duration !== null && <span className="timecode">{formatDuration(duration)}</span>}
-                {asset.missing && (
-                  <Badge variant="warning" size="xs">
-                    {t('editor.media.card.missing')}
-                  </Badge>
-                )}
+                <PlaybackBadge asset={asset} />
               </span>
               <JobIndicator asset={asset} />
             </span>

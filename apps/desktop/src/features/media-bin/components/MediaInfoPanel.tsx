@@ -1,28 +1,22 @@
-import type { Asset, AudioStreamInfo, StreamDecodability } from '@se/protocol';
+import type { Asset, AudioStreamInfo, DerivedKind, StreamDecodability } from '@se/protocol';
 import { Button, IconButton, PropertyGroup, PropertyRow } from '@se/ui';
 import { X } from '@se/ui/icons';
 import type { TFunction } from 'i18next';
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatDuration } from '../../../shared/time';
 import { codecLabel, displaySize, framesPerSecond, kilohertz } from '../services/asset-details';
 import { assetName } from '../services/asset-list';
+import { AnalysisGroup } from './AnalysisGroup';
+import { DerivedMediaGroup } from './DerivedMediaGroup';
+import { InfoValue as Value } from './InfoValue';
 
 /** Props of {@link MediaInfoPanel}. */
 export interface MediaInfoPanelProps {
   readonly asset: Asset;
   readonly onClose: () => void;
   readonly onRelink: (asset: Asset) => void;
-}
-
-/** A value of the details, selectable for copying. */
-function Value({ children, title }: { children: ReactNode; title?: string }) {
-  return (
-    <span className="block truncate text-xs text-text select-text" title={title}>
-      {children}
-    </span>
-  );
+  readonly onRetryDerived: (asset: Asset, derived: DerivedKind) => void;
 }
 
 function decodability(t: TFunction, state: StreamDecodability): string {
@@ -37,8 +31,11 @@ function audioSummary(t: TFunction, stream: AudioStreamInfo): string {
   ].join(' · ');
 }
 
-/** Details of the selected asset: file, streams, decodability, and « Relier… » when missing. */
-export function MediaInfoPanel({ asset, onClose, onRelink }: MediaInfoPanelProps) {
+/**
+ * Details of the selected asset: file, streams, decodability, how it plays (mezzanine, proxy),
+ * its analyses, and « Relier… » when missing.
+ */
+export function MediaInfoPanel({ asset, onClose, onRelink, onRetryDerived }: MediaInfoPanelProps) {
   const { t } = useTranslation();
   const info = asset.mediaInfo;
   return (
@@ -104,6 +101,8 @@ export function MediaInfoPanel({ asset, onClose, onRelink }: MediaInfoPanelProps
           </PropertyRow>
         </PropertyGroup>
       )}
+      <DerivedMediaGroup asset={asset} onRetry={onRetryDerived} />
+      <AnalysisGroup asset={asset} />
     </aside>
   );
 }

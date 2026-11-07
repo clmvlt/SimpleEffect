@@ -4,12 +4,15 @@ use std::path::Path;
 
 use se_domain::{
     Actor, AssetId, AssetPatch, Assign, Decodability, Operation, ProjectId, RemoveAsset,
-    Transaction, UpdateAsset,
+    UpdateAsset,
 };
 use se_protocol::{DecodabilityReport, RelinkOutcome};
 
-use super::{MediaService, find_asset, import::display, labels, media_paths::relative_hint};
-use crate::{AppError, new_ids::NewIds, ports::MediaError, project_actor::ProjectActorHandle};
+use super::{
+    MediaService, commit_transaction, find_asset, import::display, labels,
+    media_paths::relative_hint, scheduling::Trigger,
+};
+use crate::{AppError, ports::MediaError, project_actor::ProjectActorHandle};
 
 impl MediaService {
     /// Points an asset at the file at `path` (absolute). When the file's content differs from
@@ -64,7 +67,18 @@ impl MediaService {
                 value: Some(fingerprint),
             }),
             missing: Some(false),
-            ..AssetPatch::default()
+            ..if same_content {
+                AssetPatch::default()
+            } else {
+                // Derived copies and analyses describe the previous content.
+                AssetPatch {
+                    mezzanine: Some(Assign { value: None }),
+                    proxy: Some(Assign { value: None }),
+                    audio_analysis: Some(Assign { value: None }),
+                    scene_detection: Some(Assign { value: None }),
+                    ..AssetPatch::default()
+                }
+            }
         };
         let operation = UpdateAsset {
             asset: asset_id,
@@ -79,7 +93,7 @@ impl MediaService {
         .await?;
         let project = handle.view().await?.project;
         let relinked = find_asset(&project, asset_id)?;
-        self.schedule_jobs(handle.path(), project_id, relinked)
+        self.schedule_asset(&handle, &project, relinked, Trigger::Change)
             .await;
         Ok(RelinkOutcome::Relinked)
     }
@@ -107,7 +121,8 @@ impl MediaService {
     }
 
     /// Records what the renderer found about the decodability of an asset's streams (a system
-    /// transaction, skipped when nothing changes).
+    /// transaction, skipped when nothing changes), then queues the mezzanine and proxy it now
+    /// needs.
     ///
     /// # Errors
     /// Not open, unknown asset, commit errors.
@@ -119,23 +134,27 @@ impl MediaService {
             video: report.video,
             audio: report.audio,
         };
-        if asset.decodability == decodability {
-            return Ok(());
+        if asset.decodability != decodability {
+            let operation = UpdateAsset {
+                asset: report.asset_id,
+                patch: AssetPatch {
+                    decodability: Some(decodability),
+                    ..AssetPatch::default()
+                },
+            };
+            self.commit(
+                &handle,
+                Actor::System,
+                labels::RECORD_DECODABILITY,
+                vec![operation.into()],
+            )
+            .await?;
         }
-        let operation = UpdateAsset {
-            asset: report.asset_id,
-            patch: AssetPatch {
-                decodability: Some(decodability),
-                ..AssetPatch::default()
-            },
-        };
-        self.commit(
-            &handle,
-            Actor::System,
-            labels::RECORD_DECODABILITY,
-            vec![operation.into()],
-        )
-        .await
+        let project = handle.view().await?.project;
+        let asset = find_asset(&project, report.asset_id)?;
+        self.schedule_asset(&handle, &project, asset, Trigger::Change)
+            .await;
+        Ok(())
     }
 
     /// Commits `ops` as one transaction of `actor`.
@@ -146,12 +165,6 @@ impl MediaService {
         label: &str,
         ops: Vec<Operation>,
     ) -> Result<(), AppError> {
-        let transaction = Transaction {
-            id: NewIds(self.deps.ids.as_ref()).transaction()?,
-            actor,
-            label: label.to_owned(),
-            ops,
-        };
-        handle.apply(transaction).await.map(drop)
+        commit_transaction(handle, self.deps.ids.as_ref(), actor, label, ops).await
     }
 }

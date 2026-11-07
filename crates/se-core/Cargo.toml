@@ -40,6 +40,9 @@ tracing-subscriber = { workspace = true }
 tower = { version = "0.5.3", features = ["util"] }
 uuid = { workspace = true, features = ["v7"] }
 
+[target.'cfg(windows)'.dependencies]
+win32job = { workspace = true }
+
 [dev-dependencies]
 # In-memory ports for the router's unit tests.
 se-app = { workspace = true, features = ["test-support"] }

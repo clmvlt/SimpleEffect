@@ -1,0 +1,31 @@
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'scenes.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf63.1.102
+  Duration: 00:00:06.00, start: 0.000000, bitrate: 253 kb/s
+  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(progressive), 640x360 [SAR 1:1 DAR 16:9], 250 kb/s, 25 fps, 25 tbr, 12800 tbn (default)
+    Metadata:
+      handler_name    : VideoHandler
+      encoder         : Lavc63.1.102 libx264
+Stream mapping:
+  Stream #0:0 (h264) -> scale:default
+  null:default -> Stream #0:0 (wrapped_avframe)
+[Parsed_showinfo_3 @ 000001db659be7c0] config in time_base: 1/12800, frame_rate: 25/1
+[Parsed_showinfo_3 @ 000001db659be7c0] config out time_base: 0/0, frame_rate: 0/0
+Output #0, null, to 'pipe:':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: wrapped_avframe, yuv420p(progressive), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 25 fps, 25 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 wrapped_avframe
+[Parsed_showinfo_3 @ 000001db659be7c0] n:   0 pts:  25600 pts_time:2       duration:    512 duration_time:0.04    fmt:yuv420p cl:unspecified sar:1/1 s:320x180 i:P iskey:1 type:I checksum:3649F710 plane_checksum:[1CCC0B1C CBE8BF0C 5D752CE8] mean:[41 240 110] stdev:[0.0 0.0 0.0]
+[Parsed_showinfo_3 @ 000001db659be7c0] color_range:unknown color_space:unknown color_primaries:unknown color_trc:unknown
+[Parsed_showinfo_3 @ 000001db659be7c0] n:   1 pts:  51200 pts_time:4       duration:    512 duration_time:0.04    fmt:yuv420p cl:unspecified sar:1/1 s:320x180 i:P iskey:1 type:I checksum:CAC17059 plane_checksum:[8C9EF09F C480FF51 91A5804B] mean:[125 127 125] stdev:[55.9 78.8 82.1]
+[Parsed_showinfo_3 @ 000001db659be7c0] color_range:unknown color_space:unknown color_primaries:unknown color_trc:unknown
+[out#0/null @ 000001db63e57040] video:62KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=  150 fps=0.0 q=-0.0 Lsize=N/A time=00:00:06.00 bitrate=N/A speed= 188x elapsed=0:00:00.03    

@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use se_domain::{AssetId, AssetKind, DomainError, DomainErrorCode, JobId, ProjectId};
+use se_domain::{AssetId, AssetKind, DomainError, DomainErrorCode, Flicks, JobId, ProjectId};
 use se_protocol::{ErrorCode, ProtocolError};
 
 use crate::ports::{MediaError, StorageError};
@@ -109,6 +109,38 @@ pub enum AppError {
         /// The job.
         job_id: JobId,
     },
+    /// A mezzanine or proxy was requested for an asset it does not apply to.
+    #[error("asset {asset_id} gets no {derived}: {reason}")]
+    DerivedNotApplicable {
+        /// The asset.
+        asset_id: AssetId,
+        /// `mezzanine` or `proxy`.
+        derived: &'static str,
+        /// Why, and what to do instead.
+        reason: String,
+    },
+    /// A time outside an asset's media.
+    #[error(
+        "{:.3} s is outside asset {asset_id}, which lasts {:.3} s: pick a time between 0 and its end",
+        time.to_seconds_f64(),
+        duration.to_seconds_f64()
+    )]
+    MediaTimeOutOfRange {
+        /// The asset.
+        asset_id: AssetId,
+        /// The time asked for.
+        time: Flicks,
+        /// Its media's duration.
+        duration: Flicks,
+    },
+    /// A setting value is not accepted.
+    #[error("invalid setting {name}: {reason}")]
+    InvalidSetting {
+        /// The setting.
+        name: &'static str,
+        /// What is accepted.
+        reason: String,
+    },
     /// A bug: an invariant of the application itself was broken.
     #[error("internal error: {0}; please report it")]
     Internal(String),
@@ -122,7 +154,11 @@ impl AppError {
             Self::Storage(error) => storage_code(error),
             Self::ProjectNotOpen { .. } | Self::ActorStopped { .. } => ErrorCode::ProjectNotOpen,
             Self::SameProjectOpen { .. } => ErrorCode::ProjectLocked,
-            Self::EmptyName { .. } | Self::InvalidFormat { .. } => ErrorCode::InvalidRequest,
+            Self::EmptyName { .. } | Self::InvalidFormat { .. } | Self::InvalidSetting { .. } => {
+                ErrorCode::InvalidRequest
+            }
+            Self::DerivedNotApplicable { .. } => ErrorCode::DerivedNotApplicable,
+            Self::MediaTimeOutOfRange { .. } => ErrorCode::MediaTimeOutOfRange,
             Self::JournalBroken { .. } | Self::InvalidDocument { .. } => {
                 ErrorCode::ProjectCorrupted
             }

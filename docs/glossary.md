@@ -26,19 +26,32 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Decodability** | Whether the renderer of this machine can decode each stream (picture, sound) of an asset's original with WebCodecs, as it reported: `unknown`, `decodable`, `undecodable` (needs a mezzanine) or `noStream` | `Decodability`, `StreamDecodability` |
 | **Content fingerprint** | Quick identity of a file's content: size, modification time and xxh3 of its first and last MiB; same size and hash = same content (deduplication, relinking) | `ContentFingerprint` |
 | **Cache key** | Name of an asset's cache folder, `<hash>-<size>-<mtime>` from its fingerprint | `ContentFingerprint::cache_key` |
-| **Media cache** | `<project>/cache/media/<cache key>/`: regenerable derived files of a content (thumbnails, peaks), never recorded in the document | `media_cache_dir`, `se_media::cache_layout` |
+| **Media cache** | `<project>/cache/media/<cache key>/`: regenerable files of a content (thumbnails, peaks, mezzanine, proxy, extracted frames); thumbnails and peaks are not recorded in the document, mezzanines and proxies are | `media_cache_dir`, `se_media::cache_layout` |
 | **Missing media** | An asset whose original was found neither at its path nor through its relative hint when the project opened | `Asset::missing` |
 | **Relink** | Pointing an asset at another file (a moved or renamed original); other content needs the user's confirmation | `relinkAsset`, `MediaService::relink_asset` |
 | **Relative hint** | The original's path relative to the project folder, used to find media moved together with their project | `Asset::relative_hint` |
 | **Thumbnail sheet** | One JPEG holding up to 40 small pictures (90 px high) sampled along a video, 8 per row, with its JSON layout and source times; hovering a card scrubs through it | `ThumbnailSheet` |
 | **Poster** | One larger picture (up to 360 px high) representing an asset in the media bin | `poster.jpg` |
 | **Waveform peaks** | Minimum and maximum sample values per channel over blocks of 256, 1024 or 4096 samples, in `SEPK` files | `Peaks`, `WaveformPeaks` |
-| **Job** | A background task of the core (thumbnails, waveform peaks; later mezzanines, analyses) with a kind, a priority, progress and one automatic retry | `JobQueue`, `JobSnapshot` |
+| **Job** | A background task of the core (thumbnails, waveform peaks, mezzanine, proxy, audio analysis, scene detection; later transcription…) with a kind, a priority, progress and one automatic retry; at most 4 run at once | `JobQueue`, `JobSnapshot` |
 | **Sidecar** | A tool run as a separate process (ffmpeg, ffprobe, later whisper), stopped with its whole process tree when cancelled | `se_media::process::Sidecar` |
 | **System transaction** | A transaction recording facts the app observed (missing media, decodability), journaled but never undone | `Actor::System` |
 | **Original** | The user's source file of an asset | `Asset::original_path` |
-| **Mezzanine** | High-quality, WebCodecs-decodable copy of an asset whose codec Chromium cannot decode | `DerivedMedia::mezzanine` |
-| **Proxy** | Low-resolution copy of an asset for smooth playback | `DerivedMedia::proxy` |
+| **Mezzanine** | High-quality, WebCodecs-decodable copy of an asset this machine cannot decode (codec, or a layout outside 4:2:0 8–10 bits): HEVC Main 10 for deeper footage when decodable, H.264 High otherwise; MP4, M4A or PNG in the content's cache folder | `DerivedMedia::mezzanine` |
+| **Mezzanine policy** | The pure decision of whether an asset needs a mezzanine and how to make it, from its streams, the decodability reported and this machine's decoders | `media_policy::mezzanine_decision` |
+| **Proxy** | Low-resolution H.264 copy of a video (540p or 720p, fast decode, a keyframe every 15 frames) for smooth playback; automatic beyond 1080p or for undecodable footage, or on request | `DerivedMedia::proxy`, `media_policy::proxy_recipe` |
+| **Derived copy** | A mezzanine or a proxy: recorded in the document with its state (pending, ready, failed + reason), the file in the cache | `DerivedFile`, `DerivedKind` |
+| **Transcode recipe** | How a derived copy is made: container, picture plan (drop, copy, encode, still) and sound plan (drop, copy, AAC, FLAC) | `TranscodeRecipe`, `TranscodePlan` |
+| **Decoder capabilities** | What this machine's WebCodecs decodes among the codecs of derived copies (HEVC Main 10, H.264 High, AAC, FLAC), reported by the renderer and kept in `library.db` | `DecoderCapabilities` |
+| **Hardware encoder** | A GPU encoder ffmpeg drives (NVENC, VideoToolbox, VAAPI), detected once by a test encode; jobs fall back to libx264/libx265 | `HardwareEncoder`, `EncoderSupport` |
+| **Playback source** | Which file the engine decodes for an asset: the original, its mezzanine, nothing yet (« en préparation ») or nothing (missing, mezzanine failed) | `playbackSource` |
+| **Audio analysis** | Loudness (EBU R128 integrated, range, short-term curve), peaks and silences of an asset's first sound stream | `AudioAnalysis`, `AudioSummary` |
+| **Silence** | A stretch where the RMS level of 20 ms windows stays under a threshold (−40 dBFS) for a minimum duration (0.5 s) | `SilenceSettings`, `SilenceDetector` |
+| **LUFS / dBTP** | Loudness units relative to full scale (EBU R128) / true peak in decibels, measured on oversampled sound | `integrated_lufs`, `true_peak_dbtp` |
+| **Scene detection** | The instants where an asset's picture changes shot (ffmpeg's scene score above 0.3) | `SceneDetection`, `SceneSummary` |
+| **Analysis summary** | The small part of an analysis kept in the asset (loudness, peak, silence count, shot changes); the full result is in `project.db` | `AssetAnalysis` |
+| **Frame extraction** | Writing one picture of an asset at a time as a JPEG (cached), for AI tools that look at footage | `MediaService::extract_frame`, `FrameExtractor` |
+| **Media settings** | App-wide preferences of the media pipeline: mezzanine quality (CRF), proxy resolution, automatic proxies, ffmpeg folder | `MediaSettings` |
 | **Sequence** | A timeline with a format (resolution, frame rate, sample rate) and tracks. A project may contain several | `Sequence` |
 | **Format** | Width, height, frame rate and sample rate of a sequence | `Format` |
 | **Format preset** | A named format size: 16:9 HD and UHD, 9:16, 1:1, 4:5, or custom | `FormatPreset` |

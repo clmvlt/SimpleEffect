@@ -4,4 +4,4 @@ allow-expect-in-tests = true
 allow-panic-in-tests = true
 
 # Product and technology names that are not code identifiers ("..", keeps clippy's defaults).
-doc-valid-idents = ["SimpleEffect", "WebSocket", "WebCodecs", "PixiJS", "FFmpeg", "UUIDv7", ".."]
+doc-valid-idents = ["SimpleEffect", "WebSocket", "WebCodecs", "PixiJS", "FFmpeg", "UUIDv7", "ProRes", "DNxHR", "DNxHD", "VideoToolbox", ".."]

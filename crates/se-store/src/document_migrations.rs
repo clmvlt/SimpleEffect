@@ -9,8 +9,10 @@
 //! 3. keep the fixtures of older versions (`tests/fixtures/project-vN.json`) and add one for the
 //!    new version.
 //!
-//! History: version 2 (prompt 08) gave assets a `fingerprint` and a per-stream `decodability`.
-//! Journals need no migration: no transaction touched assets before version 2.
+//! History: version 2 (prompt 08) gave assets a `fingerprint` and a per-stream `decodability`;
+//! version 3 (prompt 09) gave them `analysis` summaries. Journals need no migration: no
+//! transaction touched assets before version 2, and `Asset.analysis` defaults to empty when a
+//! version-2 journal entry (an imported asset) is replayed.
 
 use serde_json::{Map, Value, json};
 
@@ -19,7 +21,7 @@ pub type DocumentMigration = fn(Value) -> Result<Value, String>;
 
 /// Every migration, in order: `MIGRATIONS[0]` turns version 1 into version 2, and so on.
 /// Its length is always `CURRENT_SCHEMA_VERSION - 1` (checked by a test).
-pub const MIGRATIONS: &[DocumentMigration] = &[migrate_v1_to_v2];
+pub const MIGRATIONS: &[DocumentMigration] = &[migrate_v1_to_v2, migrate_v2_to_v3];
 
 /// Version 1 → 2: every asset gets `fingerprint: null` and its single decodability becomes one
 /// state per stream (`noStream` for the streams its media info lacks).
@@ -34,6 +36,23 @@ fn migrate_v1_to_v2(mut document: Value) -> Result<Value, String> {
         let decodability = per_stream_decodability(fields);
         fields.insert("decodability".to_owned(), decodability);
         fields.insert("fingerprint".to_owned(), Value::Null);
+    }
+    Ok(document)
+}
+
+/// Version 2 → 3: every asset gets empty analysis summaries (the analyses run again).
+fn migrate_v2_to_v3(mut document: Value) -> Result<Value, String> {
+    let Some(assets) = document.get_mut("assets").and_then(Value::as_array_mut) else {
+        return Err("`assets` is missing or not a list".to_owned());
+    };
+    for asset in assets {
+        let fields = asset
+            .as_object_mut()
+            .ok_or_else(|| "an asset is not an object".to_owned())?;
+        fields.insert(
+            "analysis".to_owned(),
+            json!({ "audio": null, "scenes": null }),
+        );
     }
     Ok(document)
 }
@@ -184,6 +203,17 @@ mod tests {
         );
         assert!(assets.iter().all(|asset| asset["fingerprint"].is_null()));
         assert_eq!(migrated["schemaVersion"], json!(2));
+    }
+
+    #[test]
+    fn version_3_adds_empty_analysis_summaries() {
+        let document = json!({ "schemaVersion": 2, "assets": [{ "id": "a" }] });
+        let migrated = migrate_document(document, MIGRATIONS, 3).unwrap();
+        assert_eq!(
+            migrated["assets"][0]["analysis"],
+            json!({ "audio": null, "scenes": null })
+        );
+        assert_eq!(migrated["schemaVersion"], json!(3));
     }
 
     #[test]

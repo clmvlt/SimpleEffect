@@ -9,8 +9,8 @@ use super::{
     lookup::{all_items, find_asset},
 };
 use crate::{
-    Asset, AssetId, ContentFingerprint, Decodability, DerivedMedia, DomainError, ItemKind,
-    MediaInfo, Project,
+    Asset, AssetId, AudioSummary, ContentFingerprint, Decodability, DerivedFile, DomainError,
+    ItemKind, MediaInfo, Project, SceneSummary,
 };
 
 /// Adds an asset. Inverse: [`RemoveAsset`].
@@ -46,6 +46,9 @@ pub struct Assign<T> {
 
 /// Changes of an asset; `null` (or absent) fields are unchanged. The kind of an asset cannot
 /// change (its items depend on it).
+///
+/// Derived files and analysis summaries have one field each, so jobs finishing at the same time
+/// never overwrite each other's changes.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[serde(default, rename_all = "camelCase")]
 pub struct AssetPatch {
@@ -57,8 +60,14 @@ pub struct AssetPatch {
     pub media_info: Option<Assign<Option<MediaInfo>>>,
     /// Another content fingerprint (relinking to a file), or none.
     pub fingerprint: Option<Assign<Option<ContentFingerprint>>>,
-    /// Other mezzanine and proxy states.
-    pub derived: Option<DerivedMedia>,
+    /// Another mezzanine (state or path), or none.
+    pub mezzanine: Option<Assign<Option<DerivedFile>>>,
+    /// Another proxy (state or path), or none.
+    pub proxy: Option<Assign<Option<DerivedFile>>>,
+    /// Another audio analysis summary, or none.
+    pub audio_analysis: Option<Assign<Option<AudioSummary>>>,
+    /// Another scene detection summary, or none.
+    pub scene_detection: Option<Assign<Option<SceneSummary>>>,
     /// Another decodability.
     pub decodability: Option<Decodability>,
     /// Whether the original is missing.
@@ -68,25 +77,29 @@ pub struct AssetPatch {
 impl AssetPatch {
     /// Applies the patch and returns the one undoing it.
     fn apply(&self, asset: &mut Asset) -> Self {
-        let relative_hint = self.relative_hint.as_ref().map(|assign| Assign {
-            value: std::mem::replace(&mut asset.relative_hint, assign.value.clone()),
-        });
-        let media_info = self.media_info.as_ref().map(|assign| Assign {
-            value: std::mem::replace(&mut asset.media_info, assign.value.clone()),
-        });
-        let fingerprint = self.fingerprint.as_ref().map(|assign| Assign {
-            value: std::mem::replace(&mut asset.fingerprint, assign.value.clone()),
-        });
         Self {
             original_path: swap_field(&mut asset.original_path, self.original_path.as_ref()),
-            relative_hint,
-            media_info,
-            fingerprint,
-            derived: swap_field(&mut asset.derived, self.derived.as_ref()),
+            relative_hint: assign(&mut asset.relative_hint, self.relative_hint.as_ref()),
+            media_info: assign(&mut asset.media_info, self.media_info.as_ref()),
+            fingerprint: assign(&mut asset.fingerprint, self.fingerprint.as_ref()),
+            mezzanine: assign(&mut asset.derived.mezzanine, self.mezzanine.as_ref()),
+            proxy: assign(&mut asset.derived.proxy, self.proxy.as_ref()),
+            audio_analysis: assign(&mut asset.analysis.audio, self.audio_analysis.as_ref()),
+            scene_detection: assign(&mut asset.analysis.scenes, self.scene_detection.as_ref()),
             decodability: swap_field(&mut asset.decodability, self.decodability.as_ref()),
             missing: swap_field(&mut asset.missing, self.missing.as_ref()),
         }
     }
+}
+
+/// Replaces a nullable field when `new` is set; returns the assignment restoring it.
+fn assign<T: Clone>(
+    field: &mut Option<T>,
+    new: Option<&Assign<Option<T>>>,
+) -> Option<Assign<Option<T>>> {
+    new.map(|assign| Assign {
+        value: std::mem::replace(field, assign.value.clone()),
+    })
 }
 
 /// Changes what is known about an asset (path, probe, derived files…).
@@ -190,6 +203,39 @@ mod tests {
                 item: ItemId::from_test_index(4)
             }
         );
+    }
+
+    #[test]
+    fn derived_files_and_summaries_change_one_field_at_a_time() {
+        let mezzanine = DerivedFile {
+            relative_path: "cache/media/k/mezzanine.mp4".to_owned(),
+            status: crate::DerivedStatus::Pending,
+        };
+        let patch = AssetPatch {
+            mezzanine: Some(Assign {
+                value: Some(mezzanine.clone()),
+            }),
+            scene_detection: Some(Assign {
+                value: Some(SceneSummary { change_count: 3 }),
+            }),
+            ..AssetPatch::default()
+        };
+        let applied = apply_ok(
+            &example(),
+            UpdateAsset {
+                asset: example_ids::VIDEO_ASSET,
+                patch,
+            },
+        );
+        let before = &example().assets[0];
+        let asset = &applied.project.assets[0];
+        assert_eq!(asset.derived.mezzanine, Some(mezzanine));
+        assert_eq!(asset.derived.proxy, before.derived.proxy);
+        assert_eq!(
+            asset.analysis.scenes,
+            Some(SceneSummary { change_count: 3 })
+        );
+        assert_eq!(asset.analysis.audio, before.analysis.audio);
     }
 
     #[test]

@@ -1,5 +1,7 @@
-//! `project.db`: the operation journal, and tables later prompts fill (tasks, transcripts,
-//! analyses).
+//! `project.db`: the operation journal, the analyses of assets (`analyses.rs`), and tables later
+//! prompts fill (tasks, transcripts).
+
+mod analyses;
 
 use std::path::{Path, PathBuf};
 
@@ -13,7 +15,7 @@ use crate::{
 };
 
 /// Schema migrations of `project.db` (see [`open_database`]). Append, never edit.
-const MIGRATIONS: &[&str] = &[SCHEMA_V1];
+const MIGRATIONS: &[&str] = &[SCHEMA_V1, SCHEMA_V2];
 
 /// Version 1. `op_journal` holds the transactions committed since the last snapshot. The other
 /// tables are created now so the schema has one history; their columns are refined by the
@@ -53,6 +55,14 @@ CREATE TABLE analyses (
     payload TEXT NOT NULL,
     PRIMARY KEY (asset_id, kind)
 );
+";
+
+/// Version 2 (prompt 09): an analysis records the content it describes (`content_key`, the
+/// fingerprint cache key: a relinked asset with other content is analysed again) and the version
+/// of its JSON.
+const SCHEMA_V2: &str = "
+ALTER TABLE analyses ADD COLUMN content_key TEXT NOT NULL DEFAULT '';
+ALTER TABLE analyses ADD COLUMN format_version INTEGER NOT NULL DEFAULT 1;
 ";
 
 /// Version of the JSON stored in `op_journal.payload` (the `Transaction` format, fixed by the

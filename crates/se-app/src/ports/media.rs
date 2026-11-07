@@ -1,11 +1,15 @@
-//! Media ports: probing files, fingerprinting them and running media jobs (implemented by
-//! se-media, `docs/architecture.md` §7).
+//! Media ports: probing files, fingerprinting them, running media jobs, extracting frames and
+//! configuring the tools (implemented by se-media, `docs/architecture.md` §7).
 
 use std::path::{Path, PathBuf};
 
 use async_trait::async_trait;
-use se_domain::{AssetKind, ContentFingerprint, MediaInfo};
-use se_protocol::JobKind;
+use se_domain::{
+    AnalysisResult, AssetKind, ContentFingerprint, Flicks, MediaInfo, SilenceSettings,
+};
+use se_protocol::{JobKind, MediaToolsStatus};
+
+use super::transcode::TranscodePlan;
 
 /// Why a media port failed. Messages are actionable: they reach users and AI agents.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -79,6 +83,16 @@ pub trait MediaFiles: Send + Sync {
     /// # Errors
     /// [`MediaError::NotFound`], [`MediaError::Io`].
     async fn fingerprint(&self, path: &Path) -> Result<ContentFingerprint, MediaError>;
+
+    /// Bytes used by the files under `dir` (0 when it does not exist).
+    async fn directory_size(&self, dir: &Path) -> u64;
+
+    /// Deletes `dir` and everything in it, going on past files that cannot be deleted (in use on
+    /// Windows). Nothing happens when it does not exist.
+    ///
+    /// # Errors
+    /// [`MediaError::Io`] naming the first entry that could not be deleted (the others were).
+    async fn remove_directory(&self, dir: &Path) -> Result<(), MediaError>;
 }
 
 /// Receives the progress of a running job.
@@ -87,11 +101,46 @@ pub trait ProgressSink: Send + Sync {
     fn report(&self, fraction: f64);
 }
 
+/// What a media job produces.
+#[derive(Debug, Clone, PartialEq)]
+pub enum MediaTask {
+    /// The thumbnail sheet, its layout and the poster (cache files).
+    Thumbnails,
+    /// Waveform peaks at every level (cache files).
+    WaveformPeaks,
+    /// A mezzanine or proxy file (`plan.output`).
+    Transcode(TranscodePlan),
+    /// Silences, loudness and peaks of the first sound stream.
+    AudioAnalysis {
+        /// What counts as silence.
+        silence: SilenceSettings,
+    },
+    /// Shot changes of the picture.
+    SceneDetection {
+        /// Scene score above which a frame starts a new shot.
+        threshold: f64,
+    },
+}
+
+impl MediaTask {
+    /// The job kind (decides concurrency and how clients label it).
+    #[must_use]
+    pub fn kind(&self) -> JobKind {
+        match self {
+            Self::Thumbnails => JobKind::Thumbnails,
+            Self::WaveformPeaks => JobKind::WaveformPeaks,
+            Self::Transcode(plan) => plan.job_kind(),
+            Self::AudioAnalysis { .. } => JobKind::AudioAnalysis,
+            Self::SceneDetection { .. } => JobKind::SceneDetection,
+        }
+    }
+}
+
 /// One media job to run: what to produce, from which file, into which cache folder.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MediaJobSpec {
     /// What to produce.
-    pub kind: JobKind,
+    pub task: MediaTask,
     /// The original file.
     pub input: PathBuf,
     /// The asset's cache folder (created by the runner if needed).
@@ -102,10 +151,21 @@ pub struct MediaJobSpec {
     pub media_info: MediaInfo,
 }
 
-/// Produces derived files of media (thumbnails, waveform peaks) with ffmpeg.
+/// What a successful job produced besides files.
+#[derive(Debug, Clone, PartialEq)]
+pub enum MediaJobOutput {
+    /// Only files (in the cache folder or at the plan's output path).
+    Files,
+    /// An analysis result, to store in the project database.
+    Analysis(AnalysisResult),
+}
+
+/// Produces derived files and analyses of media with ffmpeg.
 #[async_trait]
 pub trait MediaJobRunner: Send + Sync {
-    /// Whether the outputs of a `kind` job are already complete in `output_dir` (cache hit).
+    /// Whether the outputs of a cache job (`thumbnails`, `waveformPeaks`) are already complete in
+    /// `output_dir`. Always `false` for other kinds: mezzanines and proxies are tracked by the
+    /// document, analyses by the project database.
     async fn outputs_ready(&self, kind: JobKind, output_dir: &Path) -> bool;
 
     /// Runs the job, reporting progress. Dropping the returned future cancels it: every process
@@ -113,6 +173,44 @@ pub trait MediaJobRunner: Send + Sync {
     ///
     /// # Errors
     /// [`MediaError`] when a tool is missing or fails.
-    async fn run(&self, spec: &MediaJobSpec, progress: &dyn ProgressSink)
-    -> Result<(), MediaError>;
+    async fn run(
+        &self,
+        spec: &MediaJobSpec,
+        progress: &dyn ProgressSink,
+    ) -> Result<MediaJobOutput, MediaError>;
+}
+
+/// One picture to extract from a media file.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FrameRequest {
+    /// The media file.
+    pub input: PathBuf,
+    /// Its kind (images ignore `time`).
+    pub asset_kind: AssetKind,
+    /// Source time of the picture, inside the media.
+    pub time: Flicks,
+    /// Largest width of the JPEG (never enlarged; the aspect ratio is kept).
+    pub max_width: u32,
+    /// Where to write the JPEG (atomically).
+    pub output: PathBuf,
+}
+
+/// Extracts single pictures of media as JPEG files (for AI tools that look at footage).
+#[async_trait]
+pub trait FrameExtractor: Send + Sync {
+    /// Writes the picture of `request` to `request.output`.
+    ///
+    /// # Errors
+    /// [`MediaError`] when a tool is missing or fails.
+    async fn extract_frame(&self, request: &FrameRequest) -> Result<(), MediaError>;
+}
+
+/// The ffmpeg tools themselves: where they are looked for, and what they can do.
+#[async_trait]
+pub trait MediaTools: Send + Sync {
+    /// Searches `dir` first (the user's choice), or only the bundled tools when `None`.
+    fn set_tools_dir(&self, dir: Option<PathBuf>);
+
+    /// The tools found, their version and the hardware encoders that work.
+    async fn status(&self) -> MediaToolsStatus;
 }

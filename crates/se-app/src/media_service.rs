@@ -1,17 +1,23 @@
 //! [`MediaService`]: the media use cases behind the protocol (import, relink, remove, decodability
-//! reports, jobs) and the lifecycle hooks that check missing files when a project opens and stop
-//! its jobs when it closes (ADR-0018).
+//! reports, jobs, mezzanines and proxies, analyses, settings, the project cache, frames) and the
+//! lifecycle hooks that check missing files when a project opens and stop its jobs when it closes
+//! (ADR-0018, ADR-0019).
 //!
 //! Like [`crate::ProjectService`], it never mutates a document itself: every change is a
 //! transaction sent to the project's actor. User actions (import, relink, remove) are user
 //! transactions (undoable); facts the app observed (missing files, decodability) are
 //! [`se_domain::Actor::System`] transactions, journaled but never undone.
 
+mod cache;
+mod derived;
+mod frames;
 mod import;
+mod job_work;
 pub mod media_paths;
 mod opening;
 mod relink;
 mod scheduling;
+pub mod settings;
 
 use std::{
     collections::HashMap,
@@ -20,13 +26,21 @@ use std::{
 };
 
 use async_trait::async_trait;
-use se_domain::{Asset, AssetId, AssetKind, JobId, ProjectId};
+use se_domain::{
+    Actor, Asset, AssetId, AssetKind, DerivedFile, DerivedStatus, JobId, Operation, ProjectId,
+    Transaction,
+};
 use se_protocol::JobSnapshot;
 
+pub use self::frames::{MAX_FRAME_WIDTH, MIN_FRAME_WIDTH};
 use crate::{
     AppError,
     jobs::JobQueue,
-    ports::{IdGenerator, MediaFiles, MediaJobRunner, MediaProber},
+    new_ids::NewIds,
+    ports::{
+        AppLibraryRepository, Clock, FrameExtractor, IdGenerator, MediaFiles, MediaJobRunner,
+        MediaProber, MediaTools,
+    },
     project_actor::ProjectActorHandle,
     project_service::ProjectObserver,
 };
@@ -44,6 +58,12 @@ pub mod labels {
     pub const DETECT_MISSING_MEDIA: &str = "Detect missing media";
     /// Decodability reported by the renderer (system, not undoable).
     pub const RECORD_DECODABILITY: &str = "Record decodability";
+    /// Mezzanines or proxies recorded as pending before their jobs start (system).
+    pub const QUEUE_DERIVED_MEDIA: &str = "Queue derived media";
+    /// A mezzanine or proxy job finished or failed (system).
+    pub const RECORD_DERIVED_MEDIA: &str = "Record derived media";
+    /// The summary of a finished analysis (system).
+    pub const RECORD_ANALYSIS: &str = "Record media analysis";
 }
 
 /// The ports and services the media use cases work with.
@@ -53,12 +73,20 @@ pub struct MediaServiceDeps {
     pub prober: Arc<dyn MediaProber>,
     /// Existence and fingerprints of files.
     pub files: Arc<dyn MediaFiles>,
-    /// Produces thumbnails and peaks.
+    /// Produces thumbnails, peaks, mezzanines, proxies and analyses.
     pub runner: Arc<dyn MediaJobRunner>,
+    /// Extracts single frames.
+    pub frames: Arc<dyn FrameExtractor>,
+    /// Where ffmpeg is looked for, and what it can do.
+    pub tools: Arc<dyn MediaTools>,
     /// Runs the jobs.
     pub jobs: JobQueue,
+    /// Media settings and decoder capabilities (`library.db`).
+    pub library: Arc<dyn AppLibraryRepository>,
     /// New asset and transaction ids.
     pub ids: Arc<dyn IdGenerator>,
+    /// Timestamps of stored analyses.
+    pub clock: Arc<dyn Clock>,
 }
 
 /// Where the files of an asset are, for the `/media` routes.
@@ -70,6 +98,10 @@ pub struct AssetFiles {
     pub kind: AssetKind,
     /// The folder of its derived files (thumbnails, peaks), when its fingerprint is known.
     pub cache_dir: Option<PathBuf>,
+    /// Its mezzanine, once ready.
+    pub mezzanine: Option<PathBuf>,
+    /// Its proxy, once ready.
+    pub proxy: Option<PathBuf>,
 }
 
 /// The media use cases.
@@ -132,17 +164,43 @@ impl MediaService {
                 .iter()
                 .find(|asset| asset.id == asset_id)
             {
+                let ready = |file: &Option<DerivedFile>| {
+                    file.as_ref()
+                        .filter(|file| file.status == DerivedStatus::Ready)
+                        .and_then(|file| {
+                            media_paths::resolve_relative(handle.path(), &file.relative_path)
+                        })
+                };
                 return Some(AssetFiles {
                     original: PathBuf::from(&asset.original_path),
                     kind: asset.kind,
                     cache_dir: asset.fingerprint.as_ref().map(|fingerprint| {
                         media_paths::media_cache_dir(handle.path(), fingerprint)
                     }),
+                    mezzanine: ready(&asset.derived.mezzanine),
+                    proxy: ready(&asset.derived.proxy),
                 });
             }
         }
         None
     }
+}
+
+/// Commits `ops` as one transaction of `actor` through `handle`.
+async fn commit_transaction(
+    handle: &ProjectActorHandle,
+    ids: &dyn IdGenerator,
+    actor: Actor,
+    label: &str,
+    ops: Vec<Operation>,
+) -> Result<(), AppError> {
+    let transaction = Transaction {
+        id: NewIds(ids).transaction()?,
+        actor,
+        label: label.to_owned(),
+        ops,
+    };
+    handle.apply(transaction).await.map(drop)
 }
 
 /// The asset `asset_id` of `project`.
