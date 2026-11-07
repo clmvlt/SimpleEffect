@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-07 — Prompt 09: Médias 2 : codecs pro, mezzanines, proxies, analyses — Done
 
-**Branch**: `feature/09-medias-pro-analyses`, merged into `dev` at `MERGE_SHA`
+**Branch**: `feature/09-medias-pro-analyses`, merged into `dev` at `f755755`
 
 **Done**
 - se-domain: `analysis` module (`AudioAnalysis` with integrated loudness, range, true/sample peaks, short-term `LoudnessCurve` every 0.5 s, `SilenceSettings::SPEECH` −40 dBFS/0.5 s and silences; `SceneDetection` with `DEFAULT_THRESHOLD` 0.3; `AnalysisResult`, `AnalysisKind`; summaries `AudioSummary`, `SceneSummary`, `AssetAnalysis`), `Asset.analysis` (**schema version 3**, `migrate_v2_to_v3`, `#[serde(default)]` so v2 journals replay), `AssetPatch` with one field per derived copy and summary (`mezzanine`, `proxy`, `audioAnalysis`, `sceneDetection`) instead of `derived`, `Flicks::from_millis`.
