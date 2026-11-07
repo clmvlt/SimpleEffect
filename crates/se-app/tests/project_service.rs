@@ -81,7 +81,11 @@ async fn creating_a_project_opens_it_with_a_default_sequence() {
         .create_project("  Film  ", Path::new(PARENT), hd())
         .await
         .unwrap();
-    assert_eq!(session.path, "/projects/Film.seproj");
+    // Compared as paths: `Path::join` writes `\` on Windows.
+    assert_eq!(
+        Path::new(&session.path),
+        Path::new(PARENT).join("Film.seproj")
+    );
     let snapshot = &session.snapshot;
     assert_eq!(snapshot.project.name, "Film");
     assert_eq!(snapshot.sequences.len(), 1);
@@ -323,7 +327,10 @@ async fn duplicating_copies_the_document_with_a_new_id() {
         .duplicate_project(&example_path(), "Example")
         .await
         .unwrap();
-    assert_eq!(copy.path, "/projects/Example 2.seproj");
+    assert_eq!(
+        Path::new(&copy.path),
+        Path::new(PARENT).join("Example 2.seproj")
+    );
     assert_ne!(copy.id, example_project().id);
     let folder = harness.repository.folder(&copy.path).unwrap();
     assert_eq!(folder.snapshot.id, copy.id);
