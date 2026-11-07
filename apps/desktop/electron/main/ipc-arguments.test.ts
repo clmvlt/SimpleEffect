@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseChooseFolderOptions, parseRevealPath } from './ipc-arguments';
+import {
+  parseChooseFilesOptions,
+  parseChooseFolderOptions,
+  parseRevealPath,
+} from './ipc-arguments';
 
 describe('parseChooseFolderOptions', () => {
   it('keeps valid options', () => {
@@ -19,6 +23,27 @@ describe('parseChooseFolderOptions', () => {
     expect(() =>
       parseChooseFolderOptions({ title: 'T', buttonLabel: 'B', defaultPath: 3 }),
     ).toThrow(TypeError);
+  });
+});
+
+describe('parseChooseFilesOptions', () => {
+  const valid = {
+    title: 'Importer',
+    buttonLabel: 'Importer',
+    filterName: 'Médias',
+    allFilesName: 'Tous les fichiers',
+    extensions: ['mp4', 'wav'],
+  };
+
+  it('keeps valid options', () => {
+    expect(parseChooseFilesOptions(valid)).toEqual(valid);
+  });
+
+  it('refuses malformed options and extensions', () => {
+    expect(() => parseChooseFilesOptions(undefined)).toThrow(TypeError);
+    expect(() => parseChooseFilesOptions({ ...valid, filterName: 1 })).toThrow(TypeError);
+    expect(() => parseChooseFilesOptions({ ...valid, extensions: ['.mp4'] })).toThrow(TypeError);
+    expect(() => parseChooseFilesOptions({ ...valid, extensions: 'mp4' })).toThrow(TypeError);
   });
 });
 

@@ -40,7 +40,9 @@ function memoryStorage(): DockLayoutStorage & { entries: Map<string, string> } {
 const idleBridge: SimpleEffectBridge = {
   getCoreConnection: () => new Promise(() => undefined),
   chooseFolder: () => Promise.resolve(null),
+  chooseFiles: () => Promise.resolve([]),
   showInFolder: () => Promise.resolve(),
+  getPathForFile: () => '',
 };
 
 /** Renders the app at `path`; `loaded` puts the fixture project in the store first. */

@@ -23,6 +23,20 @@ export interface ChooseFolderOptions {
   readonly defaultPath?: string;
 }
 
+/** Options of {@link SimpleEffectBridge.chooseFiles}. */
+export interface ChooseFilesOptions {
+  /** Window title of the native dialog (translated by the renderer). */
+  readonly title: string;
+  /** Label of the confirm button (translated by the renderer). */
+  readonly buttonLabel: string;
+  /** Name of the file type filter (translated), e.g. « Médias ». */
+  readonly filterName: string;
+  /** Extensions of the filter, without dots (`mp4`, `wav`…). */
+  readonly extensions: readonly string[];
+  /** Name of the « all files » filter (translated). */
+  readonly allFilesName: string;
+}
+
 /** API exposed by the preload script as `window.simpleEffect`. */
 export interface SimpleEffectBridge {
   /**
@@ -32,13 +46,24 @@ export interface SimpleEffectBridge {
   getCoreConnection(): Promise<CoreConnection>;
   /** Shows the native folder picker; resolves with the absolute path, or `null` if cancelled. */
   chooseFolder(options: ChooseFolderOptions): Promise<string | null>;
+  /**
+   * Shows the native file picker (several files allowed); resolves with their absolute paths,
+   * or an empty list if cancelled.
+   */
+  chooseFiles(options: ChooseFilesOptions): Promise<string[]>;
   /** Reveals a file or folder in the OS file manager (Explorer, Finder…). */
   showInFolder(path: string): Promise<void>;
+  /**
+   * Absolute path of a `File` dropped from the OS (`webUtils.getPathForFile`); an empty string
+   * for files that are not on disk (e.g. dragged from a web page).
+   */
+  getPathForFile(file: File): string;
 }
 
 /** IPC channels between preload and main. */
 export const IPC_CHANNELS = {
   getCoreConnection: 'core:get-connection',
   chooseFolder: 'dialog:choose-folder',
+  chooseFiles: 'dialog:choose-files',
   showInFolder: 'shell:show-in-folder',
 } as const;
