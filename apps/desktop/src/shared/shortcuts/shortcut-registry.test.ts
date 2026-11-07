@@ -140,4 +140,21 @@ describe('ShortcutRegistry', () => {
     expect(registry.handleKeyDown(keyDown({ key: 'z', ctrlKey: true }, input))).toBe(false);
     expect(run).not.toHaveBeenCalled();
   });
+
+  it('knows which keys are held, until released or the window blurs', () => {
+    const registry = new ShortcutRegistry('other');
+    registry.setActiveContext('viewer');
+    const step = vi.fn();
+    registry.bind('shuttleForward', () => {
+      if (registry.isKeyHeld('k')) step();
+    });
+    registry.handleKeyDown(keyDown({ key: 'K' }));
+    registry.handleKeyDown(keyDown({ key: 'l' }));
+    expect(step).toHaveBeenCalledOnce();
+    registry.handleKeyUp({ key: 'k' });
+    expect(registry.isKeyHeld('k')).toBe(false);
+    registry.handleKeyDown(keyDown({ key: 'k' }));
+    registry.releaseKeys();
+    expect(registry.isKeyHeld('k')).toBe(false);
+  });
 });
