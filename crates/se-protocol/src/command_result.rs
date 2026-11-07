@@ -5,8 +5,9 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    ImportReport, JobSnapshot, MediaSettings, MediaToolsStatus, NewProjectDefaults,
-    ProjectCacheInfo, ProjectSession, RecentProject, RelinkOutcome,
+    AnimationPresetInfo, FontFamily, ImportReport, JobSnapshot, MediaSettings, MediaToolsStatus,
+    NewProjectDefaults, PlacedGraphic, ProjectCacheInfo, ProjectSession, RecentProject,
+    RelinkOutcome,
 };
 
 /// The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
@@ -120,6 +121,22 @@ pub enum CommandResult {
     UpdateTransition,
     /// Answer to [`crate::Command::RemoveTransitions`]: committed.
     RemoveTransitions,
+    /// Answer to [`crate::Command::SetItemAnimations`]: committed.
+    SetItemAnimations,
+    /// Answer to [`crate::Command::AddGraphicItem`]: the new item and its track.
+    AddGraphicItem(PlacedGraphic),
+    /// Answer to [`crate::Command::ApplyAnimationPreset`]: committed.
+    ApplyAnimationPreset,
+    /// Answer to [`crate::Command::ListAnimationPresets`].
+    ListAnimationPresets {
+        /// Every preset, in display order.
+        presets: Vec<AnimationPresetInfo>,
+    },
+    /// Answer to [`crate::Command::ListFonts`].
+    ListFonts {
+        /// Bundled families first, then installed ones, each sorted by name.
+        families: Vec<FontFamily>,
+    },
     /// Answer to [`crate::Command::ImportMedia`].
     ImportMedia(ImportReport),
     /// Answer to [`crate::Command::RelinkAsset`].

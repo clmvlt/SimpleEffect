@@ -1,5 +1,7 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
+import type { AddGraphicRequest } from "./AddGraphicRequest";
+import type { AnimationPhase } from "./AnimationPhase";
 import type { AssetId } from "./AssetId";
 import type { CreateProjectRequest } from "./CreateProjectRequest";
 import type { DecodabilityReport } from "./DecodabilityReport";
@@ -8,6 +10,7 @@ import type { Flicks } from "./Flicks";
 import type { Format } from "./Format";
 import type { GenerateDerivedRequest } from "./GenerateDerivedRequest";
 import type { ImportMediaRequest } from "./ImportMediaRequest";
+import type { ItemAnimation } from "./ItemAnimation";
 import type { ItemId } from "./ItemId";
 import type { ItemPlacement } from "./ItemPlacement";
 import type { ItemTrim } from "./ItemTrim";
@@ -309,7 +312,39 @@ itemId: ItemId,
 /**
  * The property and its new keyframes or value.
  */
-animation: PropertyAnimation, } | { "kind": "addTransitions", 
+animation: PropertyAnimation, } | { "kind": "setItemAnimations", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The new values, applied in order.
+ */
+animations: Array<ItemAnimation>, } | { "kind": "addGraphicItem" } & AddGraphicRequest | { "kind": "applyAnimationPreset", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The items animated, each once; each must have every property of the preset.
+ */
+itemIds: Array<ItemId>, 
+/**
+ * Id of the preset (`listAnimationPresets`).
+ */
+preset: string, 
+/**
+ * Entrance, exit or emphasis.
+ */
+phase: AnimationPhase, 
+/**
+ * How long it lasts (shortened to each item).
+ */
+duration: Flicks, 
+/**
+ * Start relative to each item; `null` for the phase's place.
+ */
+start: Flicks | null, } | { "kind": "listAnimationPresets" } | { "kind": "listFonts" } | { "kind": "addTransitions", 
 /**
  * The open project.
  */

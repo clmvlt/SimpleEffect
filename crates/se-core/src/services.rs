@@ -7,8 +7,9 @@ use se_app::{
     DEFAULT_SAVE_DELAY, JobQueue, JobQueueConfig, MediaService, MediaServiceDeps, ProjectService,
     ProjectServiceConfig, ProjectServiceDeps,
     media_service::settings::keys::TOOLS_DIR,
-    ports::{AppLibraryRepository, IdGenerator},
+    ports::{AppLibraryRepository, FontCatalog, IdGenerator},
 };
+use se_fonts::LocalFontCatalog;
 use se_media::{FfmpegJobRunner, FfmpegTools, FfprobeProber, FsMediaFiles, ToolLocator};
 use se_store::{FsProjectRepository, SqliteAppLibrary};
 
@@ -25,6 +26,8 @@ pub struct Services {
     pub projects: Arc<ProjectService>,
     /// Media (import, relink, jobs, `/media` lookups).
     pub media: Arc<MediaService>,
+    /// Bundled and installed fonts (`listFonts`, `/media/fonts`).
+    pub fonts: Arc<dyn FontCatalog>,
 }
 
 /// Builds the services over the real adapters.
@@ -57,7 +60,20 @@ pub async fn build(paths: &AppPaths, events: &EventBus) -> Result<Services, Core
     Ok(Services {
         projects: Arc::new(projects),
         media,
+        fonts: font_catalog(),
     })
+}
+
+/// The font catalogue, reading the installed fonts in the background right away so the first
+/// `listFonts` does not wait for it.
+fn font_catalog() -> Arc<dyn FontCatalog> {
+    let catalog: Arc<dyn FontCatalog> = Arc::new(LocalFontCatalog::new());
+    let warm_up = Arc::clone(&catalog);
+    tokio::spawn(async move {
+        let count = warm_up.families().await.len();
+        tracing::info!(count, "font catalogue ready");
+    });
+    catalog
 }
 
 /// The media use cases over ffprobe/ffmpeg found by a [`ToolLocator`]. Hardware encoders are

@@ -7,6 +7,7 @@
 //! events are discarded.
 
 mod editing;
+mod graphics;
 mod item_properties;
 mod items;
 mod library;
@@ -19,6 +20,7 @@ mod tracks;
 mod transitions;
 mod trims;
 
+pub use graphics::{animation_preset_infos, graphic_track};
 pub use items::labels as item_labels;
 pub use markers::labels as marker_labels;
 pub use observer::ProjectObserver;

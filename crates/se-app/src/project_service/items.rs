@@ -53,6 +53,16 @@ pub mod labels {
     pub const CHANGE_VOLUME: &str = "Change volume";
     /// The keyframes of another animatable property changed.
     pub const CHANGE_KEYFRAMES: &str = "Change keyframes";
+    /// Items were moved, scaled, rotated or re-anchored in the frame (gizmo, inspector).
+    pub const TRANSFORM: &str = "Transform items";
+    /// A text was added.
+    pub const ADD_TEXT: &str = "Add text";
+    /// A shape was added.
+    pub const ADD_SHAPE: &str = "Add shape";
+    /// An image was added at the playhead.
+    pub const ADD_IMAGE: &str = "Add image";
+    /// An animation preset was applied.
+    pub const APPLY_ANIMATION: &str = "Apply animation";
 }
 
 impl ProjectService {

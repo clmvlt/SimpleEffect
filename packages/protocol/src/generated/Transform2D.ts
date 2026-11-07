@@ -1,6 +1,7 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { Animatable } from "./Animatable";
+import type { DesignPixels } from "./DesignPixels";
 import type { Vec2 } from "./Vec2";
 
 /**
@@ -26,4 +27,8 @@ anchor: Animatable<Vec2>,
 /**
  * Opacity from 0 (invisible) to 1 (opaque).
  */
-opacity: Animatable<number>, };
+opacity: Animatable<number>, 
+/**
+ * Gaussian blur radius of the whole item, in design pixels (0 = sharp); >= 0.
+ */
+blur: Animatable<DesignPixels>, };

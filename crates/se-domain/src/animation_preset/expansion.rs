@@ -252,7 +252,7 @@ fn merge<T: Clone>(
     keyframes: &[PresetKeyframe],
     span: Span,
     base_time: Flicks,
-    resolve: fn(&PresetValue, &T) -> T,
+    resolve: fn(&PresetValue, T) -> T,
 ) -> Animatable<T> {
     let Some(base) = current.held_value_at(base_time) else {
         return current.clone();
@@ -276,7 +276,7 @@ fn merge<T: Clone>(
         }
         added.push(Keyframe {
             time,
-            value: resolve(&keyframe.value, &base),
+            value: resolve(&keyframe.value, base.clone()),
             easing: keyframe.easing,
         });
     }
@@ -301,22 +301,22 @@ fn pair(number: PresetNumber) -> Vec2 {
     }
 }
 
-fn number_value(value: &PresetValue, base: &f64) -> f64 {
+fn number_value(value: &PresetValue, base: f64) -> f64 {
     match *value {
-        PresetValue::Base => *base,
+        PresetValue::Base => base,
         PresetValue::Absolute(number) => scalar(number),
         PresetValue::Offset(number) => base + scalar(number),
         PresetValue::Factor(number) => base * scalar(number),
     }
 }
 
-fn pixels_value(value: &PresetValue, base: &DesignPixels) -> DesignPixels {
-    DesignPixels(number_value(value, &base.0))
+fn pixels_value(value: &PresetValue, base: DesignPixels) -> DesignPixels {
+    DesignPixels(number_value(value, base.0))
 }
 
-fn point_value(value: &PresetValue, base: &Vec2) -> Vec2 {
+fn point_value(value: &PresetValue, base: Vec2) -> Vec2 {
     match *value {
-        PresetValue::Base => *base,
+        PresetValue::Base => base,
         PresetValue::Absolute(number) => pair(number),
         PresetValue::Offset(number) => {
             let offset = pair(number);
@@ -329,9 +329,9 @@ fn point_value(value: &PresetValue, base: &Vec2) -> Vec2 {
     }
 }
 
-fn color_value(value: &PresetValue, base: &Color) -> Color {
+fn color_value(value: &PresetValue, base: Color) -> Color {
     match value {
         PresetValue::Absolute(PresetNumber::Color(color)) => *color,
-        _ => *base,
+        _ => base,
     }
 }

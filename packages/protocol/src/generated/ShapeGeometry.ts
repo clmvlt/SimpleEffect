@@ -3,7 +3,7 @@
 import type { DesignPixels } from "./DesignPixels";
 
 /**
- * The outline of a shape, sized in design pixels (ADR-0015).
+ * The outline of a shape, sized in design pixels (ADR-0015). Every extent is > 0.
  */
 export type ShapeGeometry = { "kind": "rectangle", 
 /**
@@ -15,7 +15,7 @@ width: DesignPixels,
  */
 height: DesignPixels, 
 /**
- * Radius of the rounded corners (0 for square corners).
+ * Radius of the rounded corners (0 for square corners); ≥ 0.
  */
 cornerRadius: DesignPixels, } | { "kind": "ellipse", 
 /**
@@ -25,4 +25,12 @@ width: DesignPixels,
 /**
  * Height of the box.
  */
-height: DesignPixels, };
+height: DesignPixels, } | { "kind": "line", 
+/**
+ * Length from cap to cap.
+ */
+length: DesignPixels, 
+/**
+ * Thickness of the line.
+ */
+thickness: DesignPixels, };

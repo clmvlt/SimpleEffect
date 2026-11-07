@@ -8,6 +8,7 @@ members = [
   "crates/se-media",
   "crates/se-transcribe",
   "crates/se-vision",
+  "crates/se-fonts",
   "crates/se-agents",
   "crates/se-mcp",
   "crates/se-export",
@@ -34,6 +35,7 @@ se-store = { path = "crates/se-store" }
 se-media = { path = "crates/se-media" }
 se-transcribe = { path = "crates/se-transcribe" }
 se-vision = { path = "crates/se-vision" }
+se-fonts = { path = "crates/se-fonts" }
 se-agents = { path = "crates/se-agents" }
 se-mcp = { path = "crates/se-mcp" }
 se-export = { path = "crates/se-export" }
@@ -47,6 +49,8 @@ dunce = "1.0.5"
 # EBU R128 loudness (integrated, short-term, range, true peak) of analysed sound.
 ebur128 = "0.1.11"
 futures-util = "0.3.34"
+# Lists the fonts installed on the system (se-fonts).
+fontdb = { version = "0.24.0", default-features = false, features = ["fs", "memmap"] }
 hex = "0.4.3"
 # Sidecar processes in a job object (Windows) or process group (Unix): the whole tree dies on
 # cancel, and no console window opens on Windows.
