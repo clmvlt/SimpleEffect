@@ -78,6 +78,10 @@
       "redo": "Rétablir",
       "undoNamed": "Annuler : {{label}}",
       "redoNamed": "Rétablir : {{label}}"
+    },
+    "history": {
+      "createSequence": "Création de séquence",
+      "renameProject": "Renommage du projet"
     }
   },
   "statusBar": {

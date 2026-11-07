@@ -7,6 +7,7 @@ import {
   selectProjectName,
   useProjectSelector,
 } from '../../shared/project-store';
+import { historyLabel } from './history-label';
 import { useHistoryCommands } from './use-history-commands';
 
 /** Props of {@link EditorHeader}. */
@@ -23,6 +24,7 @@ export function EditorHeader({ projectId, onHome }: EditorHeaderProps) {
   const { history, undo, redo } = useHistoryCommands(projectId);
   const undoLabel = history?.undoLabel ?? null;
   const redoLabel = history?.redoLabel ?? null;
+  const shown = (label: string) => historyLabel(t, label);
   return (
     <header
       aria-label={t('editor.header.label')}
@@ -32,7 +34,7 @@ export function EditorHeader({ projectId, onHome }: EditorHeaderProps) {
         <Icon icon={House} size="sm" />
         {t('editor.backHome')}
       </Button>
-      <Separator orientation="vertical" className="h-5" />
+      <Separator orientation="vertical" className="h-5 self-center" />
       <h1 className="truncate text-md font-semibold text-text">{name}</h1>
       {sequence !== null && (
         <span className="truncate text-sm text-text-muted">
@@ -45,7 +47,7 @@ export function EditorHeader({ projectId, onHome }: EditorHeaderProps) {
           label={
             undoLabel === null
               ? t('editor.header.undo')
-              : t('editor.header.undoNamed', { label: undoLabel })
+              : t('editor.header.undoNamed', { label: shown(undoLabel) })
           }
           disabled={history?.canUndo !== true}
           onClick={undo}
@@ -55,7 +57,7 @@ export function EditorHeader({ projectId, onHome }: EditorHeaderProps) {
           label={
             redoLabel === null
               ? t('editor.header.redo')
-              : t('editor.header.redoNamed', { label: redoLabel })
+              : t('editor.header.redoNamed', { label: shown(redoLabel) })
           }
           disabled={history?.canRedo !== true}
           onClick={redo}

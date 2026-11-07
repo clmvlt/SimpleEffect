@@ -11,7 +11,8 @@ use crate::{
     project_actor::ProjectActorHandle,
 };
 
-/// Label of the transaction renaming a project (undo menu).
+/// Label of the transaction renaming a project (undo menu). A stable identifier: the renderer
+/// translates it (`apps/desktop/src/app/editor/history-label.ts`).
 const RENAME_LABEL: &str = "Rename project";
 
 impl ProjectService {

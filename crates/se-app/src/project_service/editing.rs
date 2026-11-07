@@ -5,7 +5,8 @@ use se_domain::{Actor, AddSequence, Format, ProjectId, SequenceId, Transaction};
 use super::{ProjectService, checked_name};
 use crate::{AppError, new_ids::NewIds, new_project::default_sequence};
 
-/// Label of the transaction adding a sequence (undo menu).
+/// Label of the transaction adding a sequence (undo menu). A stable identifier: the renderer
+/// translates it (`apps/desktop/src/app/editor/history-label.ts`).
 const CREATE_SEQUENCE_LABEL: &str = "Create sequence";
 
 impl ProjectService {
