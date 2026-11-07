@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use super::{ContentFingerprint, DerivedMedia, MediaInfo};
-use crate::ids::AssetId;
+use crate::{analysis::AssetAnalysis, ids::AssetId};
 
 /// A video, audio or image file used by the project. The file is referenced, never copied.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -26,6 +26,10 @@ pub struct Asset {
     pub fingerprint: Option<ContentFingerprint>,
     /// Mezzanine and proxy copies generated for this asset.
     pub derived: DerivedMedia,
+    /// Summaries of the analyses of its current content (full results: project database).
+    /// Empty when absent, so journal entries written before schema version 3 still replay.
+    #[serde(default)]
+    pub analysis: AssetAnalysis,
     /// Whether the renderer can decode each stream of the original with WebCodecs.
     pub decodability: Decodability,
     /// The original was not found at its path or relative hint when the project was opened.
@@ -89,7 +93,7 @@ pub enum StreamDecodability {
     Unknown,
     /// WebCodecs decodes it directly.
     Decodable,
-    /// WebCodecs cannot decode it: playback needs a mezzanine (prompt 09).
+    /// WebCodecs cannot decode it: playback needs a mezzanine.
     Undecodable,
     /// The file has no such stream.
     NoStream,

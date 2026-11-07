@@ -48,6 +48,12 @@ impl Flicks {
         Self(Self::PER_SECOND)
     }
 
+    /// A whole number of milliseconds (a positive `u32` always fits: 2^32 ms is about 50 days).
+    #[must_use]
+    pub const fn from_millis(milliseconds: u32) -> Self {
+        Self(milliseconds as i64 * (Self::PER_SECOND / 1000))
+    }
+
     /// The raw flick count.
     #[must_use]
     pub const fn get(self) -> i64 {

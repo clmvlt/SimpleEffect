@@ -11,6 +11,8 @@
 //! - [`ids`]: one UUIDv7 newtype per entity kind ([`ItemId`], [`AssetId`]…).
 //! - [`spatial`] and [`color`]: units of positions and sizes (ADR-0015), hex colours.
 //! - [`document`]: [`Project`] and everything it contains.
+//! - [`analysis`]: results of media analyses ([`AudioAnalysis`], [`SceneDetection`]) and the
+//!   summaries assets keep ([`AssetAnalysis`]).
 //! - [`validation`]: [`validate_project`], the cross-entity invariants.
 //! - [`operation`]: [`Operation`] and [`apply`], pure and invertible edits (`docs/architecture.md`
 //!   §5.4, ADR-0005).
@@ -26,6 +28,7 @@
 //! - Pure: no IO, no async, no clock, no randomness, no process spawning.
 //! - Allowed third-party dependencies: `serde`, `thiserror`, `uuid`, `ts-rs` (derive only).
 
+pub mod analysis;
 pub mod changeset;
 pub mod color;
 pub mod document;
@@ -40,6 +43,10 @@ pub mod time;
 pub mod transaction;
 pub mod validation;
 
+pub use analysis::{
+    AnalysisKind, AnalysisResult, AssetAnalysis, AudioAnalysis, AudioSummary, LoudnessCurve,
+    SceneDetection, SceneSummary, SilenceSettings,
+};
 pub use changeset::{Changeset, ChangesetEntry, Conflict, RevertPlan, plan_revert};
 pub use color::{Color, ColorParseError};
 pub use document::{

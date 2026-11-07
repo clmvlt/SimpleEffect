@@ -167,10 +167,23 @@ async fn load_fixture(name: &str) -> se_domain::Project {
     store.load_snapshot().await.unwrap()
 }
 
+/// The example project as the version-2 fixture holds it: no analysis summaries, and the proxy
+/// path the example used then.
+fn example_project_v2() -> se_domain::Project {
+    let mut project = example_project();
+    for asset in &mut project.assets {
+        asset.analysis = se_domain::AssetAnalysis::default();
+        if let Some(proxy) = asset.derived.proxy.as_mut() {
+            proxy.relative_path = format!("cache/proxies/{}.mp4", asset.id);
+        }
+    }
+    project
+}
+
 #[tokio::test]
 async fn version_1_documents_load_through_the_migrations() {
     // Version 1 knew neither fingerprints nor codec levels, tags, pixel formats or audio profiles.
-    let mut expected = example_project();
+    let mut expected = example_project_v2();
     for asset in &mut expected.assets {
         asset.fingerprint = None;
         let info = asset.media_info.as_mut().unwrap();
@@ -187,8 +200,13 @@ async fn version_1_documents_load_through_the_migrations() {
 }
 
 #[tokio::test]
-async fn version_2_documents_load_as_they_are() {
-    assert_eq!(load_fixture("project-v2.json").await, example_project());
+async fn version_2_documents_load_through_the_migrations() {
+    assert_eq!(load_fixture("project-v2.json").await, example_project_v2());
+}
+
+#[tokio::test]
+async fn version_3_documents_load_as_they_are() {
+    assert_eq!(load_fixture("project-v3.json").await, example_project());
 }
 
 #[tokio::test]
@@ -207,7 +225,7 @@ async fn newer_or_broken_documents_are_refused_with_explanations() {
         error,
         StorageError::SchemaTooNew {
             found: 999,
-            supported: 2,
+            supported: se_domain::CURRENT_SCHEMA_VERSION,
             ..
         }
     ));
