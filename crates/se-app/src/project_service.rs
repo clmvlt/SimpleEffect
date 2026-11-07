@@ -1,5 +1,5 @@
 //! [`ProjectService`]: the project use cases behind the protocol commands (create, open, close,
-//! recent list, rename, duplicate, trash, sequences, undo/redo).
+//! recent list, rename, duplicate, trash, sequences, tracks, markers, undo/redo).
 //!
 //! It keeps the registry of open projects (one [`ProjectActorHandle`] each) and never mutates a
 //! document itself: every change is a transaction sent to the project's actor. Operations on a
@@ -10,9 +10,13 @@ mod editing;
 mod library;
 mod lifecycle;
 mod loading;
+mod markers;
 mod observer;
+mod tracks;
 
+pub use markers::labels as marker_labels;
 pub use observer::ProjectObserver;
+pub use tracks::labels as track_labels;
 
 use std::{path::PathBuf, sync::Arc, time::Duration};
 

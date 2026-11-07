@@ -1,6 +1,6 @@
 //! Successful results of commands.
 
-use se_domain::SequenceId;
+use se_domain::{MarkerId, SequenceId, TrackId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -51,6 +51,26 @@ pub enum CommandResult {
     Undo,
     /// Answer to [`crate::Command::Redo`]: committed (the patch arrives as an event).
     Redo,
+    /// Answer to [`crate::Command::AddTrack`].
+    AddTrack {
+        /// Id of the new track.
+        track_id: TrackId,
+    },
+    /// Answer to [`crate::Command::RemoveTrack`]: committed.
+    RemoveTrack,
+    /// Answer to [`crate::Command::UpdateTrack`]: committed.
+    UpdateTrack,
+    /// Answer to [`crate::Command::ReorderTracks`]: committed.
+    ReorderTracks,
+    /// Answer to [`crate::Command::AddMarker`].
+    AddMarker {
+        /// Id of the new marker.
+        marker_id: MarkerId,
+    },
+    /// Answer to [`crate::Command::UpdateMarker`]: committed.
+    UpdateMarker,
+    /// Answer to [`crate::Command::RemoveMarker`]: committed.
+    RemoveMarker,
     /// Answer to [`crate::Command::ImportMedia`].
     ImportMedia(ImportReport),
     /// Answer to [`crate::Command::RelinkAsset`].

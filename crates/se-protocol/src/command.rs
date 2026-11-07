@@ -1,6 +1,9 @@
 //! Commands a client asks `se-core` to execute.
 
-use se_domain::{AssetId, Format, JobId, ProjectId};
+use se_domain::{
+    AssetId, Flicks, Format, JobId, MarkerColor, MarkerId, MarkerPatch, ProjectId, SequenceId,
+    TrackId, TrackKind, TrackPatch,
+};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -14,7 +17,7 @@ use crate::{
 /// Every variant has a [`crate::CommandResult`] variant **with the same name**: that pairing is
 /// how the TypeScript client derives the result type of each command without a hand-written table
 /// (ADR-0012). Adding a command: see the recipe in `crates/se-protocol/CLAUDE.md`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
@@ -96,6 +99,78 @@ pub enum Command {
     Redo {
         /// The open project.
         project_id: ProjectId,
+    },
+    /// Adds an empty track named after its kind and number (`V3`, `A3`) to a sequence (one undo
+    /// step). Answered by [`crate::CommandResult::AddTrack`].
+    AddTrack {
+        /// The open project.
+        project_id: ProjectId,
+        /// The sequence receiving the track.
+        sequence_id: SequenceId,
+        /// Video or audio (not `kind`: that is the command's tag).
+        track_kind: TrackKind,
+        /// Position in the sequence's track list (video tracks stack in list order, first =
+        /// bottom); `null` appends.
+        index: Option<usize>,
+    },
+    /// Removes an unlocked track and its items (one undo step). Answered by
+    /// [`crate::CommandResult::RemoveTrack`].
+    RemoveTrack {
+        /// The open project.
+        project_id: ProjectId,
+        /// The track.
+        track_id: TrackId,
+    },
+    /// Changes a track header: name, mute, solo, lock, visibility, gain, balance (one undo step).
+    /// Answered by [`crate::CommandResult::UpdateTrack`].
+    UpdateTrack {
+        /// The open project.
+        project_id: ProjectId,
+        /// The track.
+        track_id: TrackId,
+        /// The fields to change (absent or `null` fields stay).
+        patch: TrackPatch,
+    },
+    /// Puts the tracks of a sequence in a new order (one undo step). Answered by
+    /// [`crate::CommandResult::ReorderTracks`].
+    ReorderTracks {
+        /// The open project.
+        project_id: ProjectId,
+        /// The sequence.
+        sequence_id: SequenceId,
+        /// Every track of the sequence, once each, in the new order.
+        order: Vec<TrackId>,
+    },
+    /// Adds a marker to a sequence (one undo step). Answered by
+    /// [`crate::CommandResult::AddMarker`].
+    AddMarker {
+        /// The open project.
+        project_id: ProjectId,
+        /// The sequence receiving the marker.
+        sequence_id: SequenceId,
+        /// Its position (≥ 0).
+        time: Flicks,
+        /// Its text (may be empty).
+        label: String,
+        /// Its colour; `null` uses the default (green).
+        color: Option<MarkerColor>,
+    },
+    /// Moves, renames or recolours a marker (one undo step). Answered by
+    /// [`crate::CommandResult::UpdateMarker`].
+    UpdateMarker {
+        /// The open project.
+        project_id: ProjectId,
+        /// The marker.
+        marker_id: MarkerId,
+        /// The fields to change (absent or `null` fields stay).
+        patch: MarkerPatch,
+    },
+    /// Removes a marker (one undo step). Answered by [`crate::CommandResult::RemoveMarker`].
+    RemoveMarker {
+        /// The open project.
+        project_id: ProjectId,
+        /// The marker.
+        marker_id: MarkerId,
     },
     /// Imports media files into an open project (one undoable transaction), skipping content it
     /// already has, then queues their thumbnails and waveform peaks. Answered by
@@ -180,6 +255,27 @@ mod tests {
             serde_json::to_string(&undo).unwrap(),
             r#"{"kind":"undo","projectId":"00000000-0001-7000-8000-000000000000"}"#
         );
+    }
+
+    #[test]
+    fn track_and_marker_patches_may_omit_unchanged_fields() {
+        let json = r#"{"kind":"updateTrack","projectId":"00000000-0001-7000-8000-000000000000","trackId":"00000000-0002-7000-8000-000000000000","patch":{"muted":true}}"#;
+        let Command::UpdateTrack { patch, .. } = serde_json::from_str(json).unwrap() else {
+            panic!("updateTrack must parse as Command::UpdateTrack");
+        };
+        assert_eq!(
+            patch,
+            TrackPatch {
+                muted: Some(true),
+                ..TrackPatch::default()
+            }
+        );
+        let json = r#"{"kind":"updateMarker","projectId":"00000000-0001-7000-8000-000000000000","markerId":"00000000-0003-7000-8000-000000000000","patch":{"label":"Intro"}}"#;
+        let Command::UpdateMarker { patch, .. } = serde_json::from_str(json).unwrap() else {
+            panic!("updateMarker must parse as Command::UpdateMarker");
+        };
+        assert_eq!(patch.label.as_deref(), Some("Intro"));
+        assert_eq!(patch.time, None);
     }
 
     #[test]

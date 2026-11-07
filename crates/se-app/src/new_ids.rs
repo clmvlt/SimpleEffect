@@ -1,6 +1,6 @@
 //! [`NewIds`]: typed ids from the [`IdGenerator`] port.
 
-use se_domain::{AssetId, JobId, ProjectId, SequenceId, TrackId, TransactionId};
+use se_domain::{AssetId, JobId, MarkerId, ProjectId, SequenceId, TrackId, TransactionId};
 
 use crate::{AppError, ports::IdGenerator};
 
@@ -33,6 +33,8 @@ id_methods! {
     sequence -> SequenceId;
     /// A new track id.
     track -> TrackId;
+    /// A new marker id.
+    marker -> MarkerId;
     /// A new transaction id.
     transaction -> TransactionId;
     /// A new asset id.

@@ -81,6 +81,7 @@ impl Edit for RemoveTrack {
 /// cannot change (its items depend on it).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[serde(default, rename_all = "camelCase")]
+#[ts(optional_fields)]
 pub struct TrackPatch {
     /// Another name (not empty).
     pub name: Option<String>,
