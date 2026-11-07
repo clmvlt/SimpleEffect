@@ -21,6 +21,7 @@ import {
 } from '../../src/testing/document';
 import bars from './fixtures/bars.png?url';
 import count2997Proxy from './fixtures/count-2997-proxy.mp4?url';
+import count2997Rotated from './fixtures/count-2997-rotated.mp4?url';
 import count2997 from './fixtures/count-2997.mp4?url';
 import disc from './fixtures/disc.png?url';
 import {
@@ -35,11 +36,13 @@ import {
 } from './golden';
 
 const video = videoAsset({ width: 320, height: 180, proxy: true });
+const phone = videoAsset({ width: 320, height: 180, rotation: 90 });
 const pattern = imageAsset(320, 180);
 const sticker = imageAsset(64, 64);
-const assets = assetTable(video, pattern, sticker);
+const assets = assetTable(video, phone, pattern, sticker);
 const files = {
   [video.id]: { original: count2997, proxy: count2997Proxy },
+  [phone.id]: { original: count2997Rotated },
   [pattern.id]: { original: bars },
   [sticker.id]: { original: disc },
 };
@@ -137,6 +140,74 @@ describe('golden frames', () => {
     await expectGolden('reframe-fit-vertical', await render(scene(180, 320, clip(video.id)), time));
     const filled = scene(180, 320, clip(video.id, { reframe: 'fill' }));
     await expectGolden('reframe-fill-vertical', await render(filled, time));
+  });
+
+  it('crops a filled clip around its focus like the natural picture placed by hand', async () => {
+    const time = frameTime(10, NTSC_30);
+    const left = { kind: 'fill' as const, focus: still({ x: 0, y: 0.5 }) };
+    const filled = await render(scene(180, 320, clip(video.id, { reframe: left })), time);
+    // The same view without a crop: the natural box (320 / 6 × 180 / 6 at 6 design pixels per
+    // pixel) scaled to the frame's height, its left edge on the frame's left edge.
+    const byHand = clip(video.id, {
+      reframe: 'custom',
+      transform: {
+        scale: { x: 320 / 30, y: 320 / 30 },
+        anchor: { x: 0, y: 0.5 },
+        position: { x: 0, y: 0.5 },
+      },
+    });
+    const placed = await render(scene(180, 320, byHand), time);
+    expect(comparePixels(filled, placed, { channel: 24, ratio: 0 }).ratio).toBeLessThan(0.02);
+    await expectGolden('reframe-fill-focus-left', filled);
+  });
+
+  it('crops rotated phone footage in its upright orientation', async () => {
+    const time = frameTime(10, NTSC_30);
+    const top = { kind: 'fill' as const, focus: still({ x: 0.5, y: 0 }) };
+    const filled = await render(scene(320, 180, clip(phone.id, { reframe: top })), time);
+    // Upright 180 × 320: natural box 30 × 53.3, scaled to the frame's width, top edge on top.
+    const byHand = clip(phone.id, {
+      reframe: 'custom',
+      transform: {
+        scale: { x: 320 / 30, y: 320 / 30 },
+        anchor: { x: 0.5, y: 0 },
+        position: { x: 0.5, y: 0 },
+      },
+    });
+    const placed = await render(scene(320, 180, byHand), time);
+    expect(comparePixels(filled, placed, { channel: 24, ratio: 0 }).ratio).toBeLessThan(0.02);
+    await expectGolden('reframe-fill-rotated-top', filled);
+  });
+
+  it('animates the focus of a filled clip', async () => {
+    const moving = {
+      kind: 'fill' as const,
+      focus: {
+        kind: 'keyframed' as const,
+        keyframes: [
+          { time: 0 as Flicks, value: { x: 0, y: 0.5 }, easing: { kind: 'linear' as const } },
+          { time: seconds(1), value: { x: 1, y: 0.5 }, easing: { kind: 'linear' as const } },
+        ],
+      },
+    };
+    const time = frameTime(9, NTSC_30);
+    const animated = await render(scene(180, 320, clip(video.id, { reframe: moving })), time);
+    const progress = time / seconds(1);
+    const held = { kind: 'fill' as const, focus: still({ x: progress, y: 0.5 }) };
+    const holding = await render(scene(180, 320, clip(video.id, { reframe: held })), time);
+    expect(comparePixels(animated, holding, { channel: 0, ratio: 0 }).ratio).toBe(0);
+    await expectGolden('reframe-fill-focus-midway', animated);
+  });
+
+  it('shows a clip at its natural size, framed by its transform (custom)', async () => {
+    const custom = clip(video.id, {
+      reframe: 'custom',
+      transform: { scale: { x: 2, y: 2 }, rotation: 10, position: { x: 0.45, y: 0.5 } },
+    });
+    await expectGolden(
+      'reframe-custom',
+      await render(scene(320, 180, custom), frameTime(10, NTSC_30)),
+    );
   });
 
   it('draws keyframed properties at their interpolated values', async () => {

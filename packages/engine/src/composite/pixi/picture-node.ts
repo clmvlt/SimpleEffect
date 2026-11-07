@@ -1,8 +1,8 @@
-import { Container, ImageSource, Sprite, Texture } from 'pixi.js';
+import { Container, ImageSource, Rectangle, Sprite, Texture } from 'pixi.js';
 
-import type { Layer, Size } from '../../evaluate/frame-graph';
+import type { Crop, Layer, Size } from '../../evaluate/frame-graph';
 import type { Picture } from '../compositor';
-import { pictureFit } from '../layout';
+import { codedCrop, pictureFit } from '../layout';
 import { LayerBlur, place, type LayerNode } from './layer-node';
 
 /** Pixel size Pixi reads from a picture (`displayWidth` for frames, `width` for bitmaps). */
@@ -12,7 +12,9 @@ function resourceSize(resource: VideoFrame | ImageBitmap): readonly [number, num
     : [resource.width, resource.height];
 }
 
-/** A video frame or an image stretched over the layer's box. */
+const WHOLE: Crop = { x: 0, y: 0, width: 1, height: 1 };
+
+/** A video frame or an image (the part of it the layer crops) stretched over the layer's box. */
 export class PictureNode implements LayerNode {
   readonly kind;
   readonly root = new Container();
@@ -41,6 +43,8 @@ export class PictureNode implements LayerNode {
     this.sprite.visible = picture !== undefined;
     if (picture === undefined) return layer.box;
     this.upload(picture.source);
+    const crop = layer.kind === 'video' ? layer.crop : null;
+    this.frameTexture(crop === null ? WHOLE : codedCrop(crop, picture.rotation, picture.mirrored));
     const fit = pictureFit(layer.box, picture.rotation, picture.mirrored);
     const texture = this.sprite.texture;
     this.sprite.position.set(fit.x, fit.y);
@@ -67,7 +71,30 @@ export class PictureNode implements LayerNode {
     }
     this.releaseTexture();
     this.source = new ImageSource({ resource, autoGarbageCollect: false });
-    this.sprite.texture = new Texture({ source: this.source });
+    this.sprite.texture = new Texture({
+      source: this.source,
+      frame: new Rectangle(0, 0, width, height),
+      dynamic: true,
+    });
+  }
+
+  /** Shows only `crop` (normalised in the decoded pixels) of the texture; unchanged crops cost nothing. */
+  private frameTexture(crop: Crop): void {
+    const source = this.source;
+    if (source === null) return;
+    const texture = this.sprite.texture;
+    const x = crop.x * source.pixelWidth;
+    const y = crop.y * source.pixelHeight;
+    const width = Math.max(1, crop.width * source.pixelWidth);
+    const height = Math.max(1, crop.height * source.pixelHeight);
+    const frame = texture.frame;
+    if (frame.x === x && frame.y === y && frame.width === width && frame.height === height) return;
+    frame.x = x;
+    frame.y = y;
+    frame.width = width;
+    frame.height = height;
+    texture.orig.copyFrom(frame);
+    texture.update();
   }
 
   private releaseTexture(): void {

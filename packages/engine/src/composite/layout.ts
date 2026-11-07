@@ -1,4 +1,4 @@
-import type { ResolvedTransform, Size } from '../evaluate/frame-graph';
+import type { Crop, ResolvedTransform, Size } from '../evaluate/frame-graph';
 
 /**
  * Where a layer's box lands in the sequence frame, in the terms of a 2D scene graph node: the box
@@ -70,6 +70,44 @@ export function pictureFit(box: Size, rotation: PictureRotation, mirrored: boole
     height: quarterTurn ? box.width : box.height,
     rotation: mirrored ? -radians : radians,
     mirrored,
+  };
+}
+
+/** A normalised point of the upright picture as a point of the decoded (coded) pixels. */
+function codedPoint(
+  x: number,
+  y: number,
+  rotation: PictureRotation,
+  mirrored: boolean,
+): readonly [number, number] {
+  // The upright picture is the coded one turned clockwise, then mirrored (see `pictureFit`):
+  // undo the mirror, then the turn.
+  const unmirrored = mirrored ? 1 - x : x;
+  switch (rotation) {
+    case 0:
+      return [unmirrored, y];
+    case 90:
+      return [y, 1 - unmirrored];
+    case 180:
+      return [1 - unmirrored, 1 - y];
+    case 270:
+      return [1 - y, unmirrored];
+  }
+}
+
+/**
+ * The part of the decoded pixels showing `crop` (normalised in the upright picture) once they
+ * are turned by `rotation` and mirrored: what a texture's frame must cover so the crop fills the
+ * layer's box through {@link pictureFit}.
+ */
+export function codedCrop(crop: Crop, rotation: PictureRotation, mirrored: boolean): Crop {
+  const [ax, ay] = codedPoint(crop.x, crop.y, rotation, mirrored);
+  const [bx, by] = codedPoint(crop.x + crop.width, crop.y + crop.height, rotation, mirrored);
+  return {
+    x: Math.min(ax, bx),
+    y: Math.min(ay, by),
+    width: Math.abs(bx - ax),
+    height: Math.abs(by - ay),
   };
 }
 

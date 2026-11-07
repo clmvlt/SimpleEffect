@@ -1,0 +1,23 @@
+{
+  "id": "instagramReels",
+  "name": "Instagram Reels",
+  "aspect": { "width": 9, "height": 16 },
+  "reference": { "width": 1080, "height": 1920 },
+  "source": "Meta's Reels ad guidance, as relayed by third-party safe-zone checkers: keep the top 14 % (269 px), the bottom 35 % (672 px) and 6 % (65 px) on each side free of text and logos. Meta publishes no figures for organic Reels; the interface (buttons on the right, caption at the bottom) is the same.",
+  "url": "https://admanage.ai/instagram-reels-safe-zone",
+  "measuredOn": "2026-11-07",
+  "zones": [
+    { "id": "top", "kind": "covered", "rect": { "x": 0, "y": 0, "width": 1080, "height": 269 } },
+    {
+      "id": "bottom",
+      "kind": "covered",
+      "rect": { "x": 0, "y": 1248, "width": 1080, "height": 672 }
+    },
+    { "id": "left", "kind": "covered", "rect": { "x": 0, "y": 269, "width": 65, "height": 979 } },
+    {
+      "id": "right",
+      "kind": "covered",
+      "rect": { "x": 1015, "y": 269, "width": 65, "height": 979 }
+    }
+  ]
+}

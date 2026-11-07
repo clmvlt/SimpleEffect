@@ -1,13 +1,21 @@
 import type { Flicks, ItemId } from '@se/protocol';
 
 import type { LayerBoxes } from '../composite/compositor';
-import type { FontRequest, FrameGraph, ResolvedTransform, Size } from '../evaluate/frame-graph';
+import type {
+  Crop,
+  FontRequest,
+  FrameGraph,
+  ResolvedTransform,
+  Size,
+} from '../evaluate/frame-graph';
 
 /** Where one drawn layer sits: its resolved transform and its box in sequence pixels. */
 export interface LayerLayout {
   readonly itemId: ItemId;
   readonly transform: ResolvedTransform;
   readonly box: Size;
+  /** The part of the picture a video layer shows (fill modes), else `null`. */
+  readonly crop: Crop | null;
 }
 
 /**
@@ -25,7 +33,9 @@ export function frameLayout(graph: FrameGraph, boxes: LayerBoxes): FrameLayout {
   const layers: LayerLayout[] = [];
   for (const layer of graph.layers) {
     const box = boxes.get(layer.itemId);
-    if (box !== undefined) layers.push({ itemId: layer.itemId, transform: layer.transform, box });
+    if (box === undefined) continue;
+    const crop = layer.kind === 'video' ? layer.crop : null;
+    layers.push({ itemId: layer.itemId, transform: layer.transform, box, crop });
   }
   return { time: graph.time, frame: graph.frame, layers };
 }

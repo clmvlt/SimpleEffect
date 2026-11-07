@@ -1,0 +1,23 @@
+{
+  "id": "youtubeShorts",
+  "name": "YouTube Shorts",
+  "aspect": { "width": 9, "height": 16 },
+  "reference": { "width": 1080, "height": 1920 },
+  "source": "Google's vertical video ad guidance as measured by Socialync (YouTube publishes no official Shorts figures; some values are measured): top 288 px, bottom 672 px, left 48 px, right 192 px (like, comment and share buttons).",
+  "url": "https://www.socialync.io/tools/safe-zones/youtube-shorts",
+  "measuredOn": "2026-11-07",
+  "zones": [
+    { "id": "top", "kind": "covered", "rect": { "x": 0, "y": 0, "width": 1080, "height": 288 } },
+    {
+      "id": "bottom",
+      "kind": "covered",
+      "rect": { "x": 0, "y": 1248, "width": 1080, "height": 672 }
+    },
+    { "id": "left", "kind": "covered", "rect": { "x": 0, "y": 288, "width": 48, "height": 960 } },
+    {
+      "id": "right",
+      "kind": "covered",
+      "rect": { "x": 888, "y": 288, "width": 192, "height": 960 }
+    }
+  ]
+}
