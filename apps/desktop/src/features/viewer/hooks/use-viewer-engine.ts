@@ -1,18 +1,16 @@
 import type { SequenceId } from '@se/protocol';
 import type { CompositorBackground, MediaLocator, RenderScene } from '@se/engine/preview';
-import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
+import { useEffect, useRef, useSyncExternalStore, type RefObject } from 'react';
 
 import { playheadStore, playheadTimeOf } from '../../timeline';
-import type { PreviewEngineFactory } from '../services/preview-engine-factory';
-import {
+import type {
   ViewerEngineController,
-  type ViewerEngineStatus,
+  ViewerEngineStatus,
 } from '../services/viewer-engine-controller';
 import type { Size } from '../services/viewer-layout';
 
 /** What the viewer shows and how. */
 export interface ViewerEngineInputs {
-  readonly createEngine: PreviewEngineFactory;
   readonly sequenceId: SequenceId;
   readonly scene: RenderScene | null;
   readonly locator: MediaLocator;
@@ -27,16 +25,18 @@ interface DevWindow {
 }
 
 /**
- * Thin bridge between React and the engine, which lives outside React: it mounts the engine in
- * the returned host element, forwards the scene, options and size, and follows the playhead
- * store directly (no re-render per scrub step).
+ * Thin bridge between React and the engine, which lives outside React (`controller`): it mounts
+ * the engine in the returned host element, forwards the scene, options and size, and follows the
+ * playhead store directly (no re-render per scrub step or played frame).
  */
-export function useViewerEngine(inputs: ViewerEngineInputs): {
+export function useViewerEngine(
+  controller: ViewerEngineController,
+  inputs: ViewerEngineInputs,
+): {
   readonly host: RefObject<HTMLDivElement | null>;
   readonly status: ViewerEngineStatus;
 } {
   const host = useRef<HTMLDivElement | null>(null);
-  const [controller] = useState(() => new ViewerEngineController(inputs.createEngine));
   const status = useSyncExternalStore(controller.subscribe, controller.getStatus);
   const { sequenceId, scene, locator, proxy, background, pixels } = inputs;
 
