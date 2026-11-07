@@ -1,0 +1,74 @@
+{
+  "$comment": "Pinned sidecar binaries fetched by `pnpm fetch-binaries` into resources/bin/<platform>/. Every download has a pinned SHA-256 from its publisher (GitHub release asset digest or the builder's .sha256 file). Licences and the choice of builds: docs/adr/0018-media-import-jobs-and-cache.md. To upgrade: change url, sha256, size and files together, then run the script on each platform.",
+  "ffmpegVersion": "9.0.2",
+  "platforms": {
+    "win32-x64": {
+      "license": "GPL-3.0-or-later — Gyan.dev essentials build (https://www.gyan.dev/ffmpeg/builds/)",
+      "downloads": [
+        {
+          "url": "https://github.com/GyanD/codexffmpeg/releases/download/9.0.2/ffmpeg-9.0.2-essentials_build.zip",
+          "sha256": "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba",
+          "size": 114768076,
+          "archive": "zip",
+          "files": {
+            "ffmpeg.exe": "ffmpeg-9.0.2-essentials_build/bin/ffmpeg.exe",
+            "ffprobe.exe": "ffmpeg-9.0.2-essentials_build/bin/ffprobe.exe"
+          }
+        }
+      ]
+    },
+    "darwin-arm64": {
+      "license": "GPL-3.0-or-later — Martin Riedl's builds (https://ffmpeg.martin-riedl.de), signed, not notarized",
+      "downloads": [
+        {
+          "url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/ffmpeg.zip",
+          "sha256": "c8ed4c4e6978a03c485edbfe4e0a5dc2380f8a30bba5150531b31b094492d924",
+          "size": 28395699,
+          "archive": "zip",
+          "files": { "ffmpeg": "ffmpeg" }
+        },
+        {
+          "url": "https://ffmpeg.martin-riedl.de/download/macos/arm64/1789931890_9.0.2/ffprobe.zip",
+          "sha256": "fcbe839537485eaee7a7a8bc5cbc0f90d53617e80943e8a5b2e31cb851197ea6",
+          "size": 28317701,
+          "archive": "zip",
+          "files": { "ffprobe": "ffprobe" }
+        }
+      ]
+    },
+    "darwin-x64": {
+      "license": "GPL-3.0-or-later — Martin Riedl's builds (https://ffmpeg.martin-riedl.de), signed, not notarized",
+      "downloads": [
+        {
+          "url": "https://ffmpeg.martin-riedl.de/download/macos/amd64/1789931006_9.0.2/ffmpeg.zip",
+          "sha256": "7c6b4125b191cbf773832dc51f424cf2b6bb7da43007d1e066f95909e47cacd4",
+          "size": 33816391,
+          "archive": "zip",
+          "files": { "ffmpeg": "ffmpeg" }
+        },
+        {
+          "url": "https://ffmpeg.martin-riedl.de/download/macos/amd64/1789931006_9.0.2/ffprobe.zip",
+          "sha256": "2322438ed2f6319a691291b247d09c69dcaa3a982460d1f269a7e1af335cfdfd",
+          "size": 33719233,
+          "archive": "zip",
+          "files": { "ffprobe": "ffprobe" }
+        }
+      ]
+    },
+    "linux-x64": {
+      "license": "GPL-3.0-or-later — BtbN FFmpeg-Builds, 9.0 branch (https://github.com/BtbN/FFmpeg-Builds); monthly builds are kept two years: bump before 2028-10",
+      "downloads": [
+        {
+          "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-10-31-12-59/ffmpeg-n9.0.2-39-g7adfbe40dc-linux64-gpl-9.0.tar.xz",
+          "sha256": "73e29a56974ae5a651133a04584c7483b21afe941e17dc91d79814a758b608d3",
+          "size": 153175100,
+          "archive": "tar.xz",
+          "files": {
+            "ffmpeg": "ffmpeg-n9.0.2-39-g7adfbe40dc-linux64-gpl-9.0/bin/ffmpeg",
+            "ffprobe": "ffmpeg-n9.0.2-39-g7adfbe40dc-linux64-gpl-9.0/bin/ffprobe"
+          }
+        }
+      ]
+    }
+  }
+}

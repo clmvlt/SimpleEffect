@@ -19,6 +19,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -b",
     "codegen": "node scripts/codegen.mjs",
+    "fetch-binaries": "node scripts/fetch-binaries.mjs",
     "storybook": "pnpm --filter @se/ui storybook",
     "set-version": "node scripts/set-version.mjs"
   },
