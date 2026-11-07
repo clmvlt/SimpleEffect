@@ -26,6 +26,40 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-07 — Prompt 14: Édition audio, transitions, blancs — Done
+
+**Branch**: `feature/14-edition-audio`, merged into `dev` at `<merge>`
+
+**Done**
+- se-domain (ADR-0024): `Transition { id, kind: crossDissolve | audioCrossfade, leftItem, rightItem, duration, alignment: center | start | end }` on `Track.transitions`; `document::transition_fit` (`item_handles`, `transition_problem`, `transition_room`, `fitted_transition`); codes `INVALID_TRANSITION`, `INSUFFICIENT_HANDLES`, transition ids in `DUPLICATE_ID`, clip volume within −96..+24 dB; operations `AddTransition`, `UpdateTransition`, `RemoveTransition` (exact inverses, fit checked by validation at the end of the transaction); **transition upkeep**: `place_item`/`remove_item` drop the transitions an item move breaks, `SplitItem`/`RippleDeleteRange`/`InsertGap` put back those whose items touch again (`TransitionSnapshot`, shortened to fit, following the right part of a split); `FadeShape` (`linear`, `constantPower`, `logarithmic`) on `MediaClip` + `MediaClipPatch`; schema version 4 (migration and fixture in se-store; journals replay through serde defaults); property tests generate the three new operations.
+- se-protocol / se-app / se-core: `updateItems` (typed patches, planned like item edits), `setItemAnimation`, `addTransitions` (durations shortened to each cut's room, cuts without room skipped, `TRANSITION_NO_ROOM`), `updateTransition` (capped), `removeTransitions`, `getAudioSilences` (`MediaService::audio_silences`); `EditPlan::finish` restores transitions after whole gestures (both items moved, ripple trims); `TrackEntity.transitions`; labels and French history strings.
+- @se/engine: `fadeCurve` / `constantPowerWeights`; fades along their shapes for opacity and gain (holding at the item edges); `evaluate` gives both sides of a cross dissolve as a dissolve group (weights `1 − p` / `p`), the Pixi compositor draws it isolated with the incoming side added (`(1 − p)·(A over below) + p·(B over below)`); prefetch includes dissolve extensions; audio clips extended through sound cross-fades; `clipGainAt` + `gainEnvelope` (one point when constant, else every 10 ms) → `scheduleVoiceGain` with `linearRampToValueAtTime` (replaces the per-piece sampling of prompt 13).
+- Renderer: volume line on audio clips (drag = whole curve, Ctrl/⌘+click adds a keyframe, keyframes drag in time and dB, Alt+click removes), fade handles at clip corners with shaded ramps, transitions drawn on their cut (edges resize, click selects, `Suppr` removes, menu realigns), cut handles (drag sizes a cross-fade, click adds the default one), `Ctrl/⌘+T` (`addTransition`) at the cut nearest the playhead, toolbar default transition length + silences toggle (`se.ui.timeline-edit.v1`), hatched silences, hovered gap with its duration, audio track headers with volume (dB) and pan fields (≥ 56 px), inspector « Audio » section (gain, fades, shapes) for one selected audio clip; the viewer's scene carries transitions to the engines.
+- Tests: se-domain 195 unit (geometry, rules, ops, upkeep incl. split/ripple/removal between two transitions) + property tests; se-app `item_edits/sound.rs` (6), silences; se-core routing; engine Node 185 (fade curves, dissolve layers, gain envelopes dB → gain → ramps, cross-fade scheduling, prefetch) + browser `dissolve.browser.test.ts` (pixel blend of both renders, no dip over a lower track; reference `cross-dissolve-midway.png`); desktop 337 (volume keyframe add/move, fade handle, Ctrl+T, cut-handle drag, transition select/delete, services, inspector).
+- Docs: ADR-0024, architecture §5.3/§5.4/§6/§8, glossary (12 terms), backlog, CLAUDE.md of se-domain, se-app, se-protocol, se-core, se-store, @se/engine, desktop.
+
+**Deviations from the prompt**
+- Clip volume stays `Animatable<f64>` (the prompt said `f32`): same type as track volume and every other animatable number.
+- « Glisser la ligne = gain global » moves the whole curve (every keyframe by the same dB) when the volume is keyframed; the static value otherwise.
+- Fade shapes apply to the picture opacity too (one curve per fade, WYSIWYG).
+- Transitions shorter than requested: the core shortens durations to what the cut allows instead of refusing; a gesture never fails for asking too much.
+- Track volume and pan show in the header only from 56 px (default height 52 px: enlarge the track, or use « Hauteur des pistes »); no popover yet (backlog).
+- Not verified in the built app this time (only automated tests, including the browser golden frames): the listening checks of the acceptance criteria are to be done by hand.
+
+**Follow-ups**
+- Backlog: shrink instead of remove a transition on plain trims that steal handles, freeze-frame handles, linked picture/sound fades together, volume/pan for short headers, marquee keyframe selection.
+- Prompt 15: the inspector's other sections (transform keyframes, easing of volume keyframes), « Propriétés » for transitions.
+- Prompt 19: MCP tools for transitions, fades and volume map onto `addTransitions`, `updateTransition`, `removeTransitions`, `updateItems`, `setItemAnimation`.
+- Prompt 22: automatic silence removal can read `getAudioSilences`.
+- Prompt 27: export reuses `gainEnvelope` (offline graph) and the dissolve compositing.
+
+**Notes for the next agent**
+- An item move dropping several transitions of one track must record their `AddTransition` inverses last removal first (the property test found the swapped order; seed kept in `tests/proptest-regressions/main.txt`).
+- Inverses are replayed one by one by the property test: a composite edit cannot simply clean transitions at the end of `apply_all` (intermediate inverse states would remove valid ones).
+- In jsdom, read data attributes of SVG elements with `getAttribute` (the timeline's fade handles and volume dots are SVG).
+- The test sequence runs at 25 fps: whole-frame positions in gesture tests (0.5 s is half a frame and rounds up).
+- `playwright uninstall` removes the browsers of the **current** Playwright version, not the old ones: delete old `ms-playwright/chromium-*` folders by hand.
+
 ## 2026-11-07 — Prompt 13: Moteur B : lecture temps réel, audio, synchro A/V — Done
 
 **Branch**: `feature/13-moteur-lecture`, merged into `dev` at `e81ea72`
