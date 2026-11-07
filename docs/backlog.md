@@ -25,6 +25,9 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Timeline: snap points of other sequences' items are ignored; snapping to shot changes (scene detection) and to the waveform's transients.
 - Media bin: multiple selection to drag several assets to the timeline at once (`placeMedia` already places a list).
 - Timeline: copy/paste between projects (the internal clipboard keeps copies for the project they come from).
+- Transitions: shrink rather than remove a transition when a plain trim keeps its cut but steals handles (only composite edits and edit plans shorten them today, ADR-0024); freeze-frame handles when the media runs out; per-transition easing; one command to add a picture dissolve and a sound cross-fade on linked cuts from a single cut handle.
+- Timeline: volume and pan of audio tracks in headers shorter than 56 px (a popover), keyframe selection with marquee and `Suppr` on the volume line, eased volume segments edited on the line (today linear keyframes from the line; easing through the inspector, prompt 15).
+- Timeline: fades of linked picture and sound adjusted together (each clip has its own handles today).
 
 ## AI
 - Additional AI providers: Gemini CLI, Codex CLI, opencode (one adapter each, see architecture §15).
@@ -37,6 +40,7 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Local noise reduction / voice enhancement (e.g. RNNoise or a small ONNX model).
 - Loudness normalisation to platform targets (-14 LUFS YouTube, etc.) on export.
 - Local text-to-speech for voice-overs.
+- Sound at 2×/4× and in reverse with the volume curves applied (scrub snippets already use the clip gain at their instant).
 
 ## Interop
 - MOGRT generation for editable text in Premiere (research: proprietary, undocumented format).
