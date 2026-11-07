@@ -6,11 +6,12 @@ use std::{
 };
 
 use async_trait::async_trait;
-use se_app::ports::{AnalysisStore, JournalEntry, ProjectStore, StorageError};
+use se_app::ports::{AnalysisStore, JournalEntry, ProjectStore, StorageError, TaskStore};
 use se_domain::Project;
 
 use crate::{
     fs_analysis_store::FsAnalysisStore,
+    fs_task_store::FsTaskStore,
     io_errors::blocking,
     layout::ProjectLayout,
     project_db::ProjectDatabase,
@@ -81,6 +82,13 @@ impl ProjectStore for FsProjectStore {
 
     fn analyses(&self) -> Arc<dyn AnalysisStore> {
         Arc::new(FsAnalysisStore::new(
+            self.layout.root().to_path_buf(),
+            Arc::clone(&self.database),
+        ))
+    }
+
+    fn tasks(&self) -> Arc<dyn TaskStore> {
+        Arc::new(FsTaskStore::new(
             self.layout.root().to_path_buf(),
             Arc::clone(&self.database),
         ))
