@@ -7,7 +7,12 @@ export { TimelinePanel } from './components/TimelinePanel';
 export { useActiveSequence } from './hooks/use-active-sequence';
 export { useInOutSpan } from './hooks/use-in-out';
 export type { InOutPoints, TimeSpan } from './services/in-out';
-export { playheadStore, playheadTimeOf, usePlayheadTime } from './store/playhead-store';
+export {
+  playheadStore,
+  playheadTimeOf,
+  setPlayheadTime,
+  usePlayheadTime,
+} from './store/playhead-store';
 export {
   clearSelection,
   selectionStore,

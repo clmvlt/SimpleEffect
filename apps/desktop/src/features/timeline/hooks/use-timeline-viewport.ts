@@ -6,6 +6,7 @@ import {
   clampScroll,
   DEFAULT_PIXELS_PER_SECOND,
   fitViewport,
+  pageTo,
   revealTime,
   scrollByPixels,
   timeToX,
@@ -40,6 +41,8 @@ export interface TimelineViewportApi {
   readonly fit: () => void;
   /** Scrolls so `time` is visible. */
   readonly reveal: (time: Flicks) => void;
+  /** Scrolls by a page when `time` left the view while playing in `direction`. */
+  readonly page: (time: Flicks, direction: 1 | -1) => void;
 }
 
 /** The viewport of `sequence`, stored per sequence; fits the sequence the first time it shows. */
@@ -99,6 +102,11 @@ export function useTimelineViewport(
     },
     reveal: (time) => {
       store(revealTime(current(), time, contentEnd));
+    },
+    page: (time, direction) => {
+      const latest = current();
+      const next = pageTo(latest, time, direction, contentEnd);
+      if (next.scrollTime !== latest.scrollTime) store(next);
     },
   };
 }
