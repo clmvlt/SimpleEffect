@@ -114,6 +114,17 @@ pub enum ErrorCode {
     /// A cut has no media to cross-fade (no handle on either side, or the items are too short or
     /// already joined by a transition there).
     TransitionNoRoom,
+    /// The project has no AI task with that id.
+    TaskNotFound,
+    /// The AI task is not queued or running (cancelling a finished task).
+    TaskNotActive,
+    /// The AI task is still queued or running: wait for it, or cancel it first.
+    TaskStillActive,
+    /// The AI task has no agent session to resume (it never started, or the provider cannot
+    /// resume): retry it or submit a new task.
+    TaskNotResumable,
+    /// The AI provider cannot run tasks: its CLI is not installed or not logged in.
+    AiUnavailable,
 }
 
 #[cfg(test)]

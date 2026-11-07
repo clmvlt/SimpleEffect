@@ -1,11 +1,15 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
+import type { AiStatus } from "./AiStatus";
 import type { JobProgress } from "./JobProgress";
 import type { JobSnapshot } from "./JobSnapshot";
 import type { ProjectHistory } from "./ProjectHistory";
 import type { ProjectId } from "./ProjectId";
 import type { ProjectPatch } from "./ProjectPatch";
 import type { ProjectSession } from "./ProjectSession";
+import type { Task } from "./Task";
+import type { TaskEventRecord } from "./TaskEventRecord";
+import type { TaskId } from "./TaskId";
 
 /**
  * An event pushed inside a [`crate::EventEnvelope`], tagged by `kind` (camelCase).
@@ -41,4 +45,20 @@ job: JobSnapshot, } | { "kind": "jobCancelled",
 /**
  * The job.
  */
-job: JobSnapshot, };
+job: JobSnapshot, } | { "kind": "taskUpdated", 
+/**
+ * The task as it is now.
+ */
+task: Task, } | { "kind": "taskEventAppended", 
+/**
+ * The task's project.
+ */
+projectId: ProjectId, 
+/**
+ * The task.
+ */
+taskId: TaskId, 
+/**
+ * The new entry of its log.
+ */
+event: TaskEventRecord, } | { "kind": "aiStatusChanged" } & AiStatus;

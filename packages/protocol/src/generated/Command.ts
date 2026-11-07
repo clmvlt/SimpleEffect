@@ -1,6 +1,7 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { AddGraphicRequest } from "./AddGraphicRequest";
+import type { AiSettings } from "./AiSettings";
 import type { AnimationPhase } from "./AnimationPhase";
 import type { AssetId } from "./AssetId";
 import type { CreateProjectRequest } from "./CreateProjectRequest";
@@ -29,6 +30,8 @@ import type { ProjectId } from "./ProjectId";
 import type { PropertyAnimation } from "./PropertyAnimation";
 import type { RelinkAssetRequest } from "./RelinkAssetRequest";
 import type { SequenceId } from "./SequenceId";
+import type { SubmitTaskRequest } from "./SubmitTaskRequest";
+import type { TaskId } from "./TaskId";
 import type { TrackId } from "./TrackId";
 import type { TrackKind } from "./TrackKind";
 import type { TrackPatch } from "./TrackPatch";
@@ -465,4 +468,44 @@ projectId: ProjectId, } | { "kind": "clearProjectCache",
 /**
  * The open project.
  */
-projectId: ProjectId, };
+projectId: ProjectId, } | { "kind": "submitTask" } & SubmitTaskRequest | { "kind": "cancelTask", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The task.
+ */
+taskId: TaskId, } | { "kind": "retryTask", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The task.
+ */
+taskId: TaskId, } | { "kind": "followUpTask", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The task.
+ */
+taskId: TaskId, 
+/**
+ * What the agent must do next.
+ */
+prompt: string, } | { "kind": "listTasks", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, } | { "kind": "getTaskEvents", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The task.
+ */
+taskId: TaskId, } | { "kind": "getAiStatus" } | { "kind": "refreshAiStatus" } | { "kind": "getAiSettings" } | { "kind": "updateAiSettings" } & AiSettings;

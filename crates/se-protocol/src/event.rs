@@ -1,10 +1,13 @@
 //! Events pushed by `se-core` to its clients.
 
-use se_domain::ProjectId;
+use se_domain::{ProjectId, TaskId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{JobProgress, JobSnapshot, ProjectHistory, ProjectPatch, ProjectSession};
+use crate::{
+    AiStatus, JobProgress, JobSnapshot, ProjectHistory, ProjectPatch, ProjectSession, Task,
+    TaskEventRecord,
+};
 
 /// An event pushed inside a [`crate::EventEnvelope`], tagged by `kind` (camelCase).
 ///
@@ -66,6 +69,22 @@ pub enum CoreEvent {
         /// The job.
         job: JobSnapshot,
     },
+    /// An AI task was submitted or changed (status, run added, agent session announced).
+    TaskUpdated {
+        /// The task as it is now.
+        task: Task,
+    },
+    /// An AI task's agent reported something (appended to the task's log).
+    TaskEventAppended {
+        /// The task's project.
+        project_id: ProjectId,
+        /// The task.
+        task_id: TaskId,
+        /// The new entry of its log.
+        event: TaskEventRecord,
+    },
+    /// What is known about the AI provider changed (installed, logged in or out…).
+    AiStatusChanged(AiStatus),
 }
 
 #[cfg(test)]
