@@ -6,7 +6,7 @@ use se_protocol::{
 
 use super::{
     encode::encode,
-    handlers::{HandlerContext, editing, media, media_settings, projects, system},
+    handlers::{HandlerContext, editing, media, media_settings, projects, system, timeline},
     request::{Rejection, parse_request},
 };
 
@@ -83,6 +83,44 @@ impl RpcRouter {
             } => editing::create_sequence(context, *project_id, name, *format).await,
             Command::Undo { project_id } => editing::undo(context, *project_id).await,
             Command::Redo { project_id } => editing::redo(context, *project_id).await,
+            Command::AddTrack {
+                project_id,
+                sequence_id,
+                track_kind,
+                index,
+            } => timeline::add_track(context, *project_id, *sequence_id, *track_kind, *index).await,
+            Command::RemoveTrack {
+                project_id,
+                track_id,
+            } => timeline::remove_track(context, *project_id, *track_id).await,
+            Command::UpdateTrack {
+                project_id,
+                track_id,
+                patch,
+            } => timeline::update_track(context, *project_id, *track_id, patch).await,
+            Command::ReorderTracks {
+                project_id,
+                sequence_id,
+                order,
+            } => timeline::reorder_tracks(context, *project_id, *sequence_id, order).await,
+            Command::AddMarker {
+                project_id,
+                sequence_id,
+                time,
+                label,
+                color,
+            } => {
+                timeline::add_marker(context, *project_id, *sequence_id, *time, label, *color).await
+            }
+            Command::UpdateMarker {
+                project_id,
+                marker_id,
+                patch,
+            } => timeline::update_marker(context, *project_id, *marker_id, patch).await,
+            Command::RemoveMarker {
+                project_id,
+                marker_id,
+            } => timeline::remove_marker(context, *project_id, *marker_id).await,
             Command::ImportMedia(request) => media::import_media(context, request).await,
             Command::RelinkAsset(request) => media::relink_asset(context, request).await,
             Command::RemoveAsset {
@@ -258,6 +296,21 @@ mod tests {
         )
         .await;
         assert_eq!(cache["error"]["code"], "PROJECT_NOT_OPEN");
+    }
+
+    #[tokio::test]
+    async fn track_and_marker_commands_reach_the_project_service() {
+        let project = "00000000-0001-7000-8000-000000000000";
+        let track = reply(&format!(
+            r#"{{"type":"request","id":1,"command":{{"kind":"updateTrack","projectId":"{project}","trackId":"00000000-0002-7000-8000-000000000000","patch":{{"muted":true}}}}}}"#
+        ))
+        .await;
+        assert_eq!(track["error"]["code"], "PROJECT_NOT_OPEN");
+        let marker = reply(&format!(
+            r#"{{"type":"request","id":2,"command":{{"kind":"addMarker","projectId":"{project}","sequenceId":"00000000-0003-7000-8000-000000000000","time":0,"label":"","color":null}}}}"#
+        ))
+        .await;
+        assert_eq!(marker["error"]["code"], "PROJECT_NOT_OPEN");
     }
 
     #[tokio::test]

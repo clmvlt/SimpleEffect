@@ -1,18 +1,8 @@
 import type { Flicks } from '@se/protocol';
 
-/**
- * Display helpers for flicks (705,600,000 per second, ADR-0004). Floats appear only here, at the
- * UI boundary. TODO(prompt-10): the timeline adds the timecode helpers checked against
- * `docs/test-vectors/*.json`; keep these display-only.
- */
+import { flicksToSeconds } from './flicks';
 
-/** Flicks in one second. */
-export const FLICKS_PER_SECOND = 705_600_000;
-
-/** Seconds of a flicks value (display only, never for document positions). */
-export function flicksToSeconds(flicks: Flicks): number {
-  return flicks / FLICKS_PER_SECOND;
-}
+/** Display helpers for durations (media bin). Timecodes are in `timecode.ts`. */
 
 /** A duration as `M:SS` or `H:MM:SS` (whole seconds, rounded down), e.g. `1:05:09`. */
 export function formatDuration(flicks: Flicks): string {

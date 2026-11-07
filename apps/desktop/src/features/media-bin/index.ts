@@ -3,3 +3,4 @@
  * progress, details, missing media and relinking (prompt 08).
  */
 export { MediaBinPanel } from './components/MediaBinPanel';
+export { useAssetMediaUrl } from './hooks/use-asset-media';

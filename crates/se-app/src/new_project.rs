@@ -53,7 +53,11 @@ pub fn new_project(ids: NewIds<'_>, name: &str, format: Format) -> Result<Projec
     })
 }
 
-fn empty_track(ids: NewIds<'_>, name: &str, kind: TrackKind) -> Result<Track, AppError> {
+/// A new, empty, unlocked and audible track.
+///
+/// # Errors
+/// [`AppError::Internal`] if the id generator is broken.
+pub fn empty_track(ids: NewIds<'_>, name: &str, kind: TrackKind) -> Result<Track, AppError> {
     Ok(Track {
         id: ids.track()?,
         kind,

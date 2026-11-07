@@ -29,6 +29,7 @@ Editor widgets (`src/editor/`, prompt 04, Storybook section « Editor »):
 | `TransportBar` | Playback controls | Start, previous frame, play/pause, stop, next frame, end, loop; timecode and trailing slots; missing callbacks disable their button |
 | `Meter` | Stereo (n-channel) level meter in dBFS | Levels and peaks in props; green/orange/red zones; `updatePeakHold()` is the pure peak-hold helper; each channel is an ARIA `meter` |
 | `AspectRatioPicker` | 16:9, 9:16, 1:1, 4:5, custom | Radio group with thumbnails to scale; custom width/height fields |
+| `ClipShell`, `ClipBadge` | Body of a timeline item and its tiny AI badge (prompt 10) | `tone` (`video`, `audio`, `graphic`, `caption`), `label`, `badges`, `selected` (accent ring), `dimmed`; `children` is the picture layer (thumbnails, waveform) filling the clip under the label bar. No role: the timeline gives it one |
 | `StatusDot`, `EmptyState`, `KeyboardShortcut` | Status dot, empty placeholder, OS-aware shortcut | `KeyboardShortcut keys={['Mod','Shift','Z']}` → ⌘⇧Z on macOS, Ctrl Shift Z elsewhere (`keyLabels` localises) |
 | `AiTaskCard`, `PromptComposer` | AI task card and request box (visual only) | Card: 5 statuses, log, error, cost and actions slots. Composer: auto-growing text, removable scope chips (Backspace in an empty field removes the last), Ctrl/⌘+Enter sends, model/effort slots |
 
@@ -54,7 +55,7 @@ Editor widgets (`src/editor/`, prompt 04, Storybook section « Editor »):
 - Text: `text`, `text-muted`, `text-subtle` (still AA), `text-inverted`.
 - Accent: `accent`, `accent-hover`, `accent-muted` (selection), `accent-foreground`, `focus-ring`.
 - States: `success|warning|danger|info` (readable as text) + `-muted` fills; `danger-solid`, `danger-solid-hover`, `danger-foreground` for destructive buttons.
-- Timeline: `item-video|item-audio|item-graphic|item-caption|ai`, each with `-muted` (fill) and `-strong` (border, text).
+- Timeline: `item-video|item-audio|item-graphic|item-caption|ai`, each with `-muted` (fill) and `-strong` (border, text); marker fills `marker-green|red|purple|orange|yellow|white|blue|cyan` (Premiere's eight colours).
 - Sizes: `h-control-xs|sm|md` (24/28/32 px, also `size-`, `w-`…), 4 px grid (`p-1` = 4 px), radii `rounded-xs|sm|md|lg`, `shadow-overlay` only on floating layers.
 - Type: `text-2xs|xs|sm|md|lg|xl` = 11/12/13/14/16/20 px; `font-normal|medium|semibold`; `timecode` utility (mono + tabular numerals) for timecodes and numeric readouts.
 - Motion: `duration-(--duration-fast|normal|slow)`, `ease-standard|out|in`, `animate-overlay-in|out`, `animate-content-in|out`, `animate-spin|pulse`; all disabled under `prefers-reduced-motion`.

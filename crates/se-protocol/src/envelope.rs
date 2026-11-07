@@ -16,7 +16,7 @@ use crate::{Command, CommandResult, CoreEvent, ProtocolError};
 pub type RequestId = u64;
 
 /// A message sent by a client to `se-core`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum ClientMessage {
     /// Asks the core to execute a command; answered by exactly one [`ServerMessage::Response`].
@@ -24,7 +24,7 @@ pub enum ClientMessage {
 }
 
 /// A command to execute, with the id its response will carry.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 pub struct RequestEnvelope {
     /// Echoed back in the response. Unique per client connection lifetime.
     pub id: RequestId,

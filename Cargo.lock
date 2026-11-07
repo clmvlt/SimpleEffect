@@ -1270,6 +1270,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "se-devtools"
+version = "0.1.0"
+dependencies = [
+ "se-app",
+ "se-domain",
+ "se-media",
+ "se-store",
+ "thiserror 2.0.21",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "se-domain"
 version = "0.1.0"
 dependencies = [

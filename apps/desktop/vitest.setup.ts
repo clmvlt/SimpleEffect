@@ -19,6 +19,14 @@ if (typeof window !== 'undefined') {
   if (!('ResizeObserver' in globalThis)) {
     Object.defineProperty(globalThis, 'ResizeObserver', { value: ResizeObserverStub });
   }
+  // Pointer drags (timeline) capture the pointer; jsdom does not implement capture.
+  if (!('setPointerCapture' in Element.prototype)) {
+    Object.assign(Element.prototype, {
+      setPointerCapture: () => undefined,
+      releasePointerCapture: () => undefined,
+      hasPointerCapture: () => false,
+    });
+  }
   // sonner reads the colour scheme; jsdom has no `matchMedia`.
   if (!('matchMedia' in window)) {
     Object.defineProperty(window, 'matchMedia', {

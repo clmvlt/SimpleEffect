@@ -62,6 +62,7 @@ impl Edit for RemoveMarker {
 /// Changes of a marker; `null` (or absent) fields are unchanged.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(default, rename_all = "camelCase")]
+#[ts(optional_fields)]
 pub struct MarkerPatch {
     /// Another position (≥ 0).
     pub time: Option<Flicks>,

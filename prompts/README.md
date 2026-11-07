@@ -45,7 +45,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | [x] | 08 | [Médias 1 : import, bin, jobs, miniatures, waveforms](08-medias-import.md) | 07 | 17 |
 | [x] | 09 | [Médias 2 : codecs pro, mezzanines, proxies, analyses](09-medias-pro-analyses.md) | 08 | 10, 17 |
 | **Phase 3 — Montage** |||||
-| [ ] | 10 | [Timeline A : affichage et navigation](10-timeline-affichage.md) | 08 | 09, 17 |
+| [x] | 10 | [Timeline A : affichage et navigation](10-timeline-affichage.md) | 08 | 09, 17 |
 | [ ] | 11 | [Timeline B : édition](11-timeline-edition.md) | 10 | 17 |
 | [ ] | 12 | [Moteur A : évaluation, décodage, compositing, viewer](12-moteur-rendu.md) ⚠️ | 09, 11 | 17 |
 | [ ] | 13 | [Moteur B : lecture temps réel, audio, synchro A/V](13-moteur-lecture.md) ⚠️ | 12 | 17 |

@@ -98,7 +98,7 @@ describe('app shell', () => {
     expect(within(header).getByRole('button', { name: 'Accueil' })).toBeEnabled();
   });
 
-  it('lays out the editor panels with explicit empty states', async () => {
+  it('lays out the editor panels, the timeline showing the active sequence', async () => {
     const user = userEvent.setup();
     renderApp(EDITOR_PATH, { loaded: true });
 
@@ -108,9 +108,9 @@ describe('app shell', () => {
     expect(
       within(screen.getByRole('region', { name: 'Viewer' })).getByText('Aucune séquence ouverte'),
     ).toBeInTheDocument();
-    expect(
-      within(screen.getByRole('region', { name: 'Timeline' })).getByText('Timeline vide'),
-    ).toBeInTheDocument();
+    const timeline = screen.getByRole('region', { name: 'Timeline' });
+    expect(within(timeline).getByRole('group', { name: 'Piste track-v1' })).toBeInTheDocument();
+    expect(within(timeline).getByRole('option', { name: 'item-1' })).toBeInTheDocument();
 
     const side = screen.getByRole('region', { name: 'Inspecteur et IA' });
     expect(within(side).getByText('Aucune sélection')).toBeInTheDocument();
@@ -120,7 +120,7 @@ describe('app shell', () => {
     await user.keyboard('{ArrowRight}');
     expect(within(side).getByText('Assistant IA non configuré')).toBeInTheDocument();
 
-    expect(screen.getAllByRole('separator')).toHaveLength(3);
+    expect(screen.getAllByRole('separator', { name: /^Redimensionner/ })).toHaveLength(3);
   });
 
   it('restores saved panel sizes', () => {

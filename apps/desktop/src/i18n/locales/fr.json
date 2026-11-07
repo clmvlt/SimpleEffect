@@ -214,6 +214,75 @@
       "empty": {
         "title": "Timeline vide",
         "description": "Ajoutez des médias à une séquence pour commencer le montage."
+      },
+      "sequences": "Séquences",
+      "newSequence": "Nouvelle séquence",
+      "newSequenceName": "Séquence {{number}}",
+      "ruler": "Règle temporelle",
+      "minimap": "Aperçu de la séquence",
+      "items": {
+        "media": "Média",
+        "shape": "Forme",
+        "template": "Modèle animé",
+        "text": "Texte",
+        "aiBadge": "IA",
+        "aiDescription": "Créé par l’IA"
+      },
+      "track": {
+        "label": "Piste {{name}}",
+        "nameField": "Nom de la piste",
+        "show": "Afficher {{name}}",
+        "hide": "Masquer {{name}}",
+        "mute": "Rendre {{name}} muette",
+        "unmute": "Rétablir le son de {{name}}",
+        "solo": "Écouter {{name}} en solo",
+        "unsolo": "Quitter le solo de {{name}}",
+        "lock": "Verrouiller {{name}}",
+        "unlock": "Déverrouiller {{name}}",
+        "addAbove": "Ajouter une piste au-dessus",
+        "addBelow": "Ajouter une piste en dessous",
+        "rename": "Renommer",
+        "remove": "Supprimer la piste"
+      },
+      "marker": {
+        "label": "Marqueur {{name}}",
+        "untitled": "Sans titre",
+        "edit": "Modifier le libellé…",
+        "labelField": "Libellé du marqueur",
+        "labelPlaceholder": "Libellé",
+        "color": "Couleur",
+        "colors": {
+          "green": "Vert",
+          "red": "Rouge",
+          "purple": "Violet",
+          "orange": "Orange",
+          "yellow": "Jaune",
+          "white": "Blanc",
+          "blue": "Bleu",
+          "cyan": "Cyan"
+        },
+        "goTo": "Aller au marqueur",
+        "remove": "Supprimer le marqueur"
+      },
+      "toolbar": {
+        "label": "Outils de la timeline",
+        "playhead": "Position de la tête de lecture",
+        "tracks": "Pistes",
+        "addTrack": "Ajouter une piste",
+        "addVideoTrack": "Piste vidéo",
+        "addAudioTrack": "Piste audio",
+        "trackHeights": "Hauteur des pistes",
+        "heights": {
+          "compact": "Compacte",
+          "normal": "Normale",
+          "large": "Grande"
+        },
+        "snapping": "Aimantation",
+        "zoom": "Zoom",
+        "zoomIn": "Zoom avant",
+        "zoomOut": "Zoom arrière",
+        "zoomLevel": "Niveau de zoom",
+        "fit": "Ajuster à la fenêtre"
       }
     },
     "loading": "Ouverture du projet…",
@@ -238,7 +307,28 @@
       "renameProject": "Renommage du projet",
       "importMedia": "Import de médias",
       "relinkMedia": "Reliaison d’un média",
-      "removeMedia": "Retrait d’un média"
+      "removeMedia": "Retrait d’un média",
+      "addTrack": "Ajout de piste",
+      "removeTrack": "Suppression de piste",
+      "reorderTracks": "Réorganisation des pistes",
+      "renameTrack": "Renommage de piste",
+      "muteTrack": "Piste rendue muette",
+      "unmuteTrack": "Son de piste rétabli",
+      "soloTrack": "Piste en solo",
+      "unsoloTrack": "Fin du solo de piste",
+      "lockTrack": "Verrouillage de piste",
+      "unlockTrack": "Déverrouillage de piste",
+      "hideTrack": "Piste masquée",
+      "showTrack": "Piste affichée",
+      "changeTrackVolume": "Volume de piste",
+      "changeTrackPan": "Balance de piste",
+      "updateTrack": "Modification de piste",
+      "addMarker": "Ajout de marqueur",
+      "removeMarker": "Suppression de marqueur",
+      "moveMarker": "Déplacement de marqueur",
+      "renameMarker": "Renommage de marqueur",
+      "changeMarkerColor": "Couleur de marqueur",
+      "updateMarker": "Modification de marqueur"
     }
   },
   "statusBar": {
@@ -393,6 +483,53 @@
       "confirmDescription": "Miniatures, formes d’onde, mezzanines et proxies seront supprimés puis régénérés au besoin. Les analyses sont conservées. Les fichiers en cours d’utilisation restent.",
       "confirm": "Nettoyer",
       "cancel": "Annuler"
+    }
+  },
+  "shortcuts": {
+    "title": "Raccourcis clavier",
+    "description": "Les raccourcis d’une zone s’appliquent quand elle est active : cliquez dans la timeline ou le viewer pour l’activer.",
+    "open": "Raccourcis clavier",
+    "contexts": {
+      "global": "Partout",
+      "timeline": "Timeline",
+      "viewer": "Viewer"
+    },
+    "or": "ou",
+    "keys": {
+      "ctrl": "Ctrl",
+      "alt": "Alt",
+      "shift": "Maj",
+      "enter": "Entrée",
+      "backspace": "Retour arrière",
+      "delete": "Suppr",
+      "escape": "Échap",
+      "space": "Espace",
+      "tab": "Tab",
+      "home": "Début",
+      "end": "Fin"
+    },
+    "actions": {
+      "undo": "Annuler",
+      "redo": "Rétablir",
+      "showShortcuts": "Afficher les raccourcis clavier",
+      "goToStart": "Aller au début",
+      "goToEnd": "Aller à la fin",
+      "previousFrame": "Image précédente",
+      "nextFrame": "Image suivante",
+      "backTenFrames": "Reculer de dix images",
+      "forwardTenFrames": "Avancer de dix images",
+      "previousEditPoint": "Point de montage précédent",
+      "nextEditPoint": "Point de montage suivant",
+      "markIn": "Définir le point d’entrée",
+      "markOut": "Définir le point de sortie",
+      "clearInOut": "Effacer les points d’entrée et de sortie",
+      "addMarker": "Ajouter un marqueur",
+      "zoomIn": "Zoom avant",
+      "zoomOut": "Zoom arrière",
+      "zoomToFit": "Ajuster à la fenêtre",
+      "toggleSnapping": "Activer ou désactiver l’aimantation",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Tout désélectionner"
     }
   }
 }

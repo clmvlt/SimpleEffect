@@ -3,6 +3,7 @@
 import type { CoreInfo } from "./CoreInfo";
 import type { ImportReport } from "./ImportReport";
 import type { JobSnapshot } from "./JobSnapshot";
+import type { MarkerId } from "./MarkerId";
 import type { MediaSettings } from "./MediaSettings";
 import type { MediaToolsStatus } from "./MediaToolsStatus";
 import type { NewProjectDefaults } from "./NewProjectDefaults";
@@ -11,6 +12,7 @@ import type { ProjectSession } from "./ProjectSession";
 import type { RecentProject } from "./RecentProject";
 import type { RelinkOutcome } from "./RelinkOutcome";
 import type { SequenceId } from "./SequenceId";
+import type { TrackId } from "./TrackId";
 
 /**
  * The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
@@ -23,7 +25,15 @@ projects: Array<RecentProject>, } | { "kind": "renameProject" } & RecentProject 
 /**
  * Id of the new sequence.
  */
-sequenceId: SequenceId, } | { "kind": "undo" } | { "kind": "redo" } | { "kind": "importMedia" } & ImportReport | { "kind": "relinkAsset", 
+sequenceId: SequenceId, } | { "kind": "undo" } | { "kind": "redo" } | { "kind": "addTrack", 
+/**
+ * Id of the new track.
+ */
+trackId: TrackId, } | { "kind": "removeTrack" } | { "kind": "updateTrack" } | { "kind": "reorderTracks" } | { "kind": "addMarker", 
+/**
+ * Id of the new marker.
+ */
+markerId: MarkerId, } | { "kind": "updateMarker" } | { "kind": "removeMarker" } | { "kind": "importMedia" } & ImportReport | { "kind": "relinkAsset", 
 /**
  * Whether the asset was relinked or the user must confirm first.
  */

@@ -14,6 +14,11 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Revisions on tracks, sequences, markers and assets so that a changeset revert can detect a later change of the same field by another actor (today the revert restores the fields the task changed; ADR-0016).
 - "Skip" for an undo or redo that no longer applies (the entry currently stays at the top of its stack until the document allows it again; ADR-0016).
 - Option for ripple delete / insert gap to move sequence markers along (they stay in place today).
+- Timeline: decode waveform peaks in a worker (a zoom crossing a peak level decodes on the main thread, one ~40 ms frame seen with long files; ADR-0020).
+- Timeline: keyboard navigation between clips (Tab/arrows inside lanes, Space to select) for screen-reader users; clips are `option`s without focus today.
+- Timeline: user-defined shortcuts (remapping `SHORTCUT_ACTIONS` keys, saved as a machine preference; conflicts already detected).
+- Timeline: per-track waveform display in video tracks (clips with sound) and a « show waveforms / thumbnails » view option.
+- Timeline: sync the view state (zoom, in/out, track heights) between machines, e.g. an optional `view.json` next to the project (today a per-machine preference; ADR-0020).
 
 ## AI
 - Additional AI providers: Gemini CLI, Codex CLI, opencode (one adapter each, see architecture §15).

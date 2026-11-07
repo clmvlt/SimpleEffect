@@ -4,13 +4,21 @@ import type { AssetId } from "./AssetId";
 import type { CreateProjectRequest } from "./CreateProjectRequest";
 import type { DecodabilityReport } from "./DecodabilityReport";
 import type { DecoderCapabilities } from "./DecoderCapabilities";
+import type { Flicks } from "./Flicks";
 import type { Format } from "./Format";
 import type { GenerateDerivedRequest } from "./GenerateDerivedRequest";
 import type { ImportMediaRequest } from "./ImportMediaRequest";
 import type { JobId } from "./JobId";
+import type { MarkerColor } from "./MarkerColor";
+import type { MarkerId } from "./MarkerId";
+import type { MarkerPatch } from "./MarkerPatch";
 import type { MediaSettings } from "./MediaSettings";
 import type { ProjectId } from "./ProjectId";
 import type { RelinkAssetRequest } from "./RelinkAssetRequest";
+import type { SequenceId } from "./SequenceId";
+import type { TrackId } from "./TrackId";
+import type { TrackKind } from "./TrackKind";
+import type { TrackPatch } from "./TrackPatch";
 
 /**
  * A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -71,7 +79,96 @@ projectId: ProjectId, } | { "kind": "redo",
 /**
  * The open project.
  */
-projectId: ProjectId, } | { "kind": "importMedia" } & ImportMediaRequest | { "kind": "relinkAsset" } & RelinkAssetRequest | { "kind": "removeAsset", 
+projectId: ProjectId, } | { "kind": "addTrack", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The sequence receiving the track.
+ */
+sequenceId: SequenceId, 
+/**
+ * Video or audio (not `kind`: that is the command's tag).
+ */
+trackKind: TrackKind, 
+/**
+ * Position in the sequence's track list (video tracks stack in list order, first =
+ * bottom); `null` appends.
+ */
+index: number | null, } | { "kind": "removeTrack", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The track.
+ */
+trackId: TrackId, } | { "kind": "updateTrack", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The track.
+ */
+trackId: TrackId, 
+/**
+ * The fields to change (absent or `null` fields stay).
+ */
+patch: TrackPatch, } | { "kind": "reorderTracks", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The sequence.
+ */
+sequenceId: SequenceId, 
+/**
+ * Every track of the sequence, once each, in the new order.
+ */
+order: Array<TrackId>, } | { "kind": "addMarker", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The sequence receiving the marker.
+ */
+sequenceId: SequenceId, 
+/**
+ * Its position (≥ 0).
+ */
+time: Flicks, 
+/**
+ * Its text (may be empty).
+ */
+label: string, 
+/**
+ * Its colour; `null` uses the default (green).
+ */
+color: MarkerColor | null, } | { "kind": "updateMarker", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The marker.
+ */
+markerId: MarkerId, 
+/**
+ * The fields to change (absent or `null` fields stay).
+ */
+patch: MarkerPatch, } | { "kind": "removeMarker", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The marker.
+ */
+markerId: MarkerId, } | { "kind": "importMedia" } & ImportMediaRequest | { "kind": "relinkAsset" } & RelinkAssetRequest | { "kind": "removeAsset", 
 /**
  * The open project.
  */

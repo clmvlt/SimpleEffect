@@ -38,6 +38,7 @@ export * from './primitives/tooltip';
 
 export * from './editor/ai-task-card';
 export * from './editor/aspect-ratio-picker';
+export * from './editor/clip-shell';
 export * from './editor/color-field';
 export * from './editor/dock';
 export * from './editor/easing-curve-editor';
