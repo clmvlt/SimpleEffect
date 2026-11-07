@@ -26,6 +26,40 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-07 — Prompt 16: Formats, séquences multiples, safe areas — Done
+
+**Branch**: `feature/16-formats-sequences`, merged into `dev` at `MERGE_SHA`
+
+**Done**
+- se-domain (ADR-0026): `Reframe = fit | fill { focus } | custom | tracked { focus }` — fill crops to the frame around a focus (a point of the picture, independent of the frame's aspect), custom is the natural size (one picture pixel per design pixel), tracked is prepared for prompt 26 —; the focus is the 18th animatable property `ReframeFocus` (keyframes, validation of each component in `[0, 1]`). New `reformat` module: `FormatAdaptation { clipReframe: keep | fit | fill, fitTextWidths }`, `adapted_patch` (texts wider than 90 % of the new frame get that wrapping width), `format_change` (operations of an in-place change, locked tracks skipped), `sequence_version` / `copy_sequence` (fresh ids from a fallible `SequenceIds`, link groups and transitions remapped); `FRAME_RATE_LOCKED`, `LAST_SEQUENCE`. Trims and splits now retime **every** animatable property (blur and text styles were left outside the item and made the edit fail). Schema version 6 + migration + fixture; property tests for format changes (valid, exact undo) and versions (valid, no shared id); generators produce reframe patches and focus keyframes.
+- se-app / se-protocol / se-core: `renameSequence`, `setSequenceFormat`, `duplicateSequence` (copy, or version in another format placed after its source; label « Create version »), `removeSequence` (refuses the last one); `updateItems` takes optional `animations` in the same step (a mode switch and its compensating scale); label « Reframe items ».
+- @se/engine: `reframedPicture` (box + crop per mode), `fillCrop`, `reframeScale`; `PictureNode` frames its texture on the crop mapped back through display rotation and mirroring (`codedCrop`); `FrameLayout` carries crops; captions wrap at 90 % of narrow frames. `@se/engine/safe-areas`: TikTok, Instagram Reels, YouTube Shorts (zones the apps cover) and YouTube 16:9 (title/action safe), one JSON file each with source, URL and measurement date. Golden frames: fill around a left focus and on rotated phone footage (each checked against the same view placed by hand in custom mode), animated focus (pixel-equal to its held value), custom framing; the existing fit/fill references still pass unchanged.
+- Renderer: `shared/format` (format fields of the new-project form, now shared), feature `sequences` (format dialog with the frame rate locked once items exist, clip policy defaulting to fill when the aspect changes, « Adapter la largeur des textes »; « Créer une version… » with the name following the ratio and the independence notice; duplicate; removal confirmation; toast listing the items **newly** out of the frame with « Sélectionner », computed after the change with `evaluate` and a canvas text measurer); timeline tabs always shown with a context menu, a « … » menu and inline rename; inspector « Cadrage » (Ajuster / Remplir / Personnalisé with a compensating scale for the natural size, « Zone gardée » keyframable, « Recadrer dans le viewer »); viewer guides per sequence (safe areas, thirds, centre cross; never exported) and reframing mode (double click on a filling clip: whole picture outlined, hidden parts shown from the thumbnail sheet, drag moves the picture under the frame, one undo step, Enter/Escape/« Terminer »).
+- Tests: se-domain 231 unit + 6 property suites; se-app `item_edits/sequences.rs` (6); engine Node 217 + browser 31; desktop 410 (sequence services and dialogs, tabs, reframe inspector and switch service, viewer guides and reframing).
+- Verified in the built app on Windows (isolated profile, CDP, a 1920 × 1080 test pattern): « Créer une version… » makes « Formats 9:16 » with the clip filling the frame around its centre and the independence toast; the inspector shows « Cadrage »; reframing shows the whole picture with its dimmed thumbnail exactly aligned, a drag moves the kept area (focus 50 % → 33 %); a 16:9 sequence with a wide title changed to 9:16 without text adaptation warns « 1 élément sort du cadre » with « Sélectionner », and with adaptation the title wraps at 972 px without warning; TikTok zones, thirds and centre cross draw over the picture. Three visual issues found there were fixed (legibility of covered zones, a hint wrapping word by word, text selected while dragging).
+- Docs: ADR-0026, architecture §4.2/§4.3/§5.3/§6/§8/§11, glossary (9 terms), backlog, CLAUDE.md of se-domain, se-app, se-protocol, se-core, se-store, @se/engine, desktop.
+
+**Deviations from the prompt**
+- `Tracked { focus: Animatable<Vec2> }` instead of `Tracked { keyframes }`: the same animatable property as `fill`, so prompt 26 only writes keyframes and editing, retiming and the UI already work.
+- Fill is a real crop (the layer's box is the frame), not an overflowing box clipped by the frame: a focus, a zoom around the visible centre and the gizmo's anchors stay consistent. Existing fill goldens are unchanged.
+- `custom` = natural size (user's choice), with a compensating scale when switching to or from it.
+- The out-of-frame warning is computed after the change (comparing the real states), as a toast with « Sélectionner », rather than inside the dialog.
+- The safe-area choice is a machine preference per sequence (`se.ui.viewer.v1`), not project data.
+- Extras accepted by the user: text width adaptation, « Sélectionner », thumbnail in the reframing mode, thirds and centre guides. The frame-rate lock lives in the planners (not in `UpdateSequence`) so undo always works.
+- No platform publishes official safe areas for organic posts: the files use the best-documented third-party measurements (TikTok's In-Feed template via Socialync, Meta's Reels ad guidance, Socialync for Shorts) and SMPTE/EBU for 16:9; each file says so.
+
+**Follow-ups**
+- Prompt 19: MCP tools map onto `setSequenceFormat`, `duplicateSequence`, `renameSequence`, `removeSequence`, `updateItems` (reframe modes) and `setItemAnimations` (`reframeFocus`).
+- Prompt 26: write `tracked` focus keyframes; the « Créer une version… » dialog gets its automatic-reframing checkbox.
+- Prompt 27: export renders crops through the same `PictureNode` (nothing to add).
+- Backlog: out-of-frame preview inside the dialog, adapting shapes/images, propagating edits to versions, reframing several clips at once, live picture in the hidden parts, more platforms and re-measured safe areas.
+
+**Notes for the next agent**
+- After rebuilding the renderer for a CDP session, reload with `Page.reload { ignoreCache: true }`: `location.reload()` kept the old bundle (as `apps/desktop/CLAUDE.md` warns).
+- Heredocs with long Python edit scripts sometimes fail in this shell (« unexpected EOF »): write the script with the file tool and run it.
+- Sonner renders each toast twice in jsdom (list and live region): query with `findAllByText(...)[0]`.
+- `SequenceIds` is fallible (`type Error: From<DomainError>`) because se-app's id generator returns `Result`; tests use `reformat::copy::CountingIds`.
+
 ## 2026-11-07 — Prompt 15: Textes, graphiques et keyframes — Done
 
 **Branch**: `feature/15-textes-keyframes`, merged into `dev` at `62780fc`
