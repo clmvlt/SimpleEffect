@@ -45,8 +45,14 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Notarize or re-sign the bundled ffmpeg/ffprobe with the app's identity once macOS builds are signed; publish the GPL source offer with installers that bundle them.
 - Show more than the first sound stream in waveforms (pro files with several mono tracks), and keep more than 2 channels when useful.
 - Thumbnails of long-GOP footage follow the keyframe interval: add a slower exact mode if scrubbing short screen recordings needs it.
-- Windows: put se-core in a kill-on-close job at startup. process-wrap creates each sidecar suspended, then assigns it to its own job: if se-core is killed in that instant (seen once in a test that killed the core right after queuing a job), the child stays suspended forever. Graceful shutdown is not affected.
-- A settings field for `media.toolsDir` (the folder of ffmpeg/ffprobe chosen by the user); the core reads it at startup today.
+- Linux/macOS: a sidecar can outlive a core killed with `SIGKILL` (its own process group survives); use `PR_SET_PDEATHSIG` on Linux or a watchdog. Windows ties every child to the core with a kill-on-close job (prompt 09).
+- A configurable cache location (one folder for every project's derived files, e.g. on a faster drive) and a size limit evicting regenerable files; the settings show the project cache's location and size only (prompt 09).
+- Conform variable-frame-rate footage (`MediaInfo` frame rate `None`) to a constant rate through a mezzanine; mezzanines keep the source timing today.
+- Keep every sound stream in mezzanines (pro files with several mono tracks); only the first is kept today, like playback.
+- AMF (AMD) and Quick Sync (Intel) hardware encoders on Windows; only NVENC is tried there today.
+- Raise the priority of a mezzanine when a clip starts using its asset (prompt 11): mezzanines of unused media wait behind analyses.
+- A mezzanine decided on a machine that decodes HEVC Main 10 is HEVC: opening the project on a machine that does not decode it needs a « regenerate for this machine » action.
+- A project's cache is cleaned by the settings screen only: offer a cleanup of derived files no asset uses any more (removed assets, relinked content).
 
 ## Platform
 - Light theme.

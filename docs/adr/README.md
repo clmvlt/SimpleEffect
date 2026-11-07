@@ -23,6 +23,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0016](0016-operation-inverses-and-revert-semantics.md) | Operation inverses, revisions and changeset revert semantics | Accepted |
 | [0017](0017-project-persistence-and-synchronisation.md) | Project persistence, locking and UI synchronisation | Accepted |
 | [0018](0018-media-import-jobs-and-cache.md) | Media import, background jobs and the derived-file cache | Accepted |
+| [0019](0019-mezzanines-proxies-and-media-analyses.md) | Mezzanines, proxies, media analyses and media settings | Accepted |
 
 ## Template
 
