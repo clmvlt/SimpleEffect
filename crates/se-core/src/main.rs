@@ -20,6 +20,7 @@ mod error;
 mod handshake;
 mod logging;
 mod media_routes;
+mod platform;
 mod rpc;
 mod server;
 mod services;
@@ -33,6 +34,7 @@ const CORE_VERSION: &str = env!("CARGO_PKG_VERSION");
 async fn main() -> anyhow::Result<()> {
     let paths = app_paths::AppPaths::from_environment()?;
     let _log_guard = logging::init(&paths.logs_dir);
+    platform::tie_children_to_this_process();
     server::run(paths, shutdown::requested()).await?;
     tracing::info!("se-core stopped");
     Ok(())

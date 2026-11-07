@@ -159,11 +159,16 @@ async fn imported_media_get_thumbnails_and_peaks_served_by_media_routes() {
         .expect("an asset")
         .to_owned();
 
-    // Thumbnails and peaks complete (events may arrive before or after the response).
+    // Thumbnails and peaks complete (events may arrive before or after the response; analyses
+    // run too and may finish first).
     let completed = |events: &[Value]| {
         events
             .iter()
-            .filter(|message| message["event"]["kind"] == "jobCompleted")
+            .filter(|message| {
+                let kind = &message["event"]["job"]["kind"];
+                message["event"]["kind"] == "jobCompleted"
+                    && (kind == "thumbnails" || kind == "waveformPeaks")
+            })
             .count()
     };
     while completed(&events) < 2 {

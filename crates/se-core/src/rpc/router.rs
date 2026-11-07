@@ -6,7 +6,7 @@ use se_protocol::{
 
 use super::{
     encode::encode,
-    handlers::{HandlerContext, editing, media, projects, system},
+    handlers::{HandlerContext, editing, media, media_settings, projects, system},
     request::{Rejection, parse_request},
 };
 
@@ -94,6 +94,23 @@ impl RpcRouter {
             Command::ReportDecodability(report) => {
                 media::report_decodability(context, report).await
             }
+            Command::ReportDecoderCapabilities(capabilities) => {
+                media::report_decoder_capabilities(context, *capabilities).await
+            }
+            Command::GenerateDerivedMedia(request) => {
+                media::generate_derived_media(context, request).await
+            }
+            Command::GetMediaSettings => media_settings::get_media_settings(context).await,
+            Command::UpdateMediaSettings(settings) => {
+                media_settings::update_media_settings(context, settings).await
+            }
+            Command::GetMediaToolsStatus => media_settings::get_media_tools_status(context).await,
+            Command::GetProjectCache { project_id } => {
+                media_settings::get_project_cache(context, *project_id).await
+            }
+            Command::ClearProjectCache { project_id } => {
+                media_settings::clear_project_cache(context, *project_id).await
+            }
         }
     }
 }
@@ -101,49 +118,27 @@ impl RpcRouter {
 /// A handler context over in-memory ports, for unit tests.
 #[cfg(test)]
 pub mod testing {
-    use std::{path::PathBuf, sync::Arc, time::Duration};
-
-    use se_app::{
-        JobQueue, JobQueueConfig, MediaService, MediaServiceDeps, ProjectService,
-        ProjectServiceConfig, ProjectServiceDeps,
-        test_support::{
-            FakeJobRunner, FakeMedia, FixedClock, InMemoryAppLibrary, InMemoryProjectRepository,
-            RecordingEventSink, SequentialIds,
-        },
+    use std::{
+        path::{Path, PathBuf},
+        sync::Arc,
     };
+
+    use se_app::test_support::MediaTestbed;
 
     use crate::{app_paths::AppPaths, rpc::handlers::HandlerContext};
 
     /// Version `1.2.3`, folders under `data`, projects and media in memory.
     pub fn context() -> HandlerContext {
-        let events = Arc::new(RecordingEventSink::default());
-        let ids = Arc::new(SequentialIds::default());
-        let files = Arc::new(FakeMedia::default());
-        let media = Arc::new(MediaService::new(MediaServiceDeps {
-            prober: files.clone(),
-            files,
-            runner: Arc::new(FakeJobRunner::default()),
-            jobs: JobQueue::new(events.clone(), ids.clone(), JobQueueConfig::default()),
-            ids: ids.clone(),
-        }));
-        let deps = ProjectServiceDeps {
-            repository: Arc::new(InMemoryProjectRepository::default()),
-            library: Arc::new(InMemoryAppLibrary::default()),
-            events,
-            clock: Arc::new(FixedClock::default()),
-            ids,
-        };
-        let config = ProjectServiceConfig {
-            default_parent_dir: PathBuf::from("/projects"),
-            save_delay: Duration::from_secs(2),
-        };
+        let MediaTestbed {
+            projects, media, ..
+        } = MediaTestbed::new(Path::new("/projects"));
         HandlerContext {
             version: "1.2.3",
             paths: AppPaths {
                 data_dir: PathBuf::from("data"),
                 logs_dir: PathBuf::from("data").join("logs"),
             },
-            projects: Arc::new(ProjectService::new(deps, config).with_observer(media.clone())),
+            projects: Arc::new(projects),
             media,
         }
     }
@@ -235,6 +230,34 @@ mod tests {
         ))
         .await;
         assert_eq!(cancel["error"]["code"], "JOB_NOT_FOUND");
+        let asset = "00000000-0003-7000-8000-000000000000";
+        let proxy = reply(&format!(
+            r#"{{"type":"request","id":9,"command":{{"kind":"generateDerivedMedia","projectId":"{project}","assetId":"{asset}","derived":"proxy"}}}}"#
+        ))
+        .await;
+        assert_eq!(proxy["error"]["code"], "PROJECT_NOT_OPEN");
+        let capabilities = reply(
+            r#"{"type":"request","id":10,"command":{"kind":"reportDecoderCapabilities","hevcMain10":true,"h264High":true,"aac":true,"flac":true}}"#,
+        )
+        .await;
+        assert_eq!(capabilities["result"]["kind"], "reportDecoderCapabilities");
+    }
+
+    #[tokio::test]
+    async fn media_settings_are_read_and_validated() {
+        let settings =
+            reply(r#"{"type":"request","id":1,"command":{"kind":"getMediaSettings"}}"#).await;
+        assert_eq!(settings["result"]["settings"]["mezzanineQuality"], 14);
+        let invalid = reply(
+            r#"{"type":"request","id":2,"command":{"kind":"updateMediaSettings","mezzanineQuality":99,"proxyResolution":"720p","autoProxies":true,"toolsDir":null}}"#,
+        )
+        .await;
+        assert_eq!(invalid["error"]["code"], "INVALID_REQUEST");
+        let cache = reply(
+            r#"{"type":"request","id":3,"command":{"kind":"clearProjectCache","projectId":"00000000-0001-7000-8000-000000000000"}}"#,
+        )
+        .await;
+        assert_eq!(cache["error"]["code"], "PROJECT_NOT_OPEN");
     }
 
     #[tokio::test]
@@ -244,6 +267,8 @@ mod tests {
             "getCoreInfo",
             "getNewProjectDefaults",
             "listRecentProjects",
+            "getMediaSettings",
+            "getMediaToolsStatus",
         ] {
             let request = format!(r#"{{"type":"request","id":1,"command":{{"kind":"{kind}"}}}}"#);
             assert_eq!(reply(&request).await["result"]["kind"], kind);

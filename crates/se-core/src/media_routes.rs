@@ -9,6 +9,8 @@
 //! | `GET /media/assets/{id}/thumbnails/sheet` | the thumbnail sheet (JPEG) |
 //! | `GET /media/assets/{id}/thumbnails/poster` | the poster (JPEG) |
 //! | `GET /media/assets/{id}/peaks/{level}` | `SEPK` peaks, `level` = samples per peak (256, 1024, 4096) |
+//! | `GET /media/assets/{id}/mezzanine` | the mezzanine, once ready (type from its extension) |
+//! | `GET /media/assets/{id}/proxy` | the proxy, once ready |
 //!
 //! 404 when no open project has the asset, or the file does not exist (yet).
 
@@ -42,12 +44,16 @@ pub fn routes(media: Arc<MediaService>) -> Router {
             get(thumbnail_poster),
         )
         .route("/media/assets/{id}/peaks/{level}", get(peaks))
+        .route("/media/assets/{id}/mezzanine", get(mezzanine))
+        .route("/media/assets/{id}/proxy", get(proxy))
         .with_state(media)
 }
 
 /// What to serve, before the asset is looked up.
 enum Wanted {
     Original,
+    Mezzanine,
+    Proxy,
     Derived {
         file: String,
         content_type: &'static str,
@@ -60,6 +66,22 @@ async fn original(
     request: Request,
 ) -> Response {
     serve(&media, &id, Wanted::Original, request).await
+}
+
+async fn mezzanine(
+    State(media): State<Arc<MediaService>>,
+    Path(id): Path<String>,
+    request: Request,
+) -> Response {
+    serve(&media, &id, Wanted::Mezzanine, request).await
+}
+
+async fn proxy(
+    State(media): State<Arc<MediaService>>,
+    Path(id): Path<String>,
+    request: Request,
+) -> Response {
+    serve(&media, &id, Wanted::Proxy, request).await
 }
 
 async fn thumbnail_info(
@@ -133,6 +155,14 @@ async fn serve(media: &MediaService, id: &str, wanted: Wanted, request: Request)
     };
     let (path, content_type): (PathBuf, Option<&'static str>) = match wanted {
         Wanted::Original => (files.original, None),
+        Wanted::Mezzanine => match files.mezzanine {
+            Some(path) => (path, None),
+            None => return not_found("this asset has no ready mezzanine"),
+        },
+        Wanted::Proxy => match files.proxy {
+            Some(path) => (path, None),
+            None => return not_found("this asset has no ready proxy"),
+        },
         Wanted::Derived { file, content_type } => match files.cache_dir {
             Some(dir) => (dir.join(file), Some(content_type)),
             None => return not_found("this asset has no derived files"),
@@ -166,61 +196,30 @@ fn not_found(message: &str) -> Response {
 
 #[cfg(test)]
 mod tests {
-    use std::{path::Path as FsPath, time::Duration};
+    use std::path::Path as FsPath;
 
     use axum::http::{Request as HttpRequest, header::RANGE};
-    use se_app::{
-        JobQueue, JobQueueConfig, MediaServiceDeps, ProjectService, ProjectServiceConfig,
-        ProjectServiceDeps,
-        test_support::{
-            FakeJobRunner, FakeMedia, FixedClock, InMemoryAppLibrary, InMemoryProjectRepository,
-            RecordingEventSink, SequentialIds, probed_video,
-        },
-    };
-    use se_domain::{Format, FormatPreset, FrameRate};
+    use se_app::test_support::{MediaTestbed, probed_video};
 
     use super::*;
 
     /// A media router whose open project has one asset pointing at a real 1000-byte file.
-    async fn router_with_asset(dir: &FsPath) -> (Router, AssetId, ProjectService) {
+    async fn router_with_asset(dir: &FsPath) -> (Router, AssetId, MediaTestbed) {
         let original = dir.join("clip.mp4");
         std::fs::write(
             &original,
             (0..1000_u32).map(|i| (i % 251) as u8).collect::<Vec<_>>(),
         )
         .unwrap();
-        let events = Arc::new(RecordingEventSink::default());
-        let ids = Arc::new(SequentialIds::default());
-        let files = Arc::new(FakeMedia::default());
-        files.add(&original, 1, probed_video());
-        let media = Arc::new(MediaService::new(MediaServiceDeps {
-            prober: files.clone(),
-            files,
-            runner: Arc::new(FakeJobRunner::default()),
-            jobs: JobQueue::new(events.clone(), ids.clone(), JobQueueConfig::default()),
-            ids: ids.clone(),
-        }));
-        let projects = ProjectService::new(
-            ProjectServiceDeps {
-                repository: Arc::new(InMemoryProjectRepository::default()),
-                library: Arc::new(InMemoryAppLibrary::default()),
-                events,
-                clock: Arc::new(FixedClock::default()),
-                ids,
-            },
-            ProjectServiceConfig {
-                default_parent_dir: dir.to_path_buf(),
-                save_delay: Duration::from_secs(2),
-            },
-        )
-        .with_observer(media.clone());
-        let format = Format::from_preset(FormatPreset::Hd16x9, FrameRate::FPS_25).unwrap();
-        let session = projects.create_project("Film", dir, format).await.unwrap();
-        let report = media
-            .import_files(session.snapshot.project.id, &[original])
+        let testbed = MediaTestbed::new(dir);
+        testbed.files.add(&original, 1, probed_video());
+        let project_id = testbed.create_project(dir, "Film").await.unwrap();
+        let report = testbed
+            .media
+            .import_files(project_id, &[original])
             .await
             .unwrap();
-        (routes(media), report.imported[0], projects)
+        (routes(testbed.media.clone()), report.imported[0], testbed)
     }
 
     async fn get(router: &Router, uri: &str, range: Option<&str>) -> Response {
@@ -268,6 +267,10 @@ mod tests {
         assert_eq!(not_ready.status(), StatusCode::NOT_FOUND);
         let level = get(&router, &format!("/media/assets/{asset}/peaks/512"), None).await;
         assert_eq!(level.status(), StatusCode::NOT_FOUND);
+        let mezzanine = get(&router, &format!("/media/assets/{asset}/mezzanine"), None).await;
+        assert_eq!(mezzanine.status(), StatusCode::NOT_FOUND);
+        let proxy = get(&router, &format!("/media/assets/{asset}/proxy"), None).await;
+        assert_eq!(proxy.status(), StatusCode::NOT_FOUND);
         let bad_id = get(&router, "/media/assets/nope/original", None).await;
         assert_eq!(bad_id.status(), StatusCode::BAD_REQUEST);
     }

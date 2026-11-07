@@ -7,6 +7,7 @@
 
 pub mod editing;
 pub mod media;
+pub mod media_settings;
 pub mod projects;
 pub mod system;
 
