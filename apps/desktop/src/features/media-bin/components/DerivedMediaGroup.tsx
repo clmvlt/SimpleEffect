@@ -34,7 +34,9 @@ function sourceLabel(t: TFunction, source: PlaybackSource): string {
 function stateLabel(t: TFunction, kind: DerivedKind, display: DerivedDisplay): string {
   switch (display.kind) {
     case 'none':
-      return t('editor.media.info.derived.none');
+      return kind === 'mezzanine'
+        ? t('editor.media.info.derived.noneMezzanine')
+        : t('editor.media.info.derived.noneProxy');
     case 'queued':
       return t('editor.media.info.derived.queued');
     case 'running':
