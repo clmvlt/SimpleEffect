@@ -7,9 +7,24 @@ rust-version.workspace = true
 publish.workspace = true
 repository.workspace = true
 
+[features]
+# In-memory fakes of every port (`se_app::test_support`) for the tests of se-app and of the crates
+# wiring it. Never enabled in the shipped app.
+test-support = ["se-domain/test-support"]
+
 [dependencies]
 se-domain = { workspace = true }
 se-protocol = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
+tracing = { workspace = true }
+
+[dev-dependencies]
+# Integration tests (`tests/`) build the library without `cfg(test)`: enable the fakes.
+se-app = { workspace = true, features = ["test-support"] }
+se-domain = { workspace = true, features = ["test-support"] }
+tokio = { workspace = true, features = ["macros", "rt", "sync", "test-util", "time"] }
 
 [lints]
 workspace = true

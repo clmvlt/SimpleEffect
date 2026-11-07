@@ -1,0 +1,166 @@
+//! [`AppError`]: why a use case failed, and its protocol code.
+
+use std::path::PathBuf;
+
+use se_domain::{DomainError, DomainErrorCode, ProjectId};
+use se_protocol::{ErrorCode, ProtocolError};
+
+use crate::ports::StorageError;
+
+/// A failed use case. Messages are actionable: they reach users and AI agents unchanged.
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+pub enum AppError {
+    /// A persistence port failed.
+    #[error(transparent)]
+    Storage(#[from] StorageError),
+    /// The project is not open in this core.
+    #[error("project {project_id} is not open: open it first (openProject)")]
+    ProjectNotOpen {
+        /// The project.
+        project_id: ProjectId,
+    },
+    /// Another folder holding a project with the same id is open (a copy made outside the app).
+    #[error(
+        "{} holds project {project_id}, which is already open from {}: it is probably a copy \
+         made outside SimpleEffect; close the other one first, or use « Duplicate » to make copies",
+        path.display(),
+        open_path.display()
+    )]
+    SameProjectOpen {
+        /// The project id both folders hold.
+        project_id: ProjectId,
+        /// The folder being opened.
+        path: PathBuf,
+        /// The folder already open.
+        open_path: PathBuf,
+    },
+    /// A name was empty.
+    #[error("the {what} name must not be empty: type a name")]
+    EmptyName {
+        /// What was being named (`project`, `sequence`).
+        what: &'static str,
+    },
+    /// A sequence format breaks a document rule.
+    #[error("invalid format: {details}")]
+    InvalidFormat {
+        /// The violated rules, as validation messages.
+        details: String,
+    },
+    /// The journal cannot be replayed on top of the snapshot.
+    #[error(
+        "the journal of {} cannot be replayed: {reason}; project.json and its backups \
+         (project.json.bak.1–3) are intact",
+        path.display()
+    )]
+    JournalBroken {
+        /// The project folder.
+        path: PathBuf,
+        /// Which entry failed and why.
+        reason: String,
+    },
+    /// The loaded document breaks document invariants (e.g. edited by hand).
+    #[error(
+        "{} holds an invalid document: {details}; restore a backup (project.json.bak.1–3) or fix \
+         the file",
+        path.display()
+    )]
+    InvalidDocument {
+        /// The project folder.
+        path: PathBuf,
+        /// The violated rules.
+        details: String,
+    },
+    /// The document refused the change.
+    #[error(transparent)]
+    Domain(#[from] DomainError),
+    /// The project's actor stopped while the command was waiting for it.
+    #[error("project {project_id} was closed while the command was running: open it again")]
+    ActorStopped {
+        /// The project.
+        project_id: ProjectId,
+    },
+    /// A bug: an invariant of the application itself was broken.
+    #[error("internal error: {0}; please report it")]
+    Internal(String),
+}
+
+impl AppError {
+    /// The stable protocol code of this error.
+    #[must_use]
+    pub fn code(&self) -> ErrorCode {
+        match self {
+            Self::Storage(error) => storage_code(error),
+            Self::ProjectNotOpen { .. } | Self::ActorStopped { .. } => ErrorCode::ProjectNotOpen,
+            Self::SameProjectOpen { .. } => ErrorCode::ProjectLocked,
+            Self::EmptyName { .. } | Self::InvalidFormat { .. } => ErrorCode::InvalidRequest,
+            Self::JournalBroken { .. } | Self::InvalidDocument { .. } => {
+                ErrorCode::ProjectCorrupted
+            }
+            Self::Domain(error) => match error.code() {
+                DomainErrorCode::NothingToUndo => ErrorCode::NothingToUndo,
+                DomainErrorCode::NothingToRedo => ErrorCode::NothingToRedo,
+                _ => ErrorCode::EditRejected,
+            },
+            Self::Internal(_) => ErrorCode::Internal,
+        }
+    }
+}
+
+fn storage_code(error: &StorageError) -> ErrorCode {
+    match error {
+        StorageError::NotFound { .. } => ErrorCode::ProjectNotFound,
+        StorageError::Locked { .. } => ErrorCode::ProjectLocked,
+        StorageError::AlreadyExists { .. } => ErrorCode::ProjectAlreadyExists,
+        StorageError::SchemaTooNew { .. } => ErrorCode::SchemaTooNew,
+        StorageError::Corrupted { .. } => ErrorCode::ProjectCorrupted,
+        StorageError::Io { .. } => ErrorCode::StorageFailed,
+    }
+}
+
+impl From<AppError> for ProtocolError {
+    fn from(error: AppError) -> Self {
+        let protocol = Self::new(error.code(), error.to_string());
+        match &error {
+            // `{"domainCode":"OVERLAPPING_ITEMS"}`: clients and agents can match the domain code.
+            AppError::Domain(domain) => {
+                protocol.with_detail("domainCode", domain.code().to_string())
+            }
+            _ => protocol,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use se_domain::ItemId;
+
+    use super::*;
+
+    #[test]
+    fn storage_errors_map_to_project_codes() {
+        let locked = AppError::from(StorageError::Locked {
+            path: PathBuf::from("Film.seproj"),
+        });
+        assert_eq!(locked.code(), ErrorCode::ProjectLocked);
+        assert!(locked.to_string().contains("Film.seproj"));
+    }
+
+    #[test]
+    fn domain_errors_carry_their_domain_code() {
+        let error = AppError::from(DomainError::ItemNotFound {
+            item: ItemId::from_test_index(9),
+        });
+        let protocol = ProtocolError::from(error);
+        assert_eq!(protocol.code, ErrorCode::EditRejected);
+        let details = protocol.details.unwrap();
+        assert_eq!(details["domainCode"], "ITEM_NOT_FOUND");
+    }
+
+    #[test]
+    fn nothing_to_undo_keeps_its_own_code() {
+        assert_eq!(
+            AppError::from(DomainError::NothingToUndo).code(),
+            ErrorCode::NothingToUndo
+        );
+    }
+}
