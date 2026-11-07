@@ -13,6 +13,16 @@ export interface CoreConnection {
   readonly version: string;
 }
 
+/** Options of {@link SimpleEffectBridge.chooseFolder}. */
+export interface ChooseFolderOptions {
+  /** Window title of the native dialog (translated by the renderer). */
+  readonly title: string;
+  /** Label of the confirm button (translated by the renderer). */
+  readonly buttonLabel: string;
+  /** Folder shown first, when it exists. */
+  readonly defaultPath?: string;
+}
+
 /** API exposed by the preload script as `window.simpleEffect`. */
 export interface SimpleEffectBridge {
   /**
@@ -20,9 +30,15 @@ export interface SimpleEffectBridge {
    * Call it again after every disconnect: a restarted core has a new port and token.
    */
   getCoreConnection(): Promise<CoreConnection>;
+  /** Shows the native folder picker; resolves with the absolute path, or `null` if cancelled. */
+  chooseFolder(options: ChooseFolderOptions): Promise<string | null>;
+  /** Reveals a file or folder in the OS file manager (Explorer, Finder…). */
+  showInFolder(path: string): Promise<void>;
 }
 
 /** IPC channels between preload and main. */
 export const IPC_CHANNELS = {
   getCoreConnection: 'core:get-connection',
+  chooseFolder: 'dialog:choose-folder',
+  showInFolder: 'shell:show-in-folder',
 } as const;
