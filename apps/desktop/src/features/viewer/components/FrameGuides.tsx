@@ -35,7 +35,7 @@ export function FrameGuides({ guides, frame }: FrameGuidesProps) {
               vectorEffect="non-scaling-stroke"
               className={
                 covered
-                  ? 'fill-warning/25 stroke-warning/70'
+                  ? 'fill-overlay/55 stroke-warning'
                   : zone.kind === 'titleSafe'
                     ? 'fill-none stroke-info'
                     : 'fill-none stroke-info/60'

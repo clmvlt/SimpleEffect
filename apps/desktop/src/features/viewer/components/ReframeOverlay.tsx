@@ -115,7 +115,7 @@ export function ReframeOverlay({ controller, sequence, itemId, displayScale }: R
   const pointer = useReframePointer(sequence, layer, displayScale);
   return (
     <div
-      className="absolute inset-0 cursor-grab active:cursor-grabbing"
+      className="absolute inset-0 cursor-grab select-none active:cursor-grabbing"
       data-viewer-reframe=""
       onPointerDown={pointer.onPointerDown}
       onPointerMove={pointer.onPointerMove}
@@ -135,7 +135,7 @@ export function ReframeOverlay({ controller, sequence, itemId, displayScale }: R
           />
         </svg>
       )}
-      <div className="absolute top-2 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-md bg-overlay/90 px-2 py-1 text-xs text-text shadow-overlay">
+      <div className="absolute top-2 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-md whitespace-nowrap bg-overlay/90 px-2 py-1 text-xs text-text shadow-overlay">
         <span>
           {layer === null ? t('editor.viewer.reframe.offClip') : t('editor.viewer.reframe.hint')}
         </span>

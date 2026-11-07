@@ -51,7 +51,7 @@ export function ReframeSection({ inspection }: { readonly inspection: Inspection
           type="single"
           size="xs"
           variant="segmented"
-          aria-label={t('editor.inspector.reframe.mode')}
+          aria-label={t('editor.inspector.reframe.modeLabel')}
           value={shared ?? ''}
           onValueChange={(value) => {
             if (!isPickable(value)) return;

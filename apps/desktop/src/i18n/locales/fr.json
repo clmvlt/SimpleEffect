@@ -375,7 +375,8 @@
       },
       "reframe": {
         "title": "Cadrage",
-        "mode": "Mode de cadrage",
+        "mode": "Mode",
+        "modeLabel": "Mode de cadrage",
         "modes": {
           "fit": "Ajuster",
           "fill": "Remplir",
