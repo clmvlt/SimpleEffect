@@ -155,6 +155,7 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
 - **WebCodecs support differs per machine** (GPU/OS): always check `isConfigSupported()`; fall back to mezzanines.
 - **`VideoFrame` leaks GPU memory** if not closed; the decoder pool owns frame lifetimes.
 - **Golden frames need Chromium**: `pnpm check` fails with Playwright's « Executable doesn't exist » until `pnpm exec playwright install chromium` ran once (CI installs and caches it). They render with SwiftShader (software WebGL), so they do not depend on the GPU.
+- **AudioWorklet modules** (the level meter) are bundled with Vite's `?worker&url` and loaded from `'self'`: never from a `blob:` URL (the CSP has no `blob:` in `script-src`). They run in the audio thread's scope: import only pure code.
 - **Binaries** (ffmpeg, ffprobe, whisper) are not committed: `pnpm fetch-binaries`. Tests needing ffmpeg skip themselves (with a message) when it is absent; CI fetches it (cached) so they run there.
 - **A running app locks `target/debug/se-core.exe` on Windows**: close `pnpm dev` (or the test build) before `cargo test`, or it fails with « Accès refusé ».
 - **Never** log or persist AI CLI credentials or tokens; MCP task tokens are redacted in logs.

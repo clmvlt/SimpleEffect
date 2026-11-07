@@ -71,7 +71,12 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Pixel aspect ratio: the prober reports none, so anamorphic footage is drawn with square pixels.
 - Fall back to the mezzanine at runtime when the original was reported decodable but `canDecode()` refuses it on this machine (today: a « decodeFailed » issue).
 - Text in Workers needs the fonts loaded there (FontFace); the preview draws text on the main thread (prompt 15).
-- Prefetch the frames around the playhead while scrubbing (the architecture's prefetch window); prompt 13 decodes sequentially for playback.
+- Prefetch the frames around the playhead while scrubbing; prompt 13 decodes sequentially for playback only.
+- Playback timers (display refresh, 25 ms audio ticks) are throttled when the window is hidden or minimised: sound stutters there. Options: `backgroundThrottling: false` while playing, or audio scheduling in a Worker (prompt 13).
+- Sound at other speeds: JKL 2×/4× and reverse are silent, and clip speed changes pitch (`playbackRate`); add pitch-preserving or granular playback when editing needs it.
+- Reverse playback of long-GOP footage decodes a window per chunk and skips frames when the GOP is long; an intra-frame proxy for shuttling would make it smooth.
+- Several sound streams per file, and more than stereo output (the master is stereo).
+- The first chunk decoded after a seek in a Matroska/WebM file is placed from a millisecond-rounded timestamp (±0.5 ms for the whole run until the next seek): inaudible, but exact only when the previous chunk was decoded first.
 
 ## Platform
 - Light theme.

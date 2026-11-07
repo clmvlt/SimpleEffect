@@ -1,7 +1,7 @@
 # @se/engine
 
 ## Purpose
-The rendering engine shared by preview and export (WYSIWYG, `docs/adr/0002-web-rendering-engine.md`, `docs/adr/0022-rendering-engine-evaluation-decoding-compositing.md`): document evaluation at a time, WebCodecs decoding (via Mediabunny), PixiJS compositing, later the Web Audio graph and the export worker. It has no UI.
+The rendering engine shared by preview and export (WYSIWYG, `docs/adr/0002-web-rendering-engine.md`, `docs/adr/0022-rendering-engine-evaluation-decoding-compositing.md`, `docs/adr/0023-playback-audio-clock-and-av-sync.md`): document evaluation at a time, WebCodecs decoding (via Mediabunny), PixiJS compositing, real-time playback on the audio clock with the Web Audio graph, later the export worker. It has no UI.
 
 Implemented progressively: capabilities (prompt 08), playback sources (09), evaluation/decoding/compositing/preview (12), playback and audio (13), export (27).
 
@@ -13,7 +13,9 @@ Implemented progressively: capabilities (prompt 08), playback sources (09), eval
 | `@se/engine/evaluate` | `evaluate(sequence, assets, time) → FrameGraph`; `Evaluable{Sequence,Track,Item}` (structural: a domain `Sequence` or mirror entities fit); layer types; `designScale`, `assetDisplaySize`, `reframedBox`, `shapeBox`, `clipSourceTime`, `fadeFactor`, `resolveTransform` | — |
 | `@se/engine/composite` | `Compositor` interface, `createPixiCompositor({ canvas, width, height, renderer?, background?, preserveDrawingBuffer? })`, pure `layerPlacement`/`pictureFit`/`outputScale` | PixiJS |
 | `@se/engine/decode` | `DecoderPool`, `PictureLease`, `FrameTracker`/`pictureTracker`/`openPictureCounts`, `chooseVariant`, `MediaLocator`, `MediabunnyVideoSource`, `fetchImageBitmap`, `DecodeError` | Mediabunny |
-| `@se/engine/preview` | `createPreviewEngine(options) → PreviewEngine` (viewer engine), `createEngineWith(compositor, pool, locator, schedule?)`, `FrameRenderer`, `PreviewState`, `MediaIssue` | PixiJS + Mediabunny: **import lazily** from UI code |
+| `@se/engine/preview` | `createPreviewEngine(options) → PreviewEngine` (viewer engine: `setPlayback(rate, frameRate)` switches to playback decoding; `stats()` → `PreviewStats`), `createEngineWith(compositor, pool, locator, schedule?, now?)`, `FrameRenderer`, `PreviewState`, `MediaIssue`, `prefetchSpans` | PixiJS + Mediabunny: **import lazily** from UI code |
+| `@se/engine/playback` | `PlaybackController` (play/pause/stop, JKL `shuttle`, `step`, `seek`, loop span, content end; `PlaybackClock` with `leadTime`, `FrameTicker`), `transportPosition`, `playbackSegments`, `nextShuttleRate`, `frameIndexAt`/`frameStart`/`skippedFrames`, `PlaybackStatsCounter` | — (pure) |
+| `@se/engine/audio` | `createAudioEngine({ locator, context? }) → AudioEngine` (`clock`, `setScene`, `setLocator`, `setTransport`, `scrub`, `resume`, `levels`, `stats`, `destroy`), `createAudioEngineWith(parts)`, `audioContextClock`, `AudioGraph`, `AudioScheduler`, `AudioMeter`, `audioClipsOf`, `stripSettings`, `dbToGain`/`gainToDb`, `MediabunnyAudioSource` | Mediabunny + the meter worklet: **import lazily** from UI code |
 | `@se/engine/capabilities` | `videoCodecString`/`audioCodecString`, `checkDecodability(kind, MediaInfo, support)`, `checkDecoderCapabilities(support)` (prompts 08–09) | — |
 | `@se/engine/sources` | `playbackSource(asset)` → `original` / `mezzanine` / `preparing` / `unavailable`, `isPlayable` | — |
 
@@ -28,14 +30,25 @@ src/
 │                          pixi/pixi-compositor.ts, pixi/layer-nodes.ts (PictureNode, ShapeNode, TextNode)
 ├─ decode/                 decoder-pool.ts, frame-cache.ts (LRU + leases), decode-queue.ts, frame-tracker.ts,
 │                          frame-time.ts (frameLookupTime), media-variant.ts, video-source.ts, image-loader.ts
+├─ decode/ (playback)      frame-reader.ts (sequential reader, read-ahead budget), read-plan.ts (planRead)
 ├─ preview/                frame-renderer.ts (evaluate → pictures → compositor), engine.ts (PreviewEngine),
-│                          preview-engine.ts (factory wiring Pixi + pool), media-issue.ts
+│                          preview-engine.ts (factory wiring Pixi + pool), media-issue.ts,
+│                          playback-prefetcher.ts, prefetch-plan.ts (prefetchSpans/Requests), prefetch-window.ts
+├─ playback/               transport.ts (anchor → position, segments), playback-controller.ts, shuttle.ts (JKL),
+│                          frame-pacing.ts, refresh-period.ts (presentation lead), playback-stats.ts
+├─ audio/                  audio-engine.ts (façade), create-audio-engine.ts (AudioContext + worklet URL),
+│                          audio-clock.ts, audio-graph.ts, mix.ts, audio-clips.ts, audio-plan.ts (planPieces),
+│                          audio-scheduler.ts, audio-chunk.ts (assembly, placements), audio-chunk-pool.ts,
+│                          audio-source.ts (Mediabunny), meter/ (level-math.ts, meter-processor.ts worklet, audio-meter.ts)
 ├─ capabilities/, sources/ prompts 08–09
-└─ testing/                document builders (document.ts) and fake decoding (fake-decoding.ts) for tests
+└─ testing/                document builders (document.ts), fake decoding (fake-decoding.ts), recording-compositor.ts
 test/golden/               golden-frame tests (browser), fixtures/ (committed media), references/ (PNGs)
+test/av-sync/              A/V sync tests (browser), flash-beep.ts (media generated in the browser)
 ```
 
-Data flow: `FrameRenderer.render({ scene, time, proxy })` → `evaluate` → for each picture layer `chooseVariant` + `MediaLocator` → `DecoderPool.peek*` (sync) or `videoFrame`/`image` (async, cancellable) → `Compositor.render(graph, pictures)` → leases released.
+Data flow: `FrameRenderer.render({ scene, time, proxy, playback? })` → `evaluate` → for each picture layer `chooseVariant` + `MediaLocator` → `DecoderPool.peek*` (sync) or `videoFrame`/`image` (async, cancellable; `playbackFrame` waits for the clip's sequential reader) → `Compositor.render(graph, pictures)` → leases released.
+
+Playback flow (ADR-0023): display refresh → `PlaybackController` reads the master clock (`audioContextClock`), computes the frame at the next refresh, reports it (`onFrame`) → the app moves the playhead → `PreviewEngine.setTime` (playback mode) prefetches (`prefetchSpans` → `DecoderPool.prefetch`) and draws at once when cached. The controller's transport goes to `AudioEngine.setTransport` → `AudioScheduler` (25 ms `setInterval` ticks) plans the pieces starting in the next 200 ms (`playbackSegments` + `planPieces`) from chunks decoded 2 s ahead.
 
 ## Rules and invariants
 - No React, no `@se/ui`; no network calls except to se-core (`/media`). Preview and export use the same code path (`FrameRenderer` + `Compositor`).
@@ -49,6 +62,12 @@ Data flow: `FrameRenderer.render({ scene, time, proxy })` → `evaluate` → for
 - `pixi.js/unsafe-eval` stays imported first in `pixi-compositor.ts` (the renderer's CSP has no `unsafe-eval`).
 - Error messages never contain media URLs (they carry the session token).
 - Shared interpolation vectors (`docs/test-vectors/interpolation.json`) are the contract with a future Rust evaluator: change them only with the code.
+- **Clock.** The master clock is the audio clock (`audioContextClock`: the context time being *heard*, `getOutputTimestamp` interpolated, never ahead of `currentTime`, monotonic). Positions always come from the transport anchor and the clock (`transportPosition`), never from accumulated deltas. New anchors take effect `leadTime` ahead (output latency + 30 ms) so sound starts on its first sample. Without Web Audio the app passes a `performance.now()` clock (silent playback).
+- **Playback frames.** Late frames are skipped (`skippedFrames` counts those beyond what a fast speed skips anyway); a frame still decoding is never superseded during playback (the latest time is drawn after it); the frame chosen is the one for the next display refresh (`RefreshPeriod`).
+- **Playback decoding.** Sequential readers are bounded by a read-ahead budget in frames **and bytes** (`DecoderPool.readAheadBudget`), and forward playback closes passed frames (`FrameCache.dropBefore`): open frames stall hardware decoders, and a 1080p frame is 8 MB of a 256 MiB cache. Readers stop when no longer requested (`prefetch([])` on pause).
+- **Scheduling.** Audio is scheduled from a 25 ms timer, 200 ms ahead (`SCHEDULE_AHEAD_SECONDS`); a piece is scheduled in the window where it starts and plays to its end (never cut mid-chunk); start times are computed from the segment anchor (sample-exact over any duration); any transport change stops all voices and plans again; unchanged clips (`sameClips`) keep scheduled sound. Sound plays at rate 1 only.
+- **Chunks.** One second of media time per chunk; buffers placed contiguously unless a real gap shows; each chunk continues the previous chunk's placement (decoded in order per file); media time 0 of the sound is the first video frame when the file has video. Audio reads the original or the mezzanine, never the proxy.
+- **Meter worklet.** `meter-processor.ts` runs in the AudioWorklet scope: pure imports only (it is bundled alone with `?worker&url`), no allocation per block. A failed `addModule` leaves the meter silent, never the sound.
 
 ## Allowed dependencies
 `@se/protocol` (types), `pixi.js`, `mediabunny`. See `docs/architecture.md` §4.1 and §8.
@@ -62,3 +81,12 @@ Data flow: `FrameRenderer.render({ scene, time, proxy })` → `evaluate` → for
   - Rewrite references after an intended visual change: `SE_UPDATE_GOLDEN=1 pnpm vitest run --project engine-browser`, then **look at every changed PNG** before committing.
   - Fixtures are committed; regenerate them with `node scripts/generate-golden-fixtures.mjs` (needs `pnpm fetch-binaries`), then rewrite the references.
 - Browser-mode file commands (`commands.readFile/writeFile`) resolve paths from the package root (`./test/golden/…`), not from the test file.
+- Playback units (Node): `src/playback/*.test.ts` (transport, segments, JKL, frame pacing and stats, controller with a simulated clock and display refresh), `src/decode/frame-reader.test.ts` (`planRead`, readers, budgets, drop-behind), `src/preview/playback.test.ts` (prefetch spans/requests, adaptive window, engine playback mode, leak), `src/audio/*.test.ts` (scheduler with a simulated clock: alignment, anticipation, seek, speed, loop wrap, late chunks, scrub, ten minutes without drift; mix, chunk assembly incl. millisecond-rounded timestamps, level accumulator, chunk pool).
+- A/V sync (browser): `test/av-sync/av-sync.browser.test.ts` generates a « flash + beep » media with Mediabunny (`flash-beep.ts`, written to the gitignored `test/av-sync/generated/` and served by Vite), renders the scheduled sound offline (every beep within 2 samples, clip at 0 s and 600 s) and plays picture and sound in real time (each flash drawn within 45 ms of its beep — measured −10 to +7 ms on macOS; one retry allowed on a busy machine; Chromium runs with `--autoplay-policy=no-user-gesture-required`). Browser test files run one at a time (`fileParallelism: false`).
+- In the built app: the viewer's HUD (toolbar toggle) shows real frames per second, dropped frames, readers and queued random-access decodes, caches and the prefetch window; `apps/desktop/CLAUDE.md` describes driving playback over CDP.
+
+## Known limits (playback)
+- Sound plays only at 1× forward; JKL 2×/4× and reverse are silent; clip speed changes pitch.
+- Timers are throttled in a hidden or minimised window: playback stutters there (backlog).
+- Reverse playback reads chunks of the window before the playhead: long-GOP footage skips frames.
+- Volume keyframes are sampled once per audio piece and fades are not applied to sound yet (prompt 14).
