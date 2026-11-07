@@ -48,6 +48,17 @@ pub enum CommandResult {
         /// Id of the new sequence.
         sequence_id: SequenceId,
     },
+    /// Answer to [`crate::Command::RenameSequence`]: committed.
+    RenameSequence,
+    /// Answer to [`crate::Command::SetSequenceFormat`]: committed.
+    SetSequenceFormat,
+    /// Answer to [`crate::Command::DuplicateSequence`].
+    DuplicateSequence {
+        /// Id of the copy.
+        sequence_id: SequenceId,
+    },
+    /// Answer to [`crate::Command::RemoveSequence`]: committed.
+    RemoveSequence,
     /// Answer to [`crate::Command::Undo`]: committed (the patch arrives as an event).
     Undo,
     /// Answer to [`crate::Command::Redo`]: committed (the patch arrives as an event).

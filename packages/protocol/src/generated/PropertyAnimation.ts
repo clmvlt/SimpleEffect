@@ -38,7 +38,11 @@ value: Animatable<DesignPixels>, } | { "property": "volumeDb",
 /**
  * Static value or keyframes.
  */
-value: Animatable<number>, } | { "property": "fontSize", 
+value: Animatable<number>, } | { "property": "reframeFocus", 
+/**
+ * Static value or keyframes.
+ */
+value: Animatable<Vec2>, } | { "property": "fontSize", 
 /**
  * Static value or keyframes.
  */

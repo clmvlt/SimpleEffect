@@ -32,7 +32,11 @@ projects: Array<RecentProject>, } | { "kind": "renameProject" } & RecentProject 
 /**
  * Id of the new sequence.
  */
-sequenceId: SequenceId, } | { "kind": "undo" } | { "kind": "redo" } | { "kind": "addTrack", 
+sequenceId: SequenceId, } | { "kind": "renameSequence" } | { "kind": "setSequenceFormat" } | { "kind": "duplicateSequence", 
+/**
+ * Id of the copy.
+ */
+sequenceId: SequenceId, } | { "kind": "removeSequence" } | { "kind": "undo" } | { "kind": "redo" } | { "kind": "addTrack", 
 /**
  * Id of the new track.
  */

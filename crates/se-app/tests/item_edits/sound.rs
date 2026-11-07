@@ -167,7 +167,7 @@ async fn fades_and_volume_curves_are_one_step_each() {
     };
     opened
         .service
-        .update_items(opened.project, &[fades])
+        .update_items(opened.project, &[fades], &[])
         .await
         .unwrap();
     assert_eq!(

@@ -16,6 +16,7 @@ mod loading;
 mod markers;
 mod observer;
 mod placed_media;
+mod sequences;
 mod tracks;
 mod transitions;
 mod trims;
@@ -24,6 +25,7 @@ pub use graphics::{animation_preset_infos, graphic_track};
 pub use items::labels as item_labels;
 pub use markers::labels as marker_labels;
 pub use observer::ProjectObserver;
+pub use sequences::sequence_labels;
 pub use tracks::labels as track_labels;
 pub use transitions::labels as transition_labels;
 

@@ -3,9 +3,8 @@
 
 use se_domain::{
     AddItem, AddTrack, AnimatableProperty, AnimationPhase, ApplyAnimationPreset, AssetKind, Flicks,
-    ImageItem, Item, ItemId, ItemKind, Operation, Origin, ProjectId, PropertyAnimation, Sequence,
-    SetKeyframes, ShapeItem, TextItem, TimeRange, TrackId, TrackKind, animation_presets,
-    preset_samples,
+    ImageItem, Item, ItemId, ItemKind, Operation, Origin, ProjectId, Sequence, SetKeyframes,
+    ShapeItem, TextItem, TimeRange, TrackId, TrackKind, animation_presets, preset_samples,
 };
 use se_protocol::{
     AddGraphicRequest, AnimationPresetInfo, AnimationPresetSample, ItemAnimation, NewGraphic,
@@ -242,9 +241,10 @@ fn top_video_index(sequence: &Sequence) -> usize {
         .map_or(0, |index| index + 1)
 }
 
-/// « Transform items » for placement properties, « Change volume » for volumes, « Change
-/// keyframes » when keyframes are written, « Edit items » for other static values.
-fn animation_label(animations: &[ItemAnimation]) -> &'static str {
+/// « Transform items » for placement properties, « Change volume » for volumes, « Reframe
+/// items » for reframe focuses, « Change keyframes » when keyframes are written, « Edit items »
+/// for other static values.
+pub(super) fn animation_label(animations: &[ItemAnimation]) -> &'static str {
     use AnimatableProperty as P;
     let properties = || animations.iter().map(|change| change.animation.property());
     if properties()
@@ -253,39 +253,22 @@ fn animation_label(animations: &[ItemAnimation]) -> &'static str {
         labels::TRANSFORM
     } else if properties().all(|property| property == P::VolumeDb) {
         labels::CHANGE_VOLUME
-    } else if animations.iter().any(|change| keyframed(&change.animation)) {
+    } else if properties().all(|property| property == P::ReframeFocus) {
+        labels::REFRAME
+    } else if animations
+        .iter()
+        .any(|change| change.animation.is_keyframed())
+    {
         labels::CHANGE_KEYFRAMES
     } else {
         labels::EDIT_ITEMS
     }
 }
 
-fn keyframed(animation: &PropertyAnimation) -> bool {
-    match animation {
-        PropertyAnimation::Position { value }
-        | PropertyAnimation::Scale { value }
-        | PropertyAnimation::Anchor { value }
-        | PropertyAnimation::ShadowOffset { value } => value.is_keyframed(),
-        PropertyAnimation::Rotation { value }
-        | PropertyAnimation::Opacity { value }
-        | PropertyAnimation::VolumeDb { value }
-        | PropertyAnimation::Reveal { value } => value.is_keyframed(),
-        PropertyAnimation::Blur { value }
-        | PropertyAnimation::FontSize { value }
-        | PropertyAnimation::LetterSpacing { value }
-        | PropertyAnimation::StrokeWidth { value }
-        | PropertyAnimation::ShadowBlur { value } => value.is_keyframed(),
-        PropertyAnimation::FillColor { value }
-        | PropertyAnimation::StrokeColor { value }
-        | PropertyAnimation::ShadowColor { value }
-        | PropertyAnimation::BackgroundColor { value } => value.is_keyframed(),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use se_domain::{
-        Animatable, Vec2,
+        Animatable, PropertyAnimation, Vec2,
         test_support::{example_project, range_ms},
     };
 
