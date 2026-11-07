@@ -9,7 +9,12 @@ import { chooseVariant, type MediaLocator } from '../decode/media-variant';
 import { evaluate, type EvaluableSequence } from '../evaluate/evaluate';
 import { isPictureLayer, type FrameGraph, type PictureLayer } from '../evaluate/frame-graph';
 import type { AssetTable } from '../evaluate/item-layer';
+import type { FontLoader } from '../fonts/font-registry';
+import { frameFonts, frameLayout, type FrameLayout } from './frame-layout';
 import { MediaIssues, type MediaIssue } from './media-issue';
+
+/** Longest wait for fonts before a frame is drawn with the fallback fonts. */
+export const FONT_LOAD_TIMEOUT_MS = 4000;
 
 /** The document a renderer draws: a sequence and the project's assets. */
 export interface RenderScene {
@@ -32,7 +37,13 @@ export interface FrameRequest {
 
 /** What happened to a request. */
 export type RenderOutcome =
-  | { readonly kind: 'drawn'; readonly issues: readonly MediaIssue[] }
+  | {
+      readonly kind: 'drawn';
+      readonly issues: readonly MediaIssue[];
+      /** Font families the texts asked for that the catalogue lacks (drawn with fallbacks). */
+      readonly missingFonts: readonly string[];
+      readonly layout: FrameLayout;
+    }
   /** A newer request replaced it before its pictures were ready: nothing was drawn. */
   | { readonly kind: 'superseded' };
 
@@ -60,12 +71,18 @@ interface PictureNeed {
  */
 export class FrameRenderer {
   private current: AbortController | null = null;
+  private fonts: FontLoader | null = null;
 
   constructor(
     private readonly compositor: Compositor,
     private readonly pool: DecoderPool,
     private readonly locator: MediaLocator,
   ) {}
+
+  /** Fonts to load before drawing texts (`null`: texts use whatever the platform has). */
+  setFonts(fonts: FontLoader | null): void {
+    this.fonts = fonts;
+  }
 
   /** Draws `request`; `onLoading` is called when it has to wait for decoding. */
   async render(
@@ -85,26 +102,33 @@ export class FrameRenderer {
       if (cached === null) missing.push(need);
       else leases.set(need.layer.itemId, cached);
     }
-    if (missing.length > 0) {
+    const fonts = frameFonts(graph);
+    const fontsLoading = fonts.length === 0 ? null : (this.fonts?.ensure(fonts) ?? null);
+    if (missing.length > 0 || fontsLoading !== null) {
       onLoading();
-      await this.fetchAll(missing, leases, issues, {
-        signal: controller.signal,
-        playback: request.playback === true,
-      });
+      await Promise.all([
+        this.fetchAll(missing, leases, issues, {
+          signal: controller.signal,
+          playback: request.playback === true,
+        }),
+        fontsLoading === null ? null : withTimeout(fontsLoading, FONT_LOAD_TIMEOUT_MS),
+      ]);
       if (controller.signal.aborted) {
         releaseAll(leases);
         return { kind: 'superseded' };
       }
     }
+    let layout: FrameLayout;
     try {
       const pictures = new Map<ItemId, Picture>();
       for (const [itemId, lease] of leases) pictures.set(itemId, lease.picture);
-      this.compositor.render(graph, pictures);
+      layout = frameLayout(graph, this.compositor.render(graph, pictures));
     } finally {
       releaseAll(leases);
     }
     if (this.current === controller) this.current = null;
-    return { kind: 'drawn', issues: issues.list() };
+    const missingFonts = this.fonts?.missing(fonts) ?? [];
+    return { kind: 'drawn', issues: issues.list(), missingFonts, layout };
   }
 
   /** Cancels the pending request, if any. */
@@ -189,4 +213,15 @@ export class FrameRenderer {
 
 function releaseAll(leases: ReadonlyMap<ItemId, PictureLease>): void {
   for (const lease of leases.values()) lease.release();
+}
+
+/** Resolves when `promise` settles or after `milliseconds`, whichever comes first. */
+function withTimeout(promise: Promise<void>, milliseconds: number): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, milliseconds);
+    void promise.finally(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
 }

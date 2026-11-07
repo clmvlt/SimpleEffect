@@ -6,19 +6,25 @@ import type { ResolvedTransform } from './frame-graph';
 const CENTRE: Vec2 = { x: 0.5, y: 0.5 };
 const UNIT: Vec2 = { x: 1, y: 1 };
 
-/** Every property of `transform` at item-relative `localTime`, opacity times `opacityFactor`. */
+/**
+ * Every property of `transform` at item-relative `localTime`, opacity times `opacityFactor`, blur
+ * converted to sequence pixels with `designScale`.
+ */
 export function resolveTransform(
   transform: Transform2D,
   localTime: Flicks,
   opacityFactor = 1,
+  designScale = 1,
 ): ResolvedTransform {
   const opacity = valueAt(transform.opacity, localTime, interpolateNumber, 1);
+  const blur = valueAt(transform.blur, localTime, interpolateNumber, 0);
   return {
     position: valueAt(transform.position, localTime, interpolateVec2, CENTRE),
     scale: valueAt(transform.scale, localTime, interpolateVec2, UNIT),
     rotation: valueAt(transform.rotation, localTime, interpolateNumber, 0),
     anchor: valueAt(transform.anchor, localTime, interpolateVec2, CENTRE),
     opacity: Math.min(1, Math.max(0, opacity * opacityFactor)),
+    blur: Math.max(0, blur) * designScale,
   };
 }
 

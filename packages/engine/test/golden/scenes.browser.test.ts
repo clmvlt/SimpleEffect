@@ -14,6 +14,8 @@ import {
   rectangle,
   seconds,
   sequence,
+  still,
+  text,
   videoAsset,
   videoTrack,
 } from '../../src/testing/document';
@@ -205,12 +207,7 @@ describe('golden frames', () => {
   });
 
   it('draws basic text centred on its anchor', async () => {
-    const titled = scene(320, 180, {
-      kind: 'text',
-      content: 'SIMPLE',
-      style: { fontFamily: 'Inter', fontSize: 40 * DESIGN, color: '#ffffff' },
-      transform: rectangleTransform(),
-    });
+    const titled = scene(320, 180, text('SIMPLE', { style: { fontSize: still(40 * DESIGN) } }));
     const pixels = await render(titled, 0 as Flicks);
     // Font rasterisation differs per platform: check placement, not glyph pixels.
     expect(luminanceAt(pixels, 5, 5)).toBe(0);
@@ -220,9 +217,3 @@ describe('golden frames', () => {
     expect(luminanceAt(pixels, 20, 90)).toBe(0);
   });
 });
-
-function rectangleTransform() {
-  const shape = rectangle('#000000', 1, 1);
-  if (shape.kind !== 'shape') throw new Error('unreachable');
-  return shape.transform;
-}

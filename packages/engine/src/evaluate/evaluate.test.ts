@@ -13,6 +13,8 @@ import {
   rectangle,
   seconds,
   sequence,
+  still,
+  text,
   videoAsset,
   videoTrack,
 } from '../testing/document';
@@ -222,25 +224,24 @@ describe('evaluate: properties and boxes', () => {
   });
 
   it('turns texts and captions into text layers in sequence pixels', () => {
-    const text = item(0 as Flicks, seconds(1), {
-      kind: 'text',
-      content: 'Bonjour',
-      style: { fontFamily: 'Inter', fontSize: 72, color: '#ffcc00' },
-      transform: rectangleTransform(),
-    });
+    const title = item(
+      0 as Flicks,
+      seconds(1),
+      text('Bonjour', { style: { fontSize: still(72), color: still('#ffcc00') } }),
+    );
     const caption = item(0 as Flicks, seconds(1), { kind: 'caption', text: 'Sous-titre' });
     const graph = evaluate(
-      sequence(1280, 720, [videoTrack([text]), videoTrack([caption])]),
+      sequence(1280, 720, [videoTrack([title]), videoTrack([caption])]),
       assets,
       0 as Flicks,
     );
-    expect(graph.layers[0]).toMatchObject({ kind: 'text', content: 'Bonjour', fontSize: 48 });
+    expect(graph.layers[0]).toMatchObject({
+      kind: 'text',
+      content: 'Bonjour',
+      fontSize: 48,
+      font: { family: 'Inter', weight: 600, italic: false },
+      color: { r: 1, g: 0.8, b: 0, a: 1 },
+    });
     expect(graph.layers[1]).toMatchObject({ kind: 'text', content: 'Sous-titre' });
   });
 });
-
-function rectangleTransform() {
-  const shape = rectangle('#000000', 1, 1);
-  if (shape.kind !== 'shape') throw new Error('unreachable');
-  return shape.transform;
-}
