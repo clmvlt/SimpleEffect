@@ -31,15 +31,20 @@ hex = { workspace = true }
 rand = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+tower-http = { workspace = true }
 tokio = { workspace = true, features = ["macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
 tracing = { workspace = true }
 tracing-appender = { workspace = true }
 tracing-subscriber = { workspace = true }
+# `ServiceExt::oneshot` to run tower-http's file service inside axum handlers.
+tower = { version = "0.5.3", features = ["util"] }
 uuid = { workspace = true, features = ["v7"] }
 
 [dev-dependencies]
 # In-memory ports for the router's unit tests.
 se-app = { workspace = true, features = ["test-support"] }
+se-domain = { workspace = true, features = ["test-support"] }
+se-media = { workspace = true }
 futures-util = { workspace = true }
 serde_json = { workspace = true }
 tempfile = { workspace = true }

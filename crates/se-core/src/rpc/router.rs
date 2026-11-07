@@ -6,7 +6,7 @@ use se_protocol::{
 
 use super::{
     encode::encode,
-    handlers::{HandlerContext, editing, projects, system},
+    handlers::{HandlerContext, editing, media, projects, system},
     request::{Rejection, parse_request},
 };
 
@@ -83,6 +83,17 @@ impl RpcRouter {
             } => editing::create_sequence(context, *project_id, name, *format).await,
             Command::Undo { project_id } => editing::undo(context, *project_id).await,
             Command::Redo { project_id } => editing::redo(context, *project_id).await,
+            Command::ImportMedia(request) => media::import_media(context, request).await,
+            Command::RelinkAsset(request) => media::relink_asset(context, request).await,
+            Command::RemoveAsset {
+                project_id,
+                asset_id,
+            } => media::remove_asset(context, *project_id, *asset_id).await,
+            Command::ListJobs { project_id } => media::list_jobs(context, *project_id),
+            Command::CancelJob { job_id } => media::cancel_job(context, *job_id),
+            Command::ReportDecodability(report) => {
+                media::report_decodability(context, report).await
+            }
         }
     }
 }
@@ -93,23 +104,34 @@ pub mod testing {
     use std::{path::PathBuf, sync::Arc, time::Duration};
 
     use se_app::{
-        ProjectService, ProjectServiceConfig, ProjectServiceDeps,
+        JobQueue, JobQueueConfig, MediaService, MediaServiceDeps, ProjectService,
+        ProjectServiceConfig, ProjectServiceDeps,
         test_support::{
-            FixedClock, InMemoryAppLibrary, InMemoryProjectRepository, RecordingEventSink,
-            SequentialIds,
+            FakeJobRunner, FakeMedia, FixedClock, InMemoryAppLibrary, InMemoryProjectRepository,
+            RecordingEventSink, SequentialIds,
         },
     };
 
     use crate::{app_paths::AppPaths, rpc::handlers::HandlerContext};
 
-    /// Version `1.2.3`, folders under `data`, projects in memory.
+    /// Version `1.2.3`, folders under `data`, projects and media in memory.
     pub fn context() -> HandlerContext {
+        let events = Arc::new(RecordingEventSink::default());
+        let ids = Arc::new(SequentialIds::default());
+        let files = Arc::new(FakeMedia::default());
+        let media = Arc::new(MediaService::new(MediaServiceDeps {
+            prober: files.clone(),
+            files,
+            runner: Arc::new(FakeJobRunner::default()),
+            jobs: JobQueue::new(events.clone(), ids.clone(), JobQueueConfig::default()),
+            ids: ids.clone(),
+        }));
         let deps = ProjectServiceDeps {
             repository: Arc::new(InMemoryProjectRepository::default()),
             library: Arc::new(InMemoryAppLibrary::default()),
-            events: Arc::new(RecordingEventSink::default()),
+            events,
             clock: Arc::new(FixedClock::default()),
-            ids: Arc::new(SequentialIds::default()),
+            ids,
         };
         let config = ProjectServiceConfig {
             default_parent_dir: PathBuf::from("/projects"),
@@ -121,7 +143,8 @@ pub mod testing {
                 data_dir: PathBuf::from("data"),
                 logs_dir: PathBuf::from("data").join("logs"),
             },
-            projects: Arc::new(ProjectService::new(deps, config)),
+            projects: Arc::new(ProjectService::new(deps, config).with_observer(media.clone())),
+            media,
         }
     }
 }
@@ -191,6 +214,27 @@ mod tests {
         )
         .await;
         assert_eq!(relative["error"]["code"], "INVALID_REQUEST");
+    }
+
+    #[tokio::test]
+    async fn media_commands_reach_the_media_service() {
+        let project = "00000000-0001-7000-8000-000000000000";
+        let jobs = reply(&format!(
+            r#"{{"type":"request","id":6,"command":{{"kind":"listJobs","projectId":"{project}"}}}}"#
+        ))
+        .await;
+        assert_eq!(jobs["error"]["code"], "PROJECT_NOT_OPEN");
+        let relative = reply(&format!(
+            r#"{{"type":"request","id":7,"command":{{"kind":"importMedia","projectId":"{project}","paths":["clip.mp4"]}}}}"#
+        ))
+        .await;
+        assert_eq!(relative["error"]["code"], "INVALID_REQUEST");
+        let job = "00000000-0002-7000-8000-000000000000";
+        let cancel = reply(&format!(
+            r#"{{"type":"request","id":8,"command":{{"kind":"cancelJob","jobId":"{job}"}}}}"#
+        ))
+        .await;
+        assert_eq!(cancel["error"]["code"], "JOB_NOT_FOUND");
     }
 
     #[tokio::test]
