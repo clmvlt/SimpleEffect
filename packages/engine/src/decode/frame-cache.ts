@@ -81,6 +81,16 @@ export class FrameCache {
     return lease;
   }
 
+  /**
+   * Removes the pictures of `sourceId` shown entirely before `time` (forward playback has passed
+   * them): a decoder running through a file gets its surfaces back instead of stalling.
+   */
+  dropBefore(sourceId: string, time: number): void {
+    for (const [key, entry] of this.entries) {
+      if (entry.sourceId === sourceId && entry.end <= time) this.remove(key, entry);
+    }
+  }
+
   /** Removes every picture of `sourceId` (its file changed). */
   dropSource(sourceId: string): void {
     for (const [key, entry] of this.entries) {

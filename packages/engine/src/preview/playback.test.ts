@@ -88,13 +88,31 @@ describe('prefetchSpans', () => {
     expect(prefetchSpans(hidden, 0 as Flicks, 1, 1)).toEqual([]);
   });
 
-  it('shortens reverse windows to what one reader may hold', () => {
+  it('shortens reverse windows to what one reader may hold, frames and bytes', () => {
     const [request] = prefetchRequests(
       [{ itemId: first.id, assetId: asset.id, from: seconds(1), to: seconds(3) }],
-      { assets: scene.assets, proxy: false, locator, direction: -1, maxFrames: 10 },
+      {
+        assets: scene.assets,
+        proxy: false,
+        locator,
+        direction: -1,
+        budget: { frames: 10, bytes: Infinity },
+      },
     );
     expect(request?.to).toBeCloseTo(3.04, 6);
     expect(request?.from).toBeCloseTo(2.64, 6);
+    // Four 1080p frames fit 33.2 MB (8.3 MB each).
+    const [byBytes] = prefetchRequests(
+      [{ itemId: first.id, assetId: asset.id, from: seconds(1), to: seconds(3) }],
+      {
+        assets: scene.assets,
+        proxy: false,
+        locator,
+        direction: -1,
+        budget: { frames: 10, bytes: 4 * 1920 * 1080 * 4 },
+      },
+    );
+    expect(byBytes?.from).toBeCloseTo(2.88, 6);
   });
 });
 

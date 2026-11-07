@@ -85,12 +85,40 @@ describe('DecoderPool: playback readers', () => {
     expect(sources[0]?.readIndexes.at(-1)).toBe(39);
   });
 
+  it('closes the frames forward playback has passed', async () => {
+    const { pool, sources } = setup();
+    pool.prefetch([forward(1)]);
+    await drain();
+    pool.prefetch([forward(1.2)]);
+    const frames = sources[0]?.decodedFrames ?? [];
+    expect(frames.filter((frame) => frame.index < 30).every((frame) => frame.closed)).toBe(true);
+    expect(frames.find((frame) => frame.index === 30)?.closed).toBe(false);
+  });
+
   it('never holds more frames ahead than its share of the cache', async () => {
     const { pool, sources } = setup(8);
     pool.prefetch([forward(0, 10)]);
     await drain();
     expect(sources[0]?.readIndexes).toHaveLength(6);
     expect(pool.stats().cachedPictures).toBe(6);
+  });
+
+  it('never holds more bytes ahead than its share of the cache budget', async () => {
+    // Fake frames are 16 × 9 × 4 = 576 bytes: three fit in 0.75 × 2304 bytes.
+    const sources: FakeVideoSource[] = [];
+    const pool = new DecoderPool({
+      tracker: new FrameTracker(),
+      cacheBudgetBytes: 2304,
+      createVideoSource: (url) => {
+        const source = new FakeVideoSource(url);
+        sources.push(source);
+        return source;
+      },
+    });
+    pool.prefetch([forward(0, 10)]);
+    await drain();
+    expect(sources[0]?.readIndexes).toHaveLength(3);
+    pool.destroy();
   });
 
   it('waits for the reader rather than decoding the same frame twice', async () => {

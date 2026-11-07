@@ -61,7 +61,7 @@ export class PlaybackPrefetcher {
       proxy: input.proxy,
       locator: input.locator,
       direction: rate > 0 ? 1 : -1,
-      maxFrames: this.pool.readAheadFrames(spans.length),
+      budget: this.pool.readAheadBudget(spans.length),
     });
     this.pool.prefetch(requests);
   }

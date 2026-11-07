@@ -3,7 +3,7 @@ import type { AssetId } from '@se/protocol';
 import type { Picture } from '../composite/compositor';
 import { DecodeQueue } from './decode-queue';
 import { FrameCache, type PictureLease } from './frame-cache';
-import { FrameReader } from './frame-reader';
+import { FrameReader, type ReadAheadBudget } from './frame-reader';
 import { pictureTracker, type FrameTracker, type OpenPictureCounts } from './frame-tracker';
 import { fetchImageBitmap, type ImageLoader } from './image-loader';
 import type { MediaVariant } from './media-variant';
@@ -61,6 +61,8 @@ export interface PrefetchRequest extends ReadWindow {
 /** Share of the cache sequential readers may fill ahead of the time on screen. */
 const READ_AHEAD_SHARE = 0.75;
 
+const UNBOUNDED: ReadAheadBudget = { frames: Infinity, bytes: Infinity };
+
 interface VideoSlot {
   readonly id: string;
   /** Key of its pictures in the cache. */
@@ -113,6 +115,7 @@ export class DecoderPool {
   private readonly videos = new Map<string, VideoSlot>();
   private readonly readers = new Map<string, PlaybackReader>();
   private readonly maxCachedPictures: number;
+  private readonly cacheBudgetBytes: number;
   private readonly images = new Map<string, Promise<void>>();
   private readonly maxOpenSources: number;
   private readonly createVideoSource: VideoSourceFactory;
@@ -123,9 +126,10 @@ export class DecoderPool {
   constructor(options: DecoderPoolOptions = {}) {
     this.tracker = options.tracker ?? pictureTracker;
     this.maxCachedPictures = options.maxCachedPictures ?? 48;
+    this.cacheBudgetBytes = options.cacheBudgetBytes ?? 256 * 1024 * 1024;
     this.cache = new FrameCache(
       {
-        budgetBytes: options.cacheBudgetBytes ?? 256 * 1024 * 1024,
+        budgetBytes: this.cacheBudgetBytes,
         maxEntries: this.maxCachedPictures,
       },
       (picture) => {
@@ -176,16 +180,18 @@ export class DecoderPool {
         this.readers.delete(key);
       }
     }
-    const maxAhead = this.readAheadFrames(wanted.size);
-    for (const [key, request] of wanted) this.follow(key, request, maxAhead);
+    const budget = this.readAheadBudget(wanted.size);
+    for (const [key, request] of wanted) this.follow(key, request, budget);
+    this.dropPassedFrames(requests);
   }
 
-  /** Frames each of `readers` sequential readers may decode ahead (its share of the cache). */
-  readAheadFrames(readers: number): number {
-    return Math.max(
-      2,
-      Math.floor((this.maxCachedPictures * READ_AHEAD_SHARE) / Math.max(1, readers)),
-    );
+  /** What each of `readers` sequential readers may decode ahead: its share of the cache. */
+  readAheadBudget(readers: number): ReadAheadBudget {
+    const share = READ_AHEAD_SHARE / Math.max(1, readers);
+    return {
+      frames: Math.max(2, Math.floor(this.maxCachedPictures * share)),
+      bytes: Math.floor(this.cacheBudgetBytes * share),
+    };
   }
 
   /**
@@ -279,13 +285,28 @@ export class DecoderPool {
     return this.cache.insert(cacheKey, picture, decoded.start, decoded.end, bytes);
   }
 
+  /**
+   * Closes the cached frames forward playback has passed (before the earliest time on screen of
+   * each file): held frames are what stalls hardware decoders, and passed ones will not be shown.
+   */
+  private dropPassedFrames(requests: readonly PrefetchRequest[]): void {
+    const earliest = new Map<string, number>();
+    for (const request of requests) {
+      if (request.direction < 0) continue;
+      const id = cacheId(request.file);
+      earliest.set(id, Math.min(earliest.get(id) ?? Infinity, request.from));
+    }
+    for (const [id, time] of earliest) this.cache.dropBefore(id, time);
+  }
+
   /** Keeps, extends or restarts the reader of `key` for `request`. */
-  private follow(key: string, request: PrefetchRequest, maxAhead: number): void {
+  private follow(key: string, request: PrefetchRequest, budget: ReadAheadBudget): void {
     const existing = this.readers.get(key)?.reader;
     const progress =
       existing === undefined ? null : { start: existing.start, position: existing.decodedUntil };
     const decision = planRead(progress, request);
-    const ahead = request.direction > 0 ? maxAhead : Infinity;
+    // A reverse chunk is sized by its window (`prefetchRequests`) and must reach its end.
+    const ahead = request.direction > 0 ? budget : UNBOUNDED;
     if (decision.kind === 'keep' && existing !== undefined) {
       if (request.direction > 0) existing.extend(request.from, request.to, ahead);
       return;
@@ -296,7 +317,7 @@ export class DecoderPool {
       source: slot.source,
       start: decision.kind === 'restart' ? decision.from : request.from,
       until: decision.kind === 'restart' ? decision.to : request.to,
-      maxAhead: ahead,
+      budget: ahead,
       deliver: (decoded) => {
         this.store(slot.cacheId, decoded)?.release();
       },

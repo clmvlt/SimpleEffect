@@ -1,6 +1,7 @@
-import type { AssetId, Flicks, ItemId } from '@se/protocol';
+import type { Asset, AssetId, Flicks, ItemId } from '@se/protocol';
 
 import type { PrefetchRequest } from '../decode/decoder-pool';
+import type { ReadAheadBudget } from '../decode/frame-reader';
 import { frameLookupTime } from '../decode/frame-time';
 import { chooseVariant, type MediaLocator } from '../decode/media-variant';
 import type { EvaluableItem, EvaluableSequence } from '../evaluate/evaluate';
@@ -74,10 +75,20 @@ export interface PrefetchContext {
   /** 1 forward, −1 reverse. */
   readonly direction: 1 | -1;
   /**
-   * Frames one reader may hold: a reverse window is shortened to it, since its reader must
-   * decode the whole window before reaching the frame on screen.
+   * What one reader may hold: a reverse window is shortened to it, since its reader must decode
+   * the whole window before reaching the frame on screen.
    */
-  readonly maxFrames: number;
+  readonly budget: ReadAheadBudget;
+}
+
+/** Frames of `asset` a budget holds (by count, and by bytes at the asset's coded size). */
+function framesWithin(budget: ReadAheadBudget, asset: Asset): number {
+  const stream = asset.mediaInfo?.videoStream;
+  const bytes = stream === null || stream === undefined ? 0 : stream.width * stream.height * 4;
+  return Math.max(
+    1,
+    Math.min(budget.frames, bytes > 0 ? Math.floor(budget.bytes / bytes) : budget.frames),
+  );
 }
 
 /**
@@ -104,7 +115,10 @@ export function prefetchRequests(
     requests.push({
       key: span.itemId,
       file: { assetId: span.assetId, variant: choice.variant, url },
-      from: context.direction < 0 ? Math.max(from, to - context.maxFrames * frame) : from,
+      from:
+        context.direction < 0
+          ? Math.max(from, to - framesWithin(context.budget, asset) * frame)
+          : from,
       to,
       direction: context.direction,
     });

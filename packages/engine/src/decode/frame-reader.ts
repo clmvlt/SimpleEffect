@@ -6,6 +6,21 @@ interface FrameWaiter {
   readonly resolve: (delivered: boolean) => void;
 }
 
+/**
+ * What a reader may hold decoded ahead of the time on screen: frames (hardware decoders stall
+ * when too many are held) and bytes (the cache evicts beyond its budget: a 1080p frame is 8 MB).
+ */
+export interface ReadAheadBudget {
+  readonly frames: number;
+  readonly bytes: number;
+}
+
+/** A frame decoded ahead of the time on screen. */
+interface AheadFrame {
+  readonly end: number;
+  readonly bytes: number;
+}
+
 /** Options of a {@link FrameReader}. */
 export interface FrameReaderOptions {
   readonly source: VideoFrameSource;
@@ -13,8 +28,8 @@ export interface FrameReaderOptions {
   readonly start: number;
   /** Reading pauses once it has decoded past this time (see `extend`). */
   readonly until: number;
-  /** Frames decoded ahead of `from` (see `extend`) before reading pauses: bounds held frames. */
-  readonly maxAhead: number;
+  /** What may be decoded ahead of `from` (see `extend`) before reading pauses. */
+  readonly budget: ReadAheadBudget;
   /** Receives every decoded frame (ownership included). */
   readonly deliver: (frame: DecodedVideoFrame) => void;
 }
@@ -22,16 +37,18 @@ export interface FrameReaderOptions {
 /**
  * Decodes one file sequentially with a single decoder (playback), from `start` up to a moving
  * limit, handing each frame to `deliver` (the decoder pool caches it). It never decodes more than
- * `maxAhead` frames past the time on screen, so hardware decoders keep free surfaces. A failure
+ * its budget past the time on screen, so hardware decoders keep free surfaces and the cache never
+ * evicts frames before they are shown. A failure
  * stops it quietly: frame requests then fall back to random access, which reports the error.
  */
 export class FrameReader {
   readonly start: number;
   private until: number;
   private from: number;
-  private maxAhead: number;
+  private budget: ReadAheadBudget;
   private position: number;
-  private readonly ahead: number[] = [];
+  private readonly ahead: AheadFrame[] = [];
+  private aheadBytes = 0;
   private readonly waiters = new Set<FrameWaiter>();
   private wake: (() => void) | null = null;
   private iterator: AsyncGenerator<DecodedVideoFrame, void, undefined> | null = null;
@@ -41,7 +58,7 @@ export class FrameReader {
     this.start = options.start;
     this.until = options.until;
     this.from = options.start;
-    this.maxAhead = options.maxAhead;
+    this.budget = options.budget;
     this.position = options.start;
     void this.run();
   }
@@ -57,11 +74,15 @@ export class FrameReader {
   }
 
   /** Moves the window: the time on screen is `from`, keep decoding up to `until`. */
-  extend(from: number, until: number, maxAhead: number): void {
+  extend(from: number, until: number, budget: ReadAheadBudget): void {
     this.from = Math.max(this.from, from);
     this.until = Math.max(this.until, until);
-    this.maxAhead = maxAhead;
-    while (this.ahead.length > 0 && (this.ahead[0] ?? 0) <= this.from) this.ahead.shift();
+    this.budget = budget;
+    for (let first = this.ahead[0]; first !== undefined && first.end <= this.from;) {
+      this.ahead.shift();
+      this.aheadBytes -= first.bytes;
+      first = this.ahead[0];
+    }
     this.resume();
   }
 
@@ -103,7 +124,7 @@ export class FrameReader {
     try {
       this.iterator = this.options.source.frames(this.start);
       while (this.active) {
-        if (this.position >= this.until || this.ahead.length >= this.maxAhead) {
+        if (this.position >= this.until || this.full()) {
           await new Promise<void>((resolve) => (this.wake = resolve));
           continue;
         }
@@ -124,7 +145,11 @@ export class FrameReader {
       return;
     }
     this.position = frame.end;
-    if (frame.end > this.from) this.ahead.push(frame.end);
+    if (frame.end > this.from) {
+      const bytes = frame.frame.displayWidth * frame.frame.displayHeight * 4;
+      this.ahead.push({ end: frame.end, bytes });
+      this.aheadBytes += bytes;
+    }
     this.options.deliver(frame);
     for (const waiter of this.waiters) {
       if (waiter.time < frame.end) {
@@ -132,6 +157,10 @@ export class FrameReader {
         waiter.resolve(waiter.time >= frame.start);
       }
     }
+  }
+
+  private full(): boolean {
+    return this.ahead.length >= this.budget.frames || this.aheadBytes >= this.budget.bytes;
   }
 
   private settleWaiters(before: number, delivered: boolean): void {
