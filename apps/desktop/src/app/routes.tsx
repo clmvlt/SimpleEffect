@@ -2,6 +2,7 @@ import type { DockLayoutStorage } from '@se/ui';
 import type { RouteObject } from 'react-router';
 
 import { HomePage } from '../features/projects';
+import { PROJECT_ROUTE_PATTERN } from '../shared/routing';
 import { EditorPage } from './editor/EditorPage';
 import { AppLayout } from './layout/AppLayout';
 
@@ -21,7 +22,7 @@ export function createAppRoutes({ layoutStorage }: AppRouteDependencies): RouteO
       element: <AppLayout />,
       children: [
         { index: true, element: <HomePage /> },
-        { path: 'project/:projectId', element: <EditorPage layoutStorage={layoutStorage} /> },
+        { path: PROJECT_ROUTE_PATTERN, element: <EditorPage layoutStorage={layoutStorage} /> },
       ],
     },
   ];
