@@ -10,6 +10,8 @@ export interface MediaBinState {
   readonly query: string;
   /** Asset whose details are shown, or `null`. */
   readonly selectedAssetId: string | null;
+  /** Bumped when another panel asks to show an asset: its card scrolls into view. */
+  readonly revealRequest: number;
 }
 
 /** The media bin store. */
@@ -18,9 +20,24 @@ export const mediaBinStore = createStore<MediaBinState>()(() => ({
   kind: 'all',
   query: '',
   selectedAssetId: null,
+  revealRequest: 0,
 }));
 
 /** Changes part of the media bin's UI state. */
 export function updateMediaBin(changes: Partial<MediaBinState>): void {
   mediaBinStore.setState(changes);
+}
+
+/**
+ * Shows `assetId` in the media bin (« Afficher dans le panneau Médias »): selects it, clears the
+ * filters that could hide it and scrolls its card into view.
+ */
+export function revealAsset(assetId: string): void {
+  const { revealRequest } = mediaBinStore.getState();
+  mediaBinStore.setState({
+    selectedAssetId: assetId,
+    kind: 'all',
+    query: '',
+    revealRequest: revealRequest + 1,
+  });
 }

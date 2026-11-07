@@ -53,9 +53,21 @@ export const SHORTCUT_ACTIONS = {
   zoomIn: { contexts: ['timeline'], keys: ['=', 'plus'], repeats: true },
   zoomOut: { contexts: ['timeline'], keys: ['-'], repeats: true },
   zoomToFit: { contexts: ['timeline'], keys: ['shift+z'] },
-  toggleSnapping: { contexts: ['timeline'], keys: ['s'] },
+  toggleSnapping: { contexts: ['timeline'], keys: ['n'] },
   selectAll: { contexts: ['timeline'], keys: ['mod+a'] },
   deselectAll: { contexts: ['timeline'], keys: ['mod+shift+a'] },
+  splitAtPlayhead: { contexts: ['timeline'], keys: ['s', 'mod+k'] },
+  deleteSelection: { contexts: ['timeline'], keys: ['delete', 'backspace'] },
+  rippleDelete: { contexts: ['timeline'], keys: ['shift+delete', 'shift+backspace'] },
+  copy: { contexts: ['timeline'], keys: ['mod+c'] },
+  cut: { contexts: ['timeline'], keys: ['mod+x'] },
+  paste: { contexts: ['timeline'], keys: ['mod+v'] },
+  pasteInsert: { contexts: ['timeline'], keys: ['mod+shift+v'] },
+  nudgeLeft: { contexts: ['timeline'], keys: [','], repeats: true },
+  nudgeRight: { contexts: ['timeline'], keys: ['.'], repeats: true },
+  // `<` and `>` are Maj+, and Maj+. on QWERTY keyboards and have their own key on AZERTY ones.
+  nudgeLeftTen: { contexts: ['timeline'], keys: ['<'], repeats: true },
+  nudgeRightTen: { contexts: ['timeline'], keys: ['>'], repeats: true },
 } as const satisfies Record<string, ShortcutActionDefinition>;
 
 /** Id of a named action. */

@@ -283,6 +283,22 @@
         "zoomOut": "Zoom arrière",
         "zoomLevel": "Niveau de zoom",
         "fit": "Ajuster à la fenêtre"
+      },
+      "menu": {
+        "splitHere": "Couper ici",
+        "duplicate": "Dupliquer",
+        "link": "Lier",
+        "unlink": "Délier",
+        "properties": "Propriétés",
+        "revealInMedia": "Afficher dans le panneau Médias",
+        "delete": "Supprimer",
+        "rippleDelete": "Supprimer avec ripple",
+        "closeGap": "Fermer le blanc",
+        "paste": "Coller"
+      },
+      "gap": {
+        "label": "Blanc de {{duration}}",
+        "handle": "Glisser pour allonger ou raccourcir le blanc"
       }
     },
     "loading": "Ouverture du projet…",
@@ -328,7 +344,20 @@
       "moveMarker": "Déplacement de marqueur",
       "renameMarker": "Renommage de marqueur",
       "changeMarkerColor": "Couleur de marqueur",
-      "updateMarker": "Modification de marqueur"
+      "updateMarker": "Modification de marqueur",
+      "addClips": "Ajout de clips",
+      "moveItems": "Déplacement d’éléments",
+      "duplicateItems": "Duplication d’éléments",
+      "pasteItems": "Collage d’éléments",
+      "deleteItems": "Suppression d’éléments",
+      "rippleDelete": "Suppression avec ripple",
+      "linkItems": "Liaison d’éléments",
+      "unlinkItems": "Déliaison d’éléments",
+      "trimItems": "Rognage",
+      "rippleTrim": "Rognage ripple",
+      "splitItems": "Coupe",
+      "closeGap": "Fermeture d’un blanc",
+      "resizeGap": "Ajustement d’un blanc"
     }
   },
   "statusBar": {
@@ -435,7 +464,14 @@
     "JOB_NOT_FOUND": "Cette tâche est déjà terminée.",
     "DERIVED_NOT_APPLICABLE": "Cette copie ne s’applique pas à ce média (proxy d’un son, ou mezzanine d’un média déjà lisible).",
     "MEDIA_TIME_OUT_OF_RANGE": "Cet instant est en dehors du média.",
-    "unknown": "Une erreur inattendue est survenue. Réessayez."
+    "unknown": "Une erreur inattendue est survenue. Réessayez.",
+    "RIPPLE_BLOCKED": "Ce ripple couperait le contenu d’une piste qui doit suivre (éléments liés) : déplacez ou rognez ce contenu, ou verrouillez cette piste pour l’exclure.",
+    "edit": {
+      "OVERLAPPING_ITEMS": "Les éléments se chevaucheraient : déplacez ou rognez l’un d’eux, ou utilisez une autre piste.",
+      "TRACK_LOCKED": "Cette piste est verrouillée : déverrouillez-la pour la modifier.",
+      "TRIM_BEYOND_SOURCE": "Le média ne va pas plus loin : impossible de rallonger davantage ce clip.",
+      "INVALID_EDIT_POINT": "Ce point de montage est en dehors de l’élément."
+    }
   },
   "common": {
     "notifications": "Notifications",
@@ -529,7 +565,18 @@
       "zoomToFit": "Ajuster à la fenêtre",
       "toggleSnapping": "Activer ou désactiver l’aimantation",
       "selectAll": "Tout sélectionner",
-      "deselectAll": "Tout désélectionner"
+      "deselectAll": "Tout désélectionner",
+      "splitAtPlayhead": "Couper à la tête de lecture",
+      "deleteSelection": "Supprimer la sélection (en laissant un blanc) ou fermer le blanc sélectionné",
+      "rippleDelete": "Supprimer la sélection en refermant le temps (ripple)",
+      "copy": "Copier la sélection",
+      "cut": "Couper la sélection vers le presse-papiers",
+      "paste": "Coller à la tête de lecture sur la piste active",
+      "pasteInsert": "Coller en insertion (décale la suite)",
+      "nudgeLeft": "Décaler la sélection d’une image vers la gauche",
+      "nudgeRight": "Décaler la sélection d’une image vers la droite",
+      "nudgeLeftTen": "Décaler la sélection de dix images vers la gauche",
+      "nudgeRightTen": "Décaler la sélection de dix images vers la droite"
     }
   }
 }

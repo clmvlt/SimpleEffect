@@ -14,6 +14,7 @@ import { Ellipsis } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
 import { formatDuration } from '../../../shared/time';
+import { useAssetEntry } from '../hooks/use-asset-entry';
 import { assetName } from '../services/asset-list';
 import { AssetMenuItems, type AssetMenuHandlers } from './AssetMenuItems';
 import { AssetPreview } from './AssetPreview';
@@ -34,11 +35,13 @@ export function MediaCard({ asset, selected, ...handlers }: MediaItemProps) {
   const { t } = useTranslation();
   const name = assetName(asset);
   const duration = asset.mediaInfo?.duration ?? null;
+  const entry = useAssetEntry(asset, selected);
   return (
     <li className="relative">
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <button
+            {...entry}
             type="button"
             aria-label={t('editor.media.card.open', { name })}
             aria-pressed={selected}

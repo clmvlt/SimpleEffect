@@ -2,6 +2,8 @@ import type { Flicks } from '@se/protocol';
 import { useId, useRef } from 'react';
 import { useStore } from 'zustand';
 
+import type { GestureContext } from '../hooks/gestures/gesture-context';
+import type { EditActions } from '../hooks/use-edit-actions';
 import { useInOutPoints } from '../hooks/use-in-out';
 import type { InOutControls } from '../hooks/use-in-out';
 import type { PlayheadControls } from '../hooks/use-playhead-controls';
@@ -12,6 +14,7 @@ import { useTimelineWheel } from '../hooks/use-timeline-wheel';
 import { inOutSpan } from '../services/in-out';
 import { layoutTracks } from '../services/track-layout';
 import { DEFAULT_TRACK_HEIGHT } from '../services/track-height';
+import { playheadStore, playheadTimeOf } from '../store/playhead-store';
 import { useSelectedItemIds } from '../store/selection-store';
 import { timelineViewStore } from '../store/timeline-view-store';
 import { Minimap } from './Minimap';
@@ -26,14 +29,25 @@ export interface TimelineViewProps {
   readonly playhead: PlayheadControls;
   readonly inOut: InOutControls;
   readonly commands: TimelineCommands;
+  readonly actions: EditActions;
 }
+
+/** Free space below the last track: dropping media there adds a track. */
+const DROP_ZONE_HEIGHT = 48;
 
 /**
  * The timeline body: ruler on top, track headers and lanes in a vertically scrolling area, the
  * overview strip at the bottom. Horizontal scrolling and zoom are virtual (wheel, minimap,
  * keyboard): only what is in view is rendered.
  */
-export function TimelineView({ model, api, playhead, inOut, commands }: TimelineViewProps) {
+export function TimelineView({
+  model,
+  api,
+  playhead,
+  inOut,
+  commands,
+  actions,
+}: TimelineViewProps) {
   const root = useRef<HTMLDivElement>(null);
   const lanesId = useId();
   const trackHeights = useStore(timelineViewStore, (state) => state.trackHeights);
@@ -45,11 +59,25 @@ export function TimelineView({ model, api, playhead, inOut, commands }: Timeline
   );
   useTimelineWheel({ root, layout, api });
   const span = inOutSpan(points, model.contentEnd);
+  const inOutTimes = [points.inPoint, points.outPoint].filter(
+    (point): point is Flicks => point !== null,
+  );
   const snapCandidates = (): Flicks[] => [
     ...model.editPoints,
     ...model.markers.map((marker) => marker.time),
-    ...[points.inPoint, points.outPoint].filter((point): point is Flicks => point !== null),
+    ...inOutTimes,
   ];
+  // Read when a gesture starts and on each of its moves: snapping and the playhead come from
+  // their stores at that moment (`N` may toggle snapping during a drag).
+  const gestureContext = (): GestureContext => ({
+    model,
+    layout,
+    viewport: api.viewport,
+    commands,
+    snapping: timelineViewStore.getState().snapping,
+    playhead: playheadTimeOf(playheadStore.getState(), model.sequence.id),
+    inOut: inOutTimes,
+  });
   return (
     <div ref={root} className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0">
@@ -80,13 +108,12 @@ export function TimelineView({ model, api, playhead, inOut, commands }: Timeline
         />
       </div>
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-        <div className="flex min-h-full" style={{ height: layout.height }}>
+        <div className="flex min-h-full" style={{ height: layout.height + DROP_ZONE_HEIGHT }}>
           <TrackHeaderList model={model} layout={layout} commands={commands} />
           <TrackLanes
             id={lanesId}
-            model={model}
-            layout={layout}
-            viewport={api.viewport}
+            context={gestureContext}
+            actions={actions}
             selected={new Set(selectedIds)}
             span={span}
           />

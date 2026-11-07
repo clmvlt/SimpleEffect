@@ -38,5 +38,15 @@ export function useTimelineCommands(projectId: string): TimelineCommands {
     updateMarker: guard(api.updateMarker),
     removeMarker: guard(api.removeMarker),
     createSequence: guard(api.createSequence),
+    placeMedia: guard(api.placeMedia),
+    moveItems: guard(api.moveItems),
+    duplicateItems: guard(api.duplicateItems),
+    pasteItems: guard(api.pasteItems),
+    trimItems: guard(api.trimItems),
+    splitItems: guard(api.splitItems),
+    deleteItems: guard(api.deleteItems),
+    linkItems: guard(api.linkItems),
+    unlinkItems: guard(api.unlinkItems),
+    resizeGap: guard(api.resizeGap),
   };
 }

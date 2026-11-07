@@ -14,6 +14,21 @@ export function selectionModeOf(
   return event.shiftKey ? 'add' : 'replace';
 }
 
+/**
+ * The selection right when an item is pressed: unchanged when `clicked` is already selected (a
+ * drag then moves the whole selection; the click's own meaning waits for the release),
+ * otherwise `clicked` replaces or joins it.
+ */
+export function selectionOnPress(
+  current: readonly ItemId[],
+  clicked: readonly ItemId[],
+  mode: SelectionMode,
+): ItemId[] {
+  const selected = new Set(current);
+  if (clicked.every((id) => selected.has(id))) return [...current];
+  return nextSelection(current, clicked, mode === 'replace' ? 'replace' : 'add');
+}
+
 /** `current` changed by clicking `clicked` (the item and its linked partners) with `mode`. */
 export function nextSelection(
   current: readonly ItemId[],

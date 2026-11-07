@@ -27,6 +27,10 @@ if (typeof window !== 'undefined') {
       hasPointerCapture: () => false,
     });
   }
+  // Revealed media bin cards scroll into view; jsdom has no layout, so nothing scrolls.
+  if (!('scrollIntoView' in Element.prototype)) {
+    Object.assign(Element.prototype, { scrollIntoView: () => undefined });
+  }
   // sonner reads the colour scheme; jsdom has no `matchMedia`.
   if (!('matchMedia' in window)) {
     Object.defineProperty(window, 'matchMedia', {

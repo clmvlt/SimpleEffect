@@ -2,7 +2,7 @@ import type { TFunction } from 'i18next';
 
 /**
  * Translation keys of the labels se-core gives the user transactions it builds itself
- * (`RENAME_LABEL`, `CREATE_SEQUENCE_LABEL`, `tracks::labels`, `markers::labels` in
+ * (`RENAME_LABEL`, `CREATE_SEQUENCE_LABEL`, `tracks::labels`, `markers::labels`, `items::labels` in
  * `crates/se-app/src/project_service/`, `labels` in `crates/se-app/src/media_service.rs`). Keep
  * both sides in step. Other labels (from AI agents, later from the UI) are shown as they are.
  */
@@ -33,6 +33,19 @@ const CORE_LABEL_KEYS = {
   'Rename marker': 'editor.history.renameMarker',
   'Change marker color': 'editor.history.changeMarkerColor',
   'Update marker': 'editor.history.updateMarker',
+  'Add clips': 'editor.history.addClips',
+  'Move items': 'editor.history.moveItems',
+  'Duplicate items': 'editor.history.duplicateItems',
+  'Paste items': 'editor.history.pasteItems',
+  'Delete items': 'editor.history.deleteItems',
+  'Ripple delete': 'editor.history.rippleDelete',
+  'Link items': 'editor.history.linkItems',
+  'Unlink items': 'editor.history.unlinkItems',
+  'Trim items': 'editor.history.trimItems',
+  'Ripple trim': 'editor.history.rippleTrim',
+  'Split items': 'editor.history.splitItems',
+  'Close gap': 'editor.history.closeGap',
+  'Resize gap': 'editor.history.resizeGap',
 } as const;
 
 /** The undo/redo label to show for a transaction label received from the core. */
