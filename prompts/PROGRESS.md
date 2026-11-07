@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-07 — Prompt 14: Édition audio, transitions, blancs — Done
 
-**Branch**: `feature/14-edition-audio`, merged into `dev` at `<merge>`
+**Branch**: `feature/14-edition-audio`, merged into `dev` at `7bb9573`
 
 **Done**
 - se-domain (ADR-0024): `Transition { id, kind: crossDissolve | audioCrossfade, leftItem, rightItem, duration, alignment: center | start | end }` on `Track.transitions`; `document::transition_fit` (`item_handles`, `transition_problem`, `transition_room`, `fitted_transition`); codes `INVALID_TRANSITION`, `INSUFFICIENT_HANDLES`, transition ids in `DUPLICATE_ID`, clip volume within −96..+24 dB; operations `AddTransition`, `UpdateTransition`, `RemoveTransition` (exact inverses, fit checked by validation at the end of the transaction); **transition upkeep**: `place_item`/`remove_item` drop the transitions an item move breaks, `SplitItem`/`RippleDeleteRange`/`InsertGap` put back those whose items touch again (`TransitionSnapshot`, shortened to fit, following the right part of a split); `FadeShape` (`linear`, `constantPower`, `logarithmic`) on `MediaClip` + `MediaClipPatch`; schema version 4 (migration and fixture in se-store; journals replay through serde defaults); property tests generate the three new operations.
