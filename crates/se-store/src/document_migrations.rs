@@ -10,9 +10,10 @@
 //!    new version.
 //!
 //! History: version 2 (prompt 08) gave assets a `fingerprint` and a per-stream `decodability`;
-//! version 3 (prompt 09) gave them `analysis` summaries. Journals need no migration: no
-//! transaction touched assets before version 2, and `Asset.analysis` defaults to empty when a
-//! version-2 journal entry (an imported asset) is replayed.
+//! version 3 (prompt 09) gave them `analysis` summaries; version 4 (prompt 14) gave tracks their
+//! `transitions` and media clips their fade shapes. Journals need no migration: no transaction
+//! touched assets before version 2, and `Asset.analysis`, `Track.transitions` and the fade
+//! shapes default (empty, linear) when older journal entries are replayed.
 
 use serde_json::{Map, Value, json};
 
@@ -21,7 +22,8 @@ pub type DocumentMigration = fn(Value) -> Result<Value, String>;
 
 /// Every migration, in order: `MIGRATIONS[0]` turns version 1 into version 2, and so on.
 /// Its length is always `CURRENT_SCHEMA_VERSION - 1` (checked by a test).
-pub const MIGRATIONS: &[DocumentMigration] = &[migrate_v1_to_v2, migrate_v2_to_v3];
+pub const MIGRATIONS: &[DocumentMigration] =
+    &[migrate_v1_to_v2, migrate_v2_to_v3, migrate_v3_to_v4];
 
 /// Version 1 → 2: every asset gets `fingerprint: null` and its single decodability becomes one
 /// state per stream (`noStream` for the streams its media info lacks).
@@ -55,6 +57,46 @@ fn migrate_v2_to_v3(mut document: Value) -> Result<Value, String> {
         );
     }
     Ok(document)
+}
+
+/// Version 3 → 4: every track gets an empty `transitions` list and every media clip linear
+/// fade shapes (what version 3 played).
+fn migrate_v3_to_v4(mut document: Value) -> Result<Value, String> {
+    let Some(sequences) = document.get_mut("sequences").and_then(Value::as_array_mut) else {
+        return Err("`sequences` is missing or not a list".to_owned());
+    };
+    for sequence in sequences {
+        let tracks = sequence
+            .get_mut("tracks")
+            .and_then(Value::as_array_mut)
+            .ok_or_else(|| "a sequence has no `tracks` list".to_owned())?;
+        for track in tracks {
+            let fields = track
+                .as_object_mut()
+                .ok_or_else(|| "a track is not an object".to_owned())?;
+            for item in fields
+                .get_mut("items")
+                .and_then(Value::as_array_mut)
+                .into_iter()
+                .flatten()
+            {
+                add_fade_shapes(item);
+            }
+            fields.insert("transitions".to_owned(), json!([]));
+        }
+    }
+    Ok(document)
+}
+
+/// Linear fade shapes on `item` when it is a media clip.
+fn add_fade_shapes(item: &mut Value) {
+    let Some(kind) = item.get_mut("kind").and_then(Value::as_object_mut) else {
+        return;
+    };
+    if kind.get("kind").and_then(Value::as_str) == Some("mediaClip") {
+        kind.insert("fadeInShape".to_owned(), json!("linear"));
+        kind.insert("fadeOutShape".to_owned(), json!("linear"));
+    }
 }
 
 /// The version-2 `decodability` of a version-1 asset.
@@ -214,6 +256,24 @@ mod tests {
             json!({ "audio": null, "scenes": null })
         );
         assert_eq!(migrated["schemaVersion"], json!(3));
+    }
+
+    #[test]
+    fn version_4_adds_transitions_and_linear_fade_shapes() {
+        let document = json!({
+            "schemaVersion": 3,
+            "sequences": [{ "tracks": [{ "items": [
+                { "kind": { "kind": "mediaClip", "fadeIn": 0 } },
+                { "kind": { "kind": "text" } }
+            ] }] }]
+        });
+        let migrated = migrate_document(document, MIGRATIONS, 4).unwrap();
+        let track = &migrated["sequences"][0]["tracks"][0];
+        assert_eq!(track["transitions"], json!([]));
+        assert_eq!(track["items"][0]["kind"]["fadeInShape"], json!("linear"));
+        assert_eq!(track["items"][0]["kind"]["fadeOutShape"], json!("linear"));
+        assert_eq!(track["items"][1]["kind"], json!({ "kind": "text" }));
+        assert_eq!(migrated["schemaVersion"], json!(4));
     }
 
     #[test]

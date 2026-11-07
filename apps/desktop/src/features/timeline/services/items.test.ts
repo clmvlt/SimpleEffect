@@ -151,6 +151,8 @@ describe('item display', () => {
         volumeDb: { kind: 'static', value: 0 },
         fadeIn: seconds(0),
         fadeOut: seconds(0),
+        fadeInShape: 'linear',
+        fadeOutShape: 'linear',
         reframe: { kind: 'fit' },
       },
     });

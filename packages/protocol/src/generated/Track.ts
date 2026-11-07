@@ -3,6 +3,7 @@
 import type { Item } from "./Item";
 import type { TrackId } from "./TrackId";
 import type { TrackKind } from "./TrackKind";
+import type { Transition } from "./Transition";
 
 /**
  * A horizontal lane of a sequence. Its items never overlap in time.
@@ -50,4 +51,9 @@ pan: number,
 /**
  * The items, in any order (operations keep them sorted by start).
  */
-items: Array<Item>, };
+items: Array<Item>, 
+/**
+ * Cross-fades between adjacent items of this track, in any order. Empty when absent, so
+ * documents written before schema version 4 still read.
+ */
+transitions: Array<Transition>, };

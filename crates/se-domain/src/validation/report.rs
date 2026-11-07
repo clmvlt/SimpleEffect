@@ -77,6 +77,13 @@ impl<'a> ProjectIndex<'a> {
         self.assets.get(&id).copied()
     }
 
+    /// The duration of the asset with this id, when the asset exists and its duration is known.
+    pub(super) fn asset_duration(&self, id: AssetId) -> Option<Flicks> {
+        self.asset(id)
+            .and_then(|asset| asset.media_info.as_ref())
+            .and_then(|info| info.duration)
+    }
+
     /// Whether the project has a template with this id.
     pub(super) fn has_template(&self, id: TemplateId) -> bool {
         self.templates.contains(&id)

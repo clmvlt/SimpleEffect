@@ -7,6 +7,7 @@ import type {
   Asset,
   AssetId,
   Color,
+  FadeShape,
   Flicks,
   FrameRate,
   ItemKind,
@@ -83,6 +84,9 @@ export function clip(
     readonly reframe?: 'fit' | 'fill';
     readonly fadeIn?: Flicks;
     readonly fadeOut?: Flicks;
+    readonly fadeInShape?: FadeShape;
+    readonly fadeOutShape?: FadeShape;
+    readonly volumeDb?: Animatable<number>;
     readonly transform?: TransformSpec;
   } = {},
 ): ItemKind {
@@ -92,9 +96,11 @@ export function clip(
     sourceStart: options.sourceStart ?? (0 as Flicks),
     speed: options.speed ?? 1,
     transform: transform(options.transform),
-    volumeDb: still(0),
+    volumeDb: options.volumeDb ?? still(0),
     fadeIn: options.fadeIn ?? (0 as Flicks),
     fadeOut: options.fadeOut ?? (0 as Flicks),
+    fadeInShape: options.fadeInShape ?? 'linear',
+    fadeOutShape: options.fadeOutShape ?? 'linear',
     reframe: { kind: options.reframe ?? 'fit' },
   };
 }

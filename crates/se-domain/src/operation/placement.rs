@@ -4,6 +4,7 @@ use super::{
     AddItem, Effect, RemoveItem, RestoreItem,
     checks::{ensure_free, ensure_item_id_unused, ensure_unlocked},
     lookup::{ItemLocation, TrackLocation},
+    transition_upkeep::drop_broken_transitions,
 };
 use crate::{DomainError, Item, Project, Track};
 
@@ -18,7 +19,7 @@ pub(crate) fn insert_sorted(track: &mut Track, item: Item) {
 
 /// Replaces the item at `location` by `replacement` (same id) on track `target` (its own track
 /// or another one), keeping the item's current revision. Records a [`RestoreItem`] of the old
-/// state as the inverse.
+/// state as the inverse, then removes the transitions of both tracks that the change broke.
 ///
 /// # Errors
 /// [`DomainError::TrackLocked`] if either track is locked, [`DomainError::Overlap`] if the
@@ -39,11 +40,13 @@ pub(crate) fn place_item(
     let previous = location.track.get_mut(project).items.remove(location.index);
     replacement.revision = previous.revision;
     effect.touched.items.insert(previous.id);
+    let id = replacement.id;
     insert_sorted(target.get_mut(project), replacement);
     effect.undo_with(RestoreItem {
         track: previous_track,
         item: previous,
     });
+    drop_broken_transitions(project, &[location.track, target], id, effect);
     Ok(())
 }
 
@@ -70,7 +73,8 @@ pub(crate) fn insert_new_item(
     Ok(())
 }
 
-/// Takes the item at `location` off its track. Records an [`AddItem`] of it as the inverse.
+/// Takes the item at `location` off its track. Records an [`AddItem`] of it as the inverse, then
+/// removes the transitions joining it.
 ///
 /// # Errors
 /// [`DomainError::TrackLocked`].
@@ -84,9 +88,11 @@ pub(crate) fn remove_item(
     let track_id = track.id;
     let item = location.track.get_mut(project).items.remove(location.index);
     effect.touched.items.insert(item.id);
+    let id = item.id;
     effect.undo_with(AddItem {
         track: track_id,
         item,
     });
+    drop_broken_transitions(project, &[location.track], id, effect);
     Ok(())
 }

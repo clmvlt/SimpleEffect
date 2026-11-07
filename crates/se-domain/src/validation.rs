@@ -13,6 +13,7 @@ mod media_rules;
 mod report;
 mod sequence_rules;
 mod track_rules;
+mod transition_rules;
 mod violation;
 
 pub use violation::{Violation, ViolationCode};
@@ -26,8 +27,9 @@ use report::{Path, ProjectIndex, Report};
 /// Checked: unique ids, existing references of the right asset kind, sequence formats, times
 /// not before zero and within range, non-empty items, no overlap on a track, items sorted by
 /// start, items allowed on their track kind, positive speeds, source ranges inside their media,
-/// keyframes present, sorted and inside their item, value ranges (opacity, pan, fades, Bézier
-/// control points) and link groups within one sequence.
+/// keyframes present, sorted and inside their item, value ranges (opacity, volume, pan, fades,
+/// Bézier control points), link groups within one sequence and transitions on the cut between
+/// adjacent items with enough media beyond their edges.
 #[must_use]
 pub fn validate_project(project: &Project) -> Vec<Violation> {
     let mut report = Report::default();
@@ -40,6 +42,7 @@ pub fn validate_project(project: &Project) -> Vec<Violation> {
         for track in &sequence.tracks {
             let track_path = sequence_path.field("tracks").key(track.id);
             track_rules::check(track, &track_path, &mut report);
+            transition_rules::check(track, &index, &track_path, &mut report);
             for item in &track.items {
                 let context = ItemContext {
                     item,

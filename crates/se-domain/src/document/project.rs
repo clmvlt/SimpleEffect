@@ -11,7 +11,7 @@ use crate::ids::ProjectId;
 ///
 /// Version 2 (prompt 08): assets carry a content fingerprint and a decodability per stream.
 /// Version 3 (prompt 09): assets carry the summaries of their analyses (`analysis`).
-pub const CURRENT_SCHEMA_VERSION: u32 = 3;
+pub const CURRENT_SCHEMA_VERSION: u32 = 4;
 
 /// The whole editable state of a project, serialized as `project.json` (ADR-0006).
 ///

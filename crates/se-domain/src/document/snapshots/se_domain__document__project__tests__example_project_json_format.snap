@@ -5,7 +5,7 @@ expression: example_project()
 {
   "id": "00000000-0001-7000-8000-000000000000",
   "name": "Example",
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "revision": 42,
   "settings": {
     "defaultFormat": {
@@ -242,6 +242,8 @@ expression: example_project()
                 },
                 "fadeIn": 352800000,
                 "fadeOut": 0,
+                "fadeInShape": "linear",
+                "fadeOutShape": "linear",
                 "reframe": {
                   "kind": "fit"
                 }
@@ -301,10 +303,22 @@ expression: example_project()
                 },
                 "fadeIn": 352800000,
                 "fadeOut": 0,
+                "fadeInShape": "linear",
+                "fadeOutShape": "linear",
                 "reframe": {
                   "kind": "fit"
                 }
               }
+            }
+          ],
+          "transitions": [
+            {
+              "id": "00000000-0001-7000-8000-000000000000",
+              "kind": "crossDissolve",
+              "leftItem": "00000000-0001-7000-8000-000000000000",
+              "rightItem": "00000000-0002-7000-8000-000000000000",
+              "duration": 705600000,
+              "alignment": "center"
             }
           ]
         },
@@ -435,7 +449,8 @@ expression: example_project()
                 }
               }
             }
-          ]
+          ],
+          "transitions": []
         },
         {
           "id": "00000000-0003-7000-8000-000000000000",
@@ -551,7 +566,8 @@ expression: example_project()
                 "text": "Merci d'être là"
               }
             }
-          ]
+          ],
+          "transitions": []
         },
         {
           "id": "00000000-0004-7000-8000-000000000000",
@@ -617,12 +633,15 @@ expression: example_project()
                 },
                 "fadeIn": 352800000,
                 "fadeOut": 0,
+                "fadeInShape": "linear",
+                "fadeOutShape": "linear",
                 "reframe": {
                   "kind": "fit"
                 }
               }
             }
-          ]
+          ],
+          "transitions": []
         },
         {
           "id": "00000000-0005-7000-8000-000000000000",
@@ -711,12 +730,15 @@ expression: example_project()
                 },
                 "fadeIn": 0,
                 "fadeOut": 705600000,
+                "fadeInShape": "linear",
+                "fadeOutShape": "constantPower",
                 "reframe": {
                   "kind": "fit"
                 }
               }
             }
-          ]
+          ],
+          "transitions": []
         }
       ],
       "markers": [

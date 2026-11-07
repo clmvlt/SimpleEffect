@@ -15,6 +15,7 @@ mod caption;
 mod content_fingerprint;
 mod derived_media;
 mod easing;
+mod fade_shape;
 mod format;
 mod image;
 mod item;
@@ -29,6 +30,8 @@ mod shape;
 mod text;
 mod track;
 mod transform;
+mod transition;
+mod transition_fit;
 
 pub use animatable::{Animatable, Keyframe};
 pub use asset::{Asset, AssetKind, Decodability, StreamDecodability};
@@ -37,6 +40,7 @@ pub use caption::CaptionItem;
 pub use content_fingerprint::{ContentFingerprint, FingerprintError};
 pub use derived_media::{DerivedFile, DerivedMedia, DerivedStatus};
 pub use easing::{Easing, EasingPreset};
+pub use fade_shape::FadeShape;
 pub use format::{DEFAULT_SAMPLE_RATE, Format, FormatPreset};
 pub use image::ImageItem;
 pub use item::{Item, Origin};
@@ -51,3 +55,8 @@ pub use shape::{ShapeGeometry, ShapeItem};
 pub use text::{TextItem, TextStyle};
 pub use track::{Track, TrackKind};
 pub use transform::Transform2D;
+pub use transition::{Transition, TransitionAlignment, TransitionKind};
+pub use transition_fit::{
+    AssetDurations, Handles, TransitionProblem, fitted_transition, item_handles,
+    transition_problem, transition_room,
+};

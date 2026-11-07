@@ -60,5 +60,6 @@ pub fn track(index: u64, kind: TrackKind, name: &str, items: Vec<Item>) -> Track
         volume_db: 0.0,
         pan: 0.0,
         items,
+        transitions: Vec::new(),
     }
 }

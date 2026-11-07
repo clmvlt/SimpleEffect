@@ -132,6 +132,7 @@ mod tests {
         other.id = crate::SequenceId::from_test_index(2);
         other.markers.clear();
         other.tracks.truncate(1);
+        other.tracks[0].transitions.clear();
         other.tracks[0].id = crate::TrackId::from_test_index(20);
         other.tracks[0].items.truncate(1);
         other.tracks[0].items[0].id = ItemId::from_test_index(20);

@@ -10,7 +10,7 @@ pub use code::DomainErrorCode;
 
 use crate::{
     AnimatableProperty, AssetId, Flicks, ItemEdge, ItemId, MarkerId, SequenceId, TaskId, TrackId,
-    Violation,
+    TransitionId, Violation,
 };
 
 /// A refused change. Nothing was modified.
@@ -44,6 +44,14 @@ pub enum DomainError {
     MarkerNotFound {
         /// The unknown id.
         marker: MarkerId,
+    },
+    /// No transition has this id.
+    #[error(
+        "transition {transition} does not exist in this project; it may have been removed with          its items, read the project again for current ids"
+    )]
+    TransitionNotFound {
+        /// The unknown id.
+        transition: TransitionId,
     },
     /// No asset has this id.
     #[error("asset {asset} does not exist in this project; import it or use an existing asset id")]
@@ -289,6 +297,7 @@ impl DomainError {
             Self::SequenceNotFound { .. } => DomainErrorCode::SequenceNotFound,
             Self::MarkerNotFound { .. } => DomainErrorCode::MarkerNotFound,
             Self::AssetNotFound { .. } => DomainErrorCode::AssetNotFound,
+            Self::TransitionNotFound { .. } => DomainErrorCode::TransitionNotFound,
             Self::IdAlreadyUsed { .. } => DomainErrorCode::IdAlreadyUsed,
             Self::TrackNotInSequence { .. } => DomainErrorCode::TrackNotInSequence,
             Self::Overlap { .. } => DomainErrorCode::OverlappingItems,

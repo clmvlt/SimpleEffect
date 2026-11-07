@@ -34,6 +34,8 @@ mod split_item;
 pub(crate) mod testing;
 mod touched;
 mod track_ops;
+mod transition_ops;
+mod transition_upkeep;
 mod trim_item;
 mod update_item;
 
@@ -53,6 +55,8 @@ pub use sequence_ops::{AddSequence, RemoveSequence, SequencePatch, UpdateSequenc
 pub use split_item::SplitItem;
 pub use touched::TouchedEntities;
 pub use track_ops::{AddTrack, RemoveTrack, ReorderTracks, TrackPatch, UpdateTrack};
+pub use transition_ops::{AddTransition, RemoveTransition, TransitionPatch, UpdateTransition};
+pub use transition_upkeep::TransitionSnapshot;
 pub use trim_item::{ItemEdge, TrimItem};
 pub use update_item::UpdateItem;
 
@@ -126,6 +130,12 @@ pub enum Operation {
     RemoveAsset(RemoveAsset),
     /// Renames the project.
     RenameProject(RenameProject),
+    /// Adds a cross-fade on the cut between two adjacent items of a track.
+    AddTransition(AddTransition),
+    /// Resizes or realigns a transition.
+    UpdateTransition(UpdateTransition),
+    /// Removes a transition.
+    RemoveTransition(RemoveTransition),
 }
 
 /// Declares `From<Payload> for Operation` and the dispatch to each payload's [`Edit`] impl.
@@ -177,6 +187,9 @@ operation_payloads!(
     UpdateAsset,
     RemoveAsset,
     RenameProject,
+    AddTransition,
+    UpdateTransition,
+    RemoveTransition,
 );
 
 /// The outcome of [`apply`].

@@ -19,6 +19,8 @@ pub enum DomainErrorCode {
     MarkerNotFound,
     /// No asset has the given id.
     AssetNotFound,
+    /// No transition has the given id.
+    TransitionNotFound,
     /// A new entity reuses an existing id.
     IdAlreadyUsed,
     /// A listed track belongs to another sequence.

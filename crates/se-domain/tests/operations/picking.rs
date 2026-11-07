@@ -2,8 +2,8 @@
 //! shifting times.
 
 use se_domain::{
-    Color, DesignPixels, Flicks, Item, ItemKind, Project, SequenceId, ShapeGeometry, ShapeItem,
-    TimeRange, TrackId, TrackKind, Transform2D,
+    Color, DesignPixels, Flicks, Item, ItemId, ItemKind, Project, SequenceId, ShapeGeometry,
+    ShapeItem, TimeRange, TrackId, TrackKind, Transform2D, TransitionId,
     test_support::{item, millis},
 };
 
@@ -80,5 +80,31 @@ pub fn sequence_tracks(project: &Project, sequence: SequenceId) -> Vec<TrackId> 
         .iter()
         .filter(|candidate| candidate.id == sequence)
         .flat_map(|sequence| sequence.tracks.iter().map(|track| track.id))
+        .collect()
+}
+
+/// Every cut: two items of a track where the first ends as the second starts (track kind
+/// included, to choose the transition kind).
+pub fn cuts(project: &Project) -> Vec<(TrackId, TrackKind, ItemId, ItemId)> {
+    project
+        .sequences
+        .iter()
+        .flat_map(|sequence| &sequence.tracks)
+        .flat_map(|track| {
+            track.items.windows(2).filter_map(move |pair| {
+                (pair[0].timeline_range.end() == pair[1].timeline_range.start())
+                    .then_some((track.id, track.kind, pair[0].id, pair[1].id))
+            })
+        })
+        .collect()
+}
+
+/// Every transition id.
+pub fn transitions(project: &Project) -> Vec<TransitionId> {
+    project
+        .sequences
+        .iter()
+        .flat_map(|sequence| &sequence.tracks)
+        .flat_map(|track| track.transitions.iter().map(|transition| transition.id))
         .collect()
 }

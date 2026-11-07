@@ -50,27 +50,31 @@ pub use analysis::{
 pub use changeset::{Changeset, ChangesetEntry, Conflict, RevertPlan, plan_revert};
 pub use color::{Color, ColorParseError};
 pub use document::{
-    Animatable, Asset, AssetKind, AudioStreamInfo, BrandKit, CURRENT_SCHEMA_VERSION, CaptionItem,
-    ContentFingerprint, DEFAULT_SAMPLE_RATE, Decodability, DerivedFile, DerivedMedia,
-    DerivedStatus, Easing, EasingPreset, FingerprintError, Format, FormatPreset, ImageItem, Item,
-    ItemKind, Keyframe, Marker, MarkerColor, MediaClip, MediaInfo, MotionTemplate, Origin, Project,
-    ProjectSettings, Reframe, Sequence, ShapeGeometry, ShapeItem, StreamDecodability, TemplateItem,
-    TemplateParamValue, TextItem, TextStyle, Track, TrackKind, Transform2D, VideoStreamInfo,
+    Animatable, Asset, AssetDurations, AssetKind, AudioStreamInfo, BrandKit,
+    CURRENT_SCHEMA_VERSION, CaptionItem, ContentFingerprint, DEFAULT_SAMPLE_RATE, Decodability,
+    DerivedFile, DerivedMedia, DerivedStatus, Easing, EasingPreset, FadeShape, FingerprintError,
+    Format, FormatPreset, Handles, ImageItem, Item, ItemKind, Keyframe, Marker, MarkerColor,
+    MediaClip, MediaInfo, MotionTemplate, Origin, Project, ProjectSettings, Reframe, Sequence,
+    ShapeGeometry, ShapeItem, StreamDecodability, TemplateItem, TemplateParamValue, TextItem,
+    TextStyle, Track, TrackKind, Transform2D, Transition, TransitionAlignment, TransitionKind,
+    TransitionProblem, VideoStreamInfo, fitted_transition, item_handles, transition_problem,
+    transition_room,
 };
 pub use error::{DomainError, DomainErrorCode};
 pub use history::{History, HistoryStep};
 pub use ids::{
     AssetId, ChangesetId, IdError, ItemId, JobId, LinkGroupId, MarkerId, ProjectId, SequenceId,
-    TaskId, TemplateId, TrackId, TransactionId, Uuid,
+    TaskId, TemplateId, TrackId, TransactionId, TransitionId, Uuid,
 };
 pub use operation::{
-    AddAsset, AddItem, AddMarker, AddSequence, AddTrack, AnimatableProperty, Applied, AssetPatch,
-    Assign, CaptionPatch, ImagePatch, InsertGap, ItemEdge, ItemPatch, LinkItems, MarkerPatch,
-    MediaClipPatch, MoveItem, Operation, PropertyAnimation, RemoveAsset, RemoveItem, RemoveMarker,
-    RemoveSequence, RemoveTrack, RenameProject, ReorderTracks, RestoreItem, RippleDeleteRange,
-    SequencePatch, SetKeyframes, ShapePatch, SplitItem, TemplatePatch, TextPatch, TouchedEntities,
-    TrackPatch, TrimItem, UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker, UpdateSequence,
-    UpdateTrack, apply, apply_all,
+    AddAsset, AddItem, AddMarker, AddSequence, AddTrack, AddTransition, AnimatableProperty,
+    Applied, AssetPatch, Assign, CaptionPatch, ImagePatch, InsertGap, ItemEdge, ItemPatch,
+    LinkItems, MarkerPatch, MediaClipPatch, MoveItem, Operation, PropertyAnimation, RemoveAsset,
+    RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack, RemoveTransition, RenameProject,
+    ReorderTracks, RestoreItem, RippleDeleteRange, SequencePatch, SetKeyframes, ShapePatch,
+    SplitItem, TemplatePatch, TextPatch, TouchedEntities, TrackPatch, TransitionPatch,
+    TransitionSnapshot, TrimItem, UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker,
+    UpdateSequence, UpdateTrack, UpdateTransition, apply, apply_all,
 };
 pub use spatial::{DESIGN_REFERENCE_SIDE, DesignPixels, Vec2};
 pub use time::{

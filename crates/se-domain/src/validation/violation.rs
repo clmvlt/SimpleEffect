@@ -62,15 +62,20 @@ pub enum ViolationCode {
     KeyframesNotSorted,
     /// A keyframe before the item's start or after its end.
     KeyframeOutsideItem,
-    /// A value outside its allowed range (opacity, pan, fades, Bézier control points).
+    /// A value outside its allowed range (opacity, volume, pan, fades, Bézier control points).
     ValueOutOfRange,
     /// Items of one link group sit in different sequences.
     LinkGroupAcrossSequences,
+    /// A transition that does not sit on the cut between two adjacent items of its track, or
+    /// clashes with another transition.
+    InvalidTransition,
+    /// A transition needs more media beyond an item's edge than the item's asset has.
+    InsufficientHandles,
 }
 
 impl ViolationCode {
     /// Every code, in declaration order.
-    pub const ALL: [Self; 17] = [
+    pub const ALL: [Self; 19] = [
         Self::DuplicateId,
         Self::UnknownReference,
         Self::AssetKindMismatch,
@@ -88,6 +93,8 @@ impl ViolationCode {
         Self::KeyframeOutsideItem,
         Self::ValueOutOfRange,
         Self::LinkGroupAcrossSequences,
+        Self::InvalidTransition,
+        Self::InsufficientHandles,
     ];
 
     /// The serialized form (`OVERLAPPING_ITEMS`).
@@ -111,6 +118,8 @@ impl ViolationCode {
             Self::KeyframeOutsideItem => "KEYFRAME_OUTSIDE_ITEM",
             Self::ValueOutOfRange => "VALUE_OUT_OF_RANGE",
             Self::LinkGroupAcrossSequences => "LINK_GROUP_ACROSS_SEQUENCES",
+            Self::InvalidTransition => "INVALID_TRANSITION",
+            Self::InsufficientHandles => "INSUFFICIENT_HANDLES",
         }
     }
 }

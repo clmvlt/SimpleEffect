@@ -7,7 +7,7 @@
 
 use se_domain::{
     Asset, BrandKit, Format, Item, ItemId, Marker, MarkerId, MotionTemplate, ProjectId,
-    ProjectSettings, SequenceId, TrackId, TrackKind,
+    ProjectSettings, SequenceId, TrackId, TrackKind, Transition,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -94,6 +94,9 @@ pub struct TrackEntity {
     pub pan: f64,
     /// Its items, sorted by start time.
     pub item_ids: Vec<ItemId>,
+    /// Its cross-fades (small values, sent whole with the track: a transition change upserts
+    /// its track).
+    pub transitions: Vec<Transition>,
 }
 
 /// An item and the track holding it.

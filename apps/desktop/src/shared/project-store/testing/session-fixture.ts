@@ -51,6 +51,7 @@ export function videoTrack(id: string, itemIds: string[]): TrackEntity {
     volumeDb: 0,
     pan: 0,
     itemIds,
+    transitions: [],
   };
 }
 

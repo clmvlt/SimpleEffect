@@ -1,4 +1,4 @@
-//! `DUPLICATE_ID`: ids are unique per entity kind across the whole project.
+//! `DUPLICATE_ID`: ids are unique per entity kind across the whole project (transitions too).
 
 use std::{collections::HashSet, fmt::Display, hash::Hash};
 
@@ -80,6 +80,17 @@ fn check_sequence_children(project: &Project, sequences: &Path, report: &mut Rep
                 .map(move |item| (item.id, items.key(item.id)))
         }),
         "item",
+        report,
+    );
+    report_duplicates(
+        tracks().flat_map(|(track, path)| {
+            let transitions = path.field("transitions");
+            track
+                .transitions
+                .iter()
+                .map(move |transition| (transition.id, transitions.key(transition.id)))
+        }),
+        "transition",
         report,
     );
 }
