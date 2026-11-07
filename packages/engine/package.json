@@ -7,10 +7,12 @@
   "exports": {
     ".": "./src/index.ts",
     "./animation": "./src/animation/index.ts",
+    "./audio": "./src/audio/index.ts",
     "./capabilities": "./src/capabilities/index.ts",
     "./composite": "./src/composite/index.ts",
     "./decode": "./src/decode/index.ts",
     "./evaluate": "./src/evaluate/index.ts",
+    "./playback": "./src/playback/index.ts",
     "./preview": "./src/preview/index.ts",
     "./sources": "./src/sources/index.ts"
   },
