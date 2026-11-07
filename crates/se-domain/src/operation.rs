@@ -15,6 +15,7 @@
 
 mod add_remove_item;
 mod animation;
+mod apply_animation_preset;
 mod asset_ops;
 mod checks;
 mod effect;
@@ -40,7 +41,8 @@ mod trim_item;
 mod update_item;
 
 pub use add_remove_item::{AddItem, RemoveItem, RestoreItem};
-pub use animation::{AnimatableProperty, PropertyAnimation, SetKeyframes};
+pub use animation::{PropertyAnimation, SetKeyframes};
+pub use apply_animation_preset::ApplyAnimationPreset;
 pub use asset_ops::{AddAsset, AssetPatch, Assign, RemoveAsset, UpdateAsset};
 pub use insert_gap::InsertGap;
 pub use item_patch::{
@@ -94,6 +96,8 @@ pub enum Operation {
     UpdateItem(UpdateItem),
     /// Sets the keyframes (or static value) of one animatable property.
     SetKeyframes(SetKeyframes),
+    /// Expands an animation preset into keyframes of an item.
+    ApplyAnimationPreset(ApplyAnimationPreset),
     /// Puts items in a link group.
     LinkItems(LinkItems),
     /// Takes items out of their link group.
@@ -169,6 +173,7 @@ operation_payloads!(
     SplitItem,
     UpdateItem,
     SetKeyframes,
+    ApplyAnimationPreset,
     LinkItems,
     UnlinkItems,
     RippleDeleteRange,

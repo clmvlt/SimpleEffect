@@ -63,6 +63,12 @@ pub enum DomainErrorCode {
     NothingToRedo,
     /// A transaction recorded in another task's changeset.
     WrongChangeset,
+    /// No animation preset has the given id.
+    UnknownAnimationPreset,
+    /// An animation preset applied in a phase it does not have.
+    PresetPhaseNotSupported,
+    /// The embedded animation preset library is broken (a bug).
+    PresetLibraryUnavailable,
 }
 
 impl fmt::Display for DomainErrorCode {

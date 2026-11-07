@@ -29,6 +29,7 @@
 //! - Allowed third-party dependencies: `serde`, `thiserror`, `uuid`, `ts-rs` (derive only).
 
 pub mod analysis;
+pub mod animation_preset;
 pub mod changeset;
 pub mod color;
 pub mod document;
@@ -47,18 +48,23 @@ pub use analysis::{
     AnalysisKind, AnalysisResult, AssetAnalysis, AudioAnalysis, AudioSummary, LoudnessCurve,
     SceneDetection, SceneSummary, SilenceSettings,
 };
+pub use animation_preset::{
+    AnimationPhase, AnimationPreset, AnimationPresetLibrary, PresetPlacement, PresetRefusal,
+    animation_presets, expand_preset, preset_samples,
+};
 pub use changeset::{Changeset, ChangesetEntry, Conflict, RevertPlan, plan_revert};
 pub use color::{Color, ColorParseError};
 pub use document::{
-    Animatable, Asset, AssetDurations, AssetKind, AudioStreamInfo, BrandKit,
+    Animatable, AnimatableProperty, Asset, AssetDurations, AssetKind, AudioStreamInfo, BrandKit,
     CURRENT_SCHEMA_VERSION, CaptionItem, ContentFingerprint, DEFAULT_SAMPLE_RATE, Decodability,
     DerivedFile, DerivedMedia, DerivedStatus, Easing, EasingPreset, FadeShape, FingerprintError,
-    Format, FormatPreset, Handles, ImageItem, Item, ItemKind, Keyframe, Marker, MarkerColor,
-    MediaClip, MediaInfo, MotionTemplate, Origin, Project, ProjectSettings, Reframe, Sequence,
-    ShapeGeometry, ShapeItem, StreamDecodability, TemplateItem, TemplateParamValue, TextItem,
-    TextStyle, Track, TrackKind, Transform2D, Transition, TransitionAlignment, TransitionKind,
-    TransitionProblem, VideoStreamInfo, fitted_transition, item_handles, transition_problem,
-    transition_room,
+    Format, FormatPreset, Handles, ImageFit, ImageItem, Item, ItemKind, Keyframe, Marker,
+    MarkerColor, MediaClip, MediaInfo, MotionTemplate, Origin, Project, ProjectSettings,
+    PropertyMut, PropertyRef, Reframe, Sequence, ShapeGeometry, ShapeItem, ShapeKind,
+    StreamDecodability, Stroke, TemplateItem, TemplateParamValue, TextAlign, TextBackground,
+    TextCase, TextItem, TextShadow, TextStyle, Track, TrackKind, Transform2D, Transition,
+    TransitionAlignment, TransitionKind, TransitionProblem, VideoStreamInfo, fitted_transition,
+    item_handles, transition_problem, transition_room,
 };
 pub use error::{DomainError, DomainErrorCode};
 pub use history::{History, HistoryStep};
@@ -67,12 +73,12 @@ pub use ids::{
     TaskId, TemplateId, TrackId, TransactionId, TransitionId, Uuid,
 };
 pub use operation::{
-    AddAsset, AddItem, AddMarker, AddSequence, AddTrack, AddTransition, AnimatableProperty,
-    Applied, AssetPatch, Assign, CaptionPatch, ImagePatch, InsertGap, ItemEdge, ItemPatch,
-    LinkItems, MarkerPatch, MediaClipPatch, MoveItem, Operation, PropertyAnimation, RemoveAsset,
-    RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack, RemoveTransition, RenameProject,
-    ReorderTracks, RestoreItem, RippleDeleteRange, SequencePatch, SetKeyframes, ShapePatch,
-    SplitItem, TemplatePatch, TextPatch, TouchedEntities, TrackPatch, TransitionPatch,
+    AddAsset, AddItem, AddMarker, AddSequence, AddTrack, AddTransition, Applied,
+    ApplyAnimationPreset, AssetPatch, Assign, CaptionPatch, ImagePatch, InsertGap, ItemEdge,
+    ItemPatch, LinkItems, MarkerPatch, MediaClipPatch, MoveItem, Operation, PropertyAnimation,
+    RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack, RemoveTransition,
+    RenameProject, ReorderTracks, RestoreItem, RippleDeleteRange, SequencePatch, SetKeyframes,
+    ShapePatch, SplitItem, TemplatePatch, TextPatch, TouchedEntities, TrackPatch, TransitionPatch,
     TransitionSnapshot, TrimItem, UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker,
     UpdateSequence, UpdateTrack, UpdateTransition, apply, apply_all,
 };

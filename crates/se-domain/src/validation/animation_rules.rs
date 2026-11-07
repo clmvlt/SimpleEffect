@@ -1,57 +1,84 @@
 //! Rules of animatable properties: `EMPTY_KEYFRAMES`, `KEYFRAMES_NOT_SORTED`,
-//! `KEYFRAME_OUTSIDE_ITEM`, and `VALUE_OUT_OF_RANGE` for opacity, volume and Bézier control
-//! points.
-
-use std::ops::RangeInclusive;
+//! `KEYFRAME_OUTSIDE_ITEM`, and `VALUE_OUT_OF_RANGE` for the values of numeric properties
+//! (`AnimatableProperty::allowed_range`: opacity, volume, sizes…) and Bézier control points.
 
 use super::{Path, Report, ViolationCode, report::seconds};
-use crate::{Animatable, Easing, Flicks, Item, ItemKind, MediaClip, Transform2D};
+use crate::{Animatable, AnimatableProperty, Easing, Flicks, Item, ItemKind, PropertyRef};
 
 /// Checks every animatable property of `item` (paths are relative to `kind_path`).
 pub(super) fn check(item: &Item, kind_path: &Path, report: &mut Report) {
     let duration = item.timeline_range.duration();
-    if let Some(transform) = item.kind.transform() {
-        check_transform(transform, &kind_path.field("transform"), duration, report);
-    }
-    if let ItemKind::MediaClip(clip) = &item.kind {
-        let volume = kind_path.field("volumeDb");
-        check_keyframes(&clip.volume_db, &volume, duration, report);
-        check_values(
-            &clip.volume_db,
-            &volume,
-            MediaClip::MIN_VOLUME_DB..=MediaClip::MAX_VOLUME_DB,
-            report,
-            |value| {
-                format!(
-                    "volume must be between {} dB and {} dB, got {value}",
-                    MediaClip::MIN_VOLUME_DB,
-                    MediaClip::MAX_VOLUME_DB
-                )
-            },
-        );
+    for property in AnimatableProperty::ALL {
+        let Some(slot) = item.kind.property(property) else {
+            continue;
+        };
+        let path = property_path(&item.kind, property, kind_path);
+        match slot {
+            PropertyRef::Number(values) => check_keyframes(values, &path, duration, report),
+            PropertyRef::Pixels(values) => check_keyframes(values, &path, duration, report),
+            PropertyRef::Point(values) => check_keyframes(values, &path, duration, report),
+            PropertyRef::Color(values) => check_keyframes(values, &path, duration, report),
+        }
+        if let Some((allowed, expected)) = property.allowed_range() {
+            for (value_path, value) in value_paths(slot, &path) {
+                if !allowed.contains(&value) {
+                    report.push(
+                        ViolationCode::ValueOutOfRange,
+                        &value_path,
+                        format!("{property} must be {expected}, got {value}"),
+                    );
+                }
+            }
+        }
     }
 }
 
-fn check_transform(transform: &Transform2D, path: &Path, duration: Flicks, report: &mut Report) {
-    check_keyframes(
-        &transform.position,
-        &path.field("position"),
-        duration,
-        report,
-    );
-    check_keyframes(&transform.scale, &path.field("scale"), duration, report);
-    check_keyframes(
-        &transform.rotation,
-        &path.field("rotation"),
-        duration,
-        report,
-    );
-    check_keyframes(&transform.anchor, &path.field("anchor"), duration, report);
-    let opacity = path.field("opacity");
-    check_keyframes(&transform.opacity, &opacity, duration, report);
-    check_values(&transform.opacity, &opacity, 0.0..=1.0, report, |value| {
-        format!("opacity must be between 0 (invisible) and 1 (opaque), got {value}")
-    });
+/// Where `property` lives in an item of `kind` (JSON field names under `kind_path`).
+fn property_path(kind: &ItemKind, property: AnimatableProperty, kind_path: &Path) -> Path {
+    use AnimatableProperty as P;
+    let in_style = matches!(kind, ItemKind::Text(_));
+    let fields: &[&str] = match property {
+        P::Position => &["transform", "position"],
+        P::Scale => &["transform", "scale"],
+        P::Rotation => &["transform", "rotation"],
+        P::Anchor => &["transform", "anchor"],
+        P::Opacity => &["transform", "opacity"],
+        P::Blur => &["transform", "blur"],
+        P::VolumeDb => &["volumeDb"],
+        P::Reveal => &["reveal"],
+        P::FontSize => &["style", "fontSize"],
+        P::LetterSpacing => &["style", "letterSpacing"],
+        P::ShadowColor => &["style", "shadow", "color"],
+        P::ShadowBlur => &["style", "shadow", "blur"],
+        P::ShadowOffset => &["style", "shadow", "offset"],
+        P::BackgroundColor => &["style", "background", "color"],
+        P::FillColor if in_style => &["style", "color"],
+        P::FillColor => &["fill"],
+        P::StrokeColor if in_style => &["style", "stroke", "color"],
+        P::StrokeColor => &["stroke", "color"],
+        P::StrokeWidth if in_style => &["style", "stroke", "width"],
+        P::StrokeWidth => &["stroke", "width"],
+    };
+    fields
+        .iter()
+        .fold(kind_path.clone(), |path, field| path.field(field))
+}
+
+/// The numbers of a numeric property with the path of each (`value`, or `keyframes[i].value`).
+fn value_paths(slot: PropertyRef<'_>, path: &Path) -> Vec<(Path, f64)> {
+    let numbers = slot.numbers();
+    if slot.is_keyframed() {
+        numbers
+            .into_iter()
+            .enumerate()
+            .map(|(index, value)| (path.field("keyframes").key(index).field("value"), value))
+            .collect()
+    } else {
+        numbers
+            .into_iter()
+            .map(|value| (path.field("value"), value))
+            .collect()
+    }
 }
 
 /// Keyframes exist, have strictly increasing times within `[0, duration]` and valid easings.
@@ -115,34 +142,6 @@ fn check_easing(easing: Easing, path: &Path, report: &mut Report) {
             path,
             format!("cubic Bézier x1 and x2 must be between 0 and 1, got {x1} and {x2}"),
         );
-    }
-}
-
-/// Values of `property` (static or keyframed) are in `allowed` (NaN never is).
-fn check_values(
-    property: &Animatable<f64>,
-    path: &Path,
-    allowed: RangeInclusive<f64>,
-    report: &mut Report,
-    message: impl Fn(f64) -> String,
-) {
-    let values: Vec<(Path, f64)> = match property {
-        Animatable::Static { value } => vec![(path.field("value"), *value)],
-        Animatable::Keyframed { keyframes } => keyframes
-            .iter()
-            .enumerate()
-            .map(|(index, keyframe)| {
-                (
-                    path.field("keyframes").key(index).field("value"),
-                    keyframe.value,
-                )
-            })
-            .collect(),
-    };
-    for (value_path, value) in values {
-        if !allowed.contains(&value) {
-            report.push(ViolationCode::ValueOutOfRange, &value_path, message(value));
-        }
     }
 }
 
@@ -241,6 +240,47 @@ mod tests {
         assert_eq!(violations.len(), 1, "{violations:#?}");
         assert_eq!(violations[0].code, ViolationCode::ValueOutOfRange);
         assert!(violations[0].path.ends_with("volumeDb.value"));
+    }
+
+    #[test]
+    fn reports_style_values_outside_their_range() {
+        let mut project = example_project();
+        let ItemKind::Text(text) = &mut project.sequences[0].tracks[1].items[0].kind else {
+            unreachable!("the example's first V2 item is a text")
+        };
+        text.style.font_size = Animatable::constant(crate::DesignPixels(0.0));
+        text.reveal = Animatable::constant(1.5);
+        text.style.stroke.width = Animatable::constant(crate::DesignPixels(-1.0));
+        let violations = validate_project(&project);
+        let paths: Vec<_> = violations
+            .iter()
+            .map(|violation| violation.path.as_str())
+            .collect();
+        assert_eq!(violations.len(), 3, "{violations:#?}");
+        assert!(paths[0].ends_with("kind.style.fontSize.value"), "{paths:?}");
+        assert!(paths[1].ends_with("kind.reveal.value"), "{paths:?}");
+        assert!(
+            paths[2].ends_with("kind.style.stroke.width.value"),
+            "{paths:?}"
+        );
+        assert_eq!(
+            violations[0].message,
+            "fontSize must be a size above 0 px, got 0"
+        );
+    }
+
+    #[test]
+    fn checks_keyframes_of_colour_and_point_properties() {
+        let mut project = example_project();
+        let ItemKind::Shape(shape) = &mut project.sequences[0].tracks[2].items[1].kind else {
+            unreachable!("the example's second V3 item is a shape")
+        };
+        shape.fill = Animatable::Keyframed {
+            keyframes: Vec::new(),
+        };
+        let violations = validate_project(&project);
+        assert_eq!(codes(&project), [ViolationCode::EmptyKeyframes]);
+        assert!(violations[0].path.ends_with("kind.fill.keyframes"));
     }
 
     #[test]

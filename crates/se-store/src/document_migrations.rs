@@ -11,9 +11,11 @@
 //!
 //! History: version 2 (prompt 08) gave assets a `fingerprint` and a per-stream `decodability`;
 //! version 3 (prompt 09) gave them `analysis` summaries; version 4 (prompt 14) gave tracks their
-//! `transitions` and media clips their fade shapes. Journals need no migration: no transaction
-//! touched assets before version 2, and `Asset.analysis`, `Track.transitions` and the fade
-//! shapes default (empty, linear) when older journal entries are replayed.
+//! `transitions` and media clips their fade shapes; version 5 (prompt 15) gave texts their full
+//! style and `reveal`, shapes an outline, images a fit and transforms a blur, and made font
+//! sizes, text colours and shape fills animatable. Journals need no migration: no transaction
+//! touched assets before version 2, every field added since has a serde default (empty, linear,
+//! off), and `Animatable` reads the bare values of properties that became animatable.
 
 use serde_json::{Map, Value, json};
 
@@ -22,8 +24,12 @@ pub type DocumentMigration = fn(Value) -> Result<Value, String>;
 
 /// Every migration, in order: `MIGRATIONS[0]` turns version 1 into version 2, and so on.
 /// Its length is always `CURRENT_SCHEMA_VERSION - 1` (checked by a test).
-pub const MIGRATIONS: &[DocumentMigration] =
-    &[migrate_v1_to_v2, migrate_v2_to_v3, migrate_v3_to_v4];
+pub const MIGRATIONS: &[DocumentMigration] = &[
+    migrate_v1_to_v2,
+    migrate_v2_to_v3,
+    migrate_v3_to_v4,
+    migrate_v4_to_v5,
+];
 
 /// Version 1 → 2: every asset gets `fingerprint: null` and its single decodability becomes one
 /// state per stream (`noStream` for the streams its media info lacks).
@@ -86,6 +92,46 @@ fn migrate_v3_to_v4(mut document: Value) -> Result<Value, String> {
         }
     }
     Ok(document)
+}
+
+/// Version 4 → 5: the font size and colour of texts and the fill of shapes become static
+/// animatable values (`{"kind": "static", "value": …}`). Fields added by version 5 (font weight,
+/// outline, shadow, plate, spacing, alignment, wrapping, case, reveal, image fit, blur) take
+/// their defaults when the document is read.
+fn migrate_v4_to_v5(mut document: Value) -> Result<Value, String> {
+    let Some(sequences) = document.get_mut("sequences").and_then(Value::as_array_mut) else {
+        return Err("`sequences` is missing or not a list".to_owned());
+    };
+    let items = sequences
+        .iter_mut()
+        .filter_map(|sequence| sequence.get_mut("tracks").and_then(Value::as_array_mut))
+        .flatten()
+        .filter_map(|track| track.get_mut("items").and_then(Value::as_array_mut))
+        .flatten();
+    for item in items {
+        let Some(kind) = item.get_mut("kind").and_then(Value::as_object_mut) else {
+            continue;
+        };
+        match kind.get("kind").and_then(Value::as_str) {
+            Some("text") => {
+                if let Some(style) = kind.get_mut("style").and_then(Value::as_object_mut) {
+                    make_static(style, "fontSize");
+                    make_static(style, "color");
+                }
+            }
+            Some("shape") => make_static(kind, "fill"),
+            _ => {}
+        }
+    }
+    Ok(document)
+}
+
+/// Wraps the bare value of `field` in a static animatable value.
+fn make_static(fields: &mut Map<String, Value>, field: &str) {
+    if let Some(value) = fields.get_mut(field) {
+        let bare = value.take();
+        *value = json!({ "kind": "static", "value": bare });
+    }
 }
 
 /// Linear fade shapes on `item` when it is a media clip.
@@ -274,6 +320,33 @@ mod tests {
         assert_eq!(track["items"][0]["kind"]["fadeOutShape"], json!("linear"));
         assert_eq!(track["items"][1]["kind"], json!({ "kind": "text" }));
         assert_eq!(migrated["schemaVersion"], json!(4));
+    }
+
+    #[test]
+    fn version_5_makes_text_sizes_colours_and_shape_fills_animatable() {
+        let document = json!({
+            "schemaVersion": 4,
+            "sequences": [{ "tracks": [{ "items": [
+                { "kind": { "kind": "text", "style": { "fontSize": 72.0, "color": "#ffffff" } } },
+                { "kind": { "kind": "shape", "fill": "#000000cc" } },
+                { "kind": { "kind": "caption", "text": "Hi" } }
+            ] }] }]
+        });
+        let migrated = migrate_document(document, MIGRATIONS, 5).unwrap();
+        let items = &migrated["sequences"][0]["tracks"][0]["items"];
+        assert_eq!(
+            items[0]["kind"]["style"],
+            json!({
+                "fontSize": { "kind": "static", "value": 72.0 },
+                "color": { "kind": "static", "value": "#ffffff" }
+            })
+        );
+        assert_eq!(
+            items[1]["kind"]["fill"],
+            json!({ "kind": "static", "value": "#000000cc" })
+        );
+        assert_eq!(items[2]["kind"], json!({ "kind": "caption", "text": "Hi" }));
+        assert_eq!(migrated["schemaVersion"], json!(5));
     }
 
     #[test]

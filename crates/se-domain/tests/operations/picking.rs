@@ -2,8 +2,8 @@
 //! shifting times.
 
 use se_domain::{
-    Color, DesignPixels, Flicks, Item, ItemId, ItemKind, Project, SequenceId, ShapeGeometry,
-    ShapeItem, TimeRange, TrackId, TrackKind, Transform2D, TransitionId,
+    Animatable, Color, DesignPixels, Flicks, Item, ItemId, ItemKind, Project, SequenceId,
+    ShapeGeometry, ShapeItem, Stroke, TimeRange, TrackId, TrackKind, Transform2D, TransitionId,
     test_support::{item, millis},
 };
 
@@ -19,7 +19,9 @@ pub fn shape(index: u64, range: TimeRange) -> Item {
                     width: DesignPixels(80.0),
                     height: DesignPixels(80.0),
                 },
-                fill: Color::WHITE,
+                fill: Animatable::constant(Color::WHITE),
+                stroke: Stroke::default(),
+                cover_frame: false,
                 transform: Transform2D::default(),
             }),
         )

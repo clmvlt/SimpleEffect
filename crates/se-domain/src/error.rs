@@ -9,8 +9,8 @@ mod code;
 pub use code::DomainErrorCode;
 
 use crate::{
-    AnimatableProperty, AssetId, Flicks, ItemEdge, ItemId, MarkerId, SequenceId, TaskId, TrackId,
-    TransitionId, Violation,
+    AnimatableProperty, AnimationPhase, AssetId, Flicks, ItemEdge, ItemId, MarkerId, SequenceId,
+    TaskId, TrackId, TransitionId, Violation,
 };
 
 /// A refused change. Nothing was modified.
@@ -279,6 +279,47 @@ pub enum DomainError {
     /// Redo with an empty redo stack.
     #[error("there is nothing to redo")]
     NothingToRedo,
+    /// No animation preset has this id.
+    #[error("there is no animation preset '{preset}'; use one of: {known}")]
+    UnknownAnimationPreset {
+        /// The unknown id.
+        preset: String,
+        /// Every preset id, comma-separated.
+        known: String,
+    },
+    /// The preset cannot be applied in this phase (an emphasis as an entrance...).
+    #[error("preset '{preset}' cannot be applied as {phase}; it supports: {supported}")]
+    PresetPhaseNotSupported {
+        /// The preset.
+        preset: String,
+        /// The phase requested.
+        phase: AnimationPhase,
+        /// Its phases, comma-separated.
+        supported: String,
+    },
+    /// The item lacks a property the preset animates.
+    #[error(
+        "preset '{preset}' animates {property}, which item {item} (a {item_kind}) does not have; \
+         choose a preset without it or apply it to another item"
+    )]
+    PresetNotApplicable {
+        /// The item.
+        item: ItemId,
+        /// Kind of the item.
+        item_kind: &'static str,
+        /// The preset.
+        preset: String,
+        /// The property missing from the item.
+        property: AnimatableProperty,
+    },
+    /// The embedded preset library could not be read (a bug, guarded by a test).
+    #[error(
+        "the animation preset library cannot be read ({reason}); this is a bug of SimpleEffect"
+    )]
+    PresetLibraryUnavailable {
+        /// What is wrong with it.
+        reason: String,
+    },
     /// A transaction recorded in the changeset of another task.
     #[error("only transactions of AI task {task} can be recorded in its changeset")]
     WrongChangeset {
@@ -307,9 +348,12 @@ impl DomainError {
                 DomainErrorCode::InvalidEditPoint
             }
             Self::TrimBeyondSource { .. } => DomainErrorCode::TrimBeyondSource,
-            Self::PatchKindMismatch { .. } | Self::PropertyNotAvailable { .. } => {
-                DomainErrorCode::WrongItemKind
-            }
+            Self::PatchKindMismatch { .. }
+            | Self::PropertyNotAvailable { .. }
+            | Self::PresetNotApplicable { .. } => DomainErrorCode::WrongItemKind,
+            Self::UnknownAnimationPreset { .. } => DomainErrorCode::UnknownAnimationPreset,
+            Self::PresetPhaseNotSupported { .. } => DomainErrorCode::PresetPhaseNotSupported,
+            Self::PresetLibraryUnavailable { .. } => DomainErrorCode::PresetLibraryUnavailable,
             Self::EmptyItemList { .. } | Self::DuplicateItem { .. } => {
                 DomainErrorCode::InvalidItemList
             }

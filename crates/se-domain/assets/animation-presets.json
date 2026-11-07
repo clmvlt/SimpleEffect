@@ -1,0 +1,234 @@
+{
+  "version": 1,
+  "presets": [
+    {
+      "id": "fade",
+      "name": "Fade",
+      "description": "Fades the item in from transparent (out: to transparent).",
+      "phases": ["in", "out"],
+      "defaultDurationSeconds": 0.5,
+      "tracks": [
+        {
+          "property": "opacity",
+          "keyframes": [
+            { "at": 0, "value": { "absolute": 0 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            { "at": 1, "value": "base" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "slideFromLeft",
+      "name": "Slide from the left",
+      "description": "Slides in from 10% of the frame width to the left while fading in (out: slides away to the left).",
+      "phases": ["in", "out"],
+      "defaultDurationSeconds": 0.6,
+      "tracks": [
+        {
+          "property": "position",
+          "keyframes": [
+            { "at": 0, "value": { "offset": [-0.1, 0] }, "easing": { "kind": "cubicBezier", "x1": 0.16, "y1": 1, "x2": 0.3, "y2": 1 } },
+            { "at": 1, "value": "base" }
+          ]
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            { "at": 0, "value": { "absolute": 0 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            { "at": 0.6, "value": "base" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "slideFromRight",
+      "name": "Slide from the right",
+      "description": "Slides in from 10% of the frame width to the right while fading in (out: slides away to the right).",
+      "phases": ["in", "out"],
+      "defaultDurationSeconds": 0.6,
+      "tracks": [
+        {
+          "property": "position",
+          "keyframes": [
+            { "at": 0, "value": { "offset": [0.1, 0] }, "easing": { "kind": "cubicBezier", "x1": 0.16, "y1": 1, "x2": 0.3, "y2": 1 } },
+            { "at": 1, "value": "base" }
+          ]
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            { "at": 0, "value": { "absolute": 0 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            { "at": 0.6, "value": "base" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "slideFromTop",
+      "name": "Slide from the top",
+      "description": "Slides down from 10% of the frame height above while fading in (out: slides away upwards).",
+      "phases": ["in", "out"],
+      "defaultDurationSeconds": 0.6,
+      "tracks": [
+        {
+          "property": "position",
+          "keyframes": [
+            { "at": 0, "value": { "offset": [0, -0.1] }, "easing": { "kind": "cubicBezier", "x1": 0.16, "y1": 1, "x2": 0.3, "y2": 1 } },
+            { "at": 1, "value": "base" }
+          ]
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            { "at": 0, "value": { "absolute": 0 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            { "at": 0.6, "value": "base" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "slideFromBottom",
+      "name": "Slide from the bottom",
+      "description": "Slides up from 10% of the frame height below while fading in (out: slides away downwards).",
+      "phases": ["in", "out"],
+      "defaultDurationSeconds": 0.6,
+      "tracks": [
+        {
+          "property": "position",
+          "keyframes": [
+            { "at": 0, "value": { "offset": [0, 0.1] }, "easing": { "kind": "cubicBezier", "x1": 0.16, "y1": 1, "x2": 0.3, "y2": 1 } },
+            { "at": 1, "value": "base" }
+          ]
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            { "at": 0, "value": { "absolute": 0 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            { "at": 0.6, "value": "base" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pop",
+      "name": "Pop",
+      "description": "Grows from nothing past its size and settles back (out: shrinks to nothing).",
+      "phases": ["in", "out"],
+      "defaultDurationSeconds": 0.5,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            { "at": 0, "value": { "factor": 0 }, "easing": { "kind": "cubicBezier", "x1": 0.34, "y1": 1.56, "x2": 0.64, "y2": 1 } },
+            { "at": 1, "value": "base" }
+          ]
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            { "at": 0, "value": { "absolute": 0 } },
+            { "at": 0.3, "value": "base" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "blur",
+      "name": "Blur to sharp",
+      "description": "Comes into focus from a strong blur while fading in (out: blurs away).",
+      "phases": ["in", "out"],
+      "defaultDurationSeconds": 0.6,
+      "tracks": [
+        {
+          "property": "blur",
+          "keyframes": [
+            { "at": 0, "value": { "absolute": 40 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            { "at": 1, "value": "base" }
+          ]
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            { "at": 0, "value": { "absolute": 0 }, "easing": { "kind": "preset", "name": "easeOut" } },
+            { "at": 0.5, "value": "base" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "typewriter",
+      "name": "Typewriter",
+      "description": "Types the text out character by character at a steady pace (out: erases it from the end). Texts only.",
+      "phases": ["in", "out"],
+      "defaultDurationSeconds": 1.0,
+      "tracks": [
+        {
+          "property": "reveal",
+          "keyframes": [
+            { "at": 0, "value": { "absolute": 0 } },
+            { "at": 1, "value": "base" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bounce",
+      "name": "Bounce",
+      "description": "Jumps up three times, each lower than the last, and lands where it was.",
+      "phases": ["emphasis"],
+      "defaultDurationSeconds": 0.8,
+      "tracks": [
+        {
+          "property": "position",
+          "keyframes": [
+            { "at": 0, "value": "base", "easing": { "kind": "preset", "name": "easeOut" } },
+            { "at": 0.25, "value": { "offset": [0, -0.05] }, "easing": { "kind": "preset", "name": "easeIn" } },
+            { "at": 0.5, "value": "base", "easing": { "kind": "preset", "name": "easeOut" } },
+            { "at": 0.7, "value": { "offset": [0, -0.02] }, "easing": { "kind": "preset", "name": "easeIn" } },
+            { "at": 0.85, "value": "base", "easing": { "kind": "preset", "name": "easeOut" } },
+            { "at": 0.93, "value": { "offset": [0, -0.006] }, "easing": { "kind": "preset", "name": "easeIn" } },
+            { "at": 1, "value": "base" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shake",
+      "name": "Shake",
+      "description": "Shakes from side to side, fading out, and stops where it was.",
+      "phases": ["emphasis"],
+      "defaultDurationSeconds": 0.5,
+      "tracks": [
+        {
+          "property": "position",
+          "keyframes": [
+            { "at": 0, "value": "base", "easing": { "kind": "preset", "name": "easeInOut" } },
+            { "at": 0.1, "value": { "offset": [-0.012, 0] }, "easing": { "kind": "preset", "name": "easeInOut" } },
+            { "at": 0.3, "value": { "offset": [0.012, 0] }, "easing": { "kind": "preset", "name": "easeInOut" } },
+            { "at": 0.5, "value": { "offset": [-0.009, 0] }, "easing": { "kind": "preset", "name": "easeInOut" } },
+            { "at": 0.7, "value": { "offset": [0.006, 0] }, "easing": { "kind": "preset", "name": "easeInOut" } },
+            { "at": 0.9, "value": { "offset": [-0.003, 0] }, "easing": { "kind": "preset", "name": "easeInOut" } },
+            { "at": 1, "value": "base" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pulse",
+      "name": "Pulse",
+      "description": "Grows by 12% and shrinks back once, like a heartbeat.",
+      "phases": ["emphasis"],
+      "defaultDurationSeconds": 0.6,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            { "at": 0, "value": "base", "easing": { "kind": "preset", "name": "easeInOut" } },
+            { "at": 0.5, "value": { "factor": 1.12 }, "easing": { "kind": "preset", "name": "easeInOut" } },
+            { "at": 1, "value": "base" }
+          ]
+        }
+      ]
+    }
+  ]
+}

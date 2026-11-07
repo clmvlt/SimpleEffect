@@ -6,6 +6,7 @@
 //! document order, each with a stable [`ViolationCode`], a path and an actionable message.
 
 mod animation_rules;
+mod graphic_rules;
 mod identity_rules;
 mod item_rules;
 mod link_rules;
@@ -28,7 +29,7 @@ use report::{Path, ProjectIndex, Report};
 /// not before zero and within range, non-empty items, no overlap on a track, items sorted by
 /// start, items allowed on their track kind, positive speeds, source ranges inside their media,
 /// keyframes present, sorted and inside their item, value ranges (opacity, volume, pan, fades,
-/// Bézier control points), link groups within one sequence and transitions on the cut between
+/// sizes and styles of texts and shapes, Bézier control points), link groups within one sequence and transitions on the cut between
 /// adjacent items with enough media beyond their edges.
 #[must_use]
 pub fn validate_project(project: &Project) -> Vec<Violation> {

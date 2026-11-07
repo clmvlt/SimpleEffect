@@ -67,7 +67,7 @@ mod tests {
             unreachable!()
         };
         assert_eq!(text.content, "Salut");
-        assert_eq!(text.style.color, Color::BLACK);
+        assert_eq!(text.style.color, crate::Animatable::constant(Color::BLACK));
         assert_eq!(text.style.font_family, "Inter");
     }
 

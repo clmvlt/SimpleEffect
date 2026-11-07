@@ -7,17 +7,18 @@ use std::collections::BTreeMap;
 
 use proptest::prelude::*;
 use se_domain::{
-    AddAsset, AddItem, AddMarker, AddSequence, AddTrack, AddTransition, Animatable, AssetId,
-    AssetPatch, Assign, CaptionPatch, Color, Decodability, DerivedFile, DerivedStatus, Easing,
-    FadeShape, Flicks, Format, FormatPreset, FrameRate, InsertGap, Item, ItemEdge, ItemId,
-    ItemKind, ItemPatch, Keyframe, LinkGroupId, LinkItems, Marker, MarkerColor, MarkerId,
-    MarkerPatch, MediaClipPatch, MoveItem, Operation, Project, PropertyAnimation, RemoveAsset,
-    RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack, RemoveTransition, RenameProject,
-    ReorderTracks, RippleDeleteRange, SceneSummary, Sequence, SequenceId, SequencePatch,
-    SetKeyframes, ShapePatch, SplitItem, StreamDecodability, TemplateParamValue, TemplatePatch,
-    TextPatch, TimeRange, TrackId, TrackKind, TrackPatch, Transition, TransitionAlignment,
-    TransitionId, TransitionKind, TransitionPatch, TrimItem, UnlinkItems, UpdateAsset, UpdateItem,
-    UpdateMarker, UpdateSequence, UpdateTrack, UpdateTransition,
+    AddAsset, AddItem, AddMarker, AddSequence, AddTrack, AddTransition, Animatable, AnimationPhase,
+    ApplyAnimationPreset, AssetId, AssetPatch, Assign, CaptionPatch, Color, Decodability,
+    DerivedFile, DerivedStatus, Easing, FadeShape, Flicks, Format, FormatPreset, FrameRate,
+    InsertGap, Item, ItemEdge, ItemId, ItemKind, ItemPatch, Keyframe, LinkGroupId, LinkItems,
+    Marker, MarkerColor, MarkerId, MarkerPatch, MediaClipPatch, MoveItem, Operation, Project,
+    PropertyAnimation, RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack,
+    RemoveTransition, RenameProject, ReorderTracks, RippleDeleteRange, SceneSummary, Sequence,
+    SequenceId, SequencePatch, SetKeyframes, ShapePatch, SplitItem, StreamDecodability,
+    TemplateParamValue, TemplatePatch, TextPatch, TimeRange, TrackId, TrackKind, TrackPatch,
+    Transition, TransitionAlignment, TransitionId, TransitionKind, TransitionPatch, TrimItem,
+    UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack,
+    UpdateTransition,
     test_support::{millis, track},
 };
 
@@ -27,7 +28,7 @@ use crate::picking::{
 
 /// Number of operation kinds the generator produces (every operation but `RestoreItem`, which
 /// the inverses exercise).
-pub const KINDS: u8 = 28;
+pub const KINDS: u8 = 29;
 
 /// Random numbers from which one operation is built.
 #[derive(Debug, Clone, Copy)]
@@ -76,7 +77,8 @@ impl Generator {
             0..=10 => self.item_operation(project, seed),
             11..=17 => self.structure_operation(project, seed),
             18..=24 => self.other_operation(project, seed),
-            _ => self.transition_operation(project, seed),
+            25..=27 => self.transition_operation(project, seed),
+            _ => preset(project, seed),
         }
     }
 
@@ -486,6 +488,33 @@ fn update(item: &Item, seed: Seed) -> Operation {
         expected_revision: None,
     }
     .into()
+}
+
+/// An animation preset on a random item (refused for kinds without the preset's properties).
+fn preset(project: &Project, seed: Seed) -> Option<Operation> {
+    const PRESETS: [(&str, AnimationPhase); 5] = [
+        ("fade", AnimationPhase::In),
+        ("slideFromRight", AnimationPhase::Out),
+        ("pop", AnimationPhase::In),
+        ("typewriter", AnimationPhase::In),
+        ("bounce", AnimationPhase::Emphasis),
+    ];
+    let (_, item) = pick(&items(project), seed.pick)?.clone();
+    let (preset, phase) = PRESETS[usize::try_from(seed.choice).unwrap_or(0) % PRESETS.len()];
+    Some(
+        ApplyAnimationPreset {
+            item: item.id,
+            preset: preset.to_owned(),
+            phase,
+            duration: millis(100 + i64::from(seed.choice % 2000)),
+            start: seed
+                .offset_ms
+                .is_positive()
+                .then(|| millis(i64::from(seed.offset_ms))),
+            expected_revision: None,
+        }
+        .into(),
+    )
 }
 
 fn keyframes(item: &Item, seed: Seed) -> Operation {

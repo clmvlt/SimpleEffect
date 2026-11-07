@@ -14,6 +14,9 @@ test-support = []
 
 [dependencies]
 serde = { workspace = true }
+# Reads the embedded animation preset library (`assets/animation-presets.json`) and lets
+# `Animatable` accept the bare values older journals stored.
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 ts-rs = { workspace = true }
 uuid = { workspace = true }
@@ -23,7 +26,6 @@ uuid = { workspace = true }
 se-domain = { workspace = true, features = ["test-support"] }
 insta = { workspace = true }
 proptest = { workspace = true }
-serde_json = { workspace = true }
 
 [lints]
 workspace = true

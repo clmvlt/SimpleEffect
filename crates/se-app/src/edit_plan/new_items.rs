@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use se_domain::{
     Asset, AssetKind, DomainError, Flicks, ImageItem, Item, ItemKind, LinkGroupId, MediaClip,
-    Origin, TimeRange, Transform2D,
+    Origin, TimeRange,
 };
 
 use crate::{AppError, new_ids::NewIds};
@@ -71,10 +71,7 @@ pub(crate) fn media_parts(
         })
     };
     let picture_kind = match asset.kind {
-        AssetKind::Image => ItemKind::Image(ImageItem {
-            asset_id: asset.id,
-            transform: Transform2D::default(),
-        }),
+        AssetKind::Image => ItemKind::Image(ImageItem::new(asset.id)),
         AssetKind::Video | AssetKind::Audio => ItemKind::MediaClip(MediaClip::new(asset.id)),
     };
     Ok(MediaParts {

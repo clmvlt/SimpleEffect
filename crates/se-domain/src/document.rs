@@ -9,6 +9,7 @@
 //! data tagged by `kind`, unit enums as `camelCase` strings, times as flicks, `None` as `null`.
 
 mod animatable;
+mod animatable_property;
 mod asset;
 mod brand_kit;
 mod caption;
@@ -27,6 +28,7 @@ mod motion_template;
 mod project;
 mod sequence;
 mod shape;
+mod stroke;
 mod text;
 mod track;
 mod transform;
@@ -34,6 +36,7 @@ mod transition;
 mod transition_fit;
 
 pub use animatable::{Animatable, Keyframe};
+pub use animatable_property::{AnimatableProperty, PropertyMut, PropertyRef};
 pub use asset::{Asset, AssetKind, Decodability, StreamDecodability};
 pub use brand_kit::BrandKit;
 pub use caption::CaptionItem;
@@ -42,7 +45,7 @@ pub use derived_media::{DerivedFile, DerivedMedia, DerivedStatus};
 pub use easing::{Easing, EasingPreset};
 pub use fade_shape::FadeShape;
 pub use format::{DEFAULT_SAMPLE_RATE, Format, FormatPreset};
-pub use image::ImageItem;
+pub use image::{ImageFit, ImageItem};
 pub use item::{Item, Origin};
 pub use item_kind::ItemKind;
 pub use marker::{Marker, MarkerColor};
@@ -51,8 +54,9 @@ pub use media_info::{AudioStreamInfo, MediaInfo, VideoStreamInfo};
 pub use motion_template::{MotionTemplate, TemplateItem, TemplateParamValue};
 pub use project::{CURRENT_SCHEMA_VERSION, Project, ProjectSettings};
 pub use sequence::Sequence;
-pub use shape::{ShapeGeometry, ShapeItem};
-pub use text::{TextItem, TextStyle};
+pub use shape::{ShapeGeometry, ShapeItem, ShapeKind};
+pub use stroke::Stroke;
+pub use text::{TextAlign, TextBackground, TextCase, TextItem, TextShadow, TextStyle};
 pub use track::{Track, TrackKind};
 pub use transform::Transform2D;
 pub use transition::{Transition, TransitionAlignment, TransitionKind};

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use super::Animatable;
-use crate::spatial::Vec2;
+use crate::spatial::{DesignPixels, Vec2};
 
 /// Placement of a visual item, every property animatable. Units: ADR-0015 (`crate::spatial`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -20,10 +20,17 @@ pub struct Transform2D {
     pub anchor: Animatable<Vec2>,
     /// Opacity from 0 (invisible) to 1 (opaque).
     pub opacity: Animatable<f64>,
+    /// Gaussian blur radius of the whole item, in design pixels (0 = sharp); >= 0.
+    #[serde(default = "no_blur")]
+    pub blur: Animatable<DesignPixels>,
+}
+
+fn no_blur() -> Animatable<DesignPixels> {
+    Animatable::constant(DesignPixels(0.0))
 }
 
 impl Default for Transform2D {
-    /// Centred, natural size, upright and opaque.
+    /// Centred, natural size, upright, opaque and sharp.
     fn default() -> Self {
         Self {
             position: Animatable::constant(Vec2::splat(0.5)),
@@ -31,6 +38,7 @@ impl Default for Transform2D {
             rotation: Animatable::constant(0.0),
             anchor: Animatable::constant(Vec2::splat(0.5)),
             opacity: Animatable::constant(1.0),
+            blur: no_blur(),
         }
     }
 }

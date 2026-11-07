@@ -28,8 +28,65 @@ expression: moved.unwrap().inverse
           "content": "Bonjour",
           "style": {
             "fontFamily": "Inter",
-            "fontSize": 72.0,
-            "color": "#ffffff"
+            "fontWeight": 600,
+            "italic": false,
+            "fontSize": {
+              "kind": "static",
+              "value": 72.0
+            },
+            "color": {
+              "kind": "static",
+              "value": "#ffffff"
+            },
+            "stroke": {
+              "enabled": true,
+              "color": {
+                "kind": "static",
+                "value": "#000000"
+              },
+              "width": {
+                "kind": "static",
+                "value": 4.0
+              }
+            },
+            "shadow": {
+              "enabled": false,
+              "color": {
+                "kind": "static",
+                "value": "#000000b3"
+              },
+              "blur": {
+                "kind": "static",
+                "value": 8.0
+              },
+              "offset": {
+                "kind": "static",
+                "value": {
+                  "x": 0.0,
+                  "y": 4.0
+                }
+              }
+            },
+            "background": {
+              "enabled": false,
+              "color": {
+                "kind": "static",
+                "value": "#000000b3"
+              },
+              "padding": {
+                "x": 24.0,
+                "y": 12.0
+              },
+              "cornerRadius": 8.0
+            },
+            "letterSpacing": {
+              "kind": "static",
+              "value": 0.0
+            },
+            "lineHeight": 1.2,
+            "align": "center",
+            "maxWidth": 900.0,
+            "textCase": "normal"
           },
           "transform": {
             "position": {
@@ -77,7 +134,15 @@ expression: moved.unwrap().inverse
                   }
                 }
               ]
+            },
+            "blur": {
+              "kind": "static",
+              "value": 0.0
             }
+          },
+          "reveal": {
+            "kind": "static",
+            "value": 1.0
           }
         }
       }
