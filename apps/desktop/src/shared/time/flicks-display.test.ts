@@ -1,7 +1,8 @@
 import type { Flicks } from '@se/protocol';
 import { describe, expect, it } from 'vitest';
 
-import { FLICKS_PER_SECOND, flicksToSeconds, formatDuration } from './flicks-display';
+import { FLICKS_PER_SECOND, flicksToSeconds } from './flicks';
+import { formatDuration } from './flicks-display';
 
 const seconds = (value: number) => (value * FLICKS_PER_SECOND) as Flicks;
 
