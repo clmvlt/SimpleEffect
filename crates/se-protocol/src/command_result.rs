@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    ImportReport, JobSnapshot, NewProjectDefaults, ProjectSession, RecentProject, RelinkOutcome,
+    ImportReport, JobSnapshot, MediaSettings, MediaToolsStatus, NewProjectDefaults,
+    ProjectCacheInfo, ProjectSession, RecentProject, RelinkOutcome,
 };
 
 /// The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
@@ -68,6 +69,36 @@ pub enum CommandResult {
     CancelJob,
     /// Answer to [`crate::Command::ReportDecodability`]: recorded.
     ReportDecodability,
+    /// Answer to [`crate::Command::ReportDecoderCapabilities`]: recorded.
+    ReportDecoderCapabilities,
+    /// Answer to [`crate::Command::GenerateDerivedMedia`]: queued (the asset's derived state
+    /// becomes pending; job events follow).
+    GenerateDerivedMedia,
+    /// Answer to [`crate::Command::GetMediaSettings`].
+    GetMediaSettings {
+        /// The current settings.
+        settings: MediaSettings,
+    },
+    /// Answer to [`crate::Command::UpdateMediaSettings`].
+    UpdateMediaSettings {
+        /// The settings as saved.
+        settings: MediaSettings,
+    },
+    /// Answer to [`crate::Command::GetMediaToolsStatus`].
+    GetMediaToolsStatus {
+        /// Tools found and hardware encoders.
+        status: MediaToolsStatus,
+    },
+    /// Answer to [`crate::Command::GetProjectCache`].
+    GetProjectCache {
+        /// The cache folder and its size.
+        cache: ProjectCacheInfo,
+    },
+    /// Answer to [`crate::Command::ClearProjectCache`].
+    ClearProjectCache {
+        /// The cache folder and what is left in it (files in use cannot be deleted).
+        cache: ProjectCacheInfo,
+    },
 }
 
 /// Facts about the running core, shown in the UI and useful in bug reports.

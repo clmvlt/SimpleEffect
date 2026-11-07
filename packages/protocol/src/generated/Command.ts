@@ -3,9 +3,12 @@
 import type { AssetId } from "./AssetId";
 import type { CreateProjectRequest } from "./CreateProjectRequest";
 import type { DecodabilityReport } from "./DecodabilityReport";
+import type { DecoderCapabilities } from "./DecoderCapabilities";
 import type { Format } from "./Format";
+import type { GenerateDerivedRequest } from "./GenerateDerivedRequest";
 import type { ImportMediaRequest } from "./ImportMediaRequest";
 import type { JobId } from "./JobId";
+import type { MediaSettings } from "./MediaSettings";
 import type { ProjectId } from "./ProjectId";
 import type { RelinkAssetRequest } from "./RelinkAssetRequest";
 
@@ -84,4 +87,12 @@ projectId: ProjectId, } | { "kind": "cancelJob",
 /**
  * The job.
  */
-jobId: JobId, } | { "kind": "reportDecodability" } & DecodabilityReport;
+jobId: JobId, } | { "kind": "reportDecodability" } & DecodabilityReport | { "kind": "reportDecoderCapabilities" } & DecoderCapabilities | { "kind": "generateDerivedMedia" } & GenerateDerivedRequest | { "kind": "getMediaSettings" } | { "kind": "updateMediaSettings" } & MediaSettings | { "kind": "getMediaToolsStatus" } | { "kind": "getProjectCache", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, } | { "kind": "clearProjectCache", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, };

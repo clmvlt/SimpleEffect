@@ -35,6 +35,13 @@ describe('derived protocol types', () => {
       | 'listJobs'
       | 'cancelJob'
       | 'reportDecodability'
+      | 'reportDecoderCapabilities'
+      | 'generateDerivedMedia'
+      | 'getMediaSettings'
+      | 'updateMediaSettings'
+      | 'getMediaToolsStatus'
+      | 'getProjectCache'
+      | 'clearProjectCache'
     >();
   });
 
@@ -44,6 +51,9 @@ describe('derived protocol types', () => {
     expectTypeOf<ResultFor<'openProject'>>().toExtend<ProjectSession>();
     expectTypeOf<ResultFor<'relinkAsset'>['outcome']>().toEqualTypeOf<
       'relinked' | 'contentDiffers'
+    >();
+    expectTypeOf<ResultFor<'getMediaSettings'>['settings']['proxyResolution']>().toEqualTypeOf<
+      '540p' | '720p'
     >();
   });
 
