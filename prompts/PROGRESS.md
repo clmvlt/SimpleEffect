@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-07 — Prompt 08: Médias 1 : import, bin, jobs, miniatures, waveforms — Done
 
-**Branch**: `feature/08-medias-import`, merged into `dev` (merge commit recorded in the next `dev` commit)
+**Branch**: `feature/08-medias-import`, merged into `dev` at `b097993`
 
 **Done**
 - `pnpm fetch-binaries` (`scripts/fetch-binaries.mjs` + pure `scripts/lib/binaries.mjs`, tested): FFmpeg 9.0.2 pinned by URL, size and SHA-256 in `scripts/binaries.manifest.json` (Gyan.dev essentials for Windows, Martin Riedl for macOS arm64/x64, BtbN GPL 9.0 for Linux), plan shown (size, source, licence) and confirmation asked (`--yes` for CI, `--platform`, `--all`), extraction with system `tar`/`unzip`, stamp file for idempotence. `ci.yml` and `release.yml` fetch them (cached by manifest hash); electron-builder bundles them in `resources/bin` next to se-core.
