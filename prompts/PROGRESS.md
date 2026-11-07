@@ -26,6 +26,42 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-07 — Prompt 11: Timeline B : édition — Done
+
+**Branch**: `feature/11-timeline-edition`, merged into `dev` at `<merge>`
+
+**Done**
+- se-domain: `apply_all(&Project, &[Operation])` (one draft, `validate_project` once after the last operation); `commit` and `apply` use it. A 500-item move went from 0.8 s (release) / 1.8 s (debug) to 3 ms: validation (~1 ms for 500 items, mostly path strings) ran after every operation.
+- se-protocol: `editing.rs` (`PlacementMode`, `ItemPlacement`, `PastedItem`, `ItemTrim`, `TrackTarget`, `PlaceMediaRequest`); commands `placeMedia`, `moveItems`, `duplicateItems`, `pasteItems`, `trimItems`, `splitItems`, `deleteItems`, `linkItems`, `unlinkItems`, `resizeGap`; error code `RIPPLE_BLOCKED`.
+- se-app: `edit_plan` (crate-private `EditPlan`: operations queued, applied to a draft with `apply_all` when read, committed as one transaction by `commit_plan`; `lookup`, `placement` (lift, place overwrite/insert), `overwrite::clear_range`, `ripple` (`concerned_tracks`, `open_time`, `remove_time`, grouped `ripple_delete`), `new_items` (`media_parts`, `copies_of`, `DEFAULT_IMAGE_DURATION` = 5 s)); use cases `place_media` (`placed_media.rs`, new tracks on demand), `move_items`, `duplicate_items`, `paste_items`, `delete_items`, `link_items`, `unlink_items` (`items.rs`), `trim_items` (plain and ripple), `split_items` (right parts of linked items relinked), `resize_gap` (`trims.rs`); `item_labels`; `AppError::{InvalidEdit, RippleBlocked}`; `NewIds::{item, link_group}`. se-core: `rpc/handlers/items.rs` and router arms.
+- Renderer: gestures in `features/timeline` — one pointer handler for the lanes (`use-lane-pointer.ts`: selection with click meaning on release so a drag moves the whole selection, rectangle, gap selection), controllers `hooks/gestures/` (move with linked items across tracks of their kind by the same count, Alt copies, Ctrl/⌘ inserts; edge trims with linked partners aligned, Ctrl/⌘ ripples; gap handle), Escape cancels; drop of bin assets with ghosts (`use-media-drop.ts`, new audio track below the last one, Ctrl/⌘ inserts); shortcuts `S` and Ctrl/⌘+K (cut at the playhead: selection or every unlocked item there), `Suppr`/`⌫` (delete, or close the selected gap), Maj+`Suppr` (ripple delete), Ctrl/⌘+C/X/V and Ctrl/⌘+Maj+V (insert paste at the playhead on the active track), `,` `.` `<` `>` (nudge 1/10 frames), `N` (snapping, moved from `S`); context menu on the lanes (« Couper ici », « Dupliquer », « Lier »/« Délier », « Propriétés », « Afficher dans le panneau Médias », « Supprimer », « Supprimer avec ripple »; « Fermer le blanc » on a gap; « Coller » on empty space); snapping by whole frames to the playhead, item edges, markers and in/out points with a snap line; trim handles; selected gap shaded with its length and a handle. Ephemeral `gesture-store` preview, one command on release. Pure services (`snapping`, `move-placement`, `track-numbers`, `trim-placement`, `gaps`, `ripple-preview`, `drop-placement`, `clipboard`, `item-edits`, `preview`).
+- Renderer elsewhere: media bin entries draggable (`use-asset-entry.ts`, `shared/drag`), `revealAsset` exported; `shared/side-panel` (controlled inspector/AI tabs); `errors.edit.<DOMAIN_CODE>` messages for overlaps, locked tracks, trims beyond the media, edit points; history labels and French strings.
+- Verified in the built app on macOS (isolated profile, CDP, the domain's example project): move (« Annuler : Déplacement d’éléments »), trim (« Rognage »), gap selected (« Blanc de 0:02 ») and lengthened by its handle (« Ajustement d’un blanc », logo pushed), three undos back to the start; ripple trim of the linked interview clip by −1 s (V1 and A1 shortened, the next V1 clip pulled in, music on A2 untouched); `S` after 50 frames cut the selected linked pair (« Coupe »); Maj+⌫ on « Bonjour » closed its time on V2; Alt+drag of « Forme » overwrote « Merci d’être là »; `.` twice = two undo steps; Ctrl/⌘+C, click on V3, Fin, Ctrl/⌘+V pasted the logo at 14 s on V3; context menu « Supprimer avec ripple »; music.wav dragged from the bin with ⌘ over V2 at 12 s inserted on A2 (existing music cut at 12 s, the rest pushed); snap line on Bonjour’s end while dragging the logo, Escape cancelled without command. No process left after closing.
+- Tests: se-domain (single validation per transaction), se-app 15 planner unit tests + 12 integration tests (`tests/item_edits/`), se-protocol shape tests, se-core routing test; desktop: `TimelineEditing.test.tsx` (9: move with preview, linked insert move, Alt copy + Escape, trims and ripple trim, `S` + ripple delete, nudge + copy/paste, gap handle + close, bin drop, context menu), services (`edit-gestures.test.ts`, `edit-actions.test.ts`), error keys.
+- Docs: ADR-0021, `docs/architecture.md` §4.2/§5.4/§5.6/§6, glossary (placement mode, ripple edit, concerned tracks, ripple trim, nudge, active track, edit plan, gesture preview; gap and snapping updated), backlog (Timeline items), CLAUDE.md of se-domain, se-app, se-protocol, se-core, desktop.
+
+**Deviations from the prompt**
+- Commands per intent rather than a generic `ApplyEdit` (ADR-0021), all actor `User`.
+- Overwrite rule (the prompt left « refuse ou rogne » open): placed items **trim** what they cover on their own tracks (removing covered items, cutting spanning ones); moves and copies use the same placement modes as drops (Ctrl/⌘ inserts).
+- Ripple scope: the edited tracks plus the tracks of items linked to what moves (no sync-lock setting in the document); removing time over other content of such a track is refused (`RIPPLE_BLOCKED`) instead of cutting it; locking a track leaves it out.
+- `S` now cuts (prompt 10 had it toggle snapping): snapping moved to `N` as the prompt asks. Ten-frame nudges are `<` / `>` (Maj+, / Maj+. on QWERTY; own key on AZERTY, where Maj+, is `?`).
+- Domain: `commit` validates once per transaction (performance; intermediate states are no longer validated, stored states always are).
+- « Dupliquer » in the menu places copies right after the selection in insert mode (pushing what follows); copies are `origin: user`.
+- Extras: insert paste (Ctrl/⌘+Maj+V), « Coller » and « Fermer le blanc » in the menu, precise error toasts for common refusals.
+
+**Follow-ups**
+- Prompt 14: transitions, volume/fade handles plug into the same lanes and `gesture-store`; gap visualisation (« durée affichée au survol ») can reuse `GapHighlight`.
+- Prompt 15: « Propriétés » opens the inspector tab (`shared/side-panel`); the inspector must read `selectionStore`.
+- Prompt 19: MCP write tools call the `ProjectService` item use cases (same ripple and overwrite rules).
+- Backlog (Timeline): per-track sync lock, roll/slip/slide, auto-scroll while dragging, multi-asset drags from the bin, cross-project paste.
+- Media priority bump when a clip starts using an asset (prompt 09 follow-up) is still open.
+
+**Notes for the next agent**
+- `EditPlan::push` only queues: refusals surface at the next `plan.project()?` or at commit. Read everything you need from one `plan.project()?` borrow before pushing (it takes `&mut self`).
+- se-core publishes `projectPatched` before answering a command, so the mirror is current when `client.send` resolves: gestures clear their preview then.
+- CDP on macOS: modifiers bits are Alt 1, Ctrl 2, Meta 4, Shift 8. `getCoreConnection().url` is the HTTP base, not the socket URL. The emulated viewport resets when the CDP socket closes; measure positions with `getBoundingClientRect`, never from screenshots (Retina screenshots are 2×).
+- jsdom: no `DragEvent` (set `clientX`/`clientY` on the created event), `scrollIntoView` stubbed in `vitest.setup.ts`.
+
 ## 2026-11-07 — Prompt 10: Timeline A : affichage et navigation — Done
 
 **Branch**: `feature/10-timeline-affichage`, merged into `dev` at `75296a9`
