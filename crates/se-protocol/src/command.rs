@@ -2,9 +2,8 @@
 
 use se_domain::{
     AnimationPhase, AssetId, Flicks, Format, FormatAdaptation, ItemId, JobId, MarkerColor,
-    MarkerId, MarkerPatch,
-    ProjectId, PropertyAnimation, SequenceId, TrackId, TrackKind, TrackPatch, TransitionId,
-    TransitionPatch,
+    MarkerId, MarkerPatch, ProjectId, PropertyAnimation, SequenceId, TrackId, TrackKind,
+    TrackPatch, TransitionId, TransitionPatch,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
