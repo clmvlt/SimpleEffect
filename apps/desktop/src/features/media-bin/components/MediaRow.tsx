@@ -2,6 +2,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuTrigger, cn, focusRing } fr
 import { useTranslation } from 'react-i18next';
 
 import { formatDuration } from '../../../shared/time';
+import { useAssetEntry } from '../hooks/use-asset-entry';
 import { assetName } from '../services/asset-list';
 import { AssetMenuItems } from './AssetMenuItems';
 import { AssetPreview } from './AssetPreview';
@@ -14,11 +15,13 @@ export function MediaRow({ asset, selected, ...handlers }: MediaItemProps) {
   const { t } = useTranslation();
   const name = assetName(asset);
   const duration = asset.mediaInfo?.duration ?? null;
+  const entry = useAssetEntry(asset, selected);
   return (
     <li>
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <button
+            {...entry}
             type="button"
             aria-label={t('editor.media.card.open', { name })}
             aria-pressed={selected}

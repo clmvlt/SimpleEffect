@@ -1,4 +1,4 @@
-import type { ItemEntity } from '@se/protocol';
+import type { Flicks, ItemEntity } from '@se/protocol';
 
 import type { TimeSpan } from './in-out';
 import { timeToX, type Viewport } from './viewport';
@@ -15,15 +15,30 @@ export interface ItemBox {
   readonly width: number;
   /** Pixels of the clip cut off left of `left` (to offset its pictures). */
   readonly offsetPixels: number;
+  /** Whether the clip's real start is drawn (its trim handle can show). */
+  readonly startVisible: boolean;
+  /** Whether the clip's real end is drawn. */
+  readonly endVisible: boolean;
+}
+
+/** The drawn box of `[start, end)` in `viewport`, cut to the visible part plus the overscan. */
+export function rangeBox(start: Flicks, end: Flicks, viewport: Viewport): ItemBox {
+  const startX = timeToX(start, viewport);
+  const endX = timeToX(end, viewport);
+  const left = Math.max(startX, -OVERSCAN_PIXELS);
+  const right = Math.min(endX, viewport.width + OVERSCAN_PIXELS);
+  return {
+    left,
+    width: Math.max(1, right - left),
+    offsetPixels: left - startX,
+    startVisible: left === startX,
+    endVisible: right === endX,
+  };
 }
 
 /** The drawn box of `item` in `viewport`. */
 export function itemBox(item: ItemEntity, viewport: Viewport): ItemBox {
-  const start = timeToX(item.timelineRange.start, viewport);
-  const end = timeToX(itemEnd(item), viewport);
-  const left = Math.max(start, -OVERSCAN_PIXELS);
-  const right = Math.min(end, viewport.width + OVERSCAN_PIXELS);
-  return { left, width: Math.max(1, right - left), offsetPixels: left - start };
+  return rangeBox(item.timelineRange.start, itemEnd(item), viewport);
 }
 
 /** Where a span (the in/out points) is drawn in the lanes or the ruler. */

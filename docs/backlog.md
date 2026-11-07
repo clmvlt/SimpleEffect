@@ -19,6 +19,12 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Timeline: user-defined shortcuts (remapping `SHORTCUT_ACTIONS` keys, saved as a machine preference; conflicts already detected).
 - Timeline: per-track waveform display in video tracks (clips with sound) and a « show waveforms / thumbnails » view option.
 - Timeline: sync the view state (zoom, in/out, track heights) between machines, e.g. an optional `view.json` next to the project (today a per-machine preference; ADR-0020).
+- Timeline: per-track sync lock (choose which tracks ripple edits and inserts shift; today the concerned tracks are the edited ones plus linked partners, ADR-0021).
+- Timeline: roll, slip and slide edits, and trimming two adjacent edges at once.
+- Timeline: auto-scroll while dragging near the lanes' edges, and dragging items to a new track (drops already add one).
+- Timeline: snap points of other sequences' items are ignored; snapping to shot changes (scene detection) and to the waveform's transients.
+- Media bin: multiple selection to drag several assets to the timeline at once (`placeMedia` already places a list).
+- Timeline: copy/paste between projects (the internal clipboard keeps copies for the project they come from).
 
 ## AI
 - Additional AI providers: Gemini CLI, Codex CLI, opencode (one adapter each, see architecture §15).

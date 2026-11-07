@@ -1,6 +1,6 @@
 //! Successful results of commands.
 
-use se_domain::{MarkerId, SequenceId, TrackId};
+use se_domain::{ItemId, LinkGroupId, MarkerId, SequenceId, TrackId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -71,6 +71,41 @@ pub enum CommandResult {
     UpdateMarker,
     /// Answer to [`crate::Command::RemoveMarker`]: committed.
     RemoveMarker,
+    /// Answer to [`crate::Command::PlaceMedia`].
+    PlaceMedia {
+        /// Ids of the new items, in placement order (picture before sound for each asset).
+        item_ids: Vec<ItemId>,
+    },
+    /// Answer to [`crate::Command::MoveItems`]: committed.
+    MoveItems,
+    /// Answer to [`crate::Command::DuplicateItems`].
+    DuplicateItems {
+        /// Ids of the copies, in the order of the request.
+        item_ids: Vec<ItemId>,
+    },
+    /// Answer to [`crate::Command::PasteItems`].
+    PasteItems {
+        /// Ids of the copies, in the order of the request.
+        item_ids: Vec<ItemId>,
+    },
+    /// Answer to [`crate::Command::TrimItems`]: committed.
+    TrimItems,
+    /// Answer to [`crate::Command::SplitItems`].
+    SplitItems {
+        /// Ids of the new right parts, in the order of the request.
+        item_ids: Vec<ItemId>,
+    },
+    /// Answer to [`crate::Command::DeleteItems`]: committed.
+    DeleteItems,
+    /// Answer to [`crate::Command::LinkItems`].
+    LinkItems {
+        /// The new link group.
+        link_group: LinkGroupId,
+    },
+    /// Answer to [`crate::Command::UnlinkItems`]: committed.
+    UnlinkItems,
+    /// Answer to [`crate::Command::ResizeGap`]: committed (nothing when the length is unchanged).
+    ResizeGap,
     /// Answer to [`crate::Command::ImportMedia`].
     ImportMedia(ImportReport),
     /// Answer to [`crate::Command::RelinkAsset`].

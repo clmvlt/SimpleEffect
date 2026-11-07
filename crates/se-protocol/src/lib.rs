@@ -14,6 +14,7 @@
 
 mod command;
 mod command_result;
+mod editing;
 mod envelope;
 mod error;
 mod event;
@@ -26,6 +27,9 @@ mod project_session;
 
 pub use command::Command;
 pub use command_result::{CommandResult, CoreInfo};
+pub use editing::{
+    ItemPlacement, ItemTrim, PastedItem, PlaceMediaRequest, PlacementMode, TrackTarget,
+};
 pub use envelope::{
     ClientMessage, EventEnvelope, RequestEnvelope, RequestId, ResponseEnvelope, ResponseOutcome,
     ServerMessage,

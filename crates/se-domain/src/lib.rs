@@ -70,7 +70,7 @@ pub use operation::{
     RemoveSequence, RemoveTrack, RenameProject, ReorderTracks, RestoreItem, RippleDeleteRange,
     SequencePatch, SetKeyframes, ShapePatch, SplitItem, TemplatePatch, TextPatch, TouchedEntities,
     TrackPatch, TrimItem, UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker, UpdateSequence,
-    UpdateTrack, apply,
+    UpdateTrack, apply, apply_all,
 };
 pub use spatial::{DESIGN_REFERENCE_SIDE, DesignPixels, Vec2};
 pub use time::{

@@ -3,6 +3,8 @@ import { GalleryHorizontal } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
 import { ShortcutRegion, useActiveShortcutContext } from '../../../shared/shortcuts';
+import { useEditActions } from '../hooks/use-edit-actions';
+import { useEditShortcuts } from '../hooks/use-edit-shortcuts';
 import { inOutControls } from '../hooks/use-in-out';
 import { usePlayheadControls } from '../hooks/use-playhead-controls';
 import { useTimelineCommands } from '../hooks/use-timeline-commands';
@@ -54,6 +56,8 @@ function TimelineEditor({ model }: { readonly model: TimelineModel }) {
   );
   const inOut = inOutControls(model.sequence);
   useTimelineShortcuts({ model, viewport: api, playhead, inOut, commands });
+  const actions = useEditActions(model, commands, playhead.time);
+  useEditShortcuts(actions);
   const active = useActiveShortcutContext() === 'timeline';
   return (
     <ShortcutRegion context="timeline" claimOnMount className="size-full">
@@ -101,6 +105,7 @@ function TimelineEditor({ model }: { readonly model: TimelineModel }) {
             playhead={playhead}
             inOut={inOut}
             commands={commands}
+            actions={actions}
           />
         </PanelBody>
       </Panel>

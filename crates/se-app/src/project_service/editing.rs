@@ -4,7 +4,8 @@ use se_domain::{Actor, AddSequence, Format, Operation, ProjectId, SequenceId, Tr
 
 use super::{ProjectService, checked_name};
 use crate::{
-    AppError, new_ids::NewIds, new_project::default_sequence, project_actor::ProjectActorHandle,
+    AppError, edit_plan::EditPlan, new_ids::NewIds, new_project::default_sequence,
+    project_actor::ProjectActorHandle,
 };
 
 /// Label of the transaction adding a sequence (undo menu). A stable identifier: the renderer
@@ -65,6 +66,24 @@ impl ProjectService {
             ops,
         };
         handle.apply(transaction).await.map(drop)
+    }
+
+    /// Commits the operations of `plan` as one user transaction labelled `label`; a plan that
+    /// changes nothing commits nothing.
+    ///
+    /// # Errors
+    /// The document refuses the operations, storage errors.
+    pub(super) async fn commit_plan(
+        &self,
+        handle: &ProjectActorHandle,
+        label: &str,
+        plan: EditPlan<'_>,
+    ) -> Result<(), AppError> {
+        let ops = plan.into_ops();
+        if ops.is_empty() {
+            return Ok(());
+        }
+        self.commit_user_edit(handle, label, ops).await
     }
 
     /// Undoes the latest user transaction of an open project.

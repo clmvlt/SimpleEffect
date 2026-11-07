@@ -6,7 +6,7 @@ use se_protocol::{
 
 use super::{
     encode::encode,
-    handlers::{HandlerContext, editing, media, media_settings, projects, system, timeline},
+    handlers::{HandlerContext, editing, items, media, media_settings, projects, system, timeline},
     request::{Rejection, parse_request},
 };
 
@@ -54,6 +54,10 @@ impl RpcRouter {
     }
 
     /// The one place mapping commands to handlers: add a match arm per new command.
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one exhaustive match arm per command, so the compiler points at new commands"
+    )]
     async fn dispatch(&self, command: &Command) -> Result<CommandResult, ProtocolError> {
         let context = &self.context;
         match command {
@@ -121,6 +125,54 @@ impl RpcRouter {
                 project_id,
                 marker_id,
             } => timeline::remove_marker(context, *project_id, *marker_id).await,
+            Command::PlaceMedia(request) => items::place_media(context, request).await,
+            Command::MoveItems {
+                project_id,
+                moves,
+                mode,
+            } => items::move_items(context, *project_id, moves, *mode).await,
+            Command::DuplicateItems {
+                project_id,
+                copies,
+                mode,
+            } => items::duplicate_items(context, *project_id, copies, *mode).await,
+            Command::PasteItems {
+                project_id,
+                items: pasted,
+                mode,
+            } => items::paste_items(context, *project_id, pasted, *mode).await,
+            Command::TrimItems {
+                project_id,
+                trims,
+                ripple,
+            } => items::trim_items(context, *project_id, trims, *ripple).await,
+            Command::SplitItems {
+                project_id,
+                item_ids,
+                at,
+            } => items::split_items(context, *project_id, item_ids, *at).await,
+            Command::DeleteItems {
+                project_id,
+                item_ids,
+                ripple,
+            } => items::delete_items(context, *project_id, item_ids, *ripple).await,
+            Command::LinkItems {
+                project_id,
+                item_ids,
+            } => items::link_items(context, *project_id, item_ids).await,
+            Command::UnlinkItems {
+                project_id,
+                item_ids,
+            } => items::unlink_items(context, *project_id, item_ids).await,
+            Command::ResizeGap {
+                project_id,
+                track_id,
+                start,
+                end,
+                duration,
+            } => {
+                items::resize_gap(context, *project_id, *track_id, (*start, *end), *duration).await
+            }
             Command::ImportMedia(request) => media::import_media(context, request).await,
             Command::RelinkAsset(request) => media::relink_asset(context, request).await,
             Command::RemoveAsset {
@@ -311,6 +363,27 @@ mod tests {
         ))
         .await;
         assert_eq!(marker["error"]["code"], "PROJECT_NOT_OPEN");
+    }
+
+    #[tokio::test]
+    async fn item_commands_reach_the_project_service() {
+        let project = "00000000-0001-7000-8000-000000000000";
+        let item = "00000000-0004-7000-8000-000000000000";
+        let delete = reply(&format!(
+            r#"{{"type":"request","id":1,"command":{{"kind":"deleteItems","projectId":"{project}","itemIds":["{item}"],"ripple":true}}}}"#
+        ))
+        .await;
+        assert_eq!(delete["error"]["code"], "PROJECT_NOT_OPEN");
+        let moved = reply(&format!(
+            r#"{{"type":"request","id":2,"command":{{"kind":"moveItems","projectId":"{project}","moves":[{{"itemId":"{item}","trackId":"00000000-0002-7000-8000-000000000000","start":0}}],"mode":"insert"}}}}"#
+        ))
+        .await;
+        assert_eq!(moved["error"]["code"], "PROJECT_NOT_OPEN");
+        let gap = reply(&format!(
+            r#"{{"type":"request","id":3,"command":{{"kind":"resizeGap","projectId":"{project}","trackId":"00000000-0002-7000-8000-000000000000","start":10,"end":5,"duration":0}}}}"#
+        ))
+        .await;
+        assert_eq!(gap["error"]["code"], "INVALID_REQUEST");
     }
 
     #[tokio::test]

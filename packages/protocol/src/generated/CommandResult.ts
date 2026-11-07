@@ -2,7 +2,9 @@
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { CoreInfo } from "./CoreInfo";
 import type { ImportReport } from "./ImportReport";
+import type { ItemId } from "./ItemId";
 import type { JobSnapshot } from "./JobSnapshot";
+import type { LinkGroupId } from "./LinkGroupId";
 import type { MarkerId } from "./MarkerId";
 import type { MediaSettings } from "./MediaSettings";
 import type { MediaToolsStatus } from "./MediaToolsStatus";
@@ -33,7 +35,27 @@ trackId: TrackId, } | { "kind": "removeTrack" } | { "kind": "updateTrack" } | { 
 /**
  * Id of the new marker.
  */
-markerId: MarkerId, } | { "kind": "updateMarker" } | { "kind": "removeMarker" } | { "kind": "importMedia" } & ImportReport | { "kind": "relinkAsset", 
+markerId: MarkerId, } | { "kind": "updateMarker" } | { "kind": "removeMarker" } | { "kind": "placeMedia", 
+/**
+ * Ids of the new items, in placement order (picture before sound for each asset).
+ */
+itemIds: Array<ItemId>, } | { "kind": "moveItems" } | { "kind": "duplicateItems", 
+/**
+ * Ids of the copies, in the order of the request.
+ */
+itemIds: Array<ItemId>, } | { "kind": "pasteItems", 
+/**
+ * Ids of the copies, in the order of the request.
+ */
+itemIds: Array<ItemId>, } | { "kind": "trimItems" } | { "kind": "splitItems", 
+/**
+ * Ids of the new right parts, in the order of the request.
+ */
+itemIds: Array<ItemId>, } | { "kind": "deleteItems" } | { "kind": "linkItems", 
+/**
+ * The new link group.
+ */
+linkGroup: LinkGroupId, } | { "kind": "unlinkItems" } | { "kind": "resizeGap" } | { "kind": "importMedia" } & ImportReport | { "kind": "relinkAsset", 
 /**
  * Whether the asset was relinked or the user must confirm first.
  */

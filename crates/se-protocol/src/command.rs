@@ -1,15 +1,16 @@
 //! Commands a client asks `se-core` to execute.
 
 use se_domain::{
-    AssetId, Flicks, Format, JobId, MarkerColor, MarkerId, MarkerPatch, ProjectId, SequenceId,
-    TrackId, TrackKind, TrackPatch,
+    AssetId, Flicks, Format, ItemId, JobId, MarkerColor, MarkerId, MarkerPatch, ProjectId,
+    SequenceId, TrackId, TrackKind, TrackPatch,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
     CreateProjectRequest, DecodabilityReport, DecoderCapabilities, GenerateDerivedRequest,
-    ImportMediaRequest, MediaSettings, RelinkAssetRequest,
+    ImportMediaRequest, ItemPlacement, ItemTrim, MediaSettings, PastedItem, PlaceMediaRequest,
+    PlacementMode, RelinkAssetRequest,
 };
 
 /// A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -171,6 +172,101 @@ pub enum Command {
         project_id: ProjectId,
         /// The marker.
         marker_id: MarkerId,
+    },
+    /// Adds dropped media to a sequence as clips placed one after the other (one undo step): a
+    /// video with sound becomes two linked items. Answered by
+    /// [`crate::CommandResult::PlaceMedia`].
+    PlaceMedia(PlaceMediaRequest),
+    /// Moves items to new tracks and starts (one undo step); linked items move only when listed.
+    /// Answered by [`crate::CommandResult::MoveItems`].
+    MoveItems {
+        /// The open project.
+        project_id: ProjectId,
+        /// Every item moved (one sequence), each once.
+        moves: Vec<ItemPlacement>,
+        /// What happens to items already where they land.
+        mode: PlacementMode,
+    },
+    /// Copies items to new places (one undo step). Answered by
+    /// [`crate::CommandResult::DuplicateItems`].
+    DuplicateItems {
+        /// The open project.
+        project_id: ProjectId,
+        /// The items copied (one sequence), each once, and where each copy goes.
+        copies: Vec<ItemPlacement>,
+        /// What happens to items already where the copies land.
+        mode: PlacementMode,
+    },
+    /// Adds copies of clipboard items (one undo step). Answered by
+    /// [`crate::CommandResult::PasteItems`].
+    PasteItems {
+        /// The open project.
+        project_id: ProjectId,
+        /// The copies and their tracks (one sequence).
+        items: Vec<PastedItem>,
+        /// What happens to items already where the copies land.
+        mode: PlacementMode,
+    },
+    /// Moves item edges (one undo step). Answered by [`crate::CommandResult::TrimItems`].
+    TrimItems {
+        /// The open project.
+        project_id: ProjectId,
+        /// The edges moved, each item once.
+        trims: Vec<ItemTrim>,
+        /// Shift what follows by the change instead of leaving or filling a gap. A ripple trim
+        /// moves edges sitting at one instant (an item and its linked partners) to one place.
+        ripple: bool,
+    },
+    /// Cuts items at an instant (one undo step); right parts of linked items stay linked.
+    /// Answered by [`crate::CommandResult::SplitItems`].
+    SplitItems {
+        /// The open project.
+        project_id: ProjectId,
+        /// Items crossing `at`.
+        item_ids: Vec<ItemId>,
+        /// The cut instant.
+        at: Flicks,
+    },
+    /// Removes items (one undo step). Answered by [`crate::CommandResult::DeleteItems`].
+    DeleteItems {
+        /// The open project.
+        project_id: ProjectId,
+        /// The items removed (one sequence), each once.
+        item_ids: Vec<ItemId>,
+        /// Close the time they took on their tracks (and on the tracks of items linked to what
+        /// follows) instead of leaving gaps.
+        ripple: bool,
+    },
+    /// Puts items in a new link group (one undo step). Answered by
+    /// [`crate::CommandResult::LinkItems`].
+    LinkItems {
+        /// The open project.
+        project_id: ProjectId,
+        /// At least two items of one sequence.
+        item_ids: Vec<ItemId>,
+    },
+    /// Takes items out of their link groups (one undo step). Answered by
+    /// [`crate::CommandResult::UnlinkItems`].
+    UnlinkItems {
+        /// The open project.
+        project_id: ProjectId,
+        /// The items unlinked.
+        item_ids: Vec<ItemId>,
+    },
+    /// Lengthens, shortens or closes the empty time before an item (one undo step): what follows
+    /// moves on the track and on the tracks of items linked to it. Answered by
+    /// [`crate::CommandResult::ResizeGap`].
+    ResizeGap {
+        /// The open project.
+        project_id: ProjectId,
+        /// The track of the gap.
+        track_id: TrackId,
+        /// Where the gap starts (end of the previous item, or 0).
+        start: Flicks,
+        /// Where it ends (start of the next item).
+        end: Flicks,
+        /// Its new length (0 closes it).
+        duration: Flicks,
     },
     /// Imports media files into an open project (one undoable transaction), skipping content it
     /// already has, then queues their thumbnails and waveform peaks. Answered by

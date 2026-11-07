@@ -1,24 +1,33 @@
 import type { ItemId } from '@se/protocol';
+import { ContextMenu, ContextMenuTrigger } from '@se/ui';
 import { useRef, type RefObject } from 'react';
 
+import type { GestureContext } from '../hooks/gestures/gesture-context';
+import type { EditActions } from '../hooks/use-edit-actions';
 import { useElementWidth } from '../hooks/use-element-width';
-import { useLaneSelection } from '../hooks/use-lane-selection';
-import type { TimelineModel } from '../hooks/use-timeline-model';
+import { useLaneMenu } from '../hooks/use-lane-menu';
+import { useLanePointer } from '../hooks/use-lane-pointer';
+import { useMediaDrop } from '../hooks/use-media-drop';
 import type { TimeSpan } from '../services/in-out';
 import { OVERSCAN_PIXELS, spanBox } from '../services/item-geometry';
 import { marqueeBox } from '../services/marquee';
-import { allRows, SECTION_DIVIDER_HEIGHT, type TrackLayout } from '../services/track-layout';
-import { visibleRange, type Viewport } from '../services/viewport';
+import { allRows, SECTION_DIVIDER_HEIGHT } from '../services/track-layout';
+import { visibleRange } from '../services/viewport';
 import { visibleItems } from '../services/visible-items';
+import { clipboardFor } from '../store/clipboard-store';
+import { useGesturePreview } from '../store/gesture-store';
 import { setLanesWidth } from '../store/timeline-view-store';
+import { GapHighlight } from './GapHighlight';
+import { GestureOverlay } from './GestureOverlay';
+import { LaneMenu } from './LaneMenu';
 import { PlayheadLine } from './PlayheadLine';
 import { TrackLane } from './TrackLane';
 
 /** Props of {@link TrackLanes}. */
 export interface TrackLanesProps {
-  readonly model: TimelineModel;
-  readonly layout: TrackLayout;
-  readonly viewport: Viewport;
+  /** The model, layout and viewport (and what gestures read), always the latest. */
+  readonly context: () => GestureContext;
+  readonly actions: EditActions;
   readonly selected: ReadonlySet<ItemId>;
   /** The in/out span to shade, if any. */
   readonly span: TimeSpan | null;
@@ -26,58 +35,84 @@ export interface TrackLanesProps {
   readonly id: string;
 }
 
+const NONE: ReadonlySet<ItemId> = new Set();
+
 /**
- * The lanes of every track (only items in view are rendered), the in/out shade, the playhead line
- * and the selection rectangle. Its measured width is the viewport width.
+ * The lanes of every track (only items in view are rendered), the in/out shade, the selected
+ * gap, the playhead line, the selection rectangle and what a gesture previews. They take the
+ * pointer (selection, drags, trims, gap handle), media dropped from the bin and right clicks.
+ * Their measured width is the viewport width.
  */
-export function TrackLanes({ model, layout, viewport, selected, span, id }: TrackLanesProps) {
+export function TrackLanes({ context, actions, selected, span, id }: TrackLanesProps) {
   const element: RefObject<HTMLDivElement | null> = useRef<HTMLDivElement>(null);
   useElementWidth(element, setLanesWidth);
-  const { rect, onItemPointerDown, laneHandlers } = useLaneSelection(model, layout, viewport);
+  const { model, layout, viewport } = context();
+  const { rect, laneHandlers } = useLanePointer(context);
+  const drop = useMediaDrop(context);
+  const menu = useLaneMenu(context);
+  const preview = useGesturePreview();
+  const hidden = preview === null ? NONE : new Set(preview.placements.keys());
   const range = visibleRange(viewport, OVERSCAN_PIXELS);
   const box = rect === null ? null : marqueeBox(rect);
   return (
-    <div
-      ref={element}
-      id={id}
-      data-timeline-lanes
-      className="relative min-w-0 flex-1 overflow-hidden"
-      {...laneHandlers}
-    >
-      {allRows(layout).map((row) => (
-        <TrackLane
-          key={row.track.id}
-          row={row}
-          items={visibleItems(model.itemsByTrack.get(row.track.id) ?? [], range.start, range.end)}
-          viewport={viewport}
-          assets={model.assets}
-          templates={model.templates}
-          selected={selected}
-          onItemPointerDown={onItemPointerDown}
-        />
-      ))}
-      <div
-        aria-hidden
-        className="absolute inset-x-0 border-y border-border bg-panel-raised"
-        style={{ top: layout.dividerTop, height: SECTION_DIVIDER_HEIGHT }}
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          ref={element}
+          id={id}
+          data-timeline-lanes
+          className="relative min-w-0 flex-1 overflow-hidden"
+          onContextMenu={menu.onContextMenu}
+          {...laneHandlers}
+          {...drop}
+        >
+          {allRows(layout).map((row) => (
+            <TrackLane
+              key={row.track.id}
+              row={row}
+              items={visibleItems(
+                model.itemsByTrack.get(row.track.id) ?? [],
+                range.start,
+                range.end,
+              )}
+              viewport={viewport}
+              assets={model.assets}
+              templates={model.templates}
+              selected={selected}
+              hidden={hidden}
+            />
+          ))}
+          <div
+            aria-hidden
+            className="absolute inset-x-0 border-y border-border bg-panel-raised"
+            style={{ top: layout.dividerTop, height: SECTION_DIVIDER_HEIGHT }}
+          />
+          {span !== null && (
+            <div
+              aria-hidden
+              data-in-out-shade
+              className="pointer-events-none absolute inset-y-0 z-10 border-x border-accent/60 bg-accent-muted/50"
+              style={spanBox(span, viewport)}
+            />
+          )}
+          <GapHighlight model={model} layout={layout} viewport={viewport} />
+          <GestureOverlay model={model} layout={layout} viewport={viewport} />
+          <PlayheadLine sequenceId={model.sequence.id} viewport={viewport} />
+          {box !== null && (
+            <div
+              aria-hidden
+              data-marquee
+              className="pointer-events-none absolute z-30 rounded-xs border border-accent bg-accent-muted/30"
+              style={box}
+            />
+          )}
+        </div>
+      </ContextMenuTrigger>
+      <LaneMenu
+        target={menu.target}
+        actions={actions}
+        canPaste={clipboardFor(model.projectId) !== null}
       />
-      {span !== null && (
-        <div
-          aria-hidden
-          data-in-out-shade
-          className="pointer-events-none absolute inset-y-0 z-10 border-x border-accent/60 bg-accent-muted/50"
-          style={spanBox(span, viewport)}
-        />
-      )}
-      <PlayheadLine sequenceId={model.sequence.id} viewport={viewport} />
-      {box !== null && (
-        <div
-          aria-hidden
-          data-marquee
-          className="pointer-events-none absolute z-30 rounded-xs border border-accent bg-accent-muted/30"
-          style={box}
-        />
-      )}
-    </div>
+    </ContextMenu>
   );
 }

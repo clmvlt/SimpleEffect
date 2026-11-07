@@ -18,6 +18,7 @@ import { InspectorView } from '../../features/inspector';
 import { MediaBinPanel } from '../../features/media-bin';
 import { TimelinePanel } from '../../features/timeline';
 import { ViewerPanel } from '../../features/viewer';
+import { isSidePanelTab, showSidePanelTab, useSidePanelTab } from '../../shared/side-panel';
 
 /** Props of {@link EditorLayout}. */
 export interface EditorLayoutProps {
@@ -59,12 +60,22 @@ export function EditorLayout({ layoutStorage }: EditorLayoutProps) {
   );
 }
 
-/** The right column: « Inspecteur » and « IA » share one panel as tabs. */
+/**
+ * The right column: « Inspecteur » and « IA » share one panel as tabs (features may switch it,
+ * e.g. the timeline's « Propriétés »).
+ */
 function SidePanel() {
   const { t } = useTranslation();
+  const tab = useSidePanelTab();
   return (
     <Panel aria-label={t('editor.sidePanel')}>
-      <Tabs defaultValue="inspector" className="min-h-0 flex-1 gap-0">
+      <Tabs
+        value={tab}
+        onValueChange={(value) => {
+          if (isSidePanelTab(value)) showSidePanelTab(value);
+        }}
+        className="min-h-0 flex-1 gap-0"
+      >
         <PanelHeader>
           <TabsList variant="underline" size="xs" className="h-full border-b-0">
             <TabsTrigger value="inspector">{t('editor.inspector.title')}</TabsTrigger>

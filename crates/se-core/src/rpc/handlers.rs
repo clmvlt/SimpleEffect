@@ -6,6 +6,7 @@
 //! (`se_app::AppError` converts with `?`).
 
 pub mod editing;
+pub mod items;
 pub mod media;
 pub mod media_settings;
 pub mod projects;

@@ -1,6 +1,5 @@
 import type { ItemEntity } from '@se/protocol';
-import { ClipBadge, ClipShell } from '@se/ui';
-import type { PointerEvent } from 'react';
+import { ClipBadge, ClipShell, cn } from '@se/ui';
 import { useTranslation } from 'react-i18next';
 
 import type { ItemBox } from '../services/item-geometry';
@@ -19,7 +18,10 @@ export interface TimelineItemProps {
   readonly selected: boolean;
   /** Drawn faded (hidden or muted track). */
   readonly dimmed: boolean;
-  readonly onPointerDown: (item: ItemEntity, event: PointerEvent<HTMLDivElement>) => void;
+  /** Not drawn here: a gesture draws it elsewhere for now (moved, trimmed, shifted). */
+  readonly hidden: boolean;
+  /** Its edges can be dragged (the track is not locked). */
+  readonly editable: boolean;
 }
 
 /** Height of the clip's label bar plus its borders: the waveform is drawn below it. */
@@ -27,6 +29,9 @@ const LABEL_BAR_HEIGHT = 18;
 
 /** Narrower clips draw no pictures: nothing would be legible, and zoomed out there are many. */
 const MIN_PICTURE_WIDTH = 8;
+
+/** Narrower clips show no trim handles: their whole body moves them. */
+const MIN_TRIM_WIDTH = 16;
 
 /** Where the pictures of a media item start in its source, and how fast it plays. */
 function sourceOf(item: ItemEntity) {
@@ -37,7 +42,8 @@ function sourceOf(item: ItemEntity) {
 
 /**
  * One item in a lane: a `ClipShell` positioned on its visible part, with its thumbnails or
- * waveform, its name and the AI badge when an AI task made it.
+ * waveform, its name, the AI badge when an AI task made it, and trim handles on its edges. The
+ * lanes handle the pointer (`data-item-id`, `data-trim-edge`).
  */
 export function TimelineItem({
   item,
@@ -47,7 +53,8 @@ export function TimelineItem({
   pixelsPerSecond,
   selected,
   dimmed,
-  onPointerDown,
+  hidden,
+  editable,
 }: TimelineItemProps) {
   const { t } = useTranslation();
   const label = display.label ?? t(`editor.timeline.items.${display.fallback}`);
@@ -60,17 +67,15 @@ export function TimelineItem({
     offsetPixels: box.offsetPixels,
     width: box.width,
   };
+  const trimmable = editable && box.width >= MIN_TRIM_WIDTH;
   return (
     <div
       role="option"
       aria-selected={selected}
       aria-label={label}
       data-item-id={item.id}
-      className="absolute top-0 py-px [contain:strict]"
+      className={cn('absolute top-0 py-px [contain:strict]', hidden && 'invisible')}
       style={{ left: box.left, width: box.width, height }}
-      onPointerDown={(event) => {
-        onPointerDown(item, event);
-      }}
     >
       <ClipShell
         tone={display.tone}
@@ -93,6 +98,22 @@ export function TimelineItem({
           <WaveformCanvas asset={asset} {...picture} height={height - LABEL_BAR_HEIGHT} />
         )}
       </ClipShell>
+      {trimmable && box.startVisible && <TrimHandle edge="start" />}
+      {trimmable && box.endVisible && <TrimHandle edge="end" />}
     </div>
+  );
+}
+
+/** A strip on one edge of a clip: dragging it trims that edge (Ctrl/⌘: ripple). */
+function TrimHandle({ edge }: { readonly edge: 'start' | 'end' }) {
+  return (
+    <div
+      aria-hidden
+      data-trim-edge={edge}
+      className={cn(
+        'absolute inset-y-0 z-10 w-1.5 cursor-ew-resize hover:bg-accent/60',
+        edge === 'start' ? 'left-0 rounded-l-sm' : 'right-0 rounded-r-sm',
+      )}
+    />
   );
 }

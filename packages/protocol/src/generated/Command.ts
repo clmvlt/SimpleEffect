@@ -8,11 +8,17 @@ import type { Flicks } from "./Flicks";
 import type { Format } from "./Format";
 import type { GenerateDerivedRequest } from "./GenerateDerivedRequest";
 import type { ImportMediaRequest } from "./ImportMediaRequest";
+import type { ItemId } from "./ItemId";
+import type { ItemPlacement } from "./ItemPlacement";
+import type { ItemTrim } from "./ItemTrim";
 import type { JobId } from "./JobId";
 import type { MarkerColor } from "./MarkerColor";
 import type { MarkerId } from "./MarkerId";
 import type { MarkerPatch } from "./MarkerPatch";
 import type { MediaSettings } from "./MediaSettings";
+import type { PastedItem } from "./PastedItem";
+import type { PlaceMediaRequest } from "./PlaceMediaRequest";
+import type { PlacementMode } from "./PlacementMode";
 import type { ProjectId } from "./ProjectId";
 import type { RelinkAssetRequest } from "./RelinkAssetRequest";
 import type { SequenceId } from "./SequenceId";
@@ -168,7 +174,117 @@ projectId: ProjectId,
 /**
  * The marker.
  */
-markerId: MarkerId, } | { "kind": "importMedia" } & ImportMediaRequest | { "kind": "relinkAsset" } & RelinkAssetRequest | { "kind": "removeAsset", 
+markerId: MarkerId, } | { "kind": "placeMedia" } & PlaceMediaRequest | { "kind": "moveItems", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * Every item moved (one sequence), each once.
+ */
+moves: Array<ItemPlacement>, 
+/**
+ * What happens to items already where they land.
+ */
+mode: PlacementMode, } | { "kind": "duplicateItems", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The items copied (one sequence), each once, and where each copy goes.
+ */
+copies: Array<ItemPlacement>, 
+/**
+ * What happens to items already where the copies land.
+ */
+mode: PlacementMode, } | { "kind": "pasteItems", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The copies and their tracks (one sequence).
+ */
+items: Array<PastedItem>, 
+/**
+ * What happens to items already where the copies land.
+ */
+mode: PlacementMode, } | { "kind": "trimItems", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The edges moved, each item once.
+ */
+trims: Array<ItemTrim>, 
+/**
+ * Shift what follows by the change instead of leaving or filling a gap. A ripple trim
+ * moves edges sitting at one instant (an item and its linked partners) to one place.
+ */
+ripple: boolean, } | { "kind": "splitItems", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * Items crossing `at`.
+ */
+itemIds: Array<ItemId>, 
+/**
+ * The cut instant.
+ */
+at: Flicks, } | { "kind": "deleteItems", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The items removed (one sequence), each once.
+ */
+itemIds: Array<ItemId>, 
+/**
+ * Close the time they took on their tracks (and on the tracks of items linked to what
+ * follows) instead of leaving gaps.
+ */
+ripple: boolean, } | { "kind": "linkItems", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * At least two items of one sequence.
+ */
+itemIds: Array<ItemId>, } | { "kind": "unlinkItems", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The items unlinked.
+ */
+itemIds: Array<ItemId>, } | { "kind": "resizeGap", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The track of the gap.
+ */
+trackId: TrackId, 
+/**
+ * Where the gap starts (end of the previous item, or 0).
+ */
+start: Flicks, 
+/**
+ * Where it ends (start of the next item).
+ */
+end: Flicks, 
+/**
+ * Its new length (0 closes it).
+ */
+duration: Flicks, } | { "kind": "importMedia" } & ImportMediaRequest | { "kind": "relinkAsset" } & RelinkAssetRequest | { "kind": "removeAsset", 
 /**
  * The open project.
  */

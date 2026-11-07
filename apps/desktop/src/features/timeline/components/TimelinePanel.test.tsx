@@ -1,91 +1,29 @@
 /**
  * @vitest-environment jsdom
  */
-import { CoreClient, type ProjectSession } from '@se/protocol';
-import { TooltipProvider } from '@se/ui';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { I18nextProvider } from 'react-i18next';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createI18n } from '../../../i18n';
-import { CoreClientProvider } from '../../../shared/core';
-import {
-  connectProjectSync,
-  createProjectStore,
-  ProjectStoreProvider,
-} from '../../../shared/project-store';
-import { session } from '../../../shared/project-store/testing/session-fixture';
-import { ShortcutProvider, ShortcutRegistry } from '../../../shared/shortcuts';
-import { seconds, testItem, testSequence, testTrack } from '../testing/fixtures';
 import { playheadStore } from '../store/playhead-store';
-import { clearSelection, selectionStore } from '../store/selection-store';
+import { selectionStore } from '../store/selection-store';
 import { NEW_SEQUENCE_VIEW, timelineViewStore } from '../store/timeline-view-store';
-import { TimelinePanel } from './TimelinePanel';
+import { seconds } from '../testing/fixtures';
+import { renderTimeline as render, resetTimelineStores } from '../testing/render-timeline';
 
-const clients: CoreClient[] = [];
+const clients: { close: () => void }[] = [];
 
-beforeEach(() => {
-  window.localStorage.clear();
-  timelineViewStore.setState({
-    activeSequenceId: null,
-    sequences: {},
-    trackHeights: {},
-    snapping: true,
-  });
-  playheadStore.setState({ times: {} });
-  clearSelection();
-});
+beforeEach(resetTimelineStores);
 
 afterEach(() => {
   for (const client of clients.splice(0)) client.close();
 });
 
-/** A session with tracks V2, V1 (video) and A1 (audio): linked clip p/s, captions c1, c2. */
-function timelineSession(): ProjectSession {
-  const base = session();
-  return {
-    ...base,
-    snapshot: {
-      ...base.snapshot,
-      sequences: [testSequence(['v1', 'v2', 'a1'])],
-      tracks: [
-        testTrack('v1', 'video', ['c1', 'c2']),
-        testTrack('v2', 'video'),
-        testTrack('a1', 'audio', ['s']),
-      ],
-      items: [
-        testItem('c1', 'v1', 0, 1, { linkGroup: 'g' }),
-        testItem('c2', 'v1', 2, 1),
-        testItem('s', 'a1', 0, 1, { linkGroup: 'g' }),
-      ],
-      markers: [],
-    },
-  };
-}
-
-/** Renders the timeline over the session; the core never connects and `send` is a spy. */
+/** Renders the timeline over the test session; `send` is a spy. */
 function renderTimeline() {
-  const client = CoreClient.connect(() => new Promise(() => undefined));
-  clients.push(client);
-  const send = vi.spyOn(client, 'send').mockResolvedValue({ kind: 'updateTrack' } as never);
-  const store = createProjectStore();
-  const sync = connectProjectSync(client, store);
-  sync.load(timelineSession());
-  render(
-    <I18nextProvider i18n={createI18n()}>
-      <CoreClientProvider client={client}>
-        <ShortcutProvider registry={new ShortcutRegistry('other')}>
-          <ProjectStoreProvider store={store} sync={sync}>
-            <TooltipProvider>
-              <TimelinePanel />
-            </TooltipProvider>
-          </ProjectStoreProvider>
-        </ShortcutProvider>
-      </CoreClientProvider>
-    </I18nextProvider>,
-  );
-  return { send };
+  const rendered = render();
+  clients.push(rendered.client);
+  return rendered;
 }
 
 const selectedNames = () =>
@@ -113,21 +51,23 @@ describe('TimelinePanel', () => {
       'option',
     );
     if (first === undefined || second === undefined) throw new Error('two captions');
-    fireEvent.pointerDown(first, { button: 0 });
+    const click = (element: HTMLElement, modifiers: Record<string, boolean> = {}) => {
+      fireEvent.pointerDown(element, { button: 0, ...modifiers });
+      fireEvent.pointerUp(element, modifiers);
+    };
+    click(first);
     expect(selectionStore.getState().itemIds).toEqual(['c1', 's']);
-    fireEvent.pointerDown(second, { button: 0, shiftKey: true });
+    click(second, { shiftKey: true });
     expect(selectionStore.getState().itemIds).toEqual(['c1', 's', 'c2']);
-    fireEvent.pointerDown(first, { button: 0, ctrlKey: true });
+    click(first, { ctrlKey: true });
     expect(selectionStore.getState().itemIds).toEqual(['c2']);
-    fireEvent.pointerDown(first, { button: 0, altKey: true });
+    click(first, { altKey: true });
     expect(selectedNames()).toEqual(['Bonjour']);
     expect(selectionStore.getState().itemIds).toEqual(['c1']);
   });
 
   it('selects the items a rectangle touches and deselects on an empty click', () => {
-    renderTimeline();
-    const lanes = document.querySelector<HTMLElement>('[data-timeline-lanes]');
-    if (lanes === null) throw new Error('lanes');
+    const { lanes } = renderTimeline();
     vi.spyOn(lanes, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 1000, 300));
     // Rows: V2 0–52, V1 52–104; 50 px per second before the first fit.
     fireEvent.pointerDown(lanes, { button: 0, clientX: 5, clientY: 10 });

@@ -197,29 +197,37 @@ pub struct Applied {
 /// revision…), or [`DomainError::InvalidDocument`] if the result would break an invariant of
 /// [`validate_project`]. `project` must itself be valid.
 pub fn apply(project: &Project, operation: &Operation) -> Result<Applied, DomainError> {
-    let mut draft = project.clone();
-    let effect = apply_in_place(&mut draft, operation)?;
-    Ok(Applied {
-        project: draft,
-        inverse: effect.inverse,
-        touched: effect.touched,
-    })
+    apply_all(project, std::slice::from_ref(operation))
 }
 
-/// Applies `operation` to `draft` and validates the result. On error `draft` is left half-edited
-/// and must be discarded.
-pub(crate) fn apply_in_place(
-    draft: &mut Project,
-    operation: &Operation,
-) -> Result<Effect, DomainError> {
-    let mut effect = Effect::default();
-    operation.as_edit().apply_to(draft, &mut effect)?;
-    let violations = validate_project(draft);
-    if violations.is_empty() {
-        Ok(effect)
-    } else {
-        Err(DomainError::InvalidDocument { violations })
+/// Applies `operations` in order to one copy of `project` and validates the result once, after
+/// the last one: all or nothing. Each operation still checks its own preconditions (unknown ids,
+/// overlaps, locked tracks…), but the document-wide [`validate_project`] runs once, so a
+/// transaction of many operations costs one validation (it dominates with large sequences). The
+/// returned inverse undoes all of them (the inverses of each, last operation first).
+///
+/// # Errors
+/// The first operation refused, or [`DomainError::InvalidDocument`] if the result breaks an
+/// invariant. `project` must itself be valid.
+pub fn apply_all(project: &Project, operations: &[Operation]) -> Result<Applied, DomainError> {
+    let mut draft = project.clone();
+    let mut inverses = Vec::with_capacity(operations.len());
+    let mut touched = TouchedEntities::default();
+    for operation in operations {
+        let mut effect = Effect::default();
+        operation.as_edit().apply_to(&mut draft, &mut effect)?;
+        touched.merge(effect.touched);
+        inverses.push(effect.inverse);
     }
+    let violations = validate_project(&draft);
+    if !violations.is_empty() {
+        return Err(DomainError::InvalidDocument { violations });
+    }
+    Ok(Applied {
+        project: draft,
+        inverse: inverses.into_iter().rev().flatten().collect(),
+        touched,
+    })
 }
 
 #[cfg(test)]

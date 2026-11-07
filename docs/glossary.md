@@ -68,7 +68,7 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Template item** | An item instantiating a motion template with parameter values | `ItemKind::MotionTemplate`, `TemplateItem` |
 | **Caption** | Subtitle item built from transcript words, styled by a caption style | `ItemKind::Caption` |
 | **Brand kit** | Fonts, colours, logo and default caption style reused by the user and agents | `BrandKit` |
-| **Gap** | Empty time on a track between items (implicit, not stored) | — |
+| **Gap** | Empty time on a track before an item: from the previous item's end (or 0) to its start; computed, never stored. Selected by a click, resized with its handle, closed with `Suppr` | `Gap`, `gapAt`, `resizeGap` |
 | **Source range** | The part of an asset used by a media clip (`source_start` + duration) | `source_start` |
 | **Timeline range** | Where an item sits in its sequence (`start` + `duration`) | `timeline_range` |
 | **Time range** | A half-open interval `[start, start + duration)` with a non-negative duration | `TimeRange` |
@@ -144,8 +144,16 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Virtualisation** | Rendering only the items crossing the visible range (plus overscan), found by binary search | `visibleItems` |
 | **Playhead** | The current instant of a sequence, always on a frame start; moved by the ruler, the arrows and the timecode field | `playhead-store` |
 | **Edit point** | The start of a sequence or an edge (start or end) of an item: targets of ↑/↓ and of snapping | `editPoints` |
-| **Snapping** | The dragged playhead jumping to a nearby edit point, marker or in/out point (8 px); toggled with `S` | `snapTime`, `snapping` |
+| **Snapping** | A dragged playhead or edge (moved clips, trims, gap handle, drops) jumping to a nearby edit point, the playhead, a marker or an in/out point (8 px), shown by a line; toggled with `N` | `snapTime`, `snapShift`, `snapping` |
 | **In/out points** | The half-open span of a sequence marked with `I`/`O` (or Maj+drag on the ruler), the scope of AI requests; a machine preference, not project data | `InOutPoints`, `useInOutSpan` |
+| **Placement mode** | How items placed on tracks (dropped, moved, copied, pasted) treat what is there: `overwrite` replaces what they cover on their tracks (removing, trimming or cutting it), `insert` (Ctrl/⌘) opens time and pushes what follows | `PlacementMode` |
+| **Ripple edit** | An edit that moves what follows its edit point to close or open time: ripple delete, ripple trim, gap resize, insert | ADR-0021 |
+| **Concerned tracks** | The tracks a ripple edit shifts: the edited tracks plus every unlocked track holding items linked to what moves | `concerned_tracks`, `concernedTrackIds` |
+| **Ripple trim** | Moving an item edge (with its linked partners' edges at the same instant) while what follows shifts by the change; Ctrl/⌘ while trimming | `trimItems { ripple: true }` |
+| **Nudge** | Moving the selected items by one frame (`,` `.`) or ten (`<` `>`) | `nudgePlacements` |
+| **Active track** | The track last clicked in the timeline: pastes land on it | `selectionStore.activeTrackId` |
+| **Edit plan** | The domain operations of one gesture, planned against a draft of the document and committed as one transaction | `EditPlan` |
+| **Gesture preview** | What a drag shows before its command is sent: items drawn where they would go, ghosts of new items, the snap line; never sent to the core | `gesture-store`, `GesturePreview` |
 | **Marquee selection** | Selecting the items a rectangle drawn from empty lane space touches | `itemsInRect` |
 | **Linked selection** | Clicking an item also selects the items of its link group (Alt selects it alone) | `linkedItems` |
 | **Overview strip (minimap)** | The thin bar under the timeline showing the whole sequence and the visible window, which scrolls and zooms the timeline | `Minimap` |
