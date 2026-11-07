@@ -45,13 +45,20 @@ pub(super) struct QueueState {
 
 impl QueueState {
     /// The queued entry to start next: the highest priority, then the oldest, among kinds that
-    /// have fewer running jobs than `limit(kind)`.
-    pub fn next_runnable(&self, limit: impl Fn(JobKind) -> usize) -> Option<usize> {
+    /// have fewer running jobs than `limit(kind)`; none while `max_running` jobs run.
+    pub fn next_runnable(
+        &self,
+        limit: impl Fn(JobKind) -> usize,
+        max_running: usize,
+    ) -> Option<usize> {
         let mut running: BTreeMap<JobKind, usize> = BTreeMap::new();
         for entry in &self.entries {
             if matches!(entry.phase, Phase::Running { .. }) {
                 *running.entry(entry.snapshot.kind).or_default() += 1;
             }
+        }
+        if running.values().sum::<usize>() >= max_running {
+            return None;
         }
         let mut best: Option<usize> = None;
         for (index, entry) in self.entries.iter().enumerate() {
@@ -129,14 +136,26 @@ mod tests {
     use async_trait::async_trait;
 
     use super::*;
-    use crate::ports::ProgressSink;
+    use crate::{jobs::JobAttempt, ports::ProgressSink};
 
     struct Idle;
 
     #[async_trait]
     impl JobWork for Idle {
-        async fn run(&self, _progress: &dyn ProgressSink) -> Result<(), String> {
+        async fn run(
+            &self,
+            _progress: &dyn ProgressSink,
+            _attempt: JobAttempt,
+        ) -> Result<(), String> {
             Ok(())
+        }
+    }
+
+    /// A finished task's abort handle, standing for a running job.
+    fn running() -> Phase {
+        Phase::Running {
+            abort: tokio::spawn(async {}).abort_handle(),
+            terminated: None,
         }
     }
 
@@ -170,7 +189,21 @@ mod tests {
                 entry(3, JobKind::Thumbnails, JobPriority::High, Phase::Queued),
             ],
         };
-        assert_eq!(state.next_runnable(|_| 1), Some(1));
+        assert_eq!(state.next_runnable(|_| 1, 4), Some(1));
+    }
+
+    #[tokio::test]
+    async fn priorities_order_kinds_once_the_total_limit_counts() {
+        let state = QueueState {
+            entries: vec![
+                entry(1, JobKind::Thumbnails, JobPriority::High, running()),
+                entry(2, JobKind::Mezzanine, JobPriority::Idle, Phase::Queued),
+                entry(3, JobKind::AudioAnalysis, JobPriority::Low, Phase::Queued),
+                entry(4, JobKind::Proxy, JobPriority::Normal, Phase::Queued),
+            ],
+        };
+        assert_eq!(state.next_runnable(|_| 1, 2), Some(3));
+        assert_eq!(state.next_runnable(|_| 1, 1), None);
     }
 
     #[test]

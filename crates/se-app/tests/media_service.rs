@@ -2,72 +2,32 @@
 
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-    time::Duration,
-};
+use std::path::{Path, PathBuf};
 
 use se_app::{
-    JobQueue, JobQueueConfig, MediaService, MediaServiceDeps, ProjectService, ProjectServiceConfig,
-    ProjectServiceDeps,
     media_service::media_paths::media_cache_dir,
-    test_support::{
-        FakeJobRunner, FakeMedia, FixedClock, InMemoryAppLibrary, InMemoryProjectRepository,
-        RecordingEventSink, SequentialIds, fingerprint, probed_audio, probed_video,
-    },
+    test_support::{MediaTestbed, fingerprint, probed_audio, probed_video, settle},
 };
-use se_domain::{
-    Asset, AssetKind, Decodability, Format, FormatPreset, FrameRate, ProjectId, StreamDecodability,
-};
+use se_domain::{Asset, AssetKind, Decodability, ProjectId, StreamDecodability};
 use se_protocol::{
     CoreEvent, DecodabilityReport, ErrorCode, JobKind, ProtocolError, RelinkOutcome,
 };
 
 const PARENT: &str = "/films";
 
-struct Harness {
-    projects: ProjectService,
-    media: Arc<MediaService>,
-    files: Arc<FakeMedia>,
-    runner: Arc<FakeJobRunner>,
-    repository: InMemoryProjectRepository,
-    events: Arc<RecordingEventSink>,
+/// The testbed, with shortcuts for the project of these tests.
+struct Harness(MediaTestbed);
+
+impl std::ops::Deref for Harness {
+    type Target = MediaTestbed;
+
+    fn deref(&self) -> &MediaTestbed {
+        &self.0
+    }
 }
 
 fn harness() -> Harness {
-    let repository = InMemoryProjectRepository::default();
-    let events = Arc::new(RecordingEventSink::default());
-    let ids = Arc::new(SequentialIds::default());
-    let files = Arc::new(FakeMedia::default());
-    let runner = Arc::new(FakeJobRunner::default());
-    let jobs = JobQueue::new(events.clone(), ids.clone(), JobQueueConfig::default());
-    let media = Arc::new(MediaService::new(MediaServiceDeps {
-        prober: files.clone(),
-        files: files.clone(),
-        runner: runner.clone(),
-        jobs,
-        ids: ids.clone(),
-    }));
-    let deps = ProjectServiceDeps {
-        repository: Arc::new(repository.clone()),
-        library: Arc::new(InMemoryAppLibrary::default()),
-        events: events.clone(),
-        clock: Arc::new(FixedClock::default()),
-        ids,
-    };
-    let config = ProjectServiceConfig {
-        default_parent_dir: PathBuf::from(PARENT),
-        save_delay: Duration::from_secs(2),
-    };
-    Harness {
-        projects: ProjectService::new(deps, config).with_observer(media.clone()),
-        media,
-        files,
-        runner,
-        repository,
-        events,
-    }
+    Harness(MediaTestbed::new(Path::new(PARENT)))
 }
 
 fn media_path(name: &str) -> PathBuf {
@@ -84,25 +44,13 @@ fn code(error: se_app::AppError) -> ErrorCode {
 
 impl Harness {
     async fn create(&self) -> ProjectId {
-        let format = Format::from_preset(FormatPreset::Hd16x9, FrameRate::FPS_25).unwrap();
-        let session = self
-            .projects
-            .create_project("Film", Path::new(PARENT), format)
+        self.create_project(Path::new(PARENT), "Film")
             .await
-            .unwrap();
-        session.snapshot.project.id
+            .unwrap()
     }
 
     async fn assets(&self, project_id: ProjectId) -> Vec<Asset> {
-        let session = self.projects.project_session(project_id).await.unwrap();
-        session.snapshot.assets
-    }
-}
-
-/// Lets queued jobs run.
-async fn settle() {
-    for _ in 0..50 {
-        tokio::task::yield_now().await;
+        self.0.assets(project_id).await.unwrap()
     }
 }
 
@@ -155,7 +103,7 @@ async fn importing_adds_probed_assets_in_one_undoable_transaction_and_queues_job
         .runner
         .runs()
         .into_iter()
-        .map(|spec| (spec.kind, spec.input))
+        .map(|spec| (spec.task.kind(), spec.input))
         .collect();
     runs.sort();
     assert_eq!(
@@ -164,6 +112,9 @@ async fn importing_adds_probed_assets_in_one_undoable_transaction_and_queues_job
             (JobKind::Thumbnails, media_path("clip.mp4")),
             (JobKind::WaveformPeaks, media_path("clip.mp4")),
             (JobKind::WaveformPeaks, media_path("voice.wav")),
+            (JobKind::AudioAnalysis, media_path("clip.mp4")),
+            (JobKind::AudioAnalysis, media_path("voice.wav")),
+            (JobKind::SceneDetection, media_path("clip.mp4")),
         ]
     );
     let spec = &harness.runner.runs()[0];
@@ -172,7 +123,7 @@ async fn importing_adds_probed_assets_in_one_undoable_transaction_and_queues_job
         media_cache_dir(&project_path(), &fingerprint(1))
     );
     let jobs = harness.media.list_jobs(project_id).unwrap();
-    assert_eq!(jobs.len(), 3);
+    assert_eq!(jobs.len(), 6);
 }
 
 #[tokio::test]
@@ -233,7 +184,7 @@ async fn cached_outputs_are_not_generated_again() {
         .await
         .unwrap();
     settle().await;
-    assert_eq!(harness.runner.runs(), []);
+    assert_eq!(harness.runner.run_kinds(), [JobKind::AudioAnalysis]);
 }
 
 #[tokio::test]
@@ -384,6 +335,7 @@ async fn decodability_reports_are_system_transactions_recorded_once() {
         video: StreamDecodability::NoStream,
         audio: StreamDecodability::Decodable,
     };
+    settle().await;
     harness.events.take();
     harness.media.report_decodability(&report).await.unwrap();
     harness.media.report_decodability(&report).await.unwrap();
@@ -451,7 +403,10 @@ async fn closing_a_project_stops_its_jobs() {
         .into_iter()
         .filter(|event| matches!(event, CoreEvent::JobCancelled { .. }))
         .count();
-    assert_eq!(cancelled, 2);
+    assert_eq!(
+        cancelled, 4,
+        "thumbnails, peaks, sound analysis, scene detection"
+    );
     let error = harness.media.list_jobs(project_id).unwrap_err();
     assert_eq!(code(error), ErrorCode::ProjectNotOpen);
 }

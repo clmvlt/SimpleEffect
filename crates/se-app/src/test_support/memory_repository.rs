@@ -7,10 +7,12 @@ use std::{
 };
 
 use async_trait::async_trait;
-use se_domain::Project;
+use se_domain::{AnalysisKind, AssetId, Project};
 
 use super::lock;
-use crate::ports::{JournalEntry, ProjectRepository, ProjectStore, StorageError};
+use crate::ports::{
+    AnalysisStore, JournalEntry, ProjectRepository, ProjectStore, StorageError, StoredAnalysis,
+};
 
 /// One fake project folder.
 #[derive(Debug, Clone, PartialEq)]
@@ -23,6 +25,8 @@ pub struct StoredFolder {
     pub locked: bool,
     /// How many snapshots were saved through stores.
     pub snapshot_saves: usize,
+    /// Analyses saved in its database.
+    pub analyses: BTreeMap<(AssetId, AnalysisKind), StoredAnalysis>,
 }
 
 #[derive(Debug, Default)]
@@ -50,6 +54,7 @@ impl InMemoryProjectRepository {
                 journal,
                 locked: false,
                 snapshot_saves: 0,
+                analyses: BTreeMap::new(),
             },
         );
     }
@@ -116,7 +121,7 @@ impl ProjectRepository for InMemoryProjectRepository {
     }
 
     async fn duplicate(&self, source: &Path, project: &Project) -> Result<PathBuf, StorageError> {
-        self.with_folder(source, |_| Ok(()))?;
+        let analyses = self.with_folder(source, |folder| Ok(folder.analyses.clone()))?;
         let parent = source.parent().unwrap_or_else(|| Path::new(""));
         let state = lock(&self.state);
         let path = (1..=u32::MAX)
@@ -128,6 +133,10 @@ impl ProjectRepository for InMemoryProjectRepository {
             .unwrap_or_default();
         drop(state);
         self.insert(path.clone(), project.clone(), Vec::new());
+        self.with_folder(&path, |folder| {
+            folder.analyses = analyses;
+            Ok(())
+        })?;
         Ok(path)
     }
 
@@ -213,10 +222,44 @@ impl ProjectStore for InMemoryProjectStore {
         })
     }
 
+    fn analyses(&self) -> Arc<dyn AnalysisStore> {
+        Arc::new(InMemoryAnalysisStore {
+            repository: self.repository.clone(),
+            path: self.path.clone(),
+        })
+    }
+
     async fn close(&self) -> Result<(), StorageError> {
         self.repository.with_folder(&self.path, |folder| {
             folder.locked = false;
             Ok(())
+        })
+    }
+}
+
+/// The analyses of a fake folder.
+struct InMemoryAnalysisStore {
+    repository: InMemoryProjectRepository,
+    path: PathBuf,
+}
+
+#[async_trait]
+impl AnalysisStore for InMemoryAnalysisStore {
+    async fn save_analysis(&self, analysis: &StoredAnalysis) -> Result<(), StorageError> {
+        self.repository.with_folder(&self.path, |folder| {
+            let key = (analysis.asset_id, analysis.result.kind());
+            folder.analyses.insert(key, analysis.clone());
+            Ok(())
+        })
+    }
+
+    async fn load_analysis(
+        &self,
+        asset_id: AssetId,
+        kind: AnalysisKind,
+    ) -> Result<Option<StoredAnalysis>, StorageError> {
+        self.repository.with_folder(&self.path, |folder| {
+            Ok(folder.analyses.get(&(asset_id, kind)).cloned())
         })
     }
 }

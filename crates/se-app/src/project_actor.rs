@@ -24,7 +24,7 @@ use tracing::Instrument;
 
 use crate::{
     AppError,
-    ports::{Clock, EventSink, IdGenerator, ProjectStore},
+    ports::{AnalysisStore, Clock, EventSink, IdGenerator, ProjectStore},
 };
 
 /// Messages waiting before senders are slowed down.
@@ -81,6 +81,7 @@ enum Message {
 pub struct ProjectActorHandle {
     project_id: ProjectId,
     path: PathBuf,
+    analyses: Arc<dyn AnalysisStore>,
     sender: mpsc::Sender<Message>,
 }
 
@@ -92,6 +93,7 @@ impl ProjectActorHandle {
         let handle = Self {
             project_id: project.id,
             path: store.path().to_path_buf(),
+            analyses: store.analyses(),
             sender,
         };
         let span = tracing::info_span!("project_actor", project = %project.id);
@@ -109,6 +111,13 @@ impl ProjectActorHandle {
     #[must_use]
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    /// The analyses of the project's assets (project database). Not document state: written
+    /// directly, not through the actor.
+    #[must_use]
+    pub fn analyses(&self) -> &Arc<dyn AnalysisStore> {
+        &self.analyses
     }
 
     /// Commits `transaction` and returns the new revision.
