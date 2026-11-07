@@ -1,6 +1,8 @@
 import type {
   CoreClient,
   DecodabilityReport,
+  DecoderCapabilities,
+  GenerateDerivedRequest,
   ImportReport,
   JobSnapshot,
   RelinkAssetRequest,
@@ -40,6 +42,22 @@ export async function removeAsset(
 /** The jobs of the open project (queued, running, finished in this session). */
 export async function listJobs(client: MediaClient, projectId: string): Promise<JobSnapshot[]> {
   return (await client.send({ kind: 'listJobs', projectId })).jobs;
+}
+
+/** Tells the core what this machine decodes among the codecs of mezzanines and proxies. */
+export async function reportDecoderCapabilities(
+  client: MediaClient,
+  capabilities: DecoderCapabilities,
+): Promise<void> {
+  await client.send({ kind: 'reportDecoderCapabilities', ...capabilities });
+}
+
+/** Queues a mezzanine or proxy of an asset (a proxy on request, a retry after a failure). */
+export async function generateDerivedMedia(
+  client: MediaClient,
+  request: GenerateDerivedRequest,
+): Promise<void> {
+  await client.send({ kind: 'generateDerivedMedia', ...request });
 }
 
 /** Tells the core whether WebCodecs decodes an asset's streams on this machine. */

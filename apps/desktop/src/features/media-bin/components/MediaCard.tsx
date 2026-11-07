@@ -1,6 +1,5 @@
 import type { Asset } from '@se/protocol';
 import {
-  Badge,
   ContextMenu,
   ContextMenuContent,
   ContextMenuTrigger,
@@ -19,6 +18,7 @@ import { assetName } from '../services/asset-list';
 import { AssetMenuItems, type AssetMenuHandlers } from './AssetMenuItems';
 import { AssetPreview } from './AssetPreview';
 import { JobIndicator } from './JobIndicator';
+import { PlaybackBadge } from './PlaybackBadge';
 
 /** Width of a card's preview in pixels. */
 const PREVIEW_WIDTH = 144;
@@ -64,11 +64,7 @@ export function MediaCard({ asset, selected, ...handlers }: MediaItemProps) {
               <span className="truncate text-xs text-text" title={asset.originalPath}>
                 {name}
               </span>
-              {asset.missing && (
-                <Badge variant="warning" size="xs">
-                  {t('editor.media.card.missing')}
-                </Badge>
-              )}
+              <PlaybackBadge asset={asset} />
             </span>
             <JobIndicator asset={asset} />
           </button>

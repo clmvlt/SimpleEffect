@@ -74,13 +74,17 @@
         "duplicates_other": "{{count}} médias déjà présents dans le projet",
         "failed": "« {{name}} » n’a pas pu être importé",
         "relinked": "« {{name}} » est relié",
-        "removed": "« {{name}} » a été retiré du projet"
+        "removed": "« {{name}} » a été retiré du projet",
+        "proxyQueued": "Proxy de « {{name}} » en préparation",
+        "mezzanineQueued": "Mezzanine de « {{name}} » en préparation"
       },
       "card": {
         "missing": "Manquant",
         "duration": "Durée {{duration}}",
         "open": "Ouvrir les détails de {{name}}",
-        "actions": "Actions pour {{name}}"
+        "actions": "Actions pour {{name}}",
+        "preparing": "En préparation",
+        "unplayable": "Illisible"
       },
       "jobs": {
         "thumbnails": "Miniatures",
@@ -89,13 +93,18 @@
         "running": "{{task}} : {{percent}} %",
         "runningUnknown": "{{task}} en cours",
         "failed": "{{task}} : échec — {{message}}",
-        "progressLabel": "Préparation de {{name}}"
+        "progressLabel": "Préparation de {{name}}",
+        "mezzanine": "Mezzanine",
+        "proxy": "Proxy",
+        "audioAnalysis": "Analyse du son",
+        "sceneDetection": "Changements de plan"
       },
       "menu": {
         "relink": "Relier…",
         "reveal": "Afficher dans le dossier",
         "remove": "Retirer du projet",
-        "details": "Détails"
+        "details": "Détails",
+        "generateProxy": "Générer un proxy"
       },
       "relinkConfirm": {
         "title": "Le contenu est différent",
@@ -134,6 +143,47 @@
           "decodable": "Oui",
           "undecodable": "Non (une version compatible sera préparée)",
           "noStream": "—"
+        },
+        "derived": {
+          "title": "Lecture",
+          "playback": "Source",
+          "sources": {
+            "original": "Fichier original",
+            "mezzanine": "Mezzanine",
+            "preparing": "En préparation (pas encore lisible)",
+            "missing": "Fichier manquant",
+            "failed": "Illisible (la mezzanine a échoué)"
+          },
+          "mezzanine": "Mezzanine",
+          "proxy": "Proxy",
+          "none": "Aucune",
+          "queued": "En attente",
+          "running": "En cours : {{percent}} %",
+          "runningUnknown": "En cours",
+          "readyMezzanine": "Prête",
+          "readyProxy": "Prêt",
+          "failed": "Échec : {{message}}",
+          "retry": "Réessayer"
+        },
+        "analysis": {
+          "title": "Analyses",
+          "loudness": "Loudness intégrée",
+          "loudnessValue": "{{value}} LUFS",
+          "truePeak": "Crête réelle",
+          "truePeakValue": "{{value}} dBTP",
+          "range": "Plage de loudness",
+          "rangeValue": "{{value}} LU",
+          "silences": "Silences",
+          "silencesValue_zero": "Aucun",
+          "silencesValue_one": "{{count}} silence ({{seconds}} s)",
+          "silencesValue_other": "{{count}} silences ({{seconds}} s au total)",
+          "scenes": "Changements de plan",
+          "scenesValue_zero": "Aucun",
+          "scenesValue_one": "{{count}} changement",
+          "scenesValue_other": "{{count}} changements",
+          "pending": "Analyse en cours…",
+          "notMeasured": "—",
+          "silent": "Silence (non mesurable)"
         }
       }
     },
@@ -292,10 +342,56 @@
     "MEDIA_KIND_MISMATCH": "Ce fichier n’est pas du même type que le média à relier (vidéo, son ou image).",
     "MEDIA_TOOLS_MISSING": "ffmpeg est introuvable. Réinstallez l’application (en développement : pnpm fetch-binaries).",
     "JOB_NOT_FOUND": "Cette tâche est déjà terminée.",
+    "DERIVED_NOT_APPLICABLE": "Cette copie ne s’applique pas à ce média (proxy d’un son, ou mezzanine d’un média déjà lisible).",
+    "MEDIA_TIME_OUT_OF_RANGE": "Cet instant est en dehors du média.",
     "unknown": "Une erreur inattendue est survenue. Réessayez."
   },
   "common": {
     "notifications": "Notifications",
     "close": "Fermer"
+  },
+  "settings": {
+    "open": "Réglages",
+    "title": "Réglages",
+    "description": "Préférences de l’application, communes à tous les projets.",
+    "sections": {
+      "media": "Médias"
+    },
+    "media": {
+      "derivedTitle": "Copies de travail",
+      "quality": "Qualité des mezzanines",
+      "qualityValue": "CRF {{value}}",
+      "qualityDescription": "Plus la valeur est basse, meilleure est la qualité (et plus les fichiers sont lourds). 14 est visuellement sans perte.",
+      "proxyResolution": "Résolution des proxies",
+      "autoProxies": "Générer les proxies automatiquement",
+      "autoProxiesDescription": "Pour les médias plus grands que 1080p ou que cette machine ne lit pas directement.",
+      "appliesToNew": "Les nouveaux réglages s’appliquent aux prochaines copies ; nettoyez le cache pour régénérer les existantes.",
+      "toolsTitle": "Outils ffmpeg",
+      "toolsDir": "Dossier d’ffmpeg et ffprobe",
+      "toolsDirDefault": "Outils fournis avec l’application",
+      "chooseToolsDir": "Choisir…",
+      "chooseToolsDirTitle": "Dossier contenant ffmpeg et ffprobe",
+      "chooseToolsDirButton": "Choisir ce dossier",
+      "resetToolsDir": "Par défaut",
+      "ffmpegFound": "ffmpeg {{version}}",
+      "ffmpegPath": "Emplacement : {{path}}",
+      "hardware": "Encodage matériel",
+      "hardwareNone": "Aucun (encodage logiciel)",
+      "checking": "Vérification…",
+      "saveFailed": "Les réglages n’ont pas pu être enregistrés"
+    },
+    "cache": {
+      "title": "Cache du projet",
+      "noProject": "Ouvrez un projet pour voir son cache.",
+      "location": "Emplacement",
+      "size": "Taille",
+      "reveal": "Afficher dans le dossier",
+      "clear": "Nettoyer le cache du projet",
+      "cleared": "Cache nettoyé : les fichiers nécessaires sont régénérés",
+      "confirmTitle": "Nettoyer le cache du projet ?",
+      "confirmDescription": "Miniatures, formes d’onde, mezzanines et proxies seront supprimés puis régénérés au besoin. Les analyses sont conservées. Les fichiers en cours d’utilisation restent.",
+      "confirm": "Nettoyer",
+      "cancel": "Annuler"
+    }
   }
 }

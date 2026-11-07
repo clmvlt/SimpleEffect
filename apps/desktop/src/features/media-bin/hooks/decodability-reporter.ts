@@ -1,7 +1,15 @@
-import { checkDecodability } from '@se/engine/capabilities';
+import { checkDecodability, checkDecoderCapabilities } from '@se/engine/capabilities';
 import type { Asset } from '@se/protocol';
 
-import { reportDecodability, type MediaClient } from '../api';
+import { reportDecodability, reportDecoderCapabilities, type MediaClient } from '../api';
+
+/** Checks what this machine decodes among the codecs of mezzanines and proxies, and tells the core. */
+export async function reportCapabilitiesOf(
+  client: MediaClient,
+  check: typeof checkDecoderCapabilities = checkDecoderCapabilities,
+): Promise<void> {
+  await reportDecoderCapabilities(client, await check());
+}
 
 /** Checks with WebCodecs whether this machine decodes `asset` and tells the core. */
 export async function reportDecodabilityOf(

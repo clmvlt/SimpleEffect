@@ -27,6 +27,7 @@ export function testAsset(overrides: Partial<Asset>): Asset {
     },
     fingerprint: { sizeBytes: 1000, modifiedUnixMs: 1, sampleHash: '0000000000000001' },
     derived: { mezzanine: null, proxy: null },
+    analysis: { audio: null, scenes: null },
     decodability: { video: 'unknown', audio: 'unknown' },
     missing: false,
     ...overrides,

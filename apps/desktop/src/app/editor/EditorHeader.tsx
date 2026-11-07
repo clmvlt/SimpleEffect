@@ -2,6 +2,7 @@ import { Button, Icon, IconButton, Separator } from '@se/ui';
 import { House, Redo2, Undo2 } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
+import { SettingsButton } from '../../features/settings';
 import {
   selectActiveSequence,
   selectProjectName,
@@ -62,6 +63,8 @@ export function EditorHeader({ projectId, onHome }: EditorHeaderProps) {
           disabled={history?.canRedo !== true}
           onClick={redo}
         />
+        <Separator orientation="vertical" className="h-5 self-center" />
+        <SettingsButton projectId={projectId} />
       </div>
     </header>
   );

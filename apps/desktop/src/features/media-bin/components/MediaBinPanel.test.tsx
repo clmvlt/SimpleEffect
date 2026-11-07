@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { CoreClient, type Asset } from '@se/protocol';
+import { CoreClient, type Asset, type Flicks } from '@se/protocol';
 import { TooltipProvider } from '@se/ui';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -109,6 +109,50 @@ describe('MediaBinPanel', () => {
     expect(chooseFiles).toHaveBeenCalledWith(
       expect.objectContaining({ title: 'Relier « Été.wav »' }),
     );
+  });
+
+  it('shows how a media plays, its derived copies and its analyses, and retries a failure', async () => {
+    const prores = testAsset({
+      id: '0193e7d2-0000-7000-8000-000000000003',
+      originalPath: '/rushes/interview.mov',
+      decodability: { video: 'undecodable', audio: 'decodable' },
+      derived: {
+        mezzanine: {
+          relativePath: 'cache/media/k/mezzanine.mp4',
+          status: { kind: 'failed', message: 'disque plein' },
+        },
+        proxy: { relativePath: 'cache/media/k/proxy-540.mp4', status: { kind: 'ready' } },
+      },
+      analysis: {
+        audio: {
+          integratedLufs: -16.5,
+          loudnessRangeLu: 5,
+          truePeakDbtp: -1,
+          silenceCount: 2,
+          silenceDuration: (2.25 * 705_600_000) as Flicks,
+        },
+        scenes: { changeCount: 4 },
+      },
+    });
+    const client = renderPanel([prores]);
+    const send = vi.spyOn(client, 'send').mockResolvedValue({ kind: 'generateDerivedMedia' });
+    expect(screen.getByText('Illisible')).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Ouvrir les détails de interview.mov' }),
+    );
+    const details = screen.getByRole('complementary', { name: 'Détails' });
+    expect(within(details).getByText('Échec : disque plein')).toBeInTheDocument();
+    expect(within(details).getByText('Prêt')).toBeInTheDocument();
+    expect(within(details).getByText('-16,5 LUFS')).toBeInTheDocument();
+    expect(within(details).getByText('2 silences (2,3 s au total)')).toBeInTheDocument();
+    expect(within(details).getByText('4 changements')).toBeInTheDocument();
+    await userEvent.click(within(details).getByRole('button', { name: 'Réessayer' }));
+    expect(send).toHaveBeenCalledWith({
+      kind: 'generateDerivedMedia',
+      projectId: 'project-1',
+      assetId: prores.id,
+      derived: 'mezzanine',
+    });
   });
 
   it('imports files dropped from the OS by their paths', () => {
