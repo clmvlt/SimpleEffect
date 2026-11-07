@@ -53,6 +53,7 @@ export const SHORTCUT_ACTIONS = {
   zoomIn: { contexts: ['timeline'], keys: ['=', 'plus'], repeats: true },
   zoomOut: { contexts: ['timeline'], keys: ['-'], repeats: true },
   zoomToFit: { contexts: ['timeline'], keys: ['shift+z'] },
+  toggleSnapping: { contexts: ['timeline'], keys: ['s'] },
   selectAll: { contexts: ['timeline'], keys: ['mod+a'] },
   deselectAll: { contexts: ['timeline'], keys: ['mod+shift+a'] },
 } as const satisfies Record<string, ShortcutActionDefinition>;

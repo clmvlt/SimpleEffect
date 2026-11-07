@@ -12,7 +12,6 @@ export type { ProjectSync, ProjectSyncClient } from './project-sync';
 export { ProjectStoreProvider } from './ProjectStoreProvider';
 export type { ProjectStoreProviderProps } from './ProjectStoreProvider';
 export {
-  selectActiveSequence,
   selectClosedProjectId,
   selectHistory,
   selectProjectId,

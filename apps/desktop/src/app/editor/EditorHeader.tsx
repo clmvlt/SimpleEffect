@@ -3,11 +3,8 @@ import { House, Redo2, Undo2 } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
 import { SettingsButton } from '../../features/settings';
-import {
-  selectActiveSequence,
-  selectProjectName,
-  useProjectSelector,
-} from '../../shared/project-store';
+import { useActiveSequence } from '../../features/timeline';
+import { selectProjectName, useProjectSelector } from '../../shared/project-store';
 import { ShortcutsButton } from '../shortcuts/ShortcutsButton';
 import { historyLabel } from './history-label';
 import { useHistoryCommands } from './use-history-commands';
@@ -22,7 +19,7 @@ export interface EditorHeaderProps {
 export function EditorHeader({ projectId, onHome }: EditorHeaderProps) {
   const { t } = useTranslation();
   const name = useProjectSelector(selectProjectName);
-  const sequence = useProjectSelector(selectActiveSequence);
+  const sequence = useActiveSequence();
   const { history, undo, redo } = useHistoryCommands(projectId);
   const undoLabel = history?.undoLabel ?? null;
   const redoLabel = history?.redoLabel ?? null;

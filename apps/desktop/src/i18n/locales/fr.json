@@ -214,6 +214,75 @@
       "empty": {
         "title": "Timeline vide",
         "description": "Ajoutez des médias à une séquence pour commencer le montage."
+      },
+      "sequences": "Séquences",
+      "newSequence": "Nouvelle séquence",
+      "newSequenceName": "Séquence {{number}}",
+      "ruler": "Règle temporelle",
+      "minimap": "Aperçu de la séquence",
+      "items": {
+        "media": "Média",
+        "shape": "Forme",
+        "template": "Modèle animé",
+        "text": "Texte",
+        "aiBadge": "IA",
+        "aiDescription": "Créé par l’IA"
+      },
+      "track": {
+        "label": "Piste {{name}}",
+        "nameField": "Nom de la piste",
+        "show": "Afficher {{name}}",
+        "hide": "Masquer {{name}}",
+        "mute": "Rendre {{name}} muette",
+        "unmute": "Rétablir le son de {{name}}",
+        "solo": "Écouter {{name}} en solo",
+        "unsolo": "Quitter le solo de {{name}}",
+        "lock": "Verrouiller {{name}}",
+        "unlock": "Déverrouiller {{name}}",
+        "addAbove": "Ajouter une piste au-dessus",
+        "addBelow": "Ajouter une piste en dessous",
+        "rename": "Renommer",
+        "remove": "Supprimer la piste"
+      },
+      "marker": {
+        "label": "Marqueur {{name}}",
+        "untitled": "Sans titre",
+        "edit": "Modifier le libellé…",
+        "labelField": "Libellé du marqueur",
+        "labelPlaceholder": "Libellé",
+        "color": "Couleur",
+        "colors": {
+          "green": "Vert",
+          "red": "Rouge",
+          "purple": "Violet",
+          "orange": "Orange",
+          "yellow": "Jaune",
+          "white": "Blanc",
+          "blue": "Bleu",
+          "cyan": "Cyan"
+        },
+        "goTo": "Aller au marqueur",
+        "remove": "Supprimer le marqueur"
+      },
+      "toolbar": {
+        "label": "Outils de la timeline",
+        "playhead": "Position de la tête de lecture",
+        "tracks": "Pistes",
+        "addTrack": "Ajouter une piste",
+        "addVideoTrack": "Piste vidéo",
+        "addAudioTrack": "Piste audio",
+        "trackHeights": "Hauteur des pistes",
+        "heights": {
+          "compact": "Compacte",
+          "normal": "Normale",
+          "large": "Grande"
+        },
+        "snapping": "Aimantation",
+        "zoom": "Zoom",
+        "zoomIn": "Zoom avant",
+        "zoomOut": "Zoom arrière",
+        "zoomLevel": "Niveau de zoom",
+        "fit": "Ajuster à la fenêtre"
       }
     },
     "loading": "Ouverture du projet…",
@@ -458,6 +527,7 @@
       "zoomIn": "Zoom avant",
       "zoomOut": "Zoom arrière",
       "zoomToFit": "Ajuster à la fenêtre",
+      "toggleSnapping": "Activer ou désactiver l’aimantation",
       "selectAll": "Tout sélectionner",
       "deselectAll": "Tout désélectionner"
     }
