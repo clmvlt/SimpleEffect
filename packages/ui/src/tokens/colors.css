@@ -82,4 +82,17 @@
   --color-ai: oklch(0.66 0.2 335);
   --color-ai-muted: oklch(0.66 0.2 335 / 0.22);
   --color-ai-strong: oklch(0.8 0.15 335);
+
+  /*
+   * Marker colours: the eight colours of Premiere Pro markers (`se_domain::MarkerColor`), drawn as
+   * small flags on the timeline ruler.
+   */
+  --color-marker-green: oklch(0.72 0.17 145);
+  --color-marker-red: oklch(0.63 0.2 25);
+  --color-marker-purple: oklch(0.6 0.19 305);
+  --color-marker-orange: oklch(0.73 0.16 55);
+  --color-marker-yellow: oklch(0.88 0.16 98);
+  --color-marker-white: oklch(0.95 0 0);
+  --color-marker-blue: oklch(0.62 0.16 255);
+  --color-marker-cyan: oklch(0.8 0.12 205);
 }
