@@ -1,7 +1,12 @@
 import type { AudioStreamInfo, MediaInfo, VideoStreamInfo } from '@se/protocol';
 import { describe, expect, it, vi } from 'vitest';
 
-import { audioCodecString, checkDecodability, videoCodecString } from './index';
+import {
+  audioCodecString,
+  checkDecodability,
+  checkDecoderCapabilities,
+  videoCodecString,
+} from './index';
 import type { CodecSupport } from './index';
 
 function video(overrides: Partial<VideoStreamInfo>): VideoStreamInfo {
@@ -130,5 +135,33 @@ describe('checkDecodability', () => {
     });
     const sound: MediaInfo = { ...info, videoStream: null };
     expect((await checkDecodability('audio', sound, {})).video).toBe('noStream');
+  });
+});
+
+describe('checkDecoderCapabilities', () => {
+  it('asks for 4K HEVC Main 10, H.264 High, AAC and FLAC', async () => {
+    const videoConfigs: string[] = [];
+    const support: CodecSupport = {
+      VideoDecoder: {
+        isConfigSupported: (config) => {
+          videoConfigs.push(config.codec);
+          return Promise.resolve({ supported: config.codec.startsWith('avc1') });
+        },
+      },
+      AudioDecoder: { isConfigSupported: () => Promise.reject(new TypeError('no audio')) },
+    };
+    expect(await checkDecoderCapabilities(support)).toEqual({
+      hevcMain10: false,
+      h264High: true,
+      aac: false,
+      flac: false,
+    });
+    expect(videoConfigs).toEqual(['hvc1.2.4.L153.B0', 'avc1.640033']);
+    expect(await checkDecoderCapabilities({})).toEqual({
+      hevcMain10: false,
+      h264High: false,
+      aac: false,
+      flac: false,
+    });
   });
 });

@@ -7,6 +7,8 @@ Implemented progressively: capabilities (prompt 08), evaluation/decoding/composi
 
 ## Public API
 - `@se/engine/capabilities` (`src/capabilities/`): `videoCodecString(VideoStreamInfo)` / `audioCodecString(AudioStreamInfo)` (WebCodecs codec strings: `avc1.PPCCLL`, `hvc1|hev1.P.C.L<level>.B0`, `vp09.PP.LL.DD`, `av01.P.LLM.DD`, `vp8`; `mp4a.40.x`, `opus`, `flac`, `mp3`, `vorbis`, `ac-3`, `ec-3`, little-endian PCM; `null` for ProRes, DNxHR…; a missing level is guessed from the size), `checkDecodability(kind, MediaInfo, support = globalThis)` → `{ video, audio }` (`StreamDecodability`; never rejects: refusals, thrown errors and missing APIs are `undecodable`), `CodecSupport` (injectable `VideoDecoder`/`AudioDecoder`/`ImageDecoder`).
+- `@se/engine/capabilities` also has `checkDecoderCapabilities(support = globalThis)` → `DecoderCapabilities` (4K HEVC Main 10 `hvc1.2.4.L153.B0`, H.264 High `avc1.640033`, AAC, FLAC; never rejects), the payload of `reportDecoderCapabilities`.
+- `@se/engine/sources` (`src/sources/`): `playbackSource(asset)` → `original` | `mezzanine { relativePath }` | `preparing` | `unavailable { reason: missing | mezzanineFailed }` (a ready mezzanine wins; a pending one is waited for; a refused stream needs it), `isPlayable(asset)`. Prompts 12/13 decode what it says.
 - `@se/engine` (`src/index.ts`) exports nothing yet. Planned: `evaluate`, decoder pool, compositor, audio engine, export worker entry points.
 
 ## Rules and invariants
