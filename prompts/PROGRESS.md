@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-07 — Prompt 16: Formats, séquences multiples, safe areas — Done
 
-**Branch**: `feature/16-formats-sequences`, merged into `dev` at `MERGE_SHA`
+**Branch**: `feature/16-formats-sequences`, merged into `dev` at `94148f7`
 
 **Done**
 - se-domain (ADR-0026): `Reframe = fit | fill { focus } | custom | tracked { focus }` — fill crops to the frame around a focus (a point of the picture, independent of the frame's aspect), custom is the natural size (one picture pixel per design pixel), tracked is prepared for prompt 26 —; the focus is the 18th animatable property `ReframeFocus` (keyframes, validation of each component in `[0, 1]`). New `reformat` module: `FormatAdaptation { clipReframe: keep | fit | fill, fitTextWidths }`, `adapted_patch` (texts wider than 90 % of the new frame get that wrapping width), `format_change` (operations of an in-place change, locked tracks skipped), `sequence_version` / `copy_sequence` (fresh ids from a fallible `SequenceIds`, link groups and transitions remapped); `FRAME_RATE_LOCKED`, `LAST_SEQUENCE`. Trims and splits now retime **every** animatable property (blur and text styles were left outside the item and made the edit fail). Schema version 6 + migration + fixture; property tests for format changes (valid, exact undo) and versions (valid, no shared id); generators produce reframe patches and focus keyframes.
