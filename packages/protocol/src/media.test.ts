@@ -9,6 +9,8 @@ describe('media URLs', () => {
   it('names every asset file', () => {
     const id = '0193e7d2-0000-7000-8000-000000000001';
     expect(assetMediaPath(id, 'original')).toBe(`/media/assets/${id}/original`);
+    expect(assetMediaPath(id, 'mezzanine')).toBe(`/media/assets/${id}/mezzanine`);
+    expect(assetMediaPath(id, 'proxy')).toBe(`/media/assets/${id}/proxy`);
     expect(assetMediaPath(id, 'thumbnails')).toBe(`/media/assets/${id}/thumbnails`);
     expect(assetMediaPath(id, 'thumbnailSheet')).toBe(`/media/assets/${id}/thumbnails/sheet`);
     expect(assetMediaPath(id, 'poster')).toBe(`/media/assets/${id}/thumbnails/poster`);

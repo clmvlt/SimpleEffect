@@ -11,11 +11,18 @@ export type PeakLevel = (typeof PEAK_LEVELS)[number];
 
 /**
  * A file served by se-core's `/media` routes for an asset (`docs/architecture.md` §7):
- * the original, the thumbnail sheet layout (JSON `ThumbnailSheet`), the sheet (JPEG), the poster
- * (JPEG), or waveform peaks (`SEPK`, see `decodeWaveformPeaks`).
+ * the original, its mezzanine or proxy (once ready), the thumbnail sheet layout (JSON
+ * `ThumbnailSheet`), the sheet (JPEG), the poster (JPEG), or waveform peaks (`SEPK`, see
+ * `decodeWaveformPeaks`).
  */
 export type AssetMediaFile =
-  'original' | 'thumbnails' | 'thumbnailSheet' | 'poster' | { readonly peaks: PeakLevel };
+  | 'original'
+  | 'mezzanine'
+  | 'proxy'
+  | 'thumbnails'
+  | 'thumbnailSheet'
+  | 'poster'
+  | { readonly peaks: PeakLevel };
 
 /** Path of an asset's media file, e.g. `/media/assets/<id>/thumbnails/sheet`. */
 export function assetMediaPath(assetId: string, file: AssetMediaFile): string {
@@ -26,6 +33,10 @@ export function assetMediaPath(assetId: string, file: AssetMediaFile): string {
   switch (file) {
     case 'original':
       return `${base}/original`;
+    case 'mezzanine':
+      return `${base}/mezzanine`;
+    case 'proxy':
+      return `${base}/proxy`;
     case 'thumbnails':
       return `${base}/thumbnails`;
     case 'thumbnailSheet':
