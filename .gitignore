@@ -15,6 +15,9 @@ storybook-static/
 resources/bin/
 
 # Test and tooling leftovers
+# Failed golden-frame comparisons (actual and diff images next to the references)
+*.actual.png
+*.diff.png
 coverage/
 .vitest/
 *.tmp

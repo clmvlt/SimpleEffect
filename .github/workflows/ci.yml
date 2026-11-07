@@ -1,4 +1,5 @@
-# Runs everything `pnpm check` runs, on Linux and Windows, with the pinned ffmpeg sidecars.
+# Runs everything `pnpm check` runs, on Linux and Windows, with the pinned ffmpeg sidecars and
+# Playwright's Chromium (engine golden frames).
 name: CI
 
 on:
@@ -49,6 +50,15 @@ jobs:
           key: sidecars-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/binaries.manifest.json') }}
 
       - run: pnpm fetch-binaries --yes
+
+      # Chromium for the engine's golden-frame tests (Vitest browser mode, Playwright), cached
+      # until the lockfile changes. `--with-deps` also installs its system libraries on Linux.
+      - uses: actions/cache@v6
+        with:
+          path: ${{ runner.os == 'Windows' && '~/AppData/Local/ms-playwright' || '~/.cache/ms-playwright' }}
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - run: pnpm exec playwright install --with-deps chromium
 
       # With the sidecars present, the ffmpeg integration tests run instead of being skipped.
       - run: pnpm check
