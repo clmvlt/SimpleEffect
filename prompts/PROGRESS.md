@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-07 — Prompt 10: Timeline A : affichage et navigation — Done
 
-**Branch**: `feature/10-timeline-affichage`, merged into `dev` at `MERGE_SHA`
+**Branch**: `feature/10-timeline-affichage`, merged into `dev` at `75296a9`
 
 **Done**
 - se-protocol: commands `addTrack { projectId, sequenceId, trackKind, index }` → `trackId`, `removeTrack`, `updateTrack { patch: TrackPatch }`, `reorderTracks`, `addMarker { time, label, color }` → `markerId`, `updateMarker { patch: MarkerPatch }`, `removeMarker` (`Command` is no longer `Eq`); `TrackPatch`/`MarkerPatch` fields optional in TypeScript (`#[ts(optional_fields)]`).
