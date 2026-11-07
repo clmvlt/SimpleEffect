@@ -1,6 +1,6 @@
 import type { AssetId } from '@se/protocol';
 
-import type { AudioChunk } from './audio-chunk';
+import type { AudioChunk, ChunkPlacement } from './audio-chunk';
 import type { AudioChunkProvider } from './audio-scheduler';
 import type { AudioChunkReader, AudioReaderFactory } from './audio-source';
 
@@ -30,7 +30,9 @@ interface CachedChunk {
 
 /**
  * Decodes and caches the sound of assets in one-second chunks (LRU within a byte budget), one
- * reader per file. Concurrent loads of a chunk share one decode. A file that fails (no sound, a
+ * reader per file. Concurrent loads of a chunk share one decode; chunks of a file decode one at a
+ * time in request order, each continuing the placement of the previous chunk when it was decoded
+ * (sample-exact joins even when the container rounds timestamps). A file that fails (no sound, a
  * codec this machine cannot decode, unreadable) is not retried until its URL changes.
  */
 export class AudioChunkPool implements AudioChunkProvider {
@@ -42,6 +44,10 @@ export class AudioChunkPool implements AudioChunkProvider {
   private readonly failed = new Set<string>();
   /** Decodes running per file URL: a busy reader is never closed. */
   private readonly busy = new Map<string, number>();
+  /** The last decode of each file: the next one waits for it. */
+  private readonly tails = new Map<string, Promise<unknown>>();
+  /** Where each decoded chunk's last buffer went (`url#index`), for its successor. */
+  private readonly placements = new Map<string, ChunkPlacement>();
   private bytes = 0;
   private destroyed = false;
   private readonly budgetBytes: number;
@@ -78,7 +84,11 @@ export class AudioChunkPool implements AudioChunkProvider {
     const key = chunkKey(url, index);
     let pending = this.loading.get(key);
     if (pending === undefined) {
-      pending = this.decode(url, index, key).finally(() => this.loading.delete(key));
+      const after = this.tails.get(url) ?? Promise.resolve();
+      pending = after
+        .then(() => this.decode(url, index, key))
+        .finally(() => this.loading.delete(key));
+      this.tails.set(url, pending);
       this.loading.set(key, pending);
     }
     return pending;
@@ -93,15 +103,19 @@ export class AudioChunkPool implements AudioChunkProvider {
     for (const reader of this.readers.values()) reader.dispose();
     this.readers.clear();
     this.cached.clear();
+    this.placements.clear();
     this.bytes = 0;
   }
 
   private async decode(url: string, index: number, key: string): Promise<AudioChunk | null> {
     this.busy.set(url, (this.busy.get(url) ?? 0) + 1);
     try {
-      const chunk = await this.readerFor(url).chunk(index);
-      if (chunk !== null && !this.destroyed) this.store(key, chunk);
-      return chunk;
+      const previous = this.placements.get(chunkKey(url, index - 1)) ?? null;
+      const assembled = await this.readerFor(url).chunk(index, previous);
+      if (assembled === null || this.destroyed) return null;
+      this.placements.set(key, assembled.last);
+      this.store(key, assembled.chunk);
+      return assembled.chunk;
     } catch {
       // The viewer reports unreadable media through the picture; sound just stays silent.
       if (!this.destroyed) this.failed.add(url);

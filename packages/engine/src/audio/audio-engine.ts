@@ -53,6 +53,8 @@ export interface AudioEngineParts {
   readonly meter: AudioMeter | null;
   readonly locator: MediaLocator;
   readonly createReader: AudioReaderFactory;
+  /** Where the master goes (default: the speakers; a tap in the A/V sync test). */
+  readonly destination?: AudioNode;
 }
 
 /** Interval of the scheduling ticks (well inside the 200 ms anticipation). */
@@ -76,7 +78,7 @@ class WebAudioEngine implements AudioEngine {
   constructor(private readonly parts: AudioEngineParts) {
     this.clock = parts.clock;
     this.locator = parts.locator;
-    this.graph = new AudioGraph(parts.context);
+    this.graph = new AudioGraph(parts.context, parts.destination);
     if (parts.meter !== null) this.graph.tap(parts.meter.node);
     this.pool = new AudioChunkPool({ createReader: parts.createReader });
     this.scheduler = new AudioScheduler(this.graph, this.pool);

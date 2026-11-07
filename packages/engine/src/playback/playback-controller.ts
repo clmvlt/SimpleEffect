@@ -1,6 +1,7 @@
 import type { Flicks, FrameRate } from '@se/protocol';
 
 import { frameDurationFlicks, frameIndexAt, frameStart } from './frame-pacing';
+import { RefreshPeriod } from './refresh-period';
 import { nextShuttleRate, type ShuttleDirection } from './shuttle';
 import {
   transportPosition,
@@ -74,6 +75,7 @@ export class PlaybackController {
   private tickHandle: number | null = null;
   private destroyed = false;
   private readonly ticker: FrameTicker;
+  private readonly refresh = new RefreshPeriod();
 
   constructor(private readonly options: PlaybackControllerOptions) {
     this.frameRate = options.frameRate;
@@ -250,7 +252,9 @@ export class PlaybackController {
   private advance(): void {
     const transport = this.transport;
     if (transport === null) return;
-    const position = transportPosition(transport, this.now(), this.bounds());
+    // The frame on screen at the next refresh, when what is drawn now appears.
+    const presented = this.now() + this.refresh.seconds;
+    const position = transportPosition(transport, presented, this.bounds());
     const index = frameIndexAt(position.time, this.frameRate);
     const shown = frameStart(position.ended ? index : Math.max(0, index), this.frameRate);
     if (position.ended) {
@@ -273,6 +277,7 @@ export class PlaybackController {
     this.tickHandle = this.ticker.request(() => {
       this.tickHandle = null;
       if (!this.isPlaying()) return;
+      this.refresh.tick(this.now());
       this.advance();
       if (this.isPlaying()) this.scheduleTick();
     });
@@ -284,6 +289,7 @@ export class PlaybackController {
   }
 
   private cancelTick(): void {
+    this.refresh.pause();
     if (this.tickHandle === null) return;
     this.ticker.cancel(this.tickHandle);
     this.tickHandle = null;

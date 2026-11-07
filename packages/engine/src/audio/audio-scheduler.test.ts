@@ -211,4 +211,24 @@ describe('AudioScheduler', () => {
     scheduler.setClips(sceneClips({ volumeDb: still(-6) } as never));
     expect(output.live()).toHaveLength(voices);
   });
+
+  it('does not drift over ten minutes: every chunk starts on its anchor-derived time', () => {
+    const clips = sceneClips({}, 0 as Flicks, seconds(600));
+    const output = new FakeOutput();
+    const chunks = new FakeChunks();
+    for (let index = 0; index < 600; index++) void chunks.load(ASSET, index);
+    const scheduler = new AudioScheduler(output, chunks);
+    scheduler.setClips(clips);
+    const bounds: PlaybackBounds = { span: { start: 0 as Flicks, end: seconds(600) }, loop: false };
+    scheduler.setTransport(playFrom(0 as Flicks, 10.05), bounds);
+    while (output.now < 611) {
+      output.now += 0.025;
+      scheduler.tick();
+    }
+    const voices = output.live();
+    expect(voices).toHaveLength(600);
+    voices.forEach((voice, index) => {
+      expect(Math.abs(voice.when - (10.05 + index))).toBeLessThan(1e-9);
+    });
+  });
 });

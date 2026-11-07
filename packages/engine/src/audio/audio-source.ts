@@ -1,16 +1,22 @@
 import { ALL_FORMATS, AudioBufferSink, Input, UrlSource } from 'mediabunny';
 
 import { DecodeError, asDecodeError } from '../decode/decode-error';
-import { assembleChunk, type AudioChunk, type TimedAudioBuffer } from './audio-chunk';
+import {
+  assembleChunk,
+  type AssembledChunk,
+  type ChunkPlacement,
+  type TimedAudioBuffer,
+} from './audio-chunk';
 import { CHUNK_SECONDS } from './audio-plan';
 
 /** Decoded chunks of one file's sound. */
 export interface AudioChunkReader {
   /**
-   * Chunk `index` (media seconds `[index, index + 1)`), `null` past the end. Rejects with a
-   * `DecodeError` when the file has no sound this machine can decode.
+   * Chunk `index` (media seconds `[index, index + 1)`), `null` past the end. `previous` is where
+   * the previous chunk's last buffer went, when known: the chunk continues it exactly. Rejects
+   * with a `DecodeError` when the file has no sound this machine can decode.
    */
-  chunk(index: number): Promise<AudioChunk | null>;
+  chunk(index: number, previous: ChunkPlacement | null): Promise<AssembledChunk | null>;
   dispose(): void;
 }
 
@@ -47,7 +53,7 @@ export class MediabunnyAudioSource implements AudioChunkReader {
     });
   }
 
-  async chunk(index: number): Promise<AudioChunk | null> {
+  async chunk(index: number, previous: ChunkPlacement | null): Promise<AssembledChunk | null> {
     const { sink, origin } = await this.openTrack();
     const start = origin + index * CHUNK_SECONDS;
     const buffers: TimedAudioBuffer[] = [];
@@ -56,7 +62,7 @@ export class MediabunnyAudioSource implements AudioChunkReader {
     } catch (error: unknown) {
       throw asDecodeError(error, 'readFailed', 'Reading or decoding the sound failed.');
     }
-    return assembleChunk(buffers, index, origin, createAudioBuffer);
+    return assembleChunk(buffers, index, origin, createAudioBuffer, previous);
   }
 
   dispose(): void {

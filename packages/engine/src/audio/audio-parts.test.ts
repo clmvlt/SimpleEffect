@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { settle } from '../testing/fake-decoding';
-import { assembleChunk, type AudioChunk } from './audio-chunk';
+import { assembleChunk, type AssembledChunk } from './audio-chunk';
 import { AudioChunkPool } from './audio-chunk-pool';
 import type { AudioChunkReader } from './audio-source';
 import { LevelAccumulator } from './meter/level-math';
@@ -80,13 +80,33 @@ describe('assembleChunk', () => {
       timestamp: 0.05 + first / 100,
     }));
     const zero = assembleChunk(buffers, 0, 0.05, createBuffer);
-    const one = assembleChunk(buffers, 1, 0.05, createBuffer);
-    expect(zero?.buffer.length).toBe(100);
-    expect(zero?.buffer.getChannelData(0)[0]).toBe(1);
-    expect(zero?.buffer.getChannelData(0)[99]).toBe(100);
-    expect(one?.start).toBe(1);
-    expect(one?.buffer.length).toBe(50);
-    expect(one?.buffer.getChannelData(0)[0]).toBe(101);
+    const one = assembleChunk(buffers.slice(3), 1, 0.05, createBuffer, zero?.last ?? null);
+    expect(zero?.chunk.buffer.length).toBe(100);
+    expect(zero?.chunk.buffer.getChannelData(0)[0]).toBe(1);
+    expect(zero?.chunk.buffer.getChannelData(0)[99]).toBe(100);
+    expect(one?.chunk.start).toBe(1);
+    expect(one?.chunk.buffer.length).toBe(50);
+    expect(one?.chunk.buffer.getChannelData(0)[0]).toBe(101);
+  });
+
+  it('keeps sound contiguous when the container rounds timestamps to the millisecond', () => {
+    // 48 kHz AAC-like buffers of 1024 samples, stamped in whole milliseconds (Matroska).
+    const rate = 48_000;
+    const buffers = Array.from({ length: 60 }, (_, index) => ({
+      buffer: rampBuffer(index * 1024, 1024, rate),
+      timestamp: Math.round((index * 1024 * 1000) / rate) / 1000,
+    }));
+    const zero = assembleChunk(buffers.slice(0, 47), 0, 0, createBuffer);
+    const samples = zero?.chunk.buffer.getChannelData(0) ?? new Float32Array();
+    expect(samples.every((value, index) => value === index + 1)).toBe(true);
+    // Chunk 1 decodes the straddling buffer again, stamped by the container this time.
+    const straddling = buffers
+      .slice(46)
+      .map((timed, index) =>
+        index === 0 ? { ...timed, timestamp: timed.timestamp + 0.0006 } : timed,
+      );
+    const one = assembleChunk(straddling, 1, 0, createBuffer, zero?.last ?? null);
+    expect(one?.chunk.buffer.getChannelData(0)[0]).toBe(rate + 1);
   });
 
   it('returns null without samples in the chunk', () => {
@@ -121,7 +141,10 @@ describe('AudioChunkPool', () => {
           await settle();
           if (failing) throw new Error('no sound');
           decoded.push(index);
-          return { buffer: createBuffer(1, 100, 100), start: index } satisfies AudioChunk;
+          return {
+            chunk: { buffer: createBuffer(1, 100, 100), start: index },
+            last: { position: index * 100, length: 100 },
+          } satisfies AssembledChunk;
         },
         dispose: () => disposed.push(url),
       }),

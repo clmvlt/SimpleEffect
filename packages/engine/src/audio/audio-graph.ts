@@ -21,9 +21,13 @@ export class AudioGraph implements AudioOutput {
   readonly master: GainNode;
   private readonly strips = new Map<TrackId, Strip>();
 
-  constructor(private readonly context: BaseAudioContext) {
+  /** `destination` defaults to the speakers (an offline render or a test tap otherwise). */
+  constructor(
+    private readonly context: BaseAudioContext,
+    destination: AudioNode = context.destination,
+  ) {
     this.master = context.createGain();
-    this.master.connect(context.destination);
+    this.master.connect(destination);
   }
 
   currentTime(): number {

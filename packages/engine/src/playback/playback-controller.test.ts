@@ -140,4 +140,15 @@ describe('PlaybackController', () => {
     controller.play();
     expect(controller.getState().rate).toBe(0);
   });
+
+  it('chooses the frame for the next refresh, when the drawn picture appears', () => {
+    const { controller, refresh } = harness();
+    controller.play();
+    for (let tick = 0; tick < 30; tick++) refresh(1 / 60);
+    // 0.5 s played + one 60 Hz refresh of lead = 0.517 s: frame 12.
+    expect(controller.currentTime()).toBe(frameStart(12, RATE));
+    // 0.517 s + lead = 0.533 s: frame 13 is drawn one refresh before the clock reaches it.
+    refresh(1 / 60);
+    expect(controller.currentTime()).toBe(frameStart(13, RATE));
+  });
 });
