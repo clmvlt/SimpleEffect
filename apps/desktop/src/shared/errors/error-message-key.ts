@@ -32,6 +32,11 @@ export const ERROR_CODES = [
   'MEDIA_TIME_OUT_OF_RANGE',
   'RIPPLE_BLOCKED',
   'TRANSITION_NO_ROOM',
+  'TASK_NOT_FOUND',
+  'TASK_NOT_ACTIVE',
+  'TASK_STILL_ACTIVE',
+  'TASK_NOT_RESUMABLE',
+  'AI_UNAVAILABLE',
 ] as const satisfies readonly ErrorCode[];
 
 /**

@@ -74,6 +74,16 @@ describe('derived protocol types', () => {
       | 'getAudioSilences'
       | 'getProjectCache'
       | 'clearProjectCache'
+      | 'submitTask'
+      | 'cancelTask'
+      | 'retryTask'
+      | 'followUpTask'
+      | 'listTasks'
+      | 'getTaskEvents'
+      | 'getAiStatus'
+      | 'refreshAiStatus'
+      | 'getAiSettings'
+      | 'updateAiSettings'
     >();
   });
 
@@ -103,6 +113,9 @@ describe('derived protocol types', () => {
       | 'jobCompleted'
       | 'jobFailed'
       | 'jobCancelled'
+      | 'taskUpdated'
+      | 'taskEventAppended'
+      | 'aiStatusChanged'
     >();
     expectTypeOf<CoreEventOf<'jobCompleted'>['job']>().toEqualTypeOf<JobSnapshot>();
     expectTypeOf<CoreEventOf<'projectPatched'>>().toExtend<ProjectPatch>();

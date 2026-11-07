@@ -1,7 +1,13 @@
 /**
  * @vitest-environment jsdom
  */
-import { CoreClient, type Command, type MediaSettings } from '@se/protocol';
+import {
+  CoreClient,
+  type AiSettings,
+  type AiStatus,
+  type Command,
+  type MediaSettings,
+} from '@se/protocol';
 import { TooltipProvider } from '@se/ui';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -11,13 +17,41 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createI18n } from '../../../i18n';
 import { CoreClientProvider } from '../../../shared/core';
 import { DesktopBridgeProvider, type SimpleEffectBridge } from '../../../shared/desktop';
+import { settingsDialogStore } from '../store/settings-dialog-store';
 import { SettingsButton } from './SettingsButton';
 
 const clients: CoreClient[] = [];
 
 afterEach(() => {
   for (const client of clients.splice(0)) client.close();
+  settingsDialogStore.setState({ open: false, section: 'media' });
 });
+
+const AI_SETTINGS: AiSettings = {
+  provider: 'claude-code',
+  executablePath: null,
+  defaultModel: null,
+  defaultEffort: null,
+  maxConcurrentTasks: 3,
+};
+
+const AI_STATUS: AiStatus = {
+  provider: {
+    id: 'claude-code',
+    name: 'Claude Code',
+    command: 'claude',
+    loginCommand: '/login',
+    helpUrl: 'https://code.claude.com/docs/en/setup',
+  },
+  installation: { kind: 'installed', path: '/usr/local/bin/claude', version: '2.1.317' },
+  auth: { kind: 'loggedOut' },
+  capabilities: {
+    resumeSessions: true,
+    imageInput: true,
+    models: [{ id: 'opus', label: 'Opus' }],
+    effortLevels: ['low', 'high'],
+  },
+};
 
 const SETTINGS: MediaSettings = {
   mezzanineQuality: 14,
@@ -46,6 +80,15 @@ function answer(command: Command): unknown {
           problem: null,
         },
       };
+    case 'getAiSettings':
+      return { kind: command.kind, settings: AI_SETTINGS };
+    case 'updateAiSettings': {
+      const { kind, ...settings } = command;
+      return { kind, settings };
+    }
+    case 'refreshAiStatus':
+    case 'getAiStatus':
+      return { kind: command.kind, status: AI_STATUS };
     case 'getProjectCache':
       return {
         kind: command.kind,
@@ -70,6 +113,8 @@ function renderButton(projectId: string | null, bridge: Partial<SimpleEffectBrid
     chooseFiles: () => Promise.resolve([]),
     showInFolder: () => Promise.resolve(),
     getPathForFile: () => '',
+    chooseFile: () => Promise.resolve(null),
+    openExternal: () => Promise.resolve(),
     ...bridge,
   };
   render(
@@ -132,5 +177,48 @@ describe('SettingsDialog', () => {
     await userEvent.click(within(confirm).getByRole('button', { name: 'Nettoyer' }));
     expect(send).toHaveBeenCalledWith({ kind: 'clearProjectCache', projectId: 'project-1' });
     expect(await within(dialog).findByText('0 o')).toBeInTheDocument();
+  });
+
+  it('shows the AI provider, refreshes it and saves the AI settings', async () => {
+    const chooseFile = vi.fn(() => Promise.resolve('/opt/claude/bin/claude'));
+    const send = renderButton(null, { chooseFile });
+    await userEvent.click(screen.getByRole('button', { name: 'Réglages' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Réglages' });
+    await userEvent.click(within(dialog).getByRole('tab', { name: 'IA' }));
+    expect(send).toHaveBeenCalledWith({ kind: 'getAiSettings' });
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Actualiser' }));
+    expect(send).toHaveBeenCalledWith({ kind: 'refreshAiStatus' });
+    expect(
+      await within(dialog).findByText('Claude Code 2.1.317 — /usr/local/bin/claude'),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        'Déconnecté : ouvre un terminal, lance `claude`, puis tape `/login`.',
+      ),
+    ).toBeInTheDocument();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Choisir…' }));
+    expect(send).toHaveBeenCalledWith({
+      kind: 'updateAiSettings',
+      ...AI_SETTINGS,
+      executablePath: '/opt/claude/bin/claude',
+    });
+    within(dialog).getByRole('slider', { name: 'Tâches simultanées' }).focus();
+    await userEvent.keyboard('{ArrowRight}');
+    await vi.waitFor(() => {
+      expect(send).toHaveBeenLastCalledWith(
+        expect.objectContaining({ kind: 'updateAiSettings', maxConcurrentTasks: 4 }),
+      );
+    });
+  });
+
+  it('opens on the section asked by other parts of the app', async () => {
+    renderButton(null);
+    settingsDialogStore.setState({ open: true, section: 'ai' });
+    const dialog = await screen.findByRole('dialog', { name: 'Réglages' });
+    expect(within(dialog).getByRole('tab', { name: 'IA' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 });

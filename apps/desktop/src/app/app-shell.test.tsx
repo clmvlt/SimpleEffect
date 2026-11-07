@@ -43,6 +43,8 @@ const idleBridge: SimpleEffectBridge = {
   chooseFiles: () => Promise.resolve([]),
   showInFolder: () => Promise.resolve(),
   getPathForFile: () => '',
+  chooseFile: () => Promise.resolve(null),
+  openExternal: () => Promise.resolve(),
 };
 
 /** Renders the app at `path`; `loaded` puts the fixture project in the store first. */
@@ -124,7 +126,7 @@ describe('app shell', () => {
       'true',
     );
     await user.keyboard('{ArrowRight}');
-    expect(within(side).getByText('Assistant IA non configuré')).toBeInTheDocument();
+    expect(within(side).getByText('Recherche de l’assistant IA…')).toBeInTheDocument();
 
     expect(screen.getAllByRole('separator', { name: /^Redimensionner/ })).toHaveLength(3);
   });
@@ -146,7 +148,7 @@ describe('app shell', () => {
     renderApp('/');
     const statusBar = screen.getByRole('contentinfo', { name: 'Barre d’état' });
     expect(within(statusBar).getByRole('status')).toHaveTextContent('Connexion au cœur…');
-    expect(statusBar).toHaveTextContent('IA non configurée');
+    expect(statusBar).toHaveTextContent('Vérification de l’IA…');
     expect(statusBar).toHaveTextContent('Version 0.0.0-test');
   });
 });
