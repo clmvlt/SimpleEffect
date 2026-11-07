@@ -9,13 +9,13 @@ Everything is re-exported at the crate root (`se_domain::Flicks`, `se_domain::Pr
 | Module | Contents |
 |---|---|
 | `time` | `Flicks` (`PER_SECOND`, `MAX_SAFE` = 2^53 − 1, checked arithmetic, seconds/frames conversions), `FrameRate` (reduced, 1–1000 fps, exact frame duration, `STANDARD` constants, `nominal_fps`), `RoundingMode`, `TimeRange` (half-open), `parse_timecode` / `format_timecode`, `TimeError`, `TimecodeError` |
-| `ids` | `ProjectId`, `SequenceId`, `TrackId`, `ItemId`, `AssetId`, `TaskId`, `ChangesetId`, `TemplateId`, `LinkGroupId`, `MarkerId`, `TransactionId` (UUIDv7 newtypes: `parse`, `from_uuid`, `as_uuid`, `from_test_index`), `IdError`, `Uuid` |
+| `ids` | `ProjectId`, `SequenceId`, `TrackId`, `ItemId`, `AssetId`, `TaskId`, `ChangesetId`, `TemplateId`, `LinkGroupId`, `MarkerId`, `TransactionId`, `JobId` (UUIDv7 newtypes: `parse`, `from_uuid`, `as_uuid`, `from_test_index`), `IdError`, `Uuid` |
 | `spatial` | `Vec2`, `DesignPixels`, `DESIGN_REFERENCE_SIDE`, `design_scale` (ADR-0015) |
 | `color` | `Color` (`#rrggbb[aa]`), `ColorParseError` |
-| `document` | `Project`, `ProjectSettings`, `Asset`, `MediaInfo`, `DerivedMedia`, `Sequence`, `Format`, `FormatPreset`, `Track`, `Item`, `Origin`, `ItemKind` and its payloads (`MediaClip`, `TextItem`, `ShapeItem`, `ImageItem`, `TemplateItem`, `CaptionItem`), `Transform2D`, `Animatable`, `Keyframe`, `Easing`, `Marker`, `MotionTemplate`, `BrandKit` |
+| `document` | `Project`, `ProjectSettings`, `Asset`, `ContentFingerprint` (validated sample hash, `same_content`, `cache_key`), `Decodability` / `StreamDecodability` (per stream, `unchecked(info)`), `MediaInfo`, `DerivedMedia`, `Sequence`, `Format`, `FormatPreset`, `Track`, `Item`, `Origin`, `ItemKind` and its payloads (`MediaClip`, `TextItem`, `ShapeItem`, `ImageItem`, `TemplateItem`, `CaptionItem`), `Transform2D`, `Animatable`, `Keyframe`, `Easing`, `Marker`, `MotionTemplate`, `BrandKit` |
 | `validation` | `validate_project(&Project) -> Vec<Violation>`, `Violation { code, path, message }`, `ViolationCode` (17 codes, table in `docs/architecture.md` §5.3) |
 | `operation` | `Operation` (26 payload structs: `AddItem`, `MoveItem`, `TrimItem`, `RippleDeleteRange`…, list in `docs/architecture.md` §5.4), `apply(&Project, &Operation) -> Result<Applied { project, inverse, touched }, DomainError>`, `TouchedEntities`, patches (`ItemPatch` and one patch per kind, `TrackPatch`, `SequencePatch`, `MarkerPatch`, `AssetPatch`, `Assign`), `PropertyAnimation`, `AnimatableProperty`, `ItemEdge` |
-| `transaction` | `Transaction { id, actor, label, ops }`, `Actor`, `commit(&Project, &Transaction) -> Result<Committed { project, inverse, touched }, DomainError>` (all or nothing, bumps revisions) |
+| `transaction` | `Transaction { id, actor, label, ops }`, `Actor` (`user`, `aiTask`, `system`: journaled, never undone), `commit(&Project, &Transaction) -> Result<Committed { project, inverse, touched }, DomainError>` (all or nothing, bumps revisions) |
 | `history` | `History` (user undo/redo: `record`, `undo`, `redo`, labels), `HistoryStep` |
 | `changeset` | `Changeset`, `ChangesetEntry`, `plan_revert(&Project, &Changeset) -> RevertPlan { ops, conflicts }`, `Conflict` |
 | `error` | `DomainError` (actionable messages, times as `HH:MM:SS.mmm`), `DomainErrorCode` (`code()`) |

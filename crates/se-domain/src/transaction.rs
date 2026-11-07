@@ -40,6 +40,9 @@ pub enum Actor {
         /// The task.
         task_id: TaskId,
     },
+    /// The application itself, recording facts it observed (missing media at opening,
+    /// decodability reported by the renderer). Journaled like any commit, never undone.
+    System,
 }
 
 /// The outcome of [`commit`].

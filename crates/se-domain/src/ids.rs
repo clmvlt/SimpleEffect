@@ -182,6 +182,12 @@ uuid_id!(
     TransactionId,
     "transaction"
 );
+uuid_id!(
+    /// Identifies a background job of the core (thumbnails, waveform peaks…). Jobs live in memory
+    /// only: documents never reference them.
+    JobId,
+    "job"
+);
 
 #[cfg(test)]
 mod tests {

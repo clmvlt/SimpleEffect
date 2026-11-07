@@ -7,15 +7,15 @@ use std::collections::BTreeMap;
 
 use proptest::prelude::*;
 use se_domain::{
-    AddAsset, AddItem, AddMarker, AddSequence, AddTrack, Animatable, AssetId, AssetPatch,
-    CaptionPatch, Color, Easing, Flicks, Format, FormatPreset, FrameRate, InsertGap, Item,
-    ItemEdge, ItemId, ItemKind, ItemPatch, Keyframe, LinkGroupId, LinkItems, Marker, MarkerColor,
-    MarkerId, MarkerPatch, MediaClipPatch, MoveItem, Operation, Project, PropertyAnimation,
-    RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack, RenameProject,
-    ReorderTracks, RippleDeleteRange, Sequence, SequenceId, SequencePatch, SetKeyframes,
-    ShapePatch, SplitItem, TemplateParamValue, TemplatePatch, TextPatch, TimeRange, TrackId,
-    TrackKind, TrackPatch, TrimItem, UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker,
-    UpdateSequence, UpdateTrack,
+    AddAsset, AddItem, AddMarker, AddSequence, AddTrack, Animatable, AssetId, AssetPatch, Assign,
+    CaptionPatch, Color, Decodability, Easing, Flicks, Format, FormatPreset, FrameRate, InsertGap,
+    Item, ItemEdge, ItemId, ItemKind, ItemPatch, Keyframe, LinkGroupId, LinkItems, Marker,
+    MarkerColor, MarkerId, MarkerPatch, MediaClipPatch, MoveItem, Operation, Project,
+    PropertyAnimation, RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack,
+    RenameProject, ReorderTracks, RippleDeleteRange, Sequence, SequenceId, SequencePatch,
+    SetKeyframes, ShapePatch, SplitItem, StreamDecodability, TemplateParamValue, TemplatePatch,
+    TextPatch, TimeRange, TrackId, TrackKind, TrackPatch, TrimItem, UnlinkItems, UpdateAsset,
+    UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack,
     test_support::{millis, track},
 };
 
@@ -319,6 +319,14 @@ impl Generator {
             22 => {
                 let patch = AssetPatch {
                     missing: Some(seed.choice.is_multiple_of(2)),
+                    fingerprint: seed
+                        .choice
+                        .is_multiple_of(3)
+                        .then_some(Assign { value: None }),
+                    decodability: seed.choice.is_multiple_of(5).then_some(Decodability {
+                        video: StreamDecodability::Undecodable,
+                        audio: StreamDecodability::Decodable,
+                    }),
                     ..AssetPatch::default()
                 };
                 UpdateAsset {

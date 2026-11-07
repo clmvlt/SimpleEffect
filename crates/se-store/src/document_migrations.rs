@@ -1,21 +1,67 @@
 //! Upgrading stored documents to the current format (`schemaVersion`, ADR-0006).
 //!
 //! A migration is a pure function from the JSON of version `N` to the JSON of version `N + 1`.
-//! Version 1 is the base format, so there is no migration yet. When the document format changes
-//! (the snapshot in `se-domain/src/document/snapshots/` changes):
+//! When the document format changes (the snapshot in `se-domain/src/document/snapshots/`
+//! changes):
 //! 1. bump `se_domain::CURRENT_SCHEMA_VERSION`;
-//! 2. add `fn migrate_v1_to_v2(document: Value) -> Result<Value, String>` here and append it to
+//! 2. add `fn migrate_vN_to_vN+1(document: Value) -> Result<Value, String>` here and append it to
 //!    [`MIGRATIONS`];
-//! 3. keep `tests/fixtures/project-v1.json` and add a `project-v2.json` fixture.
+//! 3. keep the fixtures of older versions (`tests/fixtures/project-vN.json`) and add one for the
+//!    new version.
+//!
+//! History: version 2 (prompt 08) gave assets a `fingerprint` and a per-stream `decodability`.
+//! Journals need no migration: no transaction touched assets before version 2.
 
-use serde_json::Value;
+use serde_json::{Map, Value, json};
 
 /// One step: the document of version `N` (index `N - 1`) to version `N + 1`.
 pub type DocumentMigration = fn(Value) -> Result<Value, String>;
 
 /// Every migration, in order: `MIGRATIONS[0]` turns version 1 into version 2, and so on.
 /// Its length is always `CURRENT_SCHEMA_VERSION - 1` (checked by a test).
-pub const MIGRATIONS: &[DocumentMigration] = &[];
+pub const MIGRATIONS: &[DocumentMigration] = &[migrate_v1_to_v2];
+
+/// Version 1 → 2: every asset gets `fingerprint: null` and its single decodability becomes one
+/// state per stream (`noStream` for the streams its media info lacks).
+fn migrate_v1_to_v2(mut document: Value) -> Result<Value, String> {
+    let Some(assets) = document.get_mut("assets").and_then(Value::as_array_mut) else {
+        return Err("`assets` is missing or not a list".to_owned());
+    };
+    for asset in assets {
+        let fields = asset
+            .as_object_mut()
+            .ok_or_else(|| "an asset is not an object".to_owned())?;
+        let decodability = per_stream_decodability(fields);
+        fields.insert("decodability".to_owned(), decodability);
+        fields.insert("fingerprint".to_owned(), Value::Null);
+    }
+    Ok(document)
+}
+
+/// The version-2 `decodability` of a version-1 asset.
+fn per_stream_decodability(asset: &Map<String, Value>) -> Value {
+    let info = asset.get("mediaInfo").filter(|info| !info.is_null());
+    let has_video = info
+        .and_then(|info| info.get("videoStream"))
+        .is_some_and(|stream| !stream.is_null());
+    let has_audio = info
+        .and_then(|info| info.get("audioStreams"))
+        .and_then(Value::as_array)
+        .is_some_and(|streams| !streams.is_empty());
+    let (video, audio) = match asset.get("decodability").and_then(Value::as_str) {
+        Some("decodable") => ("decodable", "decodable"),
+        Some("needsMezzanine") => ("undecodable", "unknown"),
+        _ => ("unknown", "unknown"),
+    };
+    let state = |present: bool, known: &str| {
+        if present {
+            known.to_owned()
+        } else {
+            "noStream".to_owned()
+        }
+    };
+    json!({ "video": state(has_video, video), "audio": state(has_audio, audio) })
+}
 
 /// Field holding the format version.
 const VERSION_FIELD: &str = "schemaVersion";
@@ -105,11 +151,39 @@ mod tests {
 
     #[test]
     fn current_documents_are_left_unchanged() {
-        let document = json!({ "schemaVersion": 1, "name": "Film" });
+        let document = json!({ "schemaVersion": 2, "name": "Film" });
         assert_eq!(
-            migrate_document(document.clone(), MIGRATIONS, 1),
+            migrate_document(document.clone(), MIGRATIONS, 2),
             Ok(document)
         );
+    }
+
+    #[test]
+    fn version_2_splits_decodability_per_stream_and_adds_fingerprints() {
+        let document = json!({
+            "schemaVersion": 1,
+            "assets": [
+                { "decodability": "decodable", "mediaInfo": { "videoStream": null, "audioStreams": [{}] } },
+                { "decodability": "needsMezzanine", "mediaInfo": { "videoStream": {}, "audioStreams": [{}] } },
+                { "decodability": "unknown", "mediaInfo": null }
+            ]
+        });
+        let migrated = migrate_document(document, MIGRATIONS, 2).unwrap();
+        let assets = migrated["assets"].as_array().unwrap();
+        assert_eq!(
+            assets[0]["decodability"],
+            json!({ "video": "noStream", "audio": "decodable" })
+        );
+        assert_eq!(
+            assets[1]["decodability"],
+            json!({ "video": "undecodable", "audio": "unknown" })
+        );
+        assert_eq!(
+            assets[2]["decodability"],
+            json!({ "video": "noStream", "audio": "noStream" })
+        );
+        assert!(assets.iter().all(|asset| asset["fingerprint"].is_null()));
+        assert_eq!(migrated["schemaVersion"], json!(2));
     }
 
     #[test]
@@ -124,14 +198,14 @@ mod tests {
     #[test]
     fn newer_or_unversioned_documents_are_refused() {
         assert_eq!(
-            migrate_document(json!({ "schemaVersion": 9 }), MIGRATIONS, 1),
+            migrate_document(json!({ "schemaVersion": 9 }), MIGRATIONS, 2),
             Err(MigrationError::TooNew {
                 found: 9,
-                supported: 1
+                supported: 2
             })
         );
         assert_eq!(
-            migrate_document(json!({ "name": "?" }), MIGRATIONS, 1),
+            migrate_document(json!({ "name": "?" }), MIGRATIONS, 2),
             Err(MigrationError::MissingVersion)
         );
     }

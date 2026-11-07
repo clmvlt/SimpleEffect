@@ -5,7 +5,7 @@ use ts_rs::TS;
 
 use crate::time::{Flicks, FrameRate};
 
-/// Facts about a media file, filled from `ffprobe` (prompt 08).
+/// Facts about a media file, filled from `ffprobe` by se-media.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaInfo {
@@ -27,6 +27,13 @@ pub struct VideoStreamInfo {
     pub codec: String,
     /// Codec profile (e.g. `High`, `Main 10`), when known.
     pub profile: Option<String>,
+    /// Codec level as the prober reports it (H.264 `41` for 4.1, HEVC `153` for 5.1, AV1
+    /// `seq_level_idx`), when known. Needed to build WebCodecs codec strings.
+    pub level: Option<u16>,
+    /// Four-character codec tag of the container (`avc1`, `hvc1`, `hev1`…), when set.
+    pub codec_tag: Option<String>,
+    /// Pixel format as the prober names it (`yuv420p`, `yuv422p10le`…), when known.
+    pub pixel_format: Option<String>,
     /// Bits per colour component (8, 10, 12), when known.
     pub bit_depth: Option<u8>,
     /// Chroma subsampling (`4:2:0`, `4:2:2`, `4:4:4`), when known.
@@ -48,6 +55,8 @@ pub struct VideoStreamInfo {
 pub struct AudioStreamInfo {
     /// Codec name (e.g. `aac`, `pcm_s24le`).
     pub codec: String,
+    /// Codec profile (e.g. `LC`, `HE-AAC`), when known. Needed to build WebCodecs codec strings.
+    pub profile: Option<String>,
     /// Number of channels (1 mono, 2 stereo…).
     pub channels: u16,
     /// Samples per second (e.g. 48000).

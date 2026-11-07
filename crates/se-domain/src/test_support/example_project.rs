@@ -10,12 +10,12 @@ use std::collections::BTreeMap;
 use super::{item, millis, range_ms, track};
 use crate::{
     Animatable, Asset, AssetKind, AudioStreamInfo, BrandKit, CURRENT_SCHEMA_VERSION, CaptionItem,
-    Color, Decodability, DerivedFile, DerivedMedia, DerivedStatus, DesignPixels, Easing,
-    EasingPreset, Format, FormatPreset, FrameRate, ImageItem, Item, ItemKind, Keyframe,
-    LinkGroupId, Marker, MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin,
-    Project, ProjectId, ProjectSettings, Sequence, SequenceId, ShapeGeometry, ShapeItem, TaskId,
-    TemplateItem, TemplateParamValue, TextItem, TextStyle, Track, TrackKind, Transform2D, Vec2,
-    VideoStreamInfo,
+    Color, ContentFingerprint, Decodability, DerivedFile, DerivedMedia, DerivedStatus,
+    DesignPixels, Easing, EasingPreset, Format, FormatPreset, FrameRate, ImageItem, Item, ItemKind,
+    Keyframe, LinkGroupId, Marker, MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate,
+    Origin, Project, ProjectId, ProjectSettings, Sequence, SequenceId, ShapeGeometry, ShapeItem,
+    StreamDecodability, TaskId, TemplateItem, TemplateParamValue, TextItem, TextStyle, Track,
+    TrackKind, Transform2D, Vec2, VideoStreamInfo,
 };
 
 /// Ids of [`example_project`] that tests refer to: its three assets and its template.
@@ -87,13 +87,26 @@ fn example_assets() -> Vec<Asset> {
         original_path: format!("/home/demo/media/{name}"),
         relative_hint: Some(format!("media/{name}")),
         kind,
+        decodability: Decodability {
+            video: if kind == AssetKind::Audio {
+                StreamDecodability::NoStream
+            } else {
+                StreamDecodability::Decodable
+            },
+            audio: if kind == AssetKind::Image {
+                StreamDecodability::NoStream
+            } else {
+                StreamDecodability::Decodable
+            },
+        },
         media_info: Some(media_info),
+        fingerprint: Some(fingerprint(name)),
         derived: DerivedMedia::default(),
-        decodability: Decodability::Decodable,
         missing: false,
     };
     let stereo = |codec: &str| AudioStreamInfo {
         codec: codec.to_owned(),
+        profile: (codec == "aac").then(|| "LC".to_owned()),
         channels: 2,
         sample_rate: 48_000,
     };
@@ -137,10 +150,27 @@ fn example_assets() -> Vec<Asset> {
     vec![video, music, logo]
 }
 
+/// A deterministic fingerprint per file name (the sample hash only has to be valid hex).
+fn fingerprint(name: &str) -> ContentFingerprint {
+    let size = u64::try_from(name.len()).unwrap_or(0) * 1_000_000;
+    let hash = format!("{:016x}", size + 0xabc);
+    ContentFingerprint::new(size, 1_700_000_000_000, hash).expect("a 16-digit hex hash")
+}
+
 fn picture(codec: &str, width: u32, height: u32, frame_rate: Option<FrameRate>) -> VideoStreamInfo {
     VideoStreamInfo {
         codec: codec.to_owned(),
         profile: frame_rate.map(|_| "High".to_owned()),
+        level: frame_rate.map(|_| 40),
+        codec_tag: frame_rate.map(|_| "avc1".to_owned()),
+        pixel_format: Some(
+            if frame_rate.is_some() {
+                "yuv420p"
+            } else {
+                "rgba"
+            }
+            .to_owned(),
+        ),
         bit_depth: Some(8),
         chroma_subsampling: frame_rate.map(|_| "4:2:0".to_owned()),
         width,
