@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-07 — Prompt 11: Timeline B : édition — Done
 
-**Branch**: `feature/11-timeline-edition`, merged into `dev` at `<merge>`
+**Branch**: `feature/11-timeline-edition`, merged into `dev` at `60ddd95`
 
 **Done**
 - se-domain: `apply_all(&Project, &[Operation])` (one draft, `validate_project` once after the last operation); `commit` and `apply` use it. A 500-item move went from 0.8 s (release) / 1.8 s (debug) to 3 ms: validation (~1 ms for 500 items, mostly path strings) ran after every operation.
