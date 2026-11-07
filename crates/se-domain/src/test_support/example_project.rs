@@ -12,12 +12,12 @@ use crate::{
     Animatable, Asset, AssetAnalysis, AssetKind, AudioStreamInfo, AudioSummary, BrandKit,
     CURRENT_SCHEMA_VERSION, CaptionItem, Color, ContentFingerprint, Decodability, DerivedFile,
     DerivedMedia, DerivedStatus, DesignPixels, Easing, EasingPreset, FadeShape, Format,
-    FormatPreset, FrameRate, ImageItem, Item, ItemId, ItemKind, Keyframe, LinkGroupId, Marker,
-    MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin, Project, ProjectId,
-    ProjectSettings, SceneSummary, Sequence, SequenceId, ShapeGeometry, ShapeItem,
-    StreamDecodability, TaskId, TemplateItem, TemplateParamValue, TextItem, TextStyle, Track,
-    TrackKind, Transform2D, Transition, TransitionAlignment, TransitionId, TransitionKind, Vec2,
-    VideoStreamInfo,
+    FormatPreset, FrameRate, ImageFit, ImageItem, Item, ItemId, ItemKind, Keyframe, LinkGroupId,
+    Marker, MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin, Project,
+    ProjectId, ProjectSettings, SceneSummary, Sequence, SequenceId, ShapeGeometry, ShapeItem,
+    StreamDecodability, Stroke, TaskId, TemplateItem, TemplateParamValue, TextItem, TextStyle,
+    Track, TrackKind, Transform2D, Transition, TransitionAlignment, TransitionId, TransitionKind,
+    Vec2, VideoStreamInfo,
 };
 
 /// Ids of [`example_project`] that tests refer to: its three assets and its template.
@@ -275,11 +275,16 @@ fn title_text() -> Item {
     let text = TextItem {
         content: "Bonjour".to_owned(),
         style: TextStyle {
-            font_family: "Inter".to_owned(),
-            font_size: DesignPixels(72.0),
-            color: Color::WHITE,
+            font_size: Animatable::constant(DesignPixels(72.0)),
+            stroke: Stroke {
+                enabled: true,
+                ..Stroke::default()
+            },
+            max_width: Some(DesignPixels(900.0)),
+            ..TextStyle::default()
         },
         transform,
+        reveal: Animatable::constant(1.0),
     };
     item(3, range_ms(1000, 3000), ItemKind::Text(text))
 }
@@ -287,6 +292,7 @@ fn title_text() -> Item {
 fn logo_image() -> Item {
     let image = ImageItem {
         asset_id: example_ids::IMAGE_ASSET,
+        fit: ImageFit::Natural,
         transform: Transform2D {
             position: Animatable::constant(Vec2::new(0.9, 0.1)),
             scale: Animatable::constant(Vec2::splat(0.25)),
@@ -333,10 +339,12 @@ fn backdrop_shape() -> Item {
             height: DesignPixels(120.0),
             corner_radius: DesignPixels(16.0),
         },
-        fill: Color {
+        fill: Animatable::constant(Color {
             alpha: 0xcc,
             ..Color::BLACK
-        },
+        }),
+        stroke: Stroke::default(),
+        cover_frame: false,
         transform: Transform2D::default(),
     };
     item(6, range_ms(6000, 2000), ItemKind::Shape(shape))

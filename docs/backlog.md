@@ -28,6 +28,11 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Transitions: shrink rather than remove a transition when a plain trim keeps its cut but steals handles (only composite edits and edit plans shorten them today, ADR-0024); freeze-frame handles when the media runs out; per-transition easing; one command to add a picture dissolve and a sound cross-fade on linked cuts from a single cut handle.
 - Timeline: volume and pan of audio tracks in headers shorter than 56 px (a popover), keyframe selection with marquee and `Suppr` on the volume line, eased volume segments edited on the line (today linear keyframes from the line; easing through the inspector, prompt 15).
 - Timeline: fades of linked picture and sound adjusted together (each clip has its own handles today).
+- Graphics: animatable shape dimensions and gradients (scale animates size today), per-character text animations (word-by-word, per-letter offsets), text on a path, rich text (several styles in one text), shadow and plate on shapes.
+- Keyframes: marquee selection in keyframe lanes, copy/paste of keyframes, value graph editor (speed curves), spatial motion paths drawn in the viewer, keyframes of several items in one lane.
+- Viewer gizmo: snapping to other items' edges and centres, rotation of several items around their common centre, keyboard nudges of the selection in the viewer, editing text in place with the real font (a field over the text today).
+- Presets: user presets saved from keyframes, preset previews on the selected item instead of « Aa », more presets (wipe/mask reveals need masks).
+- Fonts: per-project embedding of the installed fonts a project uses (so it renders the same elsewhere), more bundled families, font previews in the font menu.
 
 ## AI
 - Additional AI providers: Gemini CLI, Codex CLI, opencode (one adapter each, see architecture §15).

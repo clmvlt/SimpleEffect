@@ -122,7 +122,9 @@ pub(crate) fn shape_item(index: u64, range: TimeRange) -> Item {
             width: crate::DesignPixels(100.0),
             height: crate::DesignPixels(100.0),
         },
-        fill: crate::Color::WHITE,
+        fill: crate::Animatable::constant(crate::Color::WHITE),
+        stroke: crate::Stroke::default(),
+        cover_frame: false,
         transform: Transform2D::default(),
     };
     Item {

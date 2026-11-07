@@ -59,7 +59,7 @@ export function TrackLanes({
 }: TrackLanesProps) {
   const element: RefObject<HTMLDivElement | null> = useRef<HTMLDivElement>(null);
   useElementWidth(element, setLanesWidth);
-  const { model, layout, viewport } = context();
+  const { model, layout, viewport, commands } = context();
   const { rect, laneHandlers } = useLanePointer(context);
   const gapHover = useGapHover(context);
   const drop = useMediaDrop(context);
@@ -102,6 +102,7 @@ export function TrackLanes({
               hidden={hidden}
               edits={preview?.clipEdits}
               showSilences={showSilences}
+              keyframes={{ commands, frameRate: model.sequence.format.frameRate }}
             />
           ))}
           <div

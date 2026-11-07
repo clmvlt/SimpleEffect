@@ -10,7 +10,12 @@ import type {
   FadeShape,
   Flicks,
   FrameRate,
+  ImageFit,
   ItemKind,
+  ShapeItem,
+  Stroke,
+  TextItem,
+  TextStyle,
   Transform2D,
   TransitionAlignment,
   TransitionKind,
@@ -46,6 +51,7 @@ export interface TransformSpec {
   readonly rotation?: number | Animatable<number>;
   readonly anchor?: Vec2 | Animatable<Vec2>;
   readonly opacity?: number | Animatable<number>;
+  readonly blur?: number | Animatable<number>;
 }
 
 function animatable<T>(value: T | Animatable<T> | undefined, fallback: T): Animatable<T> {
@@ -62,7 +68,61 @@ export function transform(spec: TransformSpec = {}): Transform2D {
     rotation: animatable(spec.rotation, 0),
     anchor: animatable(spec.anchor, { x: 0.5, y: 0.5 }),
     opacity: animatable(spec.opacity, 1),
+    blur: animatable(spec.blur, 0),
   };
+}
+
+/** An outline of `width` design pixels (`null`: none). */
+export function stroke(color: Color | null = null, width = 4): Stroke {
+  return { enabled: color !== null, color: still(color ?? '#000000'), width: still(width) };
+}
+
+/** The default text style (white Inter 96 px semi-bold, centred), with `overrides`. */
+export function textStyle(overrides: Partial<TextStyle> = {}): TextStyle {
+  return {
+    fontFamily: 'Inter',
+    fontWeight: 600,
+    italic: false,
+    fontSize: still(96),
+    color: still('#ffffff'),
+    stroke: stroke(),
+    shadow: {
+      enabled: false,
+      color: still('#000000b3'),
+      blur: still(8),
+      offset: still({ x: 0, y: 4 }),
+    },
+    background: {
+      enabled: false,
+      color: still('#000000b3'),
+      padding: { x: 24, y: 12 },
+      cornerRadius: 8,
+    },
+    letterSpacing: still(0),
+    lineHeight: 1.2,
+    align: 'center',
+    maxWidth: null,
+    textCase: 'normal',
+    ...overrides,
+  };
+}
+
+/** A text item. */
+export function text(
+  content: string,
+  options: {
+    readonly style?: Partial<TextStyle>;
+    readonly transform?: TransformSpec;
+    readonly reveal?: number | Animatable<number>;
+  } = {},
+): ItemKind {
+  const item: TextItem = {
+    content,
+    style: textStyle(options.style),
+    transform: transform(options.transform),
+    reveal: animatable(options.reveal, 1),
+  };
+  return { kind: 'text', ...item };
 }
 
 let nextId = 1;
@@ -108,39 +168,68 @@ export function clip(
   };
 }
 
-/** A filled rectangle of `width` × `height` design pixels. */
-export function rectangle(
-  fill: Color,
-  width: number,
-  height: number,
-  options: { readonly cornerRadius?: number; readonly transform?: TransformSpec } = {},
+/** Options shared by the shape builders. */
+export interface ShapeOptions {
+  readonly transform?: TransformSpec;
+  readonly stroke?: Stroke;
+  readonly coverFrame?: boolean;
+}
+
+function shape(
+  geometry: ShapeItem['geometry'],
+  fill: Color | Animatable<Color>,
+  options: ShapeOptions,
 ): ItemKind {
   return {
     kind: 'shape',
-    geometry: { kind: 'rectangle', width, height, cornerRadius: options.cornerRadius ?? 0 },
-    fill,
+    geometry,
+    fill: animatable(fill, '#000000'),
+    stroke: options.stroke ?? stroke(),
+    coverFrame: options.coverFrame ?? false,
     transform: transform(options.transform),
   };
 }
 
+/** A filled rectangle of `width` × `height` design pixels. */
+export function rectangle(
+  fill: Color | Animatable<Color>,
+  width: number,
+  height: number,
+  options: ShapeOptions & { readonly cornerRadius?: number } = {},
+): ItemKind {
+  const geometry = {
+    kind: 'rectangle' as const,
+    width,
+    height,
+    cornerRadius: options.cornerRadius ?? 0,
+  };
+  return shape(geometry, fill, options);
+}
+
 /** A filled ellipse of `width` × `height` design pixels. */
 export function ellipse(
-  fill: Color,
+  fill: Color | Animatable<Color>,
   width: number,
   height: number,
   spec: TransformSpec = {},
+  options: ShapeOptions = {},
 ): ItemKind {
-  return {
-    kind: 'shape',
-    geometry: { kind: 'ellipse', width, height },
-    fill,
-    transform: transform(spec),
-  };
+  return shape({ kind: 'ellipse', width, height }, fill, { ...options, transform: spec });
+}
+
+/** A line of `length` × `thickness` design pixels. */
+export function line(
+  fill: Color,
+  length: number,
+  thickness: number,
+  options: ShapeOptions = {},
+): ItemKind {
+  return shape({ kind: 'line', length, thickness }, fill, options);
 }
 
 /** An image item of `assetId`. */
-export function image(assetId: AssetId, spec: TransformSpec = {}): ItemKind {
-  return { kind: 'image', assetId, transform: transform(spec) };
+export function image(assetId: AssetId, spec: TransformSpec = {}, fit: ImageFit = 'fit'): ItemKind {
+  return { kind: 'image', assetId, fit, transform: transform(spec) };
 }
 
 /** A video track holding `items` (sorted by start) and `transitions`. */

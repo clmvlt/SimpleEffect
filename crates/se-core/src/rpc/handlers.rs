@@ -6,6 +6,7 @@
 //! (`se_app::AppError` converts with `?`).
 
 pub mod editing;
+pub mod graphics;
 pub mod items;
 pub mod media;
 pub mod media_settings;
@@ -16,7 +17,7 @@ pub mod timeline;
 
 use std::{path::Path, sync::Arc};
 
-use se_app::{MediaService, ProjectService};
+use se_app::{MediaService, ProjectService, ports::FontCatalog};
 use se_protocol::{ErrorCode, ProtocolError};
 
 use crate::app_paths::AppPaths;
@@ -32,6 +33,8 @@ pub struct HandlerContext {
     pub projects: Arc<ProjectService>,
     /// Media use cases (also observes project openings and closings).
     pub media: Arc<MediaService>,
+    /// Bundled and installed fonts.
+    pub fonts: Arc<dyn FontCatalog>,
 }
 
 /// A path sent by a client, refused unless absolute (a relative path would depend on the

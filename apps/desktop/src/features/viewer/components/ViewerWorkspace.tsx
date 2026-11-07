@@ -6,6 +6,7 @@ import { ShortcutRegion } from '../../../shared/shortcuts';
 import { useInOutSpan } from '../../timeline';
 import { usePlaybackSession } from '../hooks/use-playback-session';
 import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
+import { useViewerFonts } from '../hooks/use-viewer-fonts';
 import { useViewerScene } from '../hooks/use-viewer-scene';
 import type { AudioEngineFactory } from '../services/audio-engine-factory';
 import { createMediaLocator } from '../services/media-locator';
@@ -36,6 +37,7 @@ export function ViewerWorkspace({
   createAudio,
 }: ViewerWorkspaceProps) {
   const [engine] = useState(() => new ViewerEngineController(createEngine));
+  useViewerFonts(engine);
   const scene = useViewerScene(sequence);
   const endpoint = useCoreEndpoint();
   const locator = createMediaLocator(endpoint, scene?.assets ?? {});

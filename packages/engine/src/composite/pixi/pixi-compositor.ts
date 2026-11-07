@@ -4,10 +4,19 @@ import 'pixi.js/unsafe-eval';
 
 import { AlphaFilter, autoDetectRenderer, Container, type Renderer } from 'pixi.js';
 
-import type { FrameGraph, Layer } from '../../evaluate/frame-graph';
-import type { Compositor, CompositorBackground, PictureSet, RenderCanvas } from '../compositor';
+import type { FrameGraph, Layer, Size } from '../../evaluate/frame-graph';
+import type {
+  Compositor,
+  CompositorBackground,
+  LayerBoxes,
+  PictureSet,
+  RenderCanvas,
+} from '../compositor';
 import { outputScale } from '../layout';
-import { PictureNode, ShapeNode, TextNode, type LayerNode } from './layer-nodes';
+import type { LayerNode } from './layer-node';
+import { PictureNode } from './picture-node';
+import { ShapeNode } from './shape-node';
+import { TextNode } from './text-node';
 
 /** Options of {@link createPixiCompositor}. */
 export interface PixiCompositorOptions {
@@ -47,8 +56,9 @@ class PixiCompositor implements Compositor {
     this.renderer.background.alpha = background === 'black' ? 1 : 0;
   }
 
-  render(graph: FrameGraph, pictures: PictureSet): void {
-    if (this.destroyed) return;
+  render(graph: FrameGraph, pictures: PictureSet): LayerBoxes {
+    const boxes = new Map<string, Size>();
+    if (this.destroyed) return boxes;
     const scale = outputScale(graph.frame, this.renderer.screen);
     this.frameRoot.scale.set(scale.x, scale.y);
     const used = new Map<string, LayerNode>();
@@ -58,7 +68,8 @@ class PixiCompositor implements Compositor {
     for (const layer of graph.layers) {
       const node = this.nodeFor(layer);
       used.set(layer.itemId, node);
-      this.updateNode(node, layer, graph, pictures, Math.max(1, scale.x));
+      const box = this.updateNode(node, layer, graph, pictures, scale.x);
+      if (box !== null) boxes.set(layer.itemId, box);
       node.root.blendMode = layer.dissolve?.side === 'incoming' ? 'add' : 'inherit';
       this.parentOf(layer, usedGroups).addChild(node.root);
     }
@@ -71,6 +82,7 @@ class PixiCompositor implements Compositor {
     this.nodes = used;
     this.groups = usedGroups;
     this.renderer.render({ container: this.stage });
+    return boxes;
   }
 
   /**
@@ -118,20 +130,24 @@ class PixiCompositor implements Compositor {
     }
   }
 
+  /** Updates `node` for `layer` (`scale`: output pixels per sequence pixel); returns its box. */
   private updateNode(
     node: LayerNode,
     layer: Layer,
     graph: FrameGraph,
     pictures: PictureSet,
-    textResolution: number,
-  ): void {
+    scale: number,
+  ): Size | null {
     if (node instanceof PictureNode && (layer.kind === 'video' || layer.kind === 'image')) {
-      node.update(layer, pictures.get(layer.itemId), graph.frame);
-    } else if (node instanceof ShapeNode && layer.kind === 'shape') {
-      node.update(layer, graph.frame);
-    } else if (node instanceof TextNode && layer.kind === 'text') {
-      node.update(layer, graph.frame, textResolution);
+      return node.update(layer, pictures.get(layer.itemId), graph.frame, scale);
     }
+    if (node instanceof ShapeNode && layer.kind === 'shape') {
+      return node.update(layer, graph.frame, scale);
+    }
+    if (node instanceof TextNode && layer.kind === 'text') {
+      return node.update(layer, graph.frame, scale);
+    }
+    return null;
   }
 }
 

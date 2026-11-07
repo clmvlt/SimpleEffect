@@ -90,7 +90,24 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Inverse** | The operations that undo an edit, computed when it is applied (`RestoreItem` snapshots for item edits) | `Applied::inverse`, `Committed::inverse` |
 | **Touched entities** | Ids of the items, tracks, sequences, markers and assets an edit added, changed or removed | `TouchedEntities` |
 | **Item patch** | A typed change of an item's content, one patch type per item kind; `null` fields stay unchanged | `ItemPatch` |
-| **Animatable property** | Position, scale, rotation, anchor, opacity (visual items) or volume (media clips), set with its keyframes or static value | `AnimatableProperty`, `PropertyAnimation` |
+| **Animatable property** | A property keyframes can drive: placement, opacity and blur of visual items, a clip's volume, the size, colours, spacing, reveal, outline, shadow and plate colour of texts, the fill and outline of shapes (17 in all), set with its keyframes or static value | `AnimatableProperty`, `PropertyAnimation`, `ItemKind::property` |
+| **Property slot** | Typed access to one animatable property of an item (number, design pixels, pair or colour), shared by keyframe edits, presets and validation | `PropertyRef`, `PropertyMut` |
+| **Animation preset** | A named animation (fade, slides, pop, blur, typewriter, bounce, shake, pulse) defined as data and expanded into ordinary keyframes of an item | `AnimationPreset`, `assets/animation-presets.json` |
+| **Preset phase** | Where a preset plays: `in` (entrance, at the start), `out` (exit, at the end; the entrance played backwards) or `emphasis` (inside the item, returning to its values) | `AnimationPhase` |
+| **Preset base** | The property's own value a preset animates to or from, read as a hold of existing keyframes at the far end of the span | `expand_preset` |
+| **Preset sample** | A preset's expansion on a reference « Aa » text over one second, sent to clients for previews | `AnimationPresetSample` |
+| **Reveal** | Share of a text's characters shown, in reading order, laid out as the whole text (the typewriter effect) | `TextItem::reveal` |
+| **Stroke (outline)** | An outline around text glyphs or a shape, of a visible width outside them; kept when disabled | `Stroke` |
+| **Text plate** | A rounded plate behind a text block; the item's box includes it | `TextBackground` |
+| **Cover frame** | A shape whose box is the whole sequence frame whatever its format | `ShapeItem::cover_frame` |
+| **Image fit** | An image's natural box: fitted into the frame, covering it, or one image pixel per design pixel | `ImageFit` |
+| **Font catalogue** | The fonts texts may use: bundled with the app (embedded in se-core) and installed on the machine, each face served by `/media/fonts/{id}` | `FontCatalog`, `listFonts`, `se-fonts` |
+| **Font registry** | The engine's loader of catalogue faces (`FontFace`) before texts are drawn; reports families the catalogue lacks | `FontRegistry` |
+| **Frame layout** | Where each layer of a drawn frame sits (resolved transform and box): the viewer's handles and hit tests | `FrameLayout`, `LayerLayout` |
+| **Transform gizmo** | The handles over the viewer's picture to move, scale, rotate and re-anchor selected items, with snapping to the frame | `TransformGizmo` |
+| **Property preview** | The values of a continuous edit in progress, drawn by the viewer until its one command resolves | `propertyPreviewStore` |
+| **Keyframe lane** | The rows of keyframes unfolded under an item in the timeline (select, drag, delete, easing) | `KeyframeLane`, `keyframeLaneStore` |
+| **Auto-keyframing** | Editing a keyframed property at the playhead changes or adds the keyframe there | `withValueAt` |
 | **Trim** | Moving the start or end edge of an item; a media clip keeps playing the same source at the same instants | `TrimItem`, `ItemEdge` |
 | **Split** | Cutting an item in two at an instant; the right part is a new item | `SplitItem` |
 | **Ripple delete** | Deleting a time range on tracks and moving what follows left to close the gap | `RippleDeleteRange` |

@@ -5,6 +5,7 @@ import { frameDuration } from '../../../shared/time';
 import { revealAsset } from '../../media-bin';
 import { clipboardOf, pastedItems } from '../services/clipboard';
 import { isGapOf } from '../services/gaps';
+import { deletedKeyframeAnimations } from '../services/keyframe-lane';
 import {
   canLink,
   canUnlink,
@@ -13,6 +14,7 @@ import {
   nudgePlacements,
 } from '../services/item-edits';
 import { clipboardFor, setClipboard } from '../store/clipboard-store';
+import { clearKeyframeSelection, keyframeLaneStore } from '../store/keyframe-store';
 import { clearSelection, selectionStore, selectItems } from '../store/selection-store';
 import type { TimelineCommands } from './use-timeline-commands';
 import type { TimelineModel } from './use-timeline-model';
@@ -70,6 +72,16 @@ export function useEditActions(
   };
 
   const deleteSelection = (ripple: boolean) => {
+    const keyframes = keyframeLaneStore.getState().selection;
+    const keyed = keyframes === null ? undefined : model.itemsById[keyframes.itemId];
+    if (keyframes !== null && keyed !== undefined) {
+      void commands
+        .setItemAnimations(deletedKeyframeAnimations(keyed, keyframes.keys))
+        .then((done) => {
+          if (done !== null) clearKeyframeSelection();
+        });
+      return;
+    }
     const { gap, transitionId } = selectionStore.getState();
     if (transitionId !== null) {
       void commands.removeTransitions([transitionId]).then((done) => {

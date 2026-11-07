@@ -11,6 +11,7 @@ import {
 import { Activity, Gauge, Grid2x2 } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
+import { GraphicsTools } from '../../graphics';
 import {
   VIEWER_ZOOMS,
   setViewerPreferences,
@@ -34,6 +35,7 @@ export function ViewerToolbar({ preferences }: ViewerToolbarProps) {
       : t('editor.viewer.toolbar.zoomPercent', { percent: zoom * 100 });
   return (
     <div className="ml-auto flex items-center gap-1">
+      <GraphicsTools />
       <Select
         value={zoomValue(preferences.zoom)}
         onValueChange={(value) => {

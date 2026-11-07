@@ -13,6 +13,7 @@ import {
 } from '../services/selection';
 import { rowAt } from '../services/track-layout';
 import { trimGroup } from '../services/trim-placement';
+import { clearKeyframeSelection } from '../store/keyframe-store';
 import { xToTime } from '../services/viewport';
 import {
   clearSelection,
@@ -117,6 +118,7 @@ export function useLanePointer(context: () => GestureContext) {
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
+    clearKeyframeSelection();
     const origin = lanePoint(event);
     event.currentTarget.setPointerCapture(event.pointerId);
     const { itemId, edge, gapHandle } = pressTarget(event);

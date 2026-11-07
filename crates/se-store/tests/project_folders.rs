@@ -167,9 +167,34 @@ async fn load_fixture(name: &str) -> se_domain::Project {
     store.load_snapshot().await.unwrap()
 }
 
+/// The example project as the version-4 fixture holds it: a plain white Inter title (regular
+/// weight, no outline, no wrapping), an image fitted into the frame.
+fn example_project_v4() -> se_domain::Project {
+    let mut project = example_project();
+    for item in project
+        .sequences
+        .iter_mut()
+        .flat_map(|sequence| &mut sequence.tracks)
+        .flat_map(|track| &mut track.items)
+    {
+        match &mut item.kind {
+            se_domain::ItemKind::Text(text) => {
+                text.style = se_domain::TextStyle {
+                    font_weight: 400,
+                    font_size: se_domain::Animatable::constant(se_domain::DesignPixels(72.0)),
+                    ..se_domain::TextStyle::default()
+                };
+            }
+            se_domain::ItemKind::Image(image) => image.fit = se_domain::ImageFit::Fit,
+            _ => {}
+        }
+    }
+    project
+}
+
 /// The example project as the version-3 fixture holds it: no transitions, linear fades.
 fn example_project_v3() -> se_domain::Project {
-    let mut project = example_project();
+    let mut project = example_project_v4();
     for track in project
         .sequences
         .iter_mut()
@@ -229,8 +254,13 @@ async fn version_3_documents_load_through_the_migrations() {
 }
 
 #[tokio::test]
-async fn version_4_documents_load_as_they_are() {
-    assert_eq!(load_fixture("project-v4.json").await, example_project());
+async fn version_4_documents_load_through_the_migrations() {
+    assert_eq!(load_fixture("project-v4.json").await, example_project_v4());
+}
+
+#[tokio::test]
+async fn version_5_documents_load_as_they_are() {
+    assert_eq!(load_fixture("project-v5.json").await, example_project());
 }
 
 #[tokio::test]

@@ -14,10 +14,12 @@ export async function createPreviewEngine(options: PreviewEngineOptions): Promis
       ? {}
       : { preserveDrawingBuffer: options.preserveDrawingBuffer }),
   });
-  return createEngineWith(
+  const engine = createEngineWith(
     compositor,
     new DecoderPool(options.pool),
     options.locator,
     options.schedule,
   );
+  if (options.fonts !== undefined) engine.setFonts(options.fonts);
+  return engine;
 }

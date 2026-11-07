@@ -11,9 +11,10 @@ Implemented progressively: capabilities (prompt 08), playback sources (09), eval
 | `@se/engine` (`src/index.ts`) | `animation/` + `evaluate/` + `FLICKS_PER_SECOND` | nothing (pure) |
 | `@se/engine/animation` | `easedProgress(easing, p)`, `cubicBezierProgress`, `EASING_PRESET_CURVES` (CSS ease-in/out/in-out), `fadeCurve(shape, p)`, `constantPowerWeights(p)`, `valueAt(animatable, localTime, interpolator, fallback)`, `keyframesValueAt`, `interpolateNumber`/`interpolateVec2`/`interpolateColor` (OKLab, premultiplied alpha), `parseColor`/`formatColor`/`rgbaToOklab`/`oklabToRgba`/`mixColors` | — |
 | `@se/engine/evaluate` | `evaluate(sequence, assets, time) → FrameGraph`; `Evaluable{Sequence,Track,Item,Transition}` (structural: a domain `Sequence` or mirror entities fit); layer types with `DissolveRole`, `DISSOLVE_COMPOSITING`; `designScale`, `assetDisplaySize`, `reframedBox`, `shapeBox`, `clipSourceTime`, `fadeFactor`, `resolveTransform`; transitions `transitionExtent`, `transitionSpan`, `transitionProgress`, `trackTransitionSpans`, `playExtensions` | — |
-| `@se/engine/composite` | `Compositor` interface, `createPixiCompositor({ canvas, width, height, renderer?, background?, preserveDrawingBuffer? })`, pure `layerPlacement`/`pictureFit`/`outputScale` | PixiJS |
+| `@se/engine/fonts` | `FontRegistry` (registers the catalogue's faces as `FontFace`s, `ensure(requests)` loads a family's faces the first time a text uses it, `missing(requests)`), `createFontRegistry()` (document or Worker font set), `CatalogFace`, `FontLoader` | — (DOM `FontFace` at call time) |
+| `@se/engine/composite` | `Compositor` interface (`render` returns `LayerBoxes`), `createPixiCompositor({ canvas, width, height, renderer?, background?, preserveDrawingBuffer? })`, pure `layerPlacement`/`pictureFit`/`outputScale` | PixiJS |
 | `@se/engine/decode` | `DecoderPool`, `PictureLease`, `FrameTracker`/`pictureTracker`/`openPictureCounts`, `chooseVariant`, `MediaLocator`, `MediabunnyVideoSource`, `fetchImageBitmap`, `DecodeError` | Mediabunny |
-| `@se/engine/preview` | `createPreviewEngine(options) → PreviewEngine` (viewer engine: `setPlayback(rate, frameRate)` switches to playback decoding; `stats()` → `PreviewStats`), `createEngineWith(compositor, pool, locator, schedule?, now?)`, `FrameRenderer`, `PreviewState`, `MediaIssue`, `prefetchSpans` | PixiJS + Mediabunny: **import lazily** from UI code |
+| `@se/engine/preview` | `createPreviewEngine(options) → PreviewEngine` (viewer engine: `setPlayback(rate, frameRate)` switches to playback decoding; `setFonts(loader)`; `getLayout`/`subscribeLayout` → `FrameLayout`; `PreviewState.missingFonts`; `stats()` → `PreviewStats`), `frameLayout`, `frameFonts`, `FONT_LOAD_TIMEOUT_MS`, `createEngineWith(compositor, pool, locator, schedule?, now?)`, `FrameRenderer`, `PreviewState`, `MediaIssue`, `prefetchSpans` | PixiJS + Mediabunny: **import lazily** from UI code |
 | `@se/engine/playback` | `PlaybackController` (play/pause/stop, JKL `shuttle`, `step`, `seek`, loop span, content end; `PlaybackClock` with `leadTime`, `FrameTicker`), `transportPosition`, `playbackSegments`, `nextShuttleRate`, `frameIndexAt`/`frameStart`/`skippedFrames`, `PlaybackStatsCounter` | — (pure) |
 | `@se/engine/audio` | `createAudioEngine({ locator, context? }) → AudioEngine` (`clock`, `setScene`, `setLocator`, `setTransport`, `scrub`, `resume`, `levels`, `stats`, `destroy`), `createAudioEngineWith(parts)`, `audioContextClock`, `AudioGraph`, `AudioScheduler`, `AudioMeter`, `audioClipsOf` (clips extended through sound cross-fades), `clipGainAt`, `gainEnvelope`, `GAIN_STEP_SECONDS`, `scheduleVoiceGain`, `stripSettings`, `dbToGain`/`gainToDb`, `MediabunnyAudioSource` | Mediabunny + the meter worklet: **import lazily** from UI code |
 | `@se/engine/capabilities` | `videoCodecString`/`audioCodecString`, `checkDecodability(kind, MediaInfo, support)`, `checkDecoderCapabilities(support)` (prompts 08–09) | — |
@@ -25,15 +26,19 @@ src/
 ├─ time/flicks.ts          FLICKS_PER_SECOND, roundToFlicks
 ├─ animation/              easing.ts, cubic-bezier.ts, color.ts (OKLab), interpolate.ts, fade-curve.ts
 ├─ evaluate/               evaluate.ts (tracks → layers, dissolves), item-layer.ts (per item kind),
-│                          transform.ts, timing.ts (source time, fades), geometry.ts (boxes), frame-graph.ts (types),
+│                          graphic-layers.ts (text and shape styles), transform.ts (incl. blur),
+│                          timing.ts (source time, fades), geometry.ts (boxes, image fits), frame-graph.ts (types),
 │                          transitions.ts (spans, extents, play extensions)
-├─ composite/              compositor.ts (interface, Picture), layout.ts (pure geometry),
-│                          pixi/pixi-compositor.ts, pixi/layer-nodes.ts (PictureNode, ShapeNode, TextNode)
+├─ composite/              compositor.ts (interface, Picture, LayerBoxes), layout.ts (pure geometry),
+│                          text-reveal.ts (graphemes, revealed lines, line offsets),
+│                          pixi/pixi-compositor.ts, pixi/layer-node.ts (LayerNode, place, LayerBlur),
+│                          pixi/picture-node.ts, pixi/shape-node.ts, pixi/text-node.ts
+├─ fonts/                  font-registry.ts (FontRegistry, FontLoader)
 ├─ decode/                 decoder-pool.ts, frame-cache.ts (LRU + leases), decode-queue.ts, frame-tracker.ts,
 │                          frame-time.ts (frameLookupTime), media-variant.ts, video-source.ts, image-loader.ts
 ├─ decode/ (playback)      frame-reader.ts (sequential reader, read-ahead budget), read-plan.ts (planRead)
 ├─ preview/                frame-renderer.ts (evaluate → pictures → compositor), engine.ts (PreviewEngine),
-│                          preview-engine.ts (factory wiring Pixi + pool), media-issue.ts,
+│                          preview-engine.ts (factory wiring Pixi + pool), media-issue.ts, frame-layout.ts,
 │                          playback-prefetcher.ts, prefetch-plan.ts (prefetchSpans/Requests), prefetch-window.ts
 ├─ playback/               transport.ts (anchor → position, segments), playback-controller.ts, shuttle.ts (JKL),
 │                          frame-pacing.ts, refresh-period.ts (presentation lead), playback-stats.ts
@@ -69,6 +74,9 @@ Playback flow (ADR-0023): display refresh → `PlaybackController` reads the mas
 - **Scheduling.** Audio is scheduled from a 25 ms timer, 200 ms ahead (`SCHEDULE_AHEAD_SECONDS`); a piece is scheduled in the window where it starts and plays to its end (never cut mid-chunk); start times are computed from the segment anchor (sample-exact over any duration); any transport change stops all voices and plans again; unchanged clips (`sameClips`) keep scheduled sound. Sound plays at rate 1 only.
 - **Chunks.** One second of media time per chunk; buffers placed contiguously unless a real gap shows; each chunk continues the previous chunk's placement (decoded in order per file); media time 0 of the sound is the first video frame when the file has video. Audio reads the original or the mezzanine, never the proxy.
 - **Fades and levels** (ADR-0024). `fadeCurve` is the only implementation of the domain's fade shapes, used for picture opacity and sound gain; levels beyond an item's edges hold the edge value. Volume is interpolated in decibels, then converted (`dbToGain`). Each voice gets a `gainEnvelope` (one point when constant, else points every 10 ms) that the graph only ramps between: compute levels in pure code, never in the graph.
+- **Texts** (ADR-0025). A text layer is laid out once on the whole text without outline or shadow (`CanvasTextMetrics`), then drawn line by line at aligned places (`lineOffset`); a reveal shows the first characters (grapheme clusters) without moving them. Outlines are drawn twice the requested width centred on the glyph outline (the width shows outside); a disabled outline is a zero-width stroke. The node caches its style and layout keys: unchanged texts are not re-rasterised. Its box (plate included) is what `render` returns.
+- **Fonts.** Text frames wait for the catalogue's faces (`FontLoader.ensure`, at most `FONT_LOAD_TIMEOUT_MS`) before drawing; families the catalogue lacks are drawn with `FALLBACK_FONTS` (Inter, the UI's Inter Variable, sans-serif) and reported. Never draw text before fonts are settled in export.
+- **Blur** is a Pixi `BlurFilter` on the layer's root, attached only while the radius is visible (filters render offscreen).
 - **Dissolves.** `evaluate` lists the two sides of a cross dissolve one after the other with their `dissolve` role and weighted opacities; a compositor must draw them as one isolated group with the incoming side added (`DISSOLVE_COMPOSITING`), never as two ordinary layers.
 - **Meter worklet.** `meter-processor.ts` runs in the AudioWorklet scope: pure imports only (it is bundled alone with `?worker&url`), no allocation per block. A failed `addModule` leaves the meter silent, never the sound.
 
@@ -81,6 +89,7 @@ Playback flow (ADR-0023): display refresh → `PlaybackController` reads the mas
   - `frame-accuracy.browser.test.ts`: reads back the frame number encoded in the fixtures (29.97 fps H.264 with B-frames, 25 fps VP9, proxy, rotated phone clip, offsets and speeds).
   - `scenes.browser.test.ts`: compares scenes with `test/golden/references/<name>.png` (`expectGolden`, tolerance 16 levels / 0.5 % of pixels); a mismatch writes `<name>.actual.png` and `<name>.diff.png` next to it (gitignored).
   - `decoder-leaks.browser.test.ts`: intensive scrub with cancellations on real WebCodecs, zero open frames after destroy.
+  - `graphics.browser.test.ts`: outlines (outside), rounded corners, line capsules and a frame-covering plate; anchor rotation, axis scale and blur; an eased slide-in midway; text styles with the bundled Inter loaded through `FontRegistry` (fixtures `inter-latin*.woff2`), compared with `TEXT_TOLERANCE` (4 × 4 block averages: platform rasterisers differ at glyph edges) plus checks of the outline, shadow, plate and reveal pixels.
   - `dissolve.browser.test.ts`: a video dissolving into a picture equals the pixel blend of both renders at the progress (reference `cross-dissolve-midway.png`), and a dissolve on V2 never lets V1 show through halfway.
   - Rewrite references after an intended visual change: `SE_UPDATE_GOLDEN=1 pnpm vitest run --project engine-browser`, then **look at every changed PNG** before committing.
   - Fixtures are committed; regenerate them with `node scripts/generate-golden-fixtures.mjs` (needs `pnpm fetch-binaries`), then rewrite the references.

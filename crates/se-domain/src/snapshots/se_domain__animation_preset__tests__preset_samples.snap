@@ -1,0 +1,1039 @@
+---
+source: crates/se-domain/src/animation_preset.rs
+expression: expansions
+---
+[
+  [
+    "fade in",
+    [
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 0.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeOut"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": 1.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "fade out",
+    [
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 1.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeIn"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": 0.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "slideFromLeft in",
+    [
+      {
+        "property": "position",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 0.4,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "cubicBezier",
+                "x1": 0.16,
+                "y1": 1.0,
+                "x2": 0.3,
+                "y2": 1.0
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 0.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeOut"
+              }
+            },
+            {
+              "time": 423360000,
+              "value": 1.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "slideFromLeft out",
+    [
+      {
+        "property": "position",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "cubicBezier",
+                "x1": 0.7,
+                "y1": 0.0,
+                "x2": 0.84,
+                "y2": 0.0
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 0.4,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 282240000,
+              "value": 1.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeIn"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": 0.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "slideFromRight in",
+    [
+      {
+        "property": "position",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 0.6,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "cubicBezier",
+                "x1": 0.16,
+                "y1": 1.0,
+                "x2": 0.3,
+                "y2": 1.0
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 0.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeOut"
+              }
+            },
+            {
+              "time": 423360000,
+              "value": 1.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "slideFromRight out",
+    [
+      {
+        "property": "position",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "cubicBezier",
+                "x1": 0.7,
+                "y1": 0.0,
+                "x2": 0.84,
+                "y2": 0.0
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 0.6,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 282240000,
+              "value": 1.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeIn"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": 0.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "slideFromTop in",
+    [
+      {
+        "property": "position",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 0.5,
+                "y": 0.4
+              },
+              "easing": {
+                "kind": "cubicBezier",
+                "x1": 0.16,
+                "y1": 1.0,
+                "x2": 0.3,
+                "y2": 1.0
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 0.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeOut"
+              }
+            },
+            {
+              "time": 423360000,
+              "value": 1.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "slideFromTop out",
+    [
+      {
+        "property": "position",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "cubicBezier",
+                "x1": 0.7,
+                "y1": 0.0,
+                "x2": 0.84,
+                "y2": 0.0
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 0.5,
+                "y": 0.4
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 282240000,
+              "value": 1.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeIn"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": 0.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "slideFromBottom in",
+    [
+      {
+        "property": "position",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 0.5,
+                "y": 0.6
+              },
+              "easing": {
+                "kind": "cubicBezier",
+                "x1": 0.16,
+                "y1": 1.0,
+                "x2": 0.3,
+                "y2": 1.0
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 0.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeOut"
+              }
+            },
+            {
+              "time": 423360000,
+              "value": 1.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "slideFromBottom out",
+    [
+      {
+        "property": "position",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "cubicBezier",
+                "x1": 0.7,
+                "y1": 0.0,
+                "x2": 0.84,
+                "y2": 0.0
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 0.5,
+                "y": 0.6
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 282240000,
+              "value": 1.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeIn"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": 0.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "pop in",
+    [
+      {
+        "property": "scale",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "easing": {
+                "kind": "cubicBezier",
+                "x1": 0.34,
+                "y1": 1.56,
+                "x2": 0.64,
+                "y2": 1.0
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 1.0,
+                "y": 1.0
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 0.0,
+              "easing": {
+                "kind": "linear"
+              }
+            },
+            {
+              "time": 211680000,
+              "value": 1.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "pop out",
+    [
+      {
+        "property": "scale",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 1.0,
+                "y": 1.0
+              },
+              "easing": {
+                "kind": "cubicBezier",
+                "x1": 0.36,
+                "y1": 0.0,
+                "x2": 0.6599999999999999,
+                "y2": -0.56
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 0.0,
+                "y": 0.0
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 493920000,
+              "value": 1.0,
+              "easing": {
+                "kind": "linear"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": 0.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "blur in",
+    [
+      {
+        "property": "blur",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 40.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeOut"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": 0.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 0.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeOut"
+              }
+            },
+            {
+              "time": 352800000,
+              "value": 1.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "blur out",
+    [
+      {
+        "property": "blur",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 0.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeIn"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": 40.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "property": "opacity",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 352800000,
+              "value": 1.0,
+              "easing": {
+                "kind": "preset",
+                "name": "easeIn"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": 0.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "typewriter in",
+    [
+      {
+        "property": "reveal",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 0.0,
+              "easing": {
+                "kind": "linear"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": 1.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "typewriter out",
+    [
+      {
+        "property": "reveal",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": 1.0,
+              "easing": {
+                "kind": "linear"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": 0.0,
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "bounce emphasis",
+    [
+      {
+        "property": "position",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeOut"
+              }
+            },
+            {
+              "time": 176400000,
+              "value": {
+                "x": 0.5,
+                "y": 0.45
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeIn"
+              }
+            },
+            {
+              "time": 352800000,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeOut"
+              }
+            },
+            {
+              "time": 493920000,
+              "value": {
+                "x": 0.5,
+                "y": 0.48
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeIn"
+              }
+            },
+            {
+              "time": 599760000,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeOut"
+              }
+            },
+            {
+              "time": 656208000,
+              "value": {
+                "x": 0.5,
+                "y": 0.494
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeIn"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "shake emphasis",
+    [
+      {
+        "property": "position",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeInOut"
+              }
+            },
+            {
+              "time": 70560000,
+              "value": {
+                "x": 0.488,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeInOut"
+              }
+            },
+            {
+              "time": 211680000,
+              "value": {
+                "x": 0.512,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeInOut"
+              }
+            },
+            {
+              "time": 352800000,
+              "value": {
+                "x": 0.491,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeInOut"
+              }
+            },
+            {
+              "time": 493920000,
+              "value": {
+                "x": 0.506,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeInOut"
+              }
+            },
+            {
+              "time": 635040000,
+              "value": {
+                "x": 0.497,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeInOut"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 0.5,
+                "y": 0.5
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ],
+  [
+    "pulse emphasis",
+    [
+      {
+        "property": "scale",
+        "value": {
+          "kind": "keyframed",
+          "keyframes": [
+            {
+              "time": 0,
+              "value": {
+                "x": 1.0,
+                "y": 1.0
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeInOut"
+              }
+            },
+            {
+              "time": 352800000,
+              "value": {
+                "x": 1.12,
+                "y": 1.12
+              },
+              "easing": {
+                "kind": "preset",
+                "name": "easeInOut"
+              }
+            },
+            {
+              "time": 705600000,
+              "value": {
+                "x": 1.0,
+                "y": 1.0
+              },
+              "easing": {
+                "kind": "linear"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  ]
+]

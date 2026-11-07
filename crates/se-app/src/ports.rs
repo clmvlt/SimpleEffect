@@ -4,6 +4,7 @@
 
 mod analysis_store;
 mod app_library;
+mod fonts;
 mod media;
 mod project_repository;
 mod runtime;
@@ -12,6 +13,7 @@ mod transcode;
 
 pub use analysis_store::{AnalysisStore, StoredAnalysis};
 pub use app_library::{AppLibraryRepository, RecentProjectRecord};
+pub use fonts::{FontCatalog, FontData};
 pub use media::{
     FrameExtractor, FrameRequest, MediaError, MediaFiles, MediaJobOutput, MediaJobRunner,
     MediaJobSpec, MediaProber, MediaTask, MediaTools, ProbedMedia, ProgressSink,

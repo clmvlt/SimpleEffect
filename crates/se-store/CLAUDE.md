@@ -15,7 +15,7 @@ Persistence adapter: project folders, `project.json` snapshots, the project and 
 | `layout.rs` | `ProjectLayout`: `project.json`, `.tmp`, `.bak.N`, `project.db`, `.lock`, `cache/`, `exports/` |
 | `folder_name.rs` | Folder names from project names (Windows-forbidden characters → `-`, reserved names, length) |
 | `snapshot_file.rs` | `read_snapshot` (JSON → migrations → `Project`), `write_snapshot` (backup rotation + `write_atomically`) |
-| `document_migrations.rs` | `MIGRATIONS` (`migrate_vN_to_vN+1`; v1 → v2 gives assets `fingerprint: null` and a per-stream `decodability`; v2 → v3 gives them empty `analysis` summaries; v3 → v4 gives tracks empty `transitions` and media clips linear fade shapes), `migrate_document` — the recipe for a new version is in its doc comment |
+| `document_migrations.rs` | `MIGRATIONS` (`migrate_vN_to_vN+1`; v1 → v2 gives assets `fingerprint: null` and a per-stream `decodability`; v2 → v3 gives them empty `analysis` summaries; v3 → v4 gives tracks empty `transitions` and media clips linear fade shapes; v4 → v5 wraps the bare font size and colour of texts and the fill of shapes into static animatable values), `migrate_document` — the recipe for a new version is in its doc comment |
 | `sqlite.rs` | `open_database(path, migrations)`: WAL, `synchronous = FULL`, foreign keys, busy timeout, `user_version` migrations |
 | `project_db.rs`, `project_db/analyses.rs` | `project.db` schemas (v1: `op_journal`, `tasks`, `task_events`, `transcripts`, `transcript_search` FTS5, `analyses`; v2: `analyses.content_key` and `format_version`), journal queries, `save_analysis`/`load_analysis` (rows of a newer payload format are ignored) |
 | `fs_analysis_store.rs` | `FsAnalysisStore`: the `AnalysisStore` port on the blocking pool |
@@ -40,5 +40,5 @@ Persistence adapter: project folders, `project.json` snapshots, the project and 
 ## How to test
 - `cargo test -p se-store`
 - Unit tests in-file (folder names, migrations runner, SQLite migrations).
-- `tests/project_folders.rs` (temporary folders): layout, atomic writes and backups, journal survives a dropped store, lock, version fixtures (`tests/fixtures/project-v1.json` to `project-v3.json` migrated, `project-v4.json` as is), newer/broken documents, duplication, FTS5. `tests/app_library.rs`: recent list and settings.
+- `tests/project_folders.rs` (temporary folders): layout, atomic writes and backups, journal survives a dropped store, lock, version fixtures (`tests/fixtures/project-v1.json` to `project-v4.json` migrated, `project-v5.json` as is: the body of the domain's example-project snapshot), newer/broken documents, duplication, FTS5. `tests/app_library.rs`: recent list and settings.
 - `trashing_moves_the_folder_to_the_os_trash` is `#[ignore]`d because it uses the real OS trash: `cargo test -p se-store -- --ignored`.

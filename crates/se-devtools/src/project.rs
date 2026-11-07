@@ -2,10 +2,10 @@
 //! picture/sound clips, texts, captions and music, plus markers. Deterministic for a given seed.
 
 use se_domain::{
-    Asset, AssetKind, CURRENT_SCHEMA_VERSION, CaptionItem, Color, DesignPixels, Flicks, Format,
-    FormatPreset, FrameRate, Item, ItemId, ItemKind, LinkGroupId, Marker, MarkerColor, MarkerId,
-    MediaClip, Origin, Project, ProjectId, ProjectSettings, Sequence, SequenceId, TaskId, TextItem,
-    TextStyle, TimeRange, Track, TrackId, TrackKind, Transform2D, validate_project,
+    Animatable, Asset, AssetKind, CURRENT_SCHEMA_VERSION, CaptionItem, DesignPixels, Flicks,
+    Format, FormatPreset, FrameRate, Item, ItemId, ItemKind, LinkGroupId, Marker, MarkerColor,
+    MarkerId, MediaClip, Origin, Project, ProjectId, ProjectSettings, Sequence, SequenceId, TaskId,
+    TextItem, TimeRange, Track, TrackId, TrackKind, validate_project,
 };
 use uuid::Uuid;
 
@@ -180,15 +180,9 @@ impl Builder {
             Slot::Graphic => {
                 let start = self.cursors[V3].checked_add(gap).unwrap_or(Flicks::MAX);
                 let kind = if self.count.is_multiple_of(2) {
-                    ItemKind::Text(TextItem {
-                        content: format!("Titre {}", self.count),
-                        style: TextStyle {
-                            font_family: "Inter".to_owned(),
-                            font_size: DesignPixels(72.0),
-                            color: Color::WHITE,
-                        },
-                        transform: Transform2D::default(),
-                    })
+                    let mut text = TextItem::new(format!("Titre {}", self.count));
+                    text.style.font_size = Animatable::constant(DesignPixels(72.0));
+                    ItemKind::Text(text)
                 } else {
                     ItemKind::Caption(CaptionItem {
                         text: format!("Sous-titre {}", self.count),

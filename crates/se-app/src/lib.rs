@@ -48,6 +48,7 @@ pub use jobs::{JobAttempt, JobPriority, JobQueue, JobQueueConfig, JobRequest, Jo
 pub use media_service::{AssetFiles, MediaService, MediaServiceDeps};
 pub use project_actor::{ActorDeps, DEFAULT_SAVE_DELAY, ProjectActorHandle, ProjectView};
 pub use project_service::{
-    ProjectObserver, ProjectService, ProjectServiceConfig, ProjectServiceDeps, item_labels,
-    marker_labels, track_labels, transition_labels,
+    ProjectObserver, ProjectService, ProjectServiceConfig, ProjectServiceDeps,
+    animation_preset_infos, graphic_track, item_labels, marker_labels, track_labels,
+    transition_labels,
 };

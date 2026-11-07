@@ -13,7 +13,9 @@ import type { TimelineModel } from '../hooks/use-timeline-model';
 import type { TimelineViewportApi } from '../hooks/use-timeline-viewport';
 import { useTimelineWheel } from '../hooks/use-timeline-wheel';
 import { inOutSpan } from '../services/in-out';
+import { keyframeLaneHeight } from '../services/keyframe-lane';
 import { layoutTracks } from '../services/track-layout';
+import { useKeyframeLanes } from '../store/keyframe-store';
 import { DEFAULT_TRACK_HEIGHT } from '../services/track-height';
 import { playheadStore, playheadTimeOf } from '../store/playhead-store';
 import { useSelectedItemIds } from '../store/selection-store';
@@ -56,9 +58,17 @@ export function TimelineView({
   const trackHeights = useStore(timelineViewStore, (state) => state.trackHeights);
   const selectedIds = useSelectedItemIds();
   const points = useInOutPoints(model.sequence.id);
+  const { expanded } = useKeyframeLanes();
   const layout = layoutTracks(
     model.tracks,
     (track) => trackHeights[track.id] ?? DEFAULT_TRACK_HEIGHT,
+    (track) =>
+      Math.max(
+        0,
+        ...(model.itemsByTrack.get(track.id) ?? [])
+          .filter((item) => expanded.has(item.id))
+          .map((item) => keyframeLaneHeight(item.kind)),
+      ),
   );
   useTimelineWheel({ root, layout, api });
   const span = inOutSpan(points, model.contentEnd);

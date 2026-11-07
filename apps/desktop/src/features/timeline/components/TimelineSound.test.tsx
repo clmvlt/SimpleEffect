@@ -41,6 +41,7 @@ function sound(id: string, start: number, volume: Animatable<number> = STILL): I
         rotation: { kind: 'static', value: 0 },
         anchor: { kind: 'static', value: { x: 0.5, y: 0.5 } },
         opacity: { kind: 'static', value: 1 },
+        blur: { kind: 'static', value: 0 },
       },
       volumeDb: volume,
       fadeIn: seconds(0),

@@ -4,18 +4,21 @@ import { describe, expect, it } from 'vitest';
 import { DecoderPool } from '../decode/decoder-pool';
 import { DecodeError } from '../decode/decode-error';
 import { FrameTracker } from '../decode/frame-tracker';
+import type { FontLoader } from '../fonts/font-registry';
 import {
   assetTable,
   clip,
   item,
   seconds,
   sequence,
+  text,
   videoAsset,
   videoTrack,
 } from '../testing/document';
 import { FakeFrame, FakeVideoSource, settle } from '../testing/fake-decoding';
 import { RecordingCompositor } from '../testing/recording-compositor';
 import { createEngineWith } from './engine';
+import type { FrameLayout } from './frame-layout';
 import { FrameRenderer, type RenderScene } from './frame-renderer';
 
 /** 25 fps like the fake source, so lookup times land on its frames. */
@@ -30,6 +33,31 @@ const scene: RenderScene = {
   sequence: sequence(1920, 1080, [videoTrack([shot])]),
   assets: assetTable(asset),
 };
+const title = item(0 as Flicks, seconds(10), text('Titre', { style: { fontFamily: 'Oswald' } }));
+const titled: RenderScene = {
+  ...scene,
+  sequence: sequence(1920, 1080, [videoTrack([shot]), videoTrack([title])]),
+};
+
+/** Fonts that load when `finish` is called; `Oswald` is in the catalogue, nothing else is. */
+function fakeFonts() {
+  let finish: () => void = () => undefined;
+  const loading = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
+  let ready = false;
+  const fonts: FontLoader = {
+    missing: (requests) => requests.map((request) => request.family).filter((f) => f !== 'Oswald'),
+    ensure: () => (ready ? null : loading),
+  };
+  return {
+    fonts,
+    finish: () => {
+      ready = true;
+      finish();
+    },
+  };
+}
 
 function setup(failure: Error | null = null) {
   const tracker = new FrameTracker();
@@ -67,12 +95,38 @@ describe('FrameRenderer', () => {
     const outcome = await renderer.render({ scene, time: seconds(2), proxy: false }, () => {
       waited = true;
     });
-    expect(outcome).toEqual({ kind: 'drawn', issues: [] });
+    expect(outcome).toMatchObject({ kind: 'drawn', issues: [], missingFonts: [] });
     expect(waited).toBe(true);
     expect(drawnFrame(compositor)).toBe(50);
     expect(tracker.counts().videoFrames).toBe(1);
     pool.destroy();
     expect(tracker.counts().videoFrames).toBe(0);
+  });
+
+  it('waits for the fonts of its texts and reports their boxes', async () => {
+    const { renderer, compositor } = setup();
+    const { fonts, finish } = fakeFonts();
+    renderer.setFonts(fonts);
+    await renderer.render({ scene, time: seconds(2), proxy: false });
+    const drawn = compositor.draws.length;
+    const pending = renderer.render({ scene: titled, time: seconds(2), proxy: false });
+    await Promise.resolve();
+    expect(compositor.draws).toHaveLength(drawn);
+    finish();
+    const outcome = await pending;
+    expect(compositor.draws).toHaveLength(drawn + 1);
+    if (outcome.kind !== 'drawn') throw new Error('expected a drawn frame');
+    expect(outcome.missingFonts).toEqual([]);
+    const titleLayout = outcome.layout.layers.find((layer) => layer.itemId === title.id);
+    expect(titleLayout?.box.width).toBeGreaterThan(0);
+    expect(outcome.layout.layers[0]?.box).toEqual({ width: 1920, height: 1080 });
+  });
+
+  it('reports font families the catalogue lacks', async () => {
+    const { renderer } = setup();
+    renderer.setFonts({ missing: () => ['Comic'], ensure: () => null });
+    const outcome = await renderer.render({ scene: titled, time: seconds(2), proxy: false });
+    expect(outcome).toMatchObject({ kind: 'drawn', missingFonts: ['Comic'] });
   });
 
   it('draws a cached frame synchronously', async () => {
@@ -173,7 +227,24 @@ describe('PreviewEngine', () => {
     expect(compositor.draws).toHaveLength(1);
     expect(drawnFrame(compositor)).toBe(75);
     expect(statuses).toEqual(['loading', 'ready']);
-    expect(engine.getState()).toEqual({ status: 'ready', issues: [], error: null });
+    expect(engine.getState()).toEqual({
+      status: 'ready',
+      issues: [],
+      missingFonts: [],
+      error: null,
+    });
+  });
+
+  it('publishes the layout of each drawn frame', async () => {
+    const { engine, flush } = engineSetup();
+    const layouts: FrameLayout[] = [];
+    engine.subscribeLayout((layout) => layouts.push(layout));
+    engine.setScene(titled);
+    engine.setTime(seconds(1));
+    flush();
+    await engine.settled();
+    expect(layouts).toHaveLength(1);
+    expect(engine.getLayout()?.layers.map((layer) => layer.itemId)).toEqual([shot.id, title.id]);
   });
 
   it('frees every frame and the compositor on destroy', async () => {

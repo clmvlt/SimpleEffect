@@ -1,4 +1,4 @@
-import type { AssetId, Flicks, ItemId, TransitionId, Vec2 } from '@se/protocol';
+import type { AssetId, Flicks, ItemId, TextAlign, TransitionId, Vec2 } from '@se/protocol';
 
 import type { Rgba } from '../animation/color';
 
@@ -11,7 +11,8 @@ export interface Size {
 /**
  * A transform with every keyframe resolved at the evaluated time, in the domain's units
  * (ADR-0015): `position` normalised in the sequence frame, `anchor` normalised in the layer's box,
- * relative `scale`, clockwise `rotation` in degrees, `opacity` in `[0, 1]` (fades included).
+ * relative `scale`, clockwise `rotation` in degrees, `opacity` in `[0, 1]` (fades included),
+ * `blur` in sequence pixels (design pixels × design scale; 0 = sharp).
  */
 export interface ResolvedTransform {
   readonly position: Vec2;
@@ -19,6 +20,13 @@ export interface ResolvedTransform {
   readonly rotation: number;
   readonly anchor: Vec2;
   readonly opacity: number;
+  readonly blur: number;
+}
+
+/** An outline: its colour and visible width outside the edge, in sequence pixels. */
+export interface ResolvedStroke {
+  readonly color: Rgba;
+  readonly width: number;
 }
 
 /**
@@ -67,25 +75,63 @@ export interface ImageLayer extends LayerBase {
   readonly box: Size;
 }
 
-/** A filled rectangle or ellipse. */
+/** A filled rectangle, ellipse or line (a capsule of the line's thickness), maybe outlined. */
 export interface ShapeLayer extends LayerBase {
   readonly kind: 'shape';
-  readonly geometry: 'rectangle' | 'ellipse';
-  /** Box in sequence pixels (design pixels × design scale). */
+  readonly geometry: 'rectangle' | 'ellipse' | 'line';
+  /** Box in sequence pixels (design pixels × design scale; the frame for covering shapes). */
   readonly box: Size;
-  /** Corner radius in sequence pixels (rectangles; 0 for ellipses). */
+  /** Corner radius in sequence pixels (rectangles; half the thickness for lines; else 0). */
   readonly cornerRadius: number;
   readonly fill: Rgba;
+  readonly stroke: ResolvedStroke | null;
 }
 
-/** A block of text, measured by the compositor (its box depends on font metrics). */
+/** The font a text asks for (CSS matching picks the face). */
+export interface FontRequest {
+  readonly family: string;
+  /** 1 to 1000. */
+  readonly weight: number;
+  readonly italic: boolean;
+}
+
+/** A drop shadow, in sequence pixels. */
+export interface ResolvedShadow {
+  readonly color: Rgba;
+  readonly blur: number;
+  readonly offset: Vec2;
+}
+
+/** A plate behind a text block, in sequence pixels. */
+export interface ResolvedBackground {
+  readonly color: Rgba;
+  readonly padding: Vec2;
+  readonly cornerRadius: number;
+}
+
+/**
+ * A block of text, laid out by the compositor (its box depends on font metrics). Every size is in
+ * sequence pixels (design pixels × design scale).
+ */
 export interface TextLayer extends LayerBase {
   readonly kind: 'text';
+  /** The text to lay out, letter case applied. */
   readonly content: string;
-  readonly fontFamily: string;
-  /** Font size in sequence pixels (design pixels × design scale). */
+  readonly font: FontRequest;
   readonly fontSize: number;
   readonly color: Rgba;
+  readonly letterSpacing: number;
+  /** Distance between baselines as a multiple of `fontSize`. */
+  readonly lineHeight: number;
+  readonly align: TextAlign;
+  /** Wrapping width; `null` keeps each line on one line. */
+  readonly maxWidth: number | null;
+  readonly stroke: ResolvedStroke | null;
+  readonly shadow: ResolvedShadow | null;
+  /** When set, the layer's box includes the plate. */
+  readonly background: ResolvedBackground | null;
+  /** Share of the characters shown (0 to 1), laid out as the whole text. */
+  readonly reveal: number;
 }
 
 /** Something to draw, in stacking order within {@link FrameGraph.layers}. */

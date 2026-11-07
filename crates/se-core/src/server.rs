@@ -11,7 +11,7 @@ use crate::{
     access_guard::{AccessGuard, SessionToken, require_local_access},
     app_paths::AppPaths,
     error::CoreError,
-    handshake, media_routes,
+    font_routes, handshake, media_routes,
     rpc::{self, EventBus, HandlerContext, RpcRouter, RpcState},
     services,
 };
@@ -51,9 +51,10 @@ pub async fn run(
         paths,
         projects: Arc::clone(&services.projects),
         media: Arc::clone(&services.media),
+        fonts: Arc::clone(&services.fonts),
     });
     let state = RpcState::new(router, events.clone(), stopping.clone());
-    let app = routes(guard, state, services.media);
+    let app = routes(guard, state, services.media, services.fonts);
     let server = axum::serve(listener, app).with_graceful_shutdown(async move {
         shutdown.await;
         // Save every open project, then tell every client, then close the sockets (see
@@ -73,11 +74,17 @@ pub async fn run(
 }
 
 /// Every route, behind the access guard (`Host` and token checks).
-fn routes(guard: Arc<AccessGuard>, state: RpcState, media: Arc<se_app::MediaService>) -> Router {
+fn routes(
+    guard: Arc<AccessGuard>,
+    state: RpcState,
+    media: Arc<se_app::MediaService>,
+    fonts: Arc<dyn se_app::ports::FontCatalog>,
+) -> Router {
     Router::new()
         .route("/rpc", get(rpc::upgrade))
         .with_state(state)
         .merge(media_routes::routes(media))
+        .merge(font_routes::routes(fonts))
         .layer(middleware::from_fn_with_state(guard, require_local_access))
 }
 

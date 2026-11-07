@@ -1,6 +1,8 @@
 import type { Flicks } from '@se/protocol';
 import type {
   CompositorBackground,
+  FontLoader,
+  FrameLayout,
   MediaLocator,
   PreviewEngine,
   PreviewPlayback,
@@ -29,6 +31,7 @@ interface Settings {
   pixels: Size;
   locator: MediaLocator;
   playback: PreviewPlayback | null;
+  fonts: FontLoader | null;
 }
 
 /**
@@ -43,6 +46,8 @@ export class ViewerEngineController {
   private generation = 0;
   private status: ViewerEngineStatus = STARTING;
   private readonly listeners = new Set<() => void>();
+  private layout: FrameLayout | null = null;
+  private readonly layoutListeners = new Set<() => void>();
   private readonly settings: Settings = {
     scene: null,
     time: 0 as Flicks,
@@ -51,6 +56,7 @@ export class ViewerEngineController {
     pixels: { width: 1, height: 1 },
     locator: () => null,
     playback: null,
+    fonts: null,
   };
 
   constructor(private readonly factory: PreviewEngineFactory) {}
@@ -92,6 +98,7 @@ export class ViewerEngineController {
     this.engine = null;
     this.canvas?.remove();
     this.canvas = null;
+    this.setLayout(null);
   }
 
   setScene(scene: RenderScene | null): void {
@@ -132,6 +139,21 @@ export class ViewerEngineController {
     this.engine?.setPlayback(playback);
   }
 
+  /** Fonts loaded before texts are drawn (the font catalogue). */
+  setFonts(fonts: FontLoader | null): void {
+    this.settings.fonts = fonts;
+    this.engine?.setFonts(fonts);
+  }
+
+  /** Where the layers of the last drawn frame sit (the gizmo's input), `null` before one. */
+  getLayout = (): FrameLayout | null => this.layout;
+
+  /** Calls `listener` whenever a new layout is drawn; returns the unsubscribe function. */
+  subscribeLayout = (listener: () => void): (() => void) => {
+    this.layoutListeners.add(listener);
+    return () => this.layoutListeners.delete(listener);
+  };
+
   /** New media URLs (a restarted core, changed assets): redraws with them. */
   setLocator(locator: MediaLocator): void {
     this.settings.locator = locator;
@@ -152,17 +174,31 @@ export class ViewerEngineController {
 
   private start(engine: PreviewEngine): void {
     this.engine = engine;
-    const { pixels, proxy, background, scene, time, playback } = this.settings;
+    const { pixels, proxy, background, scene, time, playback, fonts } = this.settings;
     engine.resize(pixels.width, pixels.height);
     engine.setProxy(proxy);
     engine.setBackground(background);
+    engine.setFonts(fonts);
     engine.setScene(scene);
     engine.setTime(time);
     engine.setPlayback(playback);
-    this.unsubscribe = engine.subscribe((preview) => {
+    const stopState = engine.subscribe((preview) => {
       this.setStatus({ kind: 'running', preview });
     });
+    const stopLayout = engine.subscribeLayout((layout) => {
+      this.setLayout(layout);
+    });
+    this.unsubscribe = () => {
+      stopState();
+      stopLayout();
+    };
     this.setStatus({ kind: 'running', preview: engine.getState() });
+  }
+
+  private setLayout(layout: FrameLayout | null): void {
+    if (layout === this.layout) return;
+    this.layout = layout;
+    for (const listener of this.layoutListeners) listener();
   }
 
   private setStatus(status: ViewerEngineStatus): void {

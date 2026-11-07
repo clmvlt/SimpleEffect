@@ -26,7 +26,11 @@ describe('buildContentSecurityPolicy', () => {
   it('allows the inline <style> elements inserted by Radix and sonner', () => {
     const policy = buildContentSecurityPolicy({ devServer: false });
     expect(directive(policy, 'style-src')).toBe("'self' 'unsafe-inline'");
-    expect(directive(policy, 'font-src')).toBe("'self'");
+  });
+
+  it('loads fonts from the bundle and the font catalogue of the core only', () => {
+    const policy = buildContentSecurityPolicy({ devServer: false });
+    expect(directive(policy, 'font-src')).toBe("'self' data: http://127.0.0.1:*");
   });
 
   it('relaxes only what Vite Fast Refresh needs in development', () => {

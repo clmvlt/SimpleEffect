@@ -16,6 +16,8 @@ export interface AssetMenuHandlers {
   readonly onReveal: (asset: Asset) => void;
   readonly onGenerateProxy: (asset: Asset) => void;
   readonly onRemove: (asset: Asset) => void;
+  /** Adds an image at the playhead (images only; hidden when absent). */
+  readonly onAddImage?: ((asset: Asset) => void) | undefined;
 }
 
 /** Props of {@link AssetMenuItems}. */
@@ -30,8 +32,21 @@ export function AssetMenuItems({ asset, menu, ...handlers }: AssetMenuItemsProps
   const { t } = useTranslation();
   const Item = menu === 'context' ? ContextMenuItem : DropdownMenuItem;
   const Separator = menu === 'context' ? ContextMenuSeparator : DropdownMenuSeparator;
+  const { onAddImage } = handlers;
   return (
     <>
+      {asset.kind === 'image' && onAddImage !== undefined && (
+        <>
+          <Item
+            onSelect={() => {
+              onAddImage(asset);
+            }}
+          >
+            {t('editor.media.menu.addAtPlayhead')}
+          </Item>
+          <Separator />
+        </>
+      )}
       <Item
         onSelect={() => {
           handlers.onDetails(asset);

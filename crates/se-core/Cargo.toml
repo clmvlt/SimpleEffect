@@ -23,6 +23,7 @@ se-vision = { workspace = true }
 se-agents = { workspace = true }
 se-mcp = { workspace = true }
 se-export = { workspace = true }
+se-fonts = { workspace = true }
 
 anyhow = { workspace = true }
 axum = { workspace = true }

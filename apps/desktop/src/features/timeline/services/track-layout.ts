@@ -5,7 +5,10 @@ export interface TrackRow {
   readonly track: TrackEntity;
   /** Top of the row in pixels from the top of the track area. */
   readonly top: number;
+  /** Height of the track (its items). */
   readonly height: number;
+  /** Height of the keyframe lanes unfolded below its items (0 when none). */
+  readonly laneHeight: number;
 }
 
 /** The rows of the track area: video tracks above the divider, audio tracks below. */
@@ -29,11 +32,12 @@ export const SECTION_DIVIDER_HEIGHT = 6;
 export function layoutTracks(
   tracks: readonly TrackEntity[],
   heightOf: (track: TrackEntity) => number,
+  laneHeightOf: (track: TrackEntity) => number = () => 0,
 ): TrackLayout {
   let top = 0;
   const place = (track: TrackEntity): TrackRow => {
-    const row = { track, top, height: heightOf(track) };
-    top += row.height;
+    const row = { track, top, height: heightOf(track), laneHeight: laneHeightOf(track) };
+    top += row.height + row.laneHeight;
     return row;
   };
   const video = tracks
@@ -53,7 +57,7 @@ export function allRows(layout: TrackLayout): readonly TrackRow[] {
 
 /** The row under `y` (pixels from the top of the track area), if any. */
 export function rowAt(layout: TrackLayout, y: number): TrackRow | undefined {
-  return allRows(layout).find((row) => y >= row.top && y < row.top + row.height);
+  return allRows(layout).find((row) => y >= row.top && y < row.top + row.height + row.laneHeight);
 }
 
 /** Where a new track goes relative to an existing one, as seen on screen. */

@@ -3,6 +3,8 @@ import type { Flicks } from '@se/protocol';
 import type { Compositor, CompositorBackground, RenderCanvas } from '../composite/compositor';
 import type { DecoderPool, DecoderPoolOptions, DecoderPoolStats } from '../decode/decoder-pool';
 import type { MediaLocator } from '../decode/media-variant';
+import type { FontLoader } from '../fonts/font-registry';
+import type { FrameLayout } from './frame-layout';
 import { FrameRenderer, type RenderScene } from './frame-renderer';
 import type { MediaIssue } from './media-issue';
 import {
@@ -20,6 +22,8 @@ export interface PreviewState {
   readonly status: 'idle' | 'loading' | 'ready' | 'error';
   /** Media problems of the frame on screen. */
   readonly issues: readonly MediaIssue[];
+  /** Font families of the frame on screen missing from the catalogue (drawn with fallbacks). */
+  readonly missingFonts: readonly string[];
   readonly error: string | null;
 }
 
@@ -37,6 +41,8 @@ export interface PreviewEngineOptions {
   readonly preserveDrawingBuffer?: boolean;
   /** Runs a coalesced redraw (default: the next animation frame, or a macrotask in Workers). */
   readonly schedule?: (callback: () => void) => void;
+  /** Fonts loaded before texts are drawn (see `PreviewEngine.setFonts`). */
+  readonly fonts?: FontLoader;
 }
 
 /** Decoder and playback counters, for the performance HUD and leak checks. */
@@ -61,11 +67,17 @@ export interface PreviewEngine {
   setPlayback(playback: PreviewPlayback | null): void;
   setProxy(enabled: boolean): void;
   setBackground(background: CompositorBackground): void;
+  /** Fonts loaded before texts are drawn (the font catalogue); `null` uses the platform's. */
+  setFonts(fonts: FontLoader | null): void;
   /** Canvas size in pixels (the frame is scaled to fill it). */
   resize(width: number, height: number): void;
   getState(): PreviewState;
   /** Calls `listener` on every state change; returns the unsubscribe function. */
   subscribe(listener: (state: PreviewState) => void): () => void;
+  /** Where the layers of the last drawn frame sit (`null` before the first frame). */
+  getLayout(): FrameLayout | null;
+  /** Calls `listener` after each drawn frame with its layout; returns the unsubscribe function. */
+  subscribeLayout(listener: (layout: FrameLayout) => void): () => void;
   /** Decoder and playback counters (open frames: the dev leak check). */
   stats(): PreviewStats;
   /** Resolves once the latest requested frame is drawn (or the engine is destroyed). */
@@ -92,6 +104,7 @@ function sameState(left: PreviewState, right: PreviewState): boolean {
   return (
     left.status === right.status &&
     left.error === right.error &&
+    left.missingFonts.join('\n') === right.missingFonts.join('\n') &&
     left.issues.length === right.issues.length &&
     left.issues.every((issue, index) => {
       const other = right.issues[index];
@@ -112,8 +125,10 @@ class Engine implements PreviewEngine {
   private playback: PreviewPlayback | null = null;
   private drawnTime: Flicks | null = null;
   private readonly prefetcher: PlaybackPrefetcher;
-  private state: PreviewState = { status: 'idle', issues: [], error: null };
+  private state: PreviewState = { status: 'idle', issues: [], missingFonts: [], error: null };
   private readonly listeners = new Set<(state: PreviewState) => void>();
+  private layout: FrameLayout | null = null;
+  private readonly layoutListeners = new Set<(layout: FrameLayout) => void>();
   private readonly renderer: FrameRenderer;
   private scheduled = false;
   private inFlight = 0;
@@ -171,6 +186,11 @@ class Engine implements PreviewEngine {
     this.invalidate();
   }
 
+  setFonts(fonts: FontLoader | null): void {
+    this.renderer.setFonts(fonts);
+    this.invalidate();
+  }
+
   resize(width: number, height: number): void {
     this.compositor.resize(width, height);
     this.invalidate();
@@ -183,6 +203,15 @@ class Engine implements PreviewEngine {
   subscribe(listener: (state: PreviewState) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  getLayout(): FrameLayout | null {
+    return this.layout;
+  }
+
+  subscribeLayout(listener: (layout: FrameLayout) => void): () => void {
+    this.layoutListeners.add(listener);
+    return () => this.layoutListeners.delete(listener);
   }
 
   stats(): PreviewStats {
@@ -201,6 +230,7 @@ class Engine implements PreviewEngine {
     this.pool.destroy();
     this.compositor.destroy();
     this.listeners.clear();
+    this.layoutListeners.clear();
     this.wakeWaiters();
   }
 
@@ -261,11 +291,18 @@ class Engine implements PreviewEngine {
       if (outcome.kind === 'drawn') {
         this.drawnTime = time;
         if (playback !== null) this.prefetcher.drawn(time, playback, waited);
-        this.setState({ status: 'ready', issues: outcome.issues, error: null });
+        this.setState({
+          status: 'ready',
+          issues: outcome.issues,
+          missingFonts: outcome.missingFonts,
+          error: null,
+        });
+        this.layout = outcome.layout;
+        for (const listener of this.layoutListeners) listener(outcome.layout);
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.setState({ status: 'error', issues: [], error: message });
+      this.setState({ status: 'error', issues: [], missingFonts: [], error: message });
     } finally {
       this.inFlight -= 1;
       if (this.playback !== null && this.drawnTime !== this.time) this.drawPlaybackFrame();

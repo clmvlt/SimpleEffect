@@ -60,7 +60,7 @@ export function TrackHeader({
             'absolute inset-x-0 flex items-start gap-1 border-b border-border/60 bg-panel px-1 pt-1',
             dragging && 'opacity-50',
           )}
-          style={{ top: row.top, height: row.height }}
+          style={{ top: row.top, height: row.height + row.laneHeight }}
         >
           <span
             className="flex h-control-xs cursor-grab items-center text-text-subtle active:cursor-grabbing"

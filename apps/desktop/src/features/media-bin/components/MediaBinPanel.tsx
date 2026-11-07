@@ -36,7 +36,13 @@ import { RelinkConfirmDialog } from './RelinkConfirmDialog';
  * « Relier… », and the details of the selected asset. It also keeps the jobs store current and
  * reports what WebCodecs can decode.
  */
-export function MediaBinPanel() {
+/** Props of {@link MediaBinPanel}. */
+export interface MediaBinPanelProps {
+  /** Adds an image asset at the playhead (« Ajouter à la tête de lecture »); hidden when absent. */
+  readonly onAddImage?: ((asset: Asset) => void) | undefined;
+}
+
+export function MediaBinPanel({ onAddImage }: MediaBinPanelProps = {}) {
   const { t } = useTranslation();
   const projectId = useProjectSelector(selectProjectId);
   const { all, visible } = useMediaAssets();
@@ -58,6 +64,7 @@ export function MediaBinPanel() {
     onReveal: actions.reveal,
     onGenerateProxy: (asset) => void actions.generateDerived(asset, 'proxy'),
     onRemove: (asset) => void actions.remove(asset),
+    onAddImage,
   };
   const importLabel = t('editor.media.toolbar.import');
   const importFromDialog = () => void importer.importWithDialog();

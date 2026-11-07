@@ -15,7 +15,7 @@ const CORE_WEBSOCKET = 'ws://127.0.0.1:*';
  * Builds the renderer's Content-Security-Policy.
  *
  * Production allows network connections to the local core (127.0.0.1) only: no CDN, no remote
- * fonts, no telemetry (golden rule 1). Everything else is restricted to the app's own files.
+ * fonts (fonts come from the bundle or the core's font catalogue), no telemetry (golden rule 1). Everything else is restricted to the app's own files.
  *
  * Inline styles are allowed in every mode: Radix (scroll areas, select viewports) and sonner insert
  * `<style>` elements at runtime. Styles cannot run code, and the app loads no remote resource a style
@@ -28,7 +28,9 @@ export function buildContentSecurityPolicy({ devServer }: ContentSecurityPolicyO
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': ["'self'", 'data:', 'blob:', CORE_HTTP],
     'media-src': ["'self'", 'blob:', CORE_HTTP],
-    'font-src': ["'self'"],
+    // The font catalogue's faces are served by the core (`/media/fonts/{id}`, ADR-0025); Vite
+    // inlines the smallest subsets of the UI fonts as `data:` URLs in the bundle's CSS.
+    'font-src': ["'self'", 'data:', CORE_HTTP],
     'connect-src': devServer
       ? ["'self'", CORE_WEBSOCKET, CORE_HTTP, 'ws://localhost:*']
       : [CORE_WEBSOCKET, CORE_HTTP],

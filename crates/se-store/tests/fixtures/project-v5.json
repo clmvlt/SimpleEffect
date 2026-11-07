@@ -1,0 +1,865 @@
+{
+  "id": "00000000-0001-7000-8000-000000000000",
+  "name": "Example",
+  "schemaVersion": 5,
+  "revision": 42,
+  "settings": {
+    "defaultFormat": {
+      "width": 1920,
+      "height": 1080,
+      "frameRate": {
+        "numerator": 30000,
+        "denominator": 1001
+      },
+      "sampleRate": 48000
+    }
+  },
+  "assets": [
+    {
+      "id": "00000000-0001-7000-8000-000000000000",
+      "originalPath": "/home/demo/media/interview.mp4",
+      "relativeHint": "media/interview.mp4",
+      "kind": "video",
+      "mediaInfo": {
+        "duration": 42336000000,
+        "container": "mov,mp4,m4a,3gp,3g2,mj2",
+        "videoStream": {
+          "codec": "h264",
+          "profile": "High",
+          "level": 40,
+          "codecTag": "avc1",
+          "pixelFormat": "yuv420p",
+          "bitDepth": 8,
+          "chromaSubsampling": "4:2:0",
+          "width": 1920,
+          "height": 1080,
+          "frameRate": {
+            "numerator": 30000,
+            "denominator": 1001
+          },
+          "rotation": 0
+        },
+        "audioStreams": [
+          {
+            "codec": "aac",
+            "profile": "LC",
+            "channels": 2,
+            "sampleRate": 48000
+          }
+        ]
+      },
+      "fingerprint": {
+        "sizeBytes": 13000000,
+        "modifiedUnixMs": 1700000000000,
+        "sampleHash": "0000000000c667fc"
+      },
+      "derived": {
+        "mezzanine": null,
+        "proxy": {
+          "relativePath": "cache/media/0000000000c667fc-13000000-1700000000000/proxy-540.mp4",
+          "status": {
+            "kind": "ready"
+          }
+        }
+      },
+      "analysis": {
+        "audio": {
+          "integratedLufs": -16.5,
+          "loudnessRangeLu": 5.5,
+          "truePeakDbtp": -1.0,
+          "silenceCount": 3,
+          "silenceDuration": 1587600000
+        },
+        "scenes": {
+          "changeCount": 4
+        }
+      },
+      "decodability": {
+        "video": "decodable",
+        "audio": "decodable"
+      },
+      "missing": false
+    },
+    {
+      "id": "00000000-0002-7000-8000-000000000000",
+      "originalPath": "/home/demo/media/music.wav",
+      "relativeHint": "media/music.wav",
+      "kind": "audio",
+      "mediaInfo": {
+        "duration": 84672000000,
+        "container": "wav",
+        "videoStream": null,
+        "audioStreams": [
+          {
+            "codec": "pcm_s24le",
+            "profile": null,
+            "channels": 2,
+            "sampleRate": 48000
+          }
+        ]
+      },
+      "fingerprint": {
+        "sizeBytes": 9000000,
+        "modifiedUnixMs": 1700000000000,
+        "sampleHash": "0000000000895efc"
+      },
+      "derived": {
+        "mezzanine": null,
+        "proxy": null
+      },
+      "analysis": {
+        "audio": null,
+        "scenes": null
+      },
+      "decodability": {
+        "video": "noStream",
+        "audio": "decodable"
+      },
+      "missing": false
+    },
+    {
+      "id": "00000000-0003-7000-8000-000000000000",
+      "originalPath": "/home/demo/media/logo.png",
+      "relativeHint": "media/logo.png",
+      "kind": "image",
+      "mediaInfo": {
+        "duration": null,
+        "container": "png_pipe",
+        "videoStream": {
+          "codec": "png",
+          "profile": null,
+          "level": null,
+          "codecTag": null,
+          "pixelFormat": "rgba",
+          "bitDepth": 8,
+          "chromaSubsampling": null,
+          "width": 512,
+          "height": 512,
+          "frameRate": null,
+          "rotation": 0
+        },
+        "audioStreams": []
+      },
+      "fingerprint": {
+        "sizeBytes": 8000000,
+        "modifiedUnixMs": 1700000000000,
+        "sampleHash": "00000000007a1cbc"
+      },
+      "derived": {
+        "mezzanine": null,
+        "proxy": null
+      },
+      "analysis": {
+        "audio": null,
+        "scenes": null
+      },
+      "decodability": {
+        "video": "decodable",
+        "audio": "noStream"
+      },
+      "missing": false
+    }
+  ],
+  "sequences": [
+    {
+      "id": "00000000-0001-7000-8000-000000000000",
+      "name": "Main edit",
+      "format": {
+        "width": 1920,
+        "height": 1080,
+        "frameRate": {
+          "numerator": 30000,
+          "denominator": 1001
+        },
+        "sampleRate": 48000
+      },
+      "tracks": [
+        {
+          "id": "00000000-0001-7000-8000-000000000000",
+          "kind": "video",
+          "name": "V1",
+          "muted": false,
+          "solo": false,
+          "locked": false,
+          "hidden": false,
+          "volumeDb": 0.0,
+          "pan": 0.0,
+          "items": [
+            {
+              "id": "00000000-0001-7000-8000-000000000000",
+              "revision": 1,
+              "origin": {
+                "kind": "user"
+              },
+              "timelineRange": {
+                "start": 0,
+                "duration": 7056000000
+              },
+              "linkGroup": "00000000-0001-7000-8000-000000000000",
+              "kind": {
+                "kind": "mediaClip",
+                "assetId": "00000000-0001-7000-8000-000000000000",
+                "sourceStart": 3528000000,
+                "speed": 1.0,
+                "transform": {
+                  "position": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "scale": {
+                    "kind": "static",
+                    "value": {
+                      "x": 1.0,
+                      "y": 1.0
+                    }
+                  },
+                  "rotation": {
+                    "kind": "static",
+                    "value": 0.0
+                  },
+                  "anchor": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "opacity": {
+                    "kind": "static",
+                    "value": 1.0
+                  },
+                  "blur": {
+                    "kind": "static",
+                    "value": 0.0
+                  }
+                },
+                "volumeDb": {
+                  "kind": "static",
+                  "value": 0.0
+                },
+                "fadeIn": 352800000,
+                "fadeOut": 0,
+                "fadeInShape": "linear",
+                "fadeOutShape": "linear",
+                "reframe": {
+                  "kind": "fit"
+                }
+              }
+            },
+            {
+              "id": "00000000-0002-7000-8000-000000000000",
+              "revision": 1,
+              "origin": {
+                "kind": "aiTask",
+                "taskId": "00000000-0001-7000-8000-000000000000"
+              },
+              "timelineRange": {
+                "start": 7056000000,
+                "duration": 2822400000
+              },
+              "linkGroup": null,
+              "kind": {
+                "kind": "mediaClip",
+                "assetId": "00000000-0001-7000-8000-000000000000",
+                "sourceStart": 14112000000,
+                "speed": 2.0,
+                "transform": {
+                  "position": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "scale": {
+                    "kind": "static",
+                    "value": {
+                      "x": 1.0,
+                      "y": 1.0
+                    }
+                  },
+                  "rotation": {
+                    "kind": "static",
+                    "value": 0.0
+                  },
+                  "anchor": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "opacity": {
+                    "kind": "static",
+                    "value": 1.0
+                  },
+                  "blur": {
+                    "kind": "static",
+                    "value": 0.0
+                  }
+                },
+                "volumeDb": {
+                  "kind": "static",
+                  "value": 0.0
+                },
+                "fadeIn": 352800000,
+                "fadeOut": 0,
+                "fadeInShape": "linear",
+                "fadeOutShape": "linear",
+                "reframe": {
+                  "kind": "fit"
+                }
+              }
+            }
+          ],
+          "transitions": [
+            {
+              "id": "00000000-0001-7000-8000-000000000000",
+              "kind": "crossDissolve",
+              "leftItem": "00000000-0001-7000-8000-000000000000",
+              "rightItem": "00000000-0002-7000-8000-000000000000",
+              "duration": 705600000,
+              "alignment": "center"
+            }
+          ]
+        },
+        {
+          "id": "00000000-0002-7000-8000-000000000000",
+          "kind": "video",
+          "name": "V2",
+          "muted": false,
+          "solo": false,
+          "locked": false,
+          "hidden": false,
+          "volumeDb": 0.0,
+          "pan": 0.0,
+          "items": [
+            {
+              "id": "00000000-0003-7000-8000-000000000000",
+              "revision": 1,
+              "origin": {
+                "kind": "user"
+              },
+              "timelineRange": {
+                "start": 705600000,
+                "duration": 2116800000
+              },
+              "linkGroup": null,
+              "kind": {
+                "kind": "text",
+                "content": "Bonjour",
+                "style": {
+                  "fontFamily": "Inter",
+                  "fontWeight": 600,
+                  "italic": false,
+                  "fontSize": {
+                    "kind": "static",
+                    "value": 72.0
+                  },
+                  "color": {
+                    "kind": "static",
+                    "value": "#ffffff"
+                  },
+                  "stroke": {
+                    "enabled": true,
+                    "color": {
+                      "kind": "static",
+                      "value": "#000000"
+                    },
+                    "width": {
+                      "kind": "static",
+                      "value": 4.0
+                    }
+                  },
+                  "shadow": {
+                    "enabled": false,
+                    "color": {
+                      "kind": "static",
+                      "value": "#000000b3"
+                    },
+                    "blur": {
+                      "kind": "static",
+                      "value": 8.0
+                    },
+                    "offset": {
+                      "kind": "static",
+                      "value": {
+                        "x": 0.0,
+                        "y": 4.0
+                      }
+                    }
+                  },
+                  "background": {
+                    "enabled": false,
+                    "color": {
+                      "kind": "static",
+                      "value": "#000000b3"
+                    },
+                    "padding": {
+                      "x": 24.0,
+                      "y": 12.0
+                    },
+                    "cornerRadius": 8.0
+                  },
+                  "letterSpacing": {
+                    "kind": "static",
+                    "value": 0.0
+                  },
+                  "lineHeight": 1.2,
+                  "align": "center",
+                  "maxWidth": 900.0,
+                  "textCase": "normal"
+                },
+                "transform": {
+                  "position": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.8
+                    }
+                  },
+                  "scale": {
+                    "kind": "static",
+                    "value": {
+                      "x": 1.0,
+                      "y": 1.0
+                    }
+                  },
+                  "rotation": {
+                    "kind": "static",
+                    "value": 0.0
+                  },
+                  "anchor": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "opacity": {
+                    "kind": "keyframed",
+                    "keyframes": [
+                      {
+                        "time": 0,
+                        "value": 0.0,
+                        "easing": {
+                          "kind": "preset",
+                          "name": "easeOut"
+                        }
+                      },
+                      {
+                        "time": 352800000,
+                        "value": 1.0,
+                        "easing": {
+                          "kind": "preset",
+                          "name": "easeOut"
+                        }
+                      }
+                    ]
+                  },
+                  "blur": {
+                    "kind": "static",
+                    "value": 0.0
+                  }
+                },
+                "reveal": {
+                  "kind": "static",
+                  "value": 1.0
+                }
+              }
+            },
+            {
+              "id": "00000000-0004-7000-8000-000000000000",
+              "revision": 1,
+              "origin": {
+                "kind": "user"
+              },
+              "timelineRange": {
+                "start": 3528000000,
+                "duration": 1411200000
+              },
+              "linkGroup": null,
+              "kind": {
+                "kind": "image",
+                "assetId": "00000000-0003-7000-8000-000000000000",
+                "fit": "natural",
+                "transform": {
+                  "position": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.9,
+                      "y": 0.1
+                    }
+                  },
+                  "scale": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.25,
+                      "y": 0.25
+                    }
+                  },
+                  "rotation": {
+                    "kind": "static",
+                    "value": 0.0
+                  },
+                  "anchor": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "opacity": {
+                    "kind": "static",
+                    "value": 1.0
+                  },
+                  "blur": {
+                    "kind": "static",
+                    "value": 0.0
+                  }
+                }
+              }
+            }
+          ],
+          "transitions": []
+        },
+        {
+          "id": "00000000-0003-7000-8000-000000000000",
+          "kind": "video",
+          "name": "V3",
+          "muted": false,
+          "solo": false,
+          "locked": false,
+          "hidden": false,
+          "volumeDb": 0.0,
+          "pan": 0.0,
+          "items": [
+            {
+              "id": "00000000-0005-7000-8000-000000000000",
+              "revision": 1,
+              "origin": {
+                "kind": "user"
+              },
+              "timelineRange": {
+                "start": 1411200000,
+                "duration": 2116800000
+              },
+              "linkGroup": null,
+              "kind": {
+                "kind": "motionTemplate",
+                "templateId": "00000000-0001-7000-8000-000000000000",
+                "params": {
+                  "accent": {
+                    "kind": "color",
+                    "value": "#ffcc00"
+                  },
+                  "lineWidth": {
+                    "kind": "number",
+                    "value": 4.0
+                  },
+                  "slideIn": {
+                    "kind": "boolean",
+                    "value": true
+                  },
+                  "title": {
+                    "kind": "text",
+                    "value": "Jane Doe"
+                  }
+                }
+              }
+            },
+            {
+              "id": "00000000-0006-7000-8000-000000000000",
+              "revision": 1,
+              "origin": {
+                "kind": "user"
+              },
+              "timelineRange": {
+                "start": 4233600000,
+                "duration": 1411200000
+              },
+              "linkGroup": null,
+              "kind": {
+                "kind": "shape",
+                "geometry": {
+                  "kind": "rectangle",
+                  "width": 600.0,
+                  "height": 120.0,
+                  "cornerRadius": 16.0
+                },
+                "fill": {
+                  "kind": "static",
+                  "value": "#000000cc"
+                },
+                "stroke": {
+                  "enabled": false,
+                  "color": {
+                    "kind": "static",
+                    "value": "#000000"
+                  },
+                  "width": {
+                    "kind": "static",
+                    "value": 4.0
+                  }
+                },
+                "coverFrame": false,
+                "transform": {
+                  "position": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "scale": {
+                    "kind": "static",
+                    "value": {
+                      "x": 1.0,
+                      "y": 1.0
+                    }
+                  },
+                  "rotation": {
+                    "kind": "static",
+                    "value": 0.0
+                  },
+                  "anchor": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "opacity": {
+                    "kind": "static",
+                    "value": 1.0
+                  },
+                  "blur": {
+                    "kind": "static",
+                    "value": 0.0
+                  }
+                }
+              }
+            },
+            {
+              "id": "00000000-0007-7000-8000-000000000000",
+              "revision": 1,
+              "origin": {
+                "kind": "user"
+              },
+              "timelineRange": {
+                "start": 5644800000,
+                "duration": 1411200000
+              },
+              "linkGroup": null,
+              "kind": {
+                "kind": "caption",
+                "text": "Merci d'être là"
+              }
+            }
+          ],
+          "transitions": []
+        },
+        {
+          "id": "00000000-0004-7000-8000-000000000000",
+          "kind": "audio",
+          "name": "A1",
+          "muted": false,
+          "solo": false,
+          "locked": false,
+          "hidden": false,
+          "volumeDb": 0.0,
+          "pan": 0.0,
+          "items": [
+            {
+              "id": "00000000-0008-7000-8000-000000000000",
+              "revision": 1,
+              "origin": {
+                "kind": "user"
+              },
+              "timelineRange": {
+                "start": 0,
+                "duration": 7056000000
+              },
+              "linkGroup": "00000000-0001-7000-8000-000000000000",
+              "kind": {
+                "kind": "mediaClip",
+                "assetId": "00000000-0001-7000-8000-000000000000",
+                "sourceStart": 3528000000,
+                "speed": 1.0,
+                "transform": {
+                  "position": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "scale": {
+                    "kind": "static",
+                    "value": {
+                      "x": 1.0,
+                      "y": 1.0
+                    }
+                  },
+                  "rotation": {
+                    "kind": "static",
+                    "value": 0.0
+                  },
+                  "anchor": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "opacity": {
+                    "kind": "static",
+                    "value": 1.0
+                  },
+                  "blur": {
+                    "kind": "static",
+                    "value": 0.0
+                  }
+                },
+                "volumeDb": {
+                  "kind": "static",
+                  "value": 0.0
+                },
+                "fadeIn": 352800000,
+                "fadeOut": 0,
+                "fadeInShape": "linear",
+                "fadeOutShape": "linear",
+                "reframe": {
+                  "kind": "fit"
+                }
+              }
+            }
+          ],
+          "transitions": []
+        },
+        {
+          "id": "00000000-0005-7000-8000-000000000000",
+          "kind": "audio",
+          "name": "A2",
+          "muted": false,
+          "solo": false,
+          "locked": false,
+          "hidden": false,
+          "volumeDb": 0.0,
+          "pan": 0.0,
+          "items": [
+            {
+              "id": "00000000-0009-7000-8000-000000000000",
+              "revision": 1,
+              "origin": {
+                "kind": "user"
+              },
+              "timelineRange": {
+                "start": 0,
+                "duration": 9878400000
+              },
+              "linkGroup": null,
+              "kind": {
+                "kind": "mediaClip",
+                "assetId": "00000000-0002-7000-8000-000000000000",
+                "sourceStart": 0,
+                "speed": 1.0,
+                "transform": {
+                  "position": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "scale": {
+                    "kind": "static",
+                    "value": {
+                      "x": 1.0,
+                      "y": 1.0
+                    }
+                  },
+                  "rotation": {
+                    "kind": "static",
+                    "value": 0.0
+                  },
+                  "anchor": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "opacity": {
+                    "kind": "static",
+                    "value": 1.0
+                  },
+                  "blur": {
+                    "kind": "static",
+                    "value": 0.0
+                  }
+                },
+                "volumeDb": {
+                  "kind": "keyframed",
+                  "keyframes": [
+                    {
+                      "time": 0,
+                      "value": -6.0,
+                      "easing": {
+                        "kind": "cubicBezier",
+                        "x1": 0.42,
+                        "y1": 0.0,
+                        "x2": 0.58,
+                        "y2": 1.0
+                      }
+                    },
+                    {
+                      "time": 1411200000,
+                      "value": -20.0,
+                      "easing": {
+                        "kind": "cubicBezier",
+                        "x1": 0.42,
+                        "y1": 0.0,
+                        "x2": 0.58,
+                        "y2": 1.0
+                      }
+                    }
+                  ]
+                },
+                "fadeIn": 0,
+                "fadeOut": 705600000,
+                "fadeInShape": "linear",
+                "fadeOutShape": "constantPower",
+                "reframe": {
+                  "kind": "fit"
+                }
+              }
+            }
+          ],
+          "transitions": []
+        }
+      ],
+      "markers": [
+        {
+          "id": "00000000-0001-7000-8000-000000000000",
+          "time": 2116800000,
+          "label": "Intro ends",
+          "color": "yellow"
+        }
+      ]
+    }
+  ],
+  "templates": [
+    {
+      "id": "00000000-0001-7000-8000-000000000000",
+      "name": "Lower third"
+    }
+  ],
+  "brandKit": {
+    "colors": ["#ffcc00", "#1a1a1a"],
+    "fonts": ["Inter"]
+  }
+}

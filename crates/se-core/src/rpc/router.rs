@@ -7,7 +7,8 @@ use se_protocol::{
 use super::{
     encode::encode,
     handlers::{
-        HandlerContext, editing, items, media, media_settings, projects, sound, system, timeline,
+        HandlerContext, editing, graphics, items, media, media_settings, projects, sound, system,
+        timeline,
     },
     request::{Rejection, parse_request},
 };
@@ -128,6 +129,30 @@ impl RpcRouter {
                 marker_id,
             } => timeline::remove_marker(context, *project_id, *marker_id).await,
             Command::PlaceMedia(request) => items::place_media(context, request).await,
+            Command::SetItemAnimations {
+                project_id,
+                animations,
+            } => graphics::set_item_animations(context, *project_id, animations).await,
+            Command::AddGraphicItem(request) => graphics::add_graphic_item(context, request).await,
+            Command::ApplyAnimationPreset {
+                project_id,
+                item_ids,
+                preset,
+                phase,
+                duration,
+                start,
+            } => {
+                let request = graphics::PresetRequest {
+                    item_ids,
+                    preset,
+                    phase: *phase,
+                    duration: *duration,
+                    start: *start,
+                };
+                graphics::apply_animation_preset(context, *project_id, request).await
+            }
+            Command::ListAnimationPresets => graphics::list_animation_presets(),
+            Command::ListFonts => Ok(graphics::list_fonts(context).await),
             Command::MoveItems {
                 project_id,
                 moves,
@@ -241,7 +266,7 @@ pub mod testing {
         sync::Arc,
     };
 
-    use se_app::test_support::MediaTestbed;
+    use se_app::test_support::{FakeFontCatalog, MediaTestbed};
 
     use crate::{app_paths::AppPaths, rpc::handlers::HandlerContext};
 
@@ -258,6 +283,7 @@ pub mod testing {
             },
             projects: Arc::new(projects),
             media,
+            fonts: Arc::new(FakeFontCatalog),
         }
     }
 }
@@ -456,6 +482,8 @@ mod tests {
             "listRecentProjects",
             "getMediaSettings",
             "getMediaToolsStatus",
+            "listAnimationPresets",
+            "listFonts",
         ] {
             let request = format!(r#"{{"type":"request","id":1,"command":{{"kind":"{kind}"}}}}"#);
             assert_eq!(reply(&request).await["result"]["kind"], kind);

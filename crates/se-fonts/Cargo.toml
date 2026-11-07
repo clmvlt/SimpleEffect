@@ -1,0 +1,23 @@
+[package]
+name = "se-fonts"
+description = "Font adapter: the fonts bundled with SimpleEffect and those installed on the system."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+repository.workspace = true
+
+[dependencies]
+se-app = { workspace = true }
+se-protocol = { workspace = true }
+async-trait = { workspace = true }
+fontdb = { workspace = true }
+tokio = { workspace = true, features = ["rt", "sync"] }
+tracing = { workspace = true }
+xxhash-rust = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync"] }
+
+[lints]
+workspace = true

@@ -39,6 +39,7 @@ This codebase is developed and maintained by AI agents. Optimise every change fo
 | `crates/se-media` | ffprobe/ffmpeg jobs and analysis | Sidecar processes only |
 | `crates/se-transcribe` | whisper.cpp adapter | Implements `Transcriber` |
 | `crates/se-vision` | ONNX face/subject detection | Implements `SubjectDetector` |
+| `crates/se-fonts` | Font catalogue: bundled fonts (embedded) + installed fonts (`fontdb`) | Implements `FontCatalog` |
 | `crates/se-agents` | AI CLI providers, stream parsing | Only place that knows a CLI |
 | `crates/se-mcp` | MCP tools for agents | One tool per file; writes go through use cases |
 | `crates/se-export` | FCP7 XML, OTIO, SRT, render orchestration | Writers are pure functions |

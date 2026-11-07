@@ -1,118 +1,94 @@
 //! [`SetKeyframes`]: sets one animatable property of an item, typed by [`PropertyAnimation`].
 
-use std::fmt;
-
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use super::{Edit, Effect, checks::check_revision, lookup::find_item, placement::place_item};
-use crate::{Animatable, DomainError, ItemId, ItemKind, Project, Vec2};
+use crate::{
+    Animatable, AnimatableProperty, Color, DesignPixels, DomainError, ItemId, ItemKind, Project,
+    PropertyMut, PropertyRef, Vec2,
+};
 
-/// The animatable properties of items.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
-pub enum AnimatableProperty {
-    /// `transform.position` of visual items.
-    Position,
-    /// `transform.scale` of visual items.
-    Scale,
-    /// `transform.rotation` of visual items.
-    Rotation,
-    /// `transform.anchor` of visual items.
-    Anchor,
-    /// `transform.opacity` of visual items.
-    Opacity,
-    /// `volumeDb` of media clips.
-    VolumeDb,
+/// Declares [`PropertyAnimation`] with one variant per [`AnimatableProperty`] (same name), typed
+/// by the property's values, and its conversions from and to [`PropertyRef`] / [`PropertyMut`].
+macro_rules! property_animations {
+    ($($variant:ident: $value:ty => $slot:ident;)*) => {
+        /// An animatable property with its new value, typed by property (positions are
+        /// [`Vec2`], rotations numbers, sizes design pixels, colours [`Color`]). Serialized as
+        /// `{"property": "opacity", "value": {"kind": "keyframed", …}}`.
+        #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+        #[serde(tag = "property", rename_all = "camelCase")]
+        pub enum PropertyAnimation {
+            $(
+                #[doc = concat!("New value of `", stringify!($variant), "` (see [`AnimatableProperty`]).")]
+                $variant {
+                    /// Static value or keyframes.
+                    value: Animatable<$value>,
+                },
+            )*
+        }
+
+        impl PropertyAnimation {
+            /// The property set.
+            #[must_use]
+            pub const fn property(&self) -> AnimatableProperty {
+                match self {
+                    $(Self::$variant { .. } => AnimatableProperty::$variant,)*
+                }
+            }
+
+            /// The current value of `property` read through `slot`, as an animation (`None`
+            /// when the slot does not hold that property's type).
+            #[must_use]
+            pub fn read(property: AnimatableProperty, slot: PropertyRef<'_>) -> Option<Self> {
+                match (property, slot) {
+                    $((AnimatableProperty::$variant, PropertyRef::$slot(value)) => {
+                        Some(Self::$variant { value: value.clone() })
+                    })*
+                    _ => None,
+                }
+            }
+
+            /// Writes the value into `slot`; `false` (and no change) when the slot holds another
+            /// type.
+            pub(crate) fn assign(&self, slot: PropertyMut<'_>) -> bool {
+                match (self, slot) {
+                    $((Self::$variant { value }, PropertyMut::$slot(target)) => {
+                        *target = value.clone();
+                        true
+                    })*
+                    _ => false,
+                }
+            }
+        }
+    };
 }
 
-impl fmt::Display for AnimatableProperty {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(match self {
-            Self::Position => "position",
-            Self::Scale => "scale",
-            Self::Rotation => "rotation",
-            Self::Anchor => "anchor",
-            Self::Opacity => "opacity",
-            Self::VolumeDb => "volume",
-        })
-    }
-}
-
-/// An animatable property with its new value, typed by property (positions are [`Vec2`],
-/// rotations numbers…). Serialized as `{"property": "opacity", "value": {"kind": "keyframed", …}}`.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
-#[serde(tag = "property", rename_all = "camelCase")]
-pub enum PropertyAnimation {
-    /// New position.
-    Position {
-        /// Static value or keyframes.
-        value: Animatable<Vec2>,
-    },
-    /// New scale.
-    Scale {
-        /// Static value or keyframes.
-        value: Animatable<Vec2>,
-    },
-    /// New rotation.
-    Rotation {
-        /// Static value or keyframes.
-        value: Animatable<f64>,
-    },
-    /// New anchor.
-    Anchor {
-        /// Static value or keyframes.
-        value: Animatable<Vec2>,
-    },
-    /// New opacity.
-    Opacity {
-        /// Static value or keyframes.
-        value: Animatable<f64>,
-    },
-    /// New volume.
-    VolumeDb {
-        /// Static value or keyframes.
-        value: Animatable<f64>,
-    },
+property_animations! {
+    Position: Vec2 => Point;
+    Scale: Vec2 => Point;
+    Rotation: f64 => Number;
+    Anchor: Vec2 => Point;
+    Opacity: f64 => Number;
+    Blur: DesignPixels => Pixels;
+    VolumeDb: f64 => Number;
+    FontSize: DesignPixels => Pixels;
+    FillColor: Color => Color;
+    LetterSpacing: DesignPixels => Pixels;
+    Reveal: f64 => Number;
+    StrokeColor: Color => Color;
+    StrokeWidth: DesignPixels => Pixels;
+    ShadowColor: Color => Color;
+    ShadowBlur: DesignPixels => Pixels;
+    ShadowOffset: Vec2 => Point;
+    BackgroundColor: Color => Color;
 }
 
 impl PropertyAnimation {
-    /// The property set.
-    #[must_use]
-    pub const fn property(&self) -> AnimatableProperty {
-        match self {
-            Self::Position { .. } => AnimatableProperty::Position,
-            Self::Scale { .. } => AnimatableProperty::Scale,
-            Self::Rotation { .. } => AnimatableProperty::Rotation,
-            Self::Anchor { .. } => AnimatableProperty::Anchor,
-            Self::Opacity { .. } => AnimatableProperty::Opacity,
-            Self::VolumeDb { .. } => AnimatableProperty::VolumeDb,
-        }
-    }
-
     /// Sets the property on `kind`; `false` (and no change) when the kind has no such property.
-    fn apply(&self, kind: &mut ItemKind) -> bool {
-        if let Self::VolumeDb { value } = self {
-            return match kind {
-                ItemKind::MediaClip(clip) => {
-                    clip.volume_db = value.clone();
-                    true
-                }
-                _ => false,
-            };
-        }
-        let Some(transform) = kind.transform_mut() else {
-            return false;
-        };
-        match self {
-            Self::Position { value } => transform.position = value.clone(),
-            Self::Scale { value } => transform.scale = value.clone(),
-            Self::Rotation { value } => transform.rotation = value.clone(),
-            Self::Anchor { value } => transform.anchor = value.clone(),
-            Self::Opacity { value } => transform.opacity = value.clone(),
-            Self::VolumeDb { .. } => return false,
-        }
-        true
+    pub(crate) fn apply(&self, kind: &mut ItemKind) -> bool {
+        kind.property_mut(self.property())
+            .is_some_and(|slot| self.assign(slot))
     }
 }
 
@@ -199,6 +175,59 @@ mod tests {
     }
 
     #[test]
+    fn sets_text_and_shape_style_properties() {
+        let size = PropertyAnimation::FontSize {
+            value: Animatable::constant(DesignPixels(120.0)),
+        };
+        let applied = apply_ok(&example(), set(3, size));
+        let ItemKind::Text(text) = &find(&applied.project, 3).kind else {
+            panic!("expected a text");
+        };
+        assert_eq!(
+            text.style.font_size,
+            Animatable::constant(DesignPixels(120.0))
+        );
+        let fill = PropertyAnimation::FillColor {
+            value: Animatable::constant(Color::WHITE),
+        };
+        let applied = apply_ok(&example(), set(6, fill));
+        let ItemKind::Shape(shape) = &find(&applied.project, 6).kind else {
+            panic!("expected a shape");
+        };
+        assert_eq!(shape.fill, Animatable::constant(Color::WHITE));
+    }
+
+    #[test]
+    fn reads_back_what_it_wrote() {
+        let project = example();
+        let title = &find(&project, 3).kind;
+        let opacity = PropertyAnimation::read(
+            AnimatableProperty::Opacity,
+            title.property(AnimatableProperty::Opacity).unwrap(),
+        )
+        .unwrap();
+        let PropertyAnimation::Opacity { value } = &opacity else {
+            panic!("expected an opacity");
+        };
+        assert!(value.is_keyframed());
+        assert!(
+            PropertyAnimation::read(
+                AnimatableProperty::Rotation,
+                title.property(AnimatableProperty::Opacity).unwrap()
+            )
+            .is_some(),
+            "both are numbers"
+        );
+        assert!(
+            PropertyAnimation::read(
+                AnimatableProperty::FontSize,
+                title.property(AnimatableProperty::Opacity).unwrap()
+            )
+            .is_none()
+        );
+    }
+
+    #[test]
     fn refuses_properties_the_item_does_not_have() {
         let volume = PropertyAnimation::VolumeDb {
             value: Animatable::constant(0.0),
@@ -206,13 +235,20 @@ mod tests {
         let error = apply_err(&example(), set(3, volume));
         assert_eq!(
             error.to_string(),
-            "item 00000000-0003-7000-8000-000000000000 is a text, which has no volume property"
+            "item 00000000-0003-7000-8000-000000000000 is a text, which has no volumeDb property"
         );
         let opacity = PropertyAnimation::Opacity {
             value: Animatable::constant(1.0),
         };
         assert!(matches!(
             apply_err(&example(), set(7, opacity)),
+            DomainError::PropertyNotAvailable { .. }
+        ));
+        let size = PropertyAnimation::FontSize {
+            value: Animatable::constant(DesignPixels(10.0)),
+        };
+        assert!(matches!(
+            apply_err(&example(), set(6, size)),
             DomainError::PropertyNotAvailable { .. }
         ));
     }

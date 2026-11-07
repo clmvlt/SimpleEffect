@@ -1,8 +1,8 @@
-import type { Asset, AssetId, Flicks, Item, ItemKind, Transform2D } from '@se/protocol';
+import type { Asset, AssetId, Flicks, Item, ItemKind, TextItem, Transform2D } from '@se/protocol';
 
-import { BLACK, parseColor } from '../animation/color';
 import type { Layer, Size } from './frame-graph';
-import { assetDisplaySize, reframedBox, shapeBox } from './geometry';
+import { assetDisplaySize, imageBox, reframedBox } from './geometry';
+import { shapeLayerStyle, textLayerStyle, type GraphicContext } from './graphic-layers';
 import { clipSourceTime, fadeFactor } from './timing';
 import { isInvisible, resolveTransform } from './transform';
 
@@ -24,21 +24,49 @@ export interface LayerContext {
 }
 
 /**
- * Fixed look of captions until caption styles exist.
+ * Fixed look of captions until caption styles exist: white Inter 56 px, bottom centre.
  * TODO(prompt-23): caption styles (and word highlighting) replace this.
  */
-const CAPTION_LOOK = {
-  fontFamily: 'Inter',
-  fontSize: 56,
-  color: { r: 1, g: 1, b: 1, a: 1 },
+const CAPTION_LOOK: Omit<TextItem, 'content'> = {
+  style: {
+    fontFamily: 'Inter',
+    fontWeight: 600,
+    italic: false,
+    fontSize: { kind: 'static', value: 56 },
+    color: { kind: 'static', value: '#ffffff' },
+    stroke: {
+      enabled: false,
+      color: { kind: 'static', value: '#000000' },
+      width: { kind: 'static', value: 0 },
+    },
+    shadow: {
+      enabled: true,
+      color: { kind: 'static', value: '#000000b3' },
+      blur: { kind: 'static', value: 6 },
+      offset: { kind: 'static', value: { x: 0, y: 2 } },
+    },
+    background: {
+      enabled: false,
+      color: { kind: 'static', value: '#000000b3' },
+      padding: { x: 0, y: 0 },
+      cornerRadius: 0,
+    },
+    letterSpacing: { kind: 'static', value: 0 },
+    lineHeight: 1.2,
+    align: 'center',
+    maxWidth: 1600,
+    textCase: 'normal',
+  },
   transform: {
     position: { kind: 'static', value: { x: 0.5, y: 0.9 } },
     scale: { kind: 'static', value: { x: 1, y: 1 } },
     rotation: { kind: 'static', value: 0 },
     anchor: { kind: 'static', value: { x: 0.5, y: 1 } },
     opacity: { kind: 'static', value: 1 },
+    blur: { kind: 'static', value: 0 },
   } satisfies Transform2D,
-} as const;
+  reveal: { kind: 'static', value: 1 },
+};
 
 function mediaClipLayer(
   clip: Extract<ItemKind, { kind: 'mediaClip' }>,
@@ -55,57 +83,45 @@ function mediaClipLayer(
     assetId: clip.assetId,
     sourceTime: clipSourceTime(clip, range, context.time),
     box: reframedBox(assetDisplaySize(asset), context.frame, clip.reframe.kind),
-    transform: resolveTransform(clip.transform, localTime, fade),
+    transform: resolveTransform(clip.transform, localTime, fade, context.designScale),
   };
 }
 
 /** Builds the layer of one kind of item at the context's time; `null` when it draws nothing. */
 function layerOfKind(kind: ItemKind, context: LayerContext, localTime: Flicks): Layer | null {
-  const base = { itemId: context.item.id };
+  const itemId = context.item.id;
   const weight = context.opacity ?? 1;
+  const graphic: GraphicContext = {
+    localTime,
+    frame: context.frame,
+    designScale: context.designScale,
+  };
+  const placed = (transform: Transform2D) =>
+    resolveTransform(transform, localTime, weight, context.designScale);
   switch (kind.kind) {
     case 'mediaClip':
       return mediaClipLayer(kind, context);
     case 'image': {
       const asset = context.assets[kind.assetId];
       if (asset?.kind !== 'image') return null;
-      const box = reframedBox(assetDisplaySize(asset), context.frame, 'fit');
-      const transform = resolveTransform(kind.transform, localTime, weight);
-      return { ...base, kind: 'image', assetId: kind.assetId, box, transform };
-    }
-    case 'shape': {
-      const { box, cornerRadius } = shapeBox(kind.geometry, context.designScale);
-      const fill = parseColor(kind.fill) ?? BLACK;
-      const transform = resolveTransform(kind.transform, localTime, weight);
+      const box = imageBox(assetDisplaySize(asset), context.frame, kind.fit, context.designScale);
       return {
-        ...base,
-        kind: 'shape',
-        geometry: kind.geometry.kind,
+        itemId,
+        kind: 'image',
+        assetId: kind.assetId,
         box,
-        cornerRadius,
-        fill,
-        transform,
+        transform: placed(kind.transform),
       };
     }
+    case 'shape':
+      return { itemId, ...shapeLayerStyle(kind, graphic), transform: placed(kind.transform) };
     case 'text':
-      return {
-        ...base,
-        kind: 'text',
-        content: kind.content,
-        fontFamily: kind.style.fontFamily,
-        fontSize: kind.style.fontSize * context.designScale,
-        color: parseColor(kind.style.color) ?? BLACK,
-        transform: resolveTransform(kind.transform, localTime, weight),
-      };
+      return { itemId, ...textLayerStyle(kind, graphic), transform: placed(kind.transform) };
     case 'caption':
       return {
-        ...base,
-        kind: 'text',
-        content: kind.text,
-        fontFamily: CAPTION_LOOK.fontFamily,
-        fontSize: CAPTION_LOOK.fontSize * context.designScale,
-        color: CAPTION_LOOK.color,
-        transform: resolveTransform(CAPTION_LOOK.transform, localTime, weight),
+        itemId,
+        ...textLayerStyle({ ...CAPTION_LOOK, content: kind.text }, graphic),
+        transform: placed(CAPTION_LOOK.transform),
       };
     case 'motionTemplate':
       // TODO(prompt-24): motion templates render through the template runtime.

@@ -19,6 +19,8 @@ mod editing;
 mod envelope;
 mod error;
 mod event;
+mod fonts;
+mod graphics;
 mod handshake;
 mod jobs;
 mod media;
@@ -38,6 +40,11 @@ pub use envelope::{
 };
 pub use error::{ErrorCode, ProtocolError};
 pub use event::CoreEvent;
+pub use fonts::{FontFace, FontFamily, FontSource};
+pub use graphics::{
+    AddGraphicRequest, AnimationPresetInfo, AnimationPresetSample, ItemAnimation, NewGraphic,
+    PlacedGraphic,
+};
 pub use handshake::CoreHandshake;
 pub use jobs::{JobKind, JobProgress, JobSnapshot, JobState};
 pub use media::{

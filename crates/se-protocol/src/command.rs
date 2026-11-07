@@ -1,16 +1,17 @@
 //! Commands a client asks `se-core` to execute.
 
 use se_domain::{
-    AssetId, Flicks, Format, ItemId, JobId, MarkerColor, MarkerId, MarkerPatch, ProjectId,
-    PropertyAnimation, SequenceId, TrackId, TrackKind, TrackPatch, TransitionId, TransitionPatch,
+    AnimationPhase, AssetId, Flicks, Format, ItemId, JobId, MarkerColor, MarkerId, MarkerPatch,
+    ProjectId, PropertyAnimation, SequenceId, TrackId, TrackKind, TrackPatch, TransitionId,
+    TransitionPatch,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    CreateProjectRequest, DecodabilityReport, DecoderCapabilities, GenerateDerivedRequest,
-    ImportMediaRequest, ItemPlacement, ItemTrim, ItemUpdate, MediaSettings, NewTransition,
-    PastedItem, PlaceMediaRequest, PlacementMode, RelinkAssetRequest,
+    AddGraphicRequest, CreateProjectRequest, DecodabilityReport, DecoderCapabilities,
+    GenerateDerivedRequest, ImportMediaRequest, ItemAnimation, ItemPlacement, ItemTrim, ItemUpdate,
+    MediaSettings, NewTransition, PastedItem, PlaceMediaRequest, PlacementMode, RelinkAssetRequest,
 };
 
 /// A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -287,6 +288,41 @@ pub enum Command {
         /// The property and its new keyframes or value.
         animation: PropertyAnimation,
     },
+    /// Sets animatable properties of items: several properties of several items in one undo
+    /// step (a gizmo gesture, a multiple selection edited in the inspector, keyframes dragged in
+    /// the timeline). Answered by [`crate::CommandResult::SetItemAnimations`].
+    SetItemAnimations {
+        /// The open project.
+        project_id: ProjectId,
+        /// The new values, applied in order.
+        animations: Vec<ItemAnimation>,
+    },
+    /// Adds a text, a shape or an image at a time (one undo step), on the highest free video
+    /// track (a new one on top when none is free). Answered by
+    /// [`crate::CommandResult::AddGraphicItem`].
+    AddGraphicItem(AddGraphicRequest),
+    /// Expands an animation preset into keyframes of items (one undo step for all of them).
+    /// Answered by [`crate::CommandResult::ApplyAnimationPreset`].
+    ApplyAnimationPreset {
+        /// The open project.
+        project_id: ProjectId,
+        /// The items animated, each once; each must have every property of the preset.
+        item_ids: Vec<ItemId>,
+        /// Id of the preset (`listAnimationPresets`).
+        preset: String,
+        /// Entrance, exit or emphasis.
+        phase: AnimationPhase,
+        /// How long it lasts (shortened to each item).
+        duration: Flicks,
+        /// Start relative to each item; `null` for the phase's place.
+        start: Option<Flicks>,
+    },
+    /// The animation preset library. Answered by
+    /// [`crate::CommandResult::ListAnimationPresets`].
+    ListAnimationPresets,
+    /// The fonts texts may use (bundled and installed). Answered by
+    /// [`crate::CommandResult::ListFonts`].
+    ListFonts,
     /// Adds cross-fades on cuts (one undo step). Each is shortened to what its cut allows; cuts
     /// without room are skipped, and the command fails with `TRANSITION_NO_ROOM` when none has
     /// room. Answered by [`crate::CommandResult::AddTransitions`].

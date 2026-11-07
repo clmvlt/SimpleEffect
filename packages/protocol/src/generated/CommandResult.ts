@@ -1,6 +1,8 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
+import type { AnimationPresetInfo } from "./AnimationPresetInfo";
 import type { CoreInfo } from "./CoreInfo";
+import type { FontFamily } from "./FontFamily";
 import type { ImportReport } from "./ImportReport";
 import type { ItemId } from "./ItemId";
 import type { JobSnapshot } from "./JobSnapshot";
@@ -9,6 +11,7 @@ import type { MarkerId } from "./MarkerId";
 import type { MediaSettings } from "./MediaSettings";
 import type { MediaToolsStatus } from "./MediaToolsStatus";
 import type { NewProjectDefaults } from "./NewProjectDefaults";
+import type { PlacedGraphic } from "./PlacedGraphic";
 import type { ProjectCacheInfo } from "./ProjectCacheInfo";
 import type { ProjectSession } from "./ProjectSession";
 import type { RecentProject } from "./RecentProject";
@@ -62,7 +65,15 @@ linkGroup: LinkGroupId, } | { "kind": "unlinkItems" } | { "kind": "resizeGap" } 
  * Ids of the transitions added, in the order of the request (cuts without room left
  * out).
  */
-transitionIds: Array<TransitionId>, } | { "kind": "updateTransition" } | { "kind": "removeTransitions" } | { "kind": "importMedia" } & ImportReport | { "kind": "relinkAsset", 
+transitionIds: Array<TransitionId>, } | { "kind": "updateTransition" } | { "kind": "removeTransitions" } | { "kind": "setItemAnimations" } | { "kind": "addGraphicItem" } & PlacedGraphic | { "kind": "applyAnimationPreset" } | { "kind": "listAnimationPresets", 
+/**
+ * Every preset, in display order.
+ */
+presets: Array<AnimationPresetInfo>, } | { "kind": "listFonts", 
+/**
+ * Bundled families first, then installed ones, each sorted by name.
+ */
+families: Array<FontFamily>, } | { "kind": "importMedia" } & ImportReport | { "kind": "relinkAsset", 
 /**
  * Whether the asset was relinked or the user must confirm first.
  */

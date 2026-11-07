@@ -17,6 +17,7 @@
 mod access_guard;
 mod app_paths;
 mod error;
+mod font_routes;
 mod handshake;
 mod logging;
 mod media_routes;

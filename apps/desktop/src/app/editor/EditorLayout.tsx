@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { AiView } from '../../features/ai';
+import { AnimationsPanel, useCreateGraphic } from '../../features/graphics';
 import { InspectorView } from '../../features/inspector';
 import { MediaBinPanel } from '../../features/media-bin';
 import { TimelinePanel } from '../../features/timeline';
@@ -33,13 +34,22 @@ export interface EditorLayoutProps {
  */
 export function EditorLayout({ layoutStorage }: EditorLayoutProps) {
   const { t } = useTranslation();
+  const creator = useCreateGraphic();
   return (
     <div className="min-h-0 flex-1">
       <Dock layoutId="editor.rows" orientation="vertical" storage={layoutStorage}>
         <DockPanel id="workspace" defaultSize="62%" minSize={220}>
           <Dock layoutId="editor.columns" storage={layoutStorage}>
             <DockPanel id="media" defaultSize="20%" minSize={200}>
-              <MediaBinPanel />
+              <MediaBinPanel
+                onAddImage={
+                  creator === null
+                    ? undefined
+                    : (asset) => {
+                        creator.createImage(asset.id);
+                      }
+                }
+              />
             </DockPanel>
             <DockHandle label={t('editor.resize.mediaViewer')} />
             <DockPanel id="viewer" minSize={320}>
@@ -61,8 +71,8 @@ export function EditorLayout({ layoutStorage }: EditorLayoutProps) {
 }
 
 /**
- * The right column: « Inspecteur » and « IA » share one panel as tabs (features may switch it,
- * e.g. the timeline's « Propriétés »).
+ * The right column: « Inspecteur », « Animations » and « IA » share one panel as tabs (features
+ * may switch it, e.g. the timeline's « Propriétés »).
  */
 function SidePanel() {
   const { t } = useTranslation();
@@ -79,12 +89,16 @@ function SidePanel() {
         <PanelHeader>
           <TabsList variant="underline" size="xs" className="h-full border-b-0">
             <TabsTrigger value="inspector">{t('editor.inspector.title')}</TabsTrigger>
+            <TabsTrigger value="animations">{t('editor.animations.title')}</TabsTrigger>
             <TabsTrigger value="ai">{t('editor.ai.title')}</TabsTrigger>
           </TabsList>
         </PanelHeader>
         <PanelBody scrollable={false}>
           <TabsContent value="inspector" className="size-full">
             <InspectorView />
+          </TabsContent>
+          <TabsContent value="animations" className="size-full">
+            <AnimationsPanel />
           </TabsContent>
           <TabsContent value="ai" className="size-full">
             <AiView />

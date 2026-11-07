@@ -40,6 +40,7 @@ export function ViewerOverlays({ status }: ViewerOverlaysProps) {
     );
   }
   const issues = status.kind === 'running' ? summarizeIssues(status.preview.issues) : null;
+  const missingFonts = status.kind === 'running' ? status.preview.missingFonts : [];
   return (
     <>
       {loading && (
@@ -53,6 +54,14 @@ export function ViewerOverlays({ status }: ViewerOverlaysProps) {
           className="pointer-events-none absolute bottom-2 left-2"
         >
           {t(`editor.viewer.issues.${issues.kind}`, { count: issues.count })}
+        </Badge>
+      )}
+      {missingFonts.length > 0 && (
+        <Badge variant="warning" className="pointer-events-none absolute right-2 bottom-2">
+          {t('editor.viewer.missingFonts', {
+            count: missingFonts.length,
+            families: missingFonts.join(', '),
+          })}
         </Badge>
       )}
     </>

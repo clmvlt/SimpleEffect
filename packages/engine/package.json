@@ -12,6 +12,7 @@
     "./composite": "./src/composite/index.ts",
     "./decode": "./src/decode/index.ts",
     "./evaluate": "./src/evaluate/index.ts",
+    "./fonts": "./src/fonts/index.ts",
     "./playback": "./src/playback/index.ts",
     "./preview": "./src/preview/index.ts",
     "./sources": "./src/sources/index.ts"

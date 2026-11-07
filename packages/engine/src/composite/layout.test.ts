@@ -12,6 +12,7 @@ function transform(overrides: Partial<ResolvedTransform> = {}): ResolvedTransfor
     rotation: 0,
     anchor: { x: 0.5, y: 0.5 },
     opacity: 1,
+    blur: 0,
     ...overrides,
   };
 }

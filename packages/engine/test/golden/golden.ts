@@ -8,6 +8,7 @@ import { expect, inject } from 'vitest';
 import { commands } from 'vitest/browser';
 
 import type { MediaVariant } from '../../src/decode/media-variant';
+import type { FontLoader } from '../../src/fonts/font-registry';
 import { MediabunnyVideoSource } from '../../src/decode/video-source';
 import type { PreviewEngine } from '../../src/preview/engine';
 import type { RenderScene } from '../../src/preview/frame-renderer';
@@ -28,6 +29,8 @@ export interface RenderOptions {
   readonly proxy?: boolean;
   readonly offscreen?: boolean;
   readonly transparent?: boolean;
+  /** Fonts loaded before texts are drawn (`testFonts()` for the bundled Inter). */
+  readonly fonts?: FontLoader;
 }
 
 /** A rendered frame and the engine that drew it (destroy it when done). */
@@ -56,6 +59,7 @@ export async function createTestEngine(
     background: options.transparent === true ? 'transparent' : 'black',
     locator: (assetId, variant) => files[assetId]?.[variant] ?? null,
     pool: { createVideoSource: (url) => new MediabunnyVideoSource(url, 'prefer-software') },
+    ...(options.fonts === undefined ? {} : { fonts: options.fonts }),
   });
   engine.setScene(scene);
   engine.setProxy(options.proxy === true);
@@ -72,7 +76,8 @@ export async function renderScene(
   const { engine, canvas } = await createTestEngine(scene, files, options);
   engine.setTime(time);
   await engine.settled();
-  expect(engine.getState()).toMatchObject({ status: 'ready', issues: [] });
+  const state = engine.getState();
+  expect(state, state.error ?? undefined).toMatchObject({ status: 'ready', issues: [] });
   return { engine, canvas, pixels: readPixels(canvas) };
 }
 
@@ -152,10 +157,42 @@ export interface Tolerance {
   readonly channel: number;
   /** Share of pixels allowed beyond `channel`. */
   readonly ratio: number;
+  /** Compare averages of `downsample` × `downsample` blocks (absorbs anti-aliasing). */
+  readonly downsample?: number;
 }
 
 /** Default tolerance: GPU rasterisation and colour conversion differ by a few levels at edges. */
 export const DEFAULT_TOLERANCE: Tolerance = { channel: 16, ratio: 0.005 };
+
+/**
+ * Tolerance of frames with text: glyph anti-aliasing and hinting differ between the platform
+ * font rasterisers (DirectWrite, FreeType, CoreText) even for the same font file, so frames are
+ * compared as 4 × 4 block averages: a wrong colour, outline, shadow, plate or placement still
+ * fails, sub-pixel glyph edges do not.
+ */
+export const TEXT_TOLERANCE: Tolerance = { channel: 24, ratio: 0.01, downsample: 4 };
+
+/** Averages of `factor` × `factor` blocks of `pixels`. */
+export function downsample(pixels: ImageData, factor: number): ImageData {
+  const width = Math.floor(pixels.width / factor);
+  const height = Math.floor(pixels.height / factor);
+  const out = new ImageData(Math.max(1, width), Math.max(1, height));
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      for (let channel = 0; channel < 4; channel += 1) {
+        let sum = 0;
+        for (let dy = 0; dy < factor; dy += 1) {
+          for (let dx = 0; dx < factor; dx += 1) {
+            const offset = ((y * factor + dy) * pixels.width + x * factor + dx) * 4 + channel;
+            sum += pixels.data[offset] ?? 0;
+          }
+        }
+        out.data[(y * width + x) * 4 + channel] = Math.round(sum / (factor * factor));
+      }
+    }
+  }
+  return out;
+}
 
 /** Pixels beyond the tolerance and a diff image (red where they differ). */
 export function comparePixels(actual: ImageData, expected: ImageData, tolerance: Tolerance) {
@@ -196,7 +233,11 @@ export async function expectGolden(
     throw new Error(`No reference image ${path}: run the tests once with SE_UPDATE_GOLDEN=1.`);
   }
   expect([pixels.width, pixels.height]).toEqual([reference.width, reference.height]);
-  const result = comparePixels(pixels, reference, tolerance);
+  const factor = tolerance.downsample ?? 1;
+  const result =
+    factor > 1
+      ? comparePixels(downsample(pixels, factor), downsample(reference, factor), tolerance)
+      : comparePixels(pixels, reference, tolerance);
   if (result.ratio > tolerance.ratio) {
     await commands.writeFile(
       `./test/golden/references/${name}.actual.png`,

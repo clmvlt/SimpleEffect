@@ -4,14 +4,23 @@ import type { Color } from "./Color";
 import type { ShapeGeometry } from "./ShapeGeometry";
 
 /**
- * Changes of a [`crate::ShapeItem`].
+ * Changes of a [`crate::ShapeItem`] (its animatable colours and outline width go through
+ * [`super::SetKeyframes`]; `fill` here sets a static value).
  */
 export type ShapePatch = { 
 /**
  * Another outline.
  */
-geometry: ShapeGeometry | null, 
+geometry?: ShapeGeometry, 
 /**
- * Another fill colour.
+ * A static fill colour (replaces keyframes).
  */
-fill: Color | null, };
+fill?: Color, 
+/**
+ * Outline on or off.
+ */
+strokeEnabled?: boolean, 
+/**
+ * Whether the box covers the whole frame.
+ */
+coverFrame?: boolean, };

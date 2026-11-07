@@ -1,4 +1,4 @@
-import type { Asset, Format, ShapeGeometry } from '@se/protocol';
+import type { Asset, Format, ImageFit, ShapeGeometry } from '@se/protocol';
 
 import type { Size } from './frame-graph';
 
@@ -39,12 +39,36 @@ export function reframedBox(display: Size | null, frame: Size, mode: 'fit' | 'fi
   return { width: display.width * scale, height: display.height * scale };
 }
 
-/** Box of a shape in sequence pixels and its corner radius (design pixels × `scale`). */
+/**
+ * Box of a shape in sequence pixels and its corner radius (design pixels × `scale`). A shape
+ * covering the frame takes the frame's box (ADR-0015); a line is a capsule of its thickness.
+ */
 export function shapeBox(
   geometry: ShapeGeometry,
   scale: number,
+  cover: { readonly frame: Size; readonly coverFrame: boolean } | null = null,
 ): { readonly box: Size; readonly cornerRadius: number } {
-  const box = { width: geometry.width * scale, height: geometry.height * scale };
+  if (geometry.kind === 'line') {
+    const thickness = geometry.thickness * scale;
+    return {
+      box: { width: geometry.length * scale, height: thickness },
+      cornerRadius: thickness / 2,
+    };
+  }
+  const box =
+    cover?.coverFrame === true
+      ? cover.frame
+      : { width: geometry.width * scale, height: geometry.height * scale };
   const cornerRadius = geometry.kind === 'rectangle' ? geometry.cornerRadius * scale : 0;
   return { box, cornerRadius };
+}
+
+/**
+ * The natural box of an image of `display` size: fitted into or covering the frame, or one image
+ * pixel per design pixel (`natural`, times `scale` = real pixels per design pixel).
+ */
+export function imageBox(display: Size | null, frame: Size, fit: ImageFit, scale: number): Size {
+  if (fit !== 'natural') return reframedBox(display, frame, fit);
+  if (display === null) return frame;
+  return { width: display.width * scale, height: display.height * scale };
 }

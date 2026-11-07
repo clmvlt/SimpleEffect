@@ -9,10 +9,10 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::checks::swap_field;
+use super::{Assign, checks::swap_field};
 use crate::{
-    AssetId, Color, DesignPixels, FadeShape, Flicks, ItemKind, Reframe, ShapeGeometry, TemplateId,
-    TemplateParamValue,
+    Animatable, AssetId, Color, DesignPixels, FadeShape, Flicks, ImageFit, ItemKind, Reframe,
+    ShapeGeometry, TemplateId, TemplateParamValue, TextAlign, TextCase, TextItem, Vec2,
 };
 
 /// A change of an item's content; its kind must match the item's.
@@ -56,38 +56,69 @@ pub struct MediaClipPatch {
     pub reframe: Option<Reframe>,
 }
 
-/// Changes of a [`crate::TextItem`].
-///
-/// TODO(prompt-15): the style fields added to `TextStyle`.
+/// Changes of a [`crate::TextItem`]: its content and the static parts of its style (animatable
+/// ones go through [`super::SetKeyframes`]; `fontSize` and `color` here set a static value).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[serde(default, rename_all = "camelCase")]
+#[ts(optional_fields)]
 pub struct TextPatch {
     /// Another text.
     pub content: Option<String>,
     /// Another font family.
     pub font_family: Option<String>,
-    /// Another font size.
+    /// Another weight (1 to 1000).
+    pub font_weight: Option<u16>,
+    /// Italic or upright.
+    pub italic: Option<bool>,
+    /// A static font size (replaces keyframes).
     pub font_size: Option<DesignPixels>,
-    /// Another glyph colour.
+    /// A static glyph colour (replaces keyframes).
     pub color: Option<Color>,
+    /// Another line height (multiple of the font size).
+    pub line_height: Option<f64>,
+    /// Another alignment.
+    pub align: Option<TextAlign>,
+    /// Another wrapping width, or `{"value": null}` for no wrapping.
+    pub max_width: Option<Assign<Option<DesignPixels>>>,
+    /// Another letter case.
+    pub text_case: Option<TextCase>,
+    /// Outline on or off.
+    pub stroke_enabled: Option<bool>,
+    /// Shadow on or off.
+    pub shadow_enabled: Option<bool>,
+    /// Background plate on or off.
+    pub background_enabled: Option<bool>,
+    /// Another plate padding (design pixels, x and y).
+    pub background_padding: Option<Vec2>,
+    /// Another plate corner radius.
+    pub background_corner_radius: Option<DesignPixels>,
 }
 
-/// Changes of a [`crate::ShapeItem`].
+/// Changes of a [`crate::ShapeItem`] (its animatable colours and outline width go through
+/// [`super::SetKeyframes`]; `fill` here sets a static value).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[serde(default, rename_all = "camelCase")]
+#[ts(optional_fields)]
 pub struct ShapePatch {
     /// Another outline.
     pub geometry: Option<ShapeGeometry>,
-    /// Another fill colour.
+    /// A static fill colour (replaces keyframes).
     pub fill: Option<Color>,
+    /// Outline on or off.
+    pub stroke_enabled: Option<bool>,
+    /// Whether the box covers the whole frame.
+    pub cover_frame: Option<bool>,
 }
 
 /// Changes of a [`crate::ImageItem`].
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(default, rename_all = "camelCase")]
+#[ts(optional_fields)]
 pub struct ImagePatch {
     /// Another image asset.
     pub asset_id: Option<AssetId>,
+    /// Another natural box.
+    pub fit: Option<ImageFit>,
 }
 
 /// Changes of a [`crate::TemplateItem`].
@@ -136,18 +167,18 @@ impl ItemPatch {
                 swap_field(&mut clip.fade_out_shape, patch.fade_out_shape.as_ref());
                 swap_field(&mut clip.reframe, patch.reframe.as_ref());
             }
-            (Self::Text(patch), ItemKind::Text(text)) => {
-                swap_field(&mut text.content, patch.content.as_ref());
-                swap_field(&mut text.style.font_family, patch.font_family.as_ref());
-                swap_field(&mut text.style.font_size, patch.font_size.as_ref());
-                swap_field(&mut text.style.color, patch.color.as_ref());
-            }
+            (Self::Text(patch), ItemKind::Text(text)) => patch.apply(text),
             (Self::Shape(patch), ItemKind::Shape(shape)) => {
                 swap_field(&mut shape.geometry, patch.geometry.as_ref());
-                swap_field(&mut shape.fill, patch.fill.as_ref());
+                if let Some(fill) = patch.fill {
+                    shape.fill = Animatable::constant(fill);
+                }
+                swap_field(&mut shape.stroke.enabled, patch.stroke_enabled.as_ref());
+                swap_field(&mut shape.cover_frame, patch.cover_frame.as_ref());
             }
             (Self::Image(patch), ItemKind::Image(image)) => {
                 swap_field(&mut image.asset_id, patch.asset_id.as_ref());
+                swap_field(&mut image.fit, patch.fit.as_ref());
             }
             (Self::MotionTemplate(patch), ItemKind::MotionTemplate(template)) => {
                 swap_field(&mut template.template_id, patch.template_id.as_ref());
@@ -167,9 +198,58 @@ impl ItemPatch {
     }
 }
 
+impl TextPatch {
+    fn apply(&self, text: &mut TextItem) {
+        let style = &mut text.style;
+        swap_field(&mut text.content, self.content.as_ref());
+        swap_field(&mut style.font_family, self.font_family.as_ref());
+        swap_field(&mut style.font_weight, self.font_weight.as_ref());
+        swap_field(&mut style.italic, self.italic.as_ref());
+        if let Some(size) = self.font_size {
+            style.font_size = Animatable::constant(size);
+        }
+        if let Some(color) = self.color {
+            style.color = Animatable::constant(color);
+        }
+        swap_field(&mut style.line_height, self.line_height.as_ref());
+        swap_field(&mut style.align, self.align.as_ref());
+        if let Some(Assign { value }) = self.max_width {
+            style.max_width = value;
+        }
+        swap_field(&mut style.text_case, self.text_case.as_ref());
+        swap_field(&mut style.stroke.enabled, self.stroke_enabled.as_ref());
+        swap_field(&mut style.shadow.enabled, self.shadow_enabled.as_ref());
+        swap_field(
+            &mut style.background.enabled,
+            self.background_enabled.as_ref(),
+        );
+        swap_field(
+            &mut style.background.padding,
+            self.background_padding.as_ref(),
+        );
+        swap_field(
+            &mut style.background.corner_radius,
+            self.background_corner_radius.as_ref(),
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn clears_the_wrapping_width() {
+        let mut text = TextItem::new("Long");
+        text.style.max_width = Some(DesignPixels(800.0));
+        let patch: TextPatch = serde_json::from_str(r#"{"maxWidth":{"value":null}}"#).unwrap();
+        patch.apply(&mut text);
+        assert_eq!(text.style.max_width, None);
+        let keep: TextPatch = serde_json::from_str(r#"{"maxWidth":null}"#).unwrap();
+        text.style.max_width = Some(DesignPixels(800.0));
+        keep.apply(&mut text);
+        assert_eq!(text.style.max_width, Some(DesignPixels(800.0)));
+    }
 
     #[test]
     fn missing_fields_mean_unchanged() {

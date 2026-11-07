@@ -31,8 +31,19 @@ expression: forward
         "kind": "text",
         "content": "Salut",
         "fontFamily": null,
+        "fontWeight": null,
+        "italic": null,
         "fontSize": null,
-        "color": null
+        "color": null,
+        "lineHeight": null,
+        "align": null,
+        "maxWidth": null,
+        "textCase": null,
+        "strokeEnabled": null,
+        "shadowEnabled": null,
+        "backgroundEnabled": null,
+        "backgroundPadding": null,
+        "backgroundCornerRadius": null
       },
       "expectedRevision": null
     },
