@@ -114,9 +114,19 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Agent session** | The AI CLI's conversation id, used to resume a task | `AgentSessionId` |
 | **Tool** | An MCP function exposed to agents (read or write) | `tools::*` |
 | **Agent instructions** | Provider-agnostic markdown guidance composed into the agent's system prompt | `agent-instructions/` |
-| **Frame graph** | The resolved list of layers to draw at one instant | `FrameGraph` |
-| **Compositor** | The component drawing a frame graph to a canvas | `Compositor` |
-| **Golden frame** | Reference image used to test rendering | — |
+| **Frame graph** | Everything visible in a sequence at one instant: layers bottom first, transforms resolved, sizes in sequence pixels; the pure output of `evaluate` | `FrameGraph` |
+| **Layer** | One drawable item in a frame graph: `video`, `image`, `shape` or `text` (captions draw as text until prompt 23) | `Layer` |
+| **Natural box** | The box a picture fills at scale 1: the asset's upright display size fitted or filled into the frame (images always fit); independent of the decoded variant | `VideoLayer.box`, `reframedBox` |
+| **Media variant** | The file of an asset the engine decodes: original, mezzanine or proxy | `MediaVariant`, `chooseVariant` |
+| **Media locator** | Gives the engine the URL of an asset's variant (se-core's `/media`, with the token and a content version) | `MediaLocator`, `createMediaLocator` |
+| **Decoder pool** | Owns the engine's decoders (one per asset and variant) and every decoded picture, with an LRU cache and cancellation of obsolete requests | `DecoderPool` |
+| **Picture lease** | A borrowed decoded picture, valid until released; the pool never closes a leased picture | `PictureLease` |
+| **Frame lookup time** | The media time (seconds) at which a source frame is requested: the middle of the frame computed exactly from the asset's frame rate | `frameLookupTime` |
+| **Open picture count** | `VideoFrame`s and `ImageBitmap`s the engine opened and has not closed: the leak check (zero after destroy) | `FrameTracker`, `openPictureCounts` |
+| **Media issue** | Why a picture layer was drawn without its media (preparing, missing, mezzanine failed, decode failed), reported per asset | `MediaIssue` |
+| **Compositor** | The component drawing a frame graph to a canvas (PixiJS today, behind an interface) | `Compositor`, `createPixiCompositor` |
+| **Preview engine** | The viewer's engine outside React: scene, time and options in, one coalesced draw per animation frame, a state out | `PreviewEngine`, `ViewerEngineController` |
+| **Golden frame** | A reference PNG a rendered test scene must match within a tolerance (`packages/engine/test/golden/references/`) | `expectGolden` |
 | **Premiere package** | Export folder with FCP7 XML, OTIO, overlay renders and SRT | — |
 | **Core** | The Rust process `se-core` | — |
 | **Renderer** | The Electron renderer process (React UI + engine) | — |

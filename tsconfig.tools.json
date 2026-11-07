@@ -5,5 +5,5 @@
     "outDir": ".tsbuild/tools",
     "types": ["node"]
   },
-  "include": ["vitest.config.ts"]
+  "include": ["vitest.config.ts", "packages/engine/vitest.browser.config.ts"]
 }

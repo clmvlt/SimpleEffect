@@ -72,6 +72,8 @@ Adapters depend on `se-app` and `se-domain`, never on each other. `se-core` depe
 | `pnpm codegen` | Regenerate `packages/protocol/src/generated/` from Rust (`se-codegen`); `--check` fails if stale |
 | `pnpm storybook` | Design system playground (`@se/ui` Storybook on http://localhost:6006, a11y addon) |
 | `pnpm generate-test-project` | Write a valid 500-item project with generated media into `target/test-projects/` (`--items`, `--out`, `--name`, `--seed`; needs `pnpm fetch-binaries`) for timeline and performance work |
+| `pnpm exec playwright install chromium` | Once per machine: the headless Chromium of the engine's golden-frame tests (Vitest browser mode, project `engine-browser`, part of `pnpm test`/`pnpm check`) |
+| `node scripts/generate-golden-fixtures.mjs` | Rewrite the engine's committed golden-frame media fixtures with the pinned ffmpeg; `SE_UPDATE_GOLDEN=1 pnpm vitest run --project engine-browser` rewrites the reference PNGs (look at each before committing) |
 | `pnpm fetch-binaries` | Download the pinned ffmpeg/ffprobe builds (`scripts/binaries.manifest.json`, SHA-256 checked) into `resources/bin/<platform>/`; asks first (`--yes` for CI, `--platform <key>`, `--all`). Whisper arrives with prompt 21 |
 
 ## Code conventions
@@ -152,6 +154,7 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
 - **Flicks in JSON:** exact as JS numbers up to ±2^53 (~147 days); the domain rejects larger values.
 - **WebCodecs support differs per machine** (GPU/OS): always check `isConfigSupported()`; fall back to mezzanines.
 - **`VideoFrame` leaks GPU memory** if not closed; the decoder pool owns frame lifetimes.
+- **Golden frames need Chromium**: `pnpm check` fails with Playwright's « Executable doesn't exist » until `pnpm exec playwright install chromium` ran once (CI installs and caches it). They render with SwiftShader (software WebGL), so they do not depend on the GPU.
 - **Binaries** (ffmpeg, ffprobe, whisper) are not committed: `pnpm fetch-binaries`. Tests needing ffmpeg skip themselves (with a message) when it is absent; CI fetches it (cached) so they run there.
 - **A running app locks `target/debug/se-core.exe` on Windows**: close `pnpm dev` (or the test build) before `cargo test`, or it fails with « Accès refusé ».
 - **Never** log or persist AI CLI credentials or tokens; MCP task tokens are redacted in logs.

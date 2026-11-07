@@ -26,6 +26,44 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-07 — Prompt 12: Moteur A : évaluation, décodage, compositing, viewer — Done
+
+**Branch**: `feature/12-moteur-rendu`, merged into `dev` at `<merge>`
+
+**Done**
+- `@se/engine` (ADR-0022): root entry pure (`animation/`, `evaluate/`); subpaths `composite`, `decode`, `preview` load PixiJS 8.22 / Mediabunny 1.65 (`dependencies` of the engine).
+  - `animation/`: linear, hold, CSS cubic Bézier (Newton + bisection), presets = CSS ease-in/out/in-out (same curves as `@se/ui`'s editor), number/vector/colour interpolation (OKLab, premultiplied alpha), `valueAt` (binary search over keyframes). **Shared vectors `docs/test-vectors/interpolation.json`** (computed by an independent bisection reference).
+  - `evaluate(sequence, assets, time) → FrameGraph` (structural input: a domain `Sequence` or mirror entities): visible video tracks bottom first, item by binary search, source time `sourceStart + (time − start) × speed` rounded to the flick, resolved transforms, fades as opacity, natural boxes (asset display size with rotation, fit/fill; images fit), shapes and text in sequence pixels, captions as basic text (fixed look), templates skipped, invisible layers dropped.
+  - `decode/`: `DecoderPool` (one Mediabunny `UrlSource` source per asset+variant over `/media`, LRU picture cache keyed by source and URL with 256 MiB / 48 pictures limits, **leases**, per-source `DecodeQueue` skipping requests aborted before they start, idle sources closed beyond 8), `FrameTracker` (open `VideoFrame`/`ImageBitmap` counter), `frameLookupTime` (exact frame index in flicks, lookup at mid-frame), `chooseVariant` (ready proxy when asked — even offline originals —, else original/mezzanine via `playbackSource`), `MediabunnyVideoSource` (media time 0 = first frame, display rotation and mirroring), `fetchImageBitmap`, `DecodeError`.
+  - `composite/`: `Compositor { resize, setBackground, render, destroy }`, `createPixiCompositor` (WebGL 2, WebGPU optional, `HTMLCanvasElement`/`OffscreenCanvas`, `pixi.js/unsafe-eval` for the CSP, one node per item, textures from `VideoFrame`s), pure `layerPlacement`/`pictureFit`/`outputScale`.
+  - `preview/`: `FrameRenderer` (synchronous draw when cached, else `loading` + previous image kept, superseded requests dropped, per-asset `MediaIssue`s), `PreviewEngine` (`createPreviewEngine`, `createEngineWith`: setters coalesced into one draw per animation frame, state, `stats()`, `settled()`).
+- `@se/protocol`: `AssetMediaFile` gains `mezzanine` and `proxy`.
+- Renderer `features/viewer`: canvas at the sequence ratio fitted to the panel or at 50/100/200 % (scrolls), « Lire les proxys », transparency checkerboard (preferences in `se.ui.viewer.v1`), spinner after 150 ms of decoding, media-issue badge, « Aperçu indisponible » without WebCodecs/WebGL, footer timecode + format; `ViewerEngineController` owns the engine outside React (fresh canvas per engine, StrictMode-safe), `@se/engine/preview` imported lazily, playhead store followed directly; `ShortcutRegion context="viewer"` (time shortcuts work in the viewer). Dev builds expose `window.simpleEffectPreviewStats()`.
+- Golden frames (`packages/engine/test/golden/`, project `engine-browser`, Vitest browser mode + Playwright Chromium, SwiftShader, software decoding): frame-number readback (29.97 H.264 with B-frames at every tested frame and one flick before a boundary, offsets, speed 2, 25 fps VP9, proxy, rotated phone clip), **9 reference scenes** (shapes/opacity, test pattern, video frame, multitrack transforms + mirror + alpha, 9:16 fit and fill, keyframes midway, alpha over video, proxy framing toggled on one engine) plus OffscreenCanvas = canvas, transparent background, text placement; real-WebCodecs scrub leak test. Fixtures committed (≈35 kB) from `scripts/generate-golden-fixtures.mjs`.
+- Tests: engine 107 Node + 18 browser; desktop viewer 17 (services, controller, panel with a fake engine); app shell updated.
+- Verified in the built app on macOS (isolated profile, CDP, a project made through the core with a 720p 29.97 `testsrc` clip, a rotated phone clip and colour bars): frame 0 and typed timecodes show the right frames (phone frame 45 read back upright from its bits at 00:00:11:15), bars composited over the clip on V3, proxy generated then toggled on/off with identical framing, 100 % zoom draws a 1920×1080 canvas in a scrolling stage, checkerboard on; **60 s of intensive arrow-key scrubbing within the content (7,461 key presses) held at most 47 frames + 1 image (cache limit 48) and left 0 open pictures once the editor closed**.
+- Docs: ADR-0022, `docs/architecture.md` §2/§4.2/§8, glossary (13 terms), backlog (Rendering engine section), CLAUDE.md of root (Chromium command and gotcha, fixtures script), `@se/engine` (rewritten: entry points, internal architecture, frame lifetime rules, golden workflow), `@se/protocol`, desktop; CI installs and caches Playwright Chromium.
+
+**Deviations from the prompt**
+- Reframe modes are the domain's `fit` and `fill` (the prompt's « custom » does not exist in the document; a transform on top is the custom framing). Images (no `reframe` field) fit the frame at scale 1 (ADR-0022).
+- Frame lookup uses the exact frame index at mid-frame instead of the raw time: robust to millisecond-rounded containers (found while testing: an epsilon either switched frames one flick early or missed Matroska frames).
+- Interface `Compositor` also has `setBackground` (black for preview/export, transparent behind the viewer's checkerboard).
+- Golden tests force SwiftShader and software decoding (pixels identical across machines); fixtures are committed rather than generated by ffmpeg at test time; text is checked by placement only (fonts differ per OS).
+- Decoding and compositing run on the renderer's main thread (WebCodecs decodes off-thread); the engine is Worker-ready (`OffscreenCanvas` tested) — moving it is in the backlog.
+- The dev counter is exposed only by the Vite dev server (`import.meta.env.DEV`), not by builds.
+
+**Follow-ups**
+- Prompt 13: sequential decoding for playback (`samples`/`samplesAtTimestamps`, one decoder per run instead of one per `getSample`), prefetch window, `AudioEngine`, transport bar in `ViewerPanel` (TODO in code).
+- Prompt 15: full text styles in `TextNode` (TODO), fonts in Workers. Prompt 23: caption styles replace `CAPTION_LOOK`. Prompt 24: template layers. Prompt 26: automatic reframe variant. Prompt 27: export reuses `FrameRenderer` + `PixiCompositor` on an `OffscreenCanvas`.
+- Backlog (Rendering engine): Worker hosting, WebGL context-loss recovery, pixel aspect ratio, runtime fallback to the mezzanine when `canDecode()` refuses, scrub prefetch.
+
+**Notes for the next agent**
+- Vitest browser-mode file commands resolve paths from the project root (`packages/engine`), not from the test file. `SE_UPDATE_GOLDEN=1` rewrites references: look at every PNG before committing.
+- A Pixi `ImageSource` whose resource changes size in place kept the old frame size (the proxy toggle zoomed the picture): `PictureNode` creates a new texture when the size changes. A golden test toggles the proxy on one engine for this.
+- Mediabunny's `getSample` configures a new `VideoDecoder` per call; its `UrlSource` retries failed requests forever by default.
+- `electron-vite build --mode development` still compiles `import.meta.env.DEV` to false. In CDP checks, `[role=status]` also matches the status bar's connection indicator: scope selectors to the viewer.
+- macOS VideoToolbox kept decoding with 47 held frames (no stall at the default limits).
+
 ## 2026-11-07 — Prompt 11: Timeline B : édition — Done
 
 **Branch**: `feature/11-timeline-edition`, merged into `dev` at `60ddd95`

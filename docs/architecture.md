@@ -57,7 +57,7 @@ SimpleEffect/
 │  ├─ glossary.md            domain vocabulary
 │  ├─ ai-tools.md            MCP tool catalog = contract with AI agents (created in prompt 18)
 │  ├─ backlog.md             ideas not yet scheduled
-│  ├─ test-vectors/          JSON vectors shared by Rust and TypeScript tests (flicks, timecodes)
+│  ├─ test-vectors/          JSON vectors shared by Rust and TypeScript tests (flicks, timecodes, interpolation)
 │  └─ adr/                   architecture decision records
 ├─ prompts/                  roadmap: one prompt per feature, executed in order (French)
 ├─ apps/
@@ -86,7 +86,7 @@ SimpleEffect/
 │  └─ se-devtools/           dev tools: large test projects (`pnpm generate-test-project`)
 ├─ packages/
 │  ├─ protocol/              @se/protocol: generated TS types + typed RPC client
-│  ├─ engine/                @se/engine: evaluation, decode, composite, audio, export
+│  ├─ engine/                @se/engine: evaluation, decode, composite, audio, export (golden frames in test/golden/)
 │  └─ ui/                    @se/ui: design system (shadcn-style, editor components)
 ├─ scripts/                  Node scripts behind pnpm commands (check, dev, build, package, set-version, codegen…)
 └─ resources/bin/<platform>/ ffmpeg, ffprobe, whisper-cli (gitignored, fetched)
@@ -152,6 +152,7 @@ Every port has an in-memory/fake implementation in `se-app` (feature `test-suppo
 - **Keyboard shortcuts** (`shared/shortcuts/`, prompt 10): `SHORTCUT_ACTIONS` is the single table of named actions (`undo`, `markIn`, `nextFrame`, `zoomToFit`…), each with its contexts (`global`, `timeline`, `viewer`), default keys (`mod+shift+z`; `appleKeys` when macOS differs) and whether holding repeats it. Components bind handlers with `useShortcutAction(action, run)`; the `ShortcutRegistry` runs the latest handler of the action a key press matches, when the action is global or belongs to the active context — the `ShortcutRegion` last clicked or focused (`data-shortcut-context`; the timeline claims it on mount). Keys typed in text fields are ignored, symbols ignore Shift (layouts differ), ⌥ letters on macOS are read from `code`. `findShortcutConflicts` must stay empty for the table (tested); tooltips show keys with `useShortcutHint(action)`, and « Raccourcis clavier » (`?`, `app/shortcuts/`) lists every action by context.
 - **Time in the renderer** (`shared/time/`, prompt 10): branded flicks, frame rates, rounding modes, `parseTimecode`/`formatTimecode` and pixels at a zoom, mirroring `se_domain::time` and replaying `docs/test-vectors/*.json` for parity. `shared/canvas/` gives canvases cached token values (`tokenValue`) and `prepareCanvas` (resize only when the size changes).
 - **Timeline** (`features/timeline`, prompt 10, ADR-0020): shows the active sequence (tabs when there are several, « + » creates one). Tracks are DOM rows — video tracks above in reverse document order (they stack first = bottom), audio below — with only the items in view rendered (binary search over each track's sorted items) as `ClipShell`s drawing thumbnails from the sheet and waveforms in a canvas at the peak level matching the zoom. Horizontal scroll and zoom are virtual (Ctrl/⌘+wheel around the pointer, Maj+wheel or swipe, slider, fit, minimap), applied once per animation frame; the playhead moves by style from its own store. Stores: `timeline-view-store` (per sequence: zoom, scroll, in/out points; track heights; snapping; active sequence — saved per project in `localStorage`, never in the project), `playhead-store`, `selection-store`. Track and marker edits are one protocol command each (one undo step). Geometry lives in pure `services/`. Editing (prompt 11, ADR-0021): one pointer handler on the lanes selects (click semantics apply on release, so a drag moves the whole selection), draws the rectangle or starts a gesture controller (`hooks/gestures/`: move with linked items — Alt copies, Ctrl/⌘ inserts —, edge trim — Ctrl/⌘ ripples —, gap handle); media dragged from the bin (`shared/drag`) drops as `placeMedia`; shortcuts cut (`S`, Ctrl/⌘+K), delete (Maj: ripple), copy/cut/paste (internal clipboard, pasted at the playhead on the active track), nudge (`,` `.`, `<` `>`) and toggle snapping (`N`); a context menu on the lanes offers « Couper ici », « Dupliquer », « Lier/Délier », « Propriétés » (inspector tab through `shared/side-panel`), « Afficher dans le panneau Médias » (`revealAsset` from `features/media-bin`) and deletes. Gestures snap by whole frames to the playhead, item edges, markers and in/out points, preview in `gesture-store` and send one command on release.
+- **Viewer** (`features/viewer`, prompt 12): the frame of the active sequence at the playhead. The engine lives outside React: `ViewerEngineController` mounts a fresh canvas in the picture element and starts `@se/engine/preview` on it (imported lazily; a missing WebCodecs shows « Aperçu indisponible »), and `useViewerEngine` forwards the scene (built from the mirror's entities), media URLs (`createMediaLocator`: `/media/assets/<id>/<variant>?t=…&v=<version>`), options and canvas size, and follows `playheadStore` directly. Zoom (Ajuster, 50 %, 100 %, 200 %), « Lire les proxys » and the transparency checkerboard are machine preferences (`se.ui.viewer.v1`); the canvas draws at most the sequence resolution; a spinner appears when decoding takes more than 150 ms; a badge reports media that could not be drawn; the footer shows the timecode and format. Time shortcuts work there too (context `viewer`).
 - The editor (`app/editor/`) loads the project named by `/project/:projectId` (`getProjectSnapshot`, or reopens it from the recent list after a reload or a core restart), shows its name and active sequence, binds Ctrl/⌘+Z and Ctrl/⌘+Maj+Z to `undo`/`redo`, and closes the project when the user goes back home.
 
 ### 4.3 Features
@@ -338,20 +339,22 @@ Decisions: ADR-0007 (sidecars, mezzanines), ADR-0018 (import, jobs, cache) and A
 
 ## 8. Rendering engine (`@se/engine`)
 
+ADR-0002 (web engine shared by preview and export), ADR-0022 (how prompt 12 built it).
+
 ```
-evaluate(sequence, time) ─► FrameGraph ─► Compositor.render(frameGraph, frames) ─► canvas
-                                   ▲
-                 DecoderPool (Mediabunny + WebCodecs, LRU cache of VideoFrame, prefetch window)
+sequence + assets + time ──► evaluate ──► FrameGraph ──► FrameRenderer ──► Compositor.render(graph, pictures) ──► canvas
+                                                              │  ▲
+                                         chooseVariant + URL  ▼  │ leases
+                                                    DecoderPool (Mediabunny + WebCodecs, LRU picture cache)
 ```
 
-- `evaluate` is pure: resolves visible items, interpolates keyframes, applies easing, computes transforms, z-order.
-- `DecoderPool`: one decoder per (asset, source variant); frame cache with strict `VideoFrame.close()` discipline.
-- `Compositor` interface; `PixiCompositor` is the implementation (WebGL2, WebGPU optional). Works on `HTMLCanvasElement` and `OffscreenCanvas`.
-- `AudioEngine`: Web Audio graph (clip gain → track gain/pan → master), lookahead scheduler, `AudioContext` clock is the master clock, meters via AudioWorklet.
-- `PlaybackController`: play/pause/seek/shuttle (JKL), loop range, dropped-frame accounting.
-- `ExportWorker`: same `evaluate` + `PixiCompositor` on `OffscreenCanvas`, `VideoEncoder`/`AudioEncoder`, Mediabunny muxer, streams output to `/media/renders/{job}`; alternative path pipes raw frames to ffmpeg through se-core for ProRes/DNxHR.
-- `MotionTemplateRuntime`: runs AI-authored template modules in a dedicated Worker (see §10).
-- Golden-frame tests run in Vitest browser mode (Chromium) with pixel tolerance.
+- **Entry points.** `@se/engine` (root) is pure and dependency-free: `animation/` (easings, Bézier solver, number/vector/OKLab colour interpolation) and `evaluate/`. GPU and decoding parts are subpaths that load PixiJS and Mediabunny: `@se/engine/preview` (the viewer engine, imported lazily by the renderer), `@se/engine/composite`, `@se/engine/decode`; plus `capabilities` and `sources` (prompts 08–09).
+- **`evaluate(sequence, assets, time) → FrameGraph`** is pure: on every visible video track (bottom first) the item covering `time` (binary search, half-open ranges) becomes a layer — `video` (asset, source time `sourceStart + (time − start) × speed` rounded to the flick, natural box), `image`, `shape`, `text` (captions with a fixed look until prompt 23); templates draw nothing until prompt 24. Transforms are resolved at the item-relative time in domain units (ADR-0015); clip fades multiply the opacity; invisible layers (opacity 0, zero scale) are dropped so their media is never decoded. A picture's **natural box** is the asset's upright display size (rotation applied) fitted or filled into the frame (`reframe`; images always fit): it never depends on the decoded file, so a proxy keeps the framing. Shared interpolation vectors: `docs/test-vectors/interpolation.json`.
+- **Decoding** (`DecoderPool`): one Mediabunny source per (asset, variant) over se-core's `/media` URLs (`UrlSource`, Range requests); `chooseVariant` picks the ready proxy when the viewer's option is on (even for an offline original), otherwise `playbackSource` (original if decodable, else mezzanine); stills load as `ImageBitmap`. Media time 0 is the first frame. The renderer asks for the frame at `frameLookupTime`: with the asset's frame rate, the frame index is computed exactly in flicks and the lookup aims at the middle of that frame (robust to millisecond-rounded container timestamps). Pictures live in an LRU cache keyed by source and URL (byte budget, count limit: hardware decoders stall when too many frames are held); callers borrow them through **leases**, and the cache closes a picture only when it is evicted and unleased. Decodes of one source run one at a time; a request aborted before it starts is skipped (fast scrub). Every picture goes through a `FrameTracker` (open `VideoFrame`/`ImageBitmap` counter, the dev leak check).
+- **Compositing** (`Compositor { resize, setBackground, render, destroy }`, `PixiCompositor` on PixiJS v8: WebGL 2, WebGPU optional, `HTMLCanvasElement` or `OffscreenCanvas`; `pixi.js/unsafe-eval` keeps it inside the CSP). It draws in sequence pixels scaled to the canvas, reuses one scene node per item, uploads `VideoFrame`s as textures (display rotation and mirroring applied) and keeps no picture beyond `render`, so leases are released right after.
+- **`FrameRenderer`** (the path export will reuse): evaluate, lease cached pictures, draw synchronously when all are cached; otherwise report `loading`, keep the previous image, decode, then draw unless a newer request superseded it. Media that cannot be drawn is reported per asset (`preparing`, `missing`, `mezzanineFailed`, `decodeFailed`). **`PreviewEngine`** wraps it for the viewer: scene, time, proxy, background and size setters coalesced into one draw per animation frame, a state (`idle`/`loading`/`ready`/`error` + issues), `stats()` and `settled()`.
+- Planned: `AudioEngine` and `PlaybackController` (prompt 13: Web Audio graph, `AudioContext` clock as master clock, JKL, sequential decoding), `ExportWorker` (prompt 27: same evaluate + compositor on `OffscreenCanvas`, `VideoEncoder`/`AudioEncoder`, Mediabunny muxer; ffmpeg through se-core for ProRes/DNxHR), `MotionTemplateRuntime` (§10).
+- **Golden frames** (`packages/engine/test/golden/`, Vitest browser mode in headless Chromium via Playwright, project `engine-browser`): committed fixtures from `scripts/generate-golden-fixtures.mjs` (videos encoding their frame number in binary, a proxy, a rotated copy, VP9, colour bars, an alpha disc) and reference PNGs compared with a tolerance; WebGL runs on SwiftShader and decoding prefers software so references match on every OS. `SE_UPDATE_GOLDEN=1` rewrites them.
 
 ## 9. AI architecture
 

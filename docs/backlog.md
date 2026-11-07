@@ -65,6 +65,14 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - A mezzanine decided on a machine that decodes HEVC Main 10 is HEVC: opening the project on a machine that does not decode it needs a « regenerate for this machine » action.
 - A project's cache is cleaned by the settings screen only: offer a cleanup of derived files no asset uses any more (removed assets, relinked content).
 
+## Rendering engine
+- Run decoding and compositing in a Worker (`OffscreenCanvas` is supported; demuxing runs on the renderer's main thread today) once playback (prompt 13) shows the main thread is busy.
+- Recover from a lost WebGL context (recreate the compositor and redraw); the viewer only shows « Aperçu indisponible » when the engine fails to start.
+- Pixel aspect ratio: the prober reports none, so anamorphic footage is drawn with square pixels.
+- Fall back to the mezzanine at runtime when the original was reported decodable but `canDecode()` refuses it on this machine (today: a « decodeFailed » issue).
+- Text in Workers needs the fonts loaded there (FontFace); the preview draws text on the main thread (prompt 15).
+- Prefetch the frames around the playhead while scrubbing (the architecture's prefetch window); prompt 13 decodes sequentially for playback.
+
 ## Platform
 - Light theme.
 - Additional UI languages (English first).

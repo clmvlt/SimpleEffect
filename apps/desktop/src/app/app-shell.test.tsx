@@ -105,9 +105,10 @@ describe('app shell', () => {
     expect(
       within(screen.getByRole('region', { name: 'Médias' })).getByText('Aucun média'),
     ).toBeInTheDocument();
-    expect(
-      within(screen.getByRole('region', { name: 'Viewer' })).getByText('Aucune séquence ouverte'),
-    ).toBeInTheDocument();
+    const viewer = screen.getByRole('region', { name: 'Viewer' });
+    expect(within(viewer).getByText('1920 × 1080 · 25 i/s')).toBeInTheDocument();
+    // jsdom has no WebCodecs: the viewer explains it instead of loading the engine.
+    expect(await within(viewer).findByText('Aperçu indisponible')).toBeInTheDocument();
     const timeline = screen.getByRole('region', { name: 'Timeline' });
     expect(within(timeline).getByRole('group', { name: 'Piste track-v1' })).toBeInTheDocument();
     expect(within(timeline).getByRole('option', { name: 'item-1' })).toBeInTheDocument();

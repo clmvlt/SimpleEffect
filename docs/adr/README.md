@@ -26,6 +26,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0019](0019-mezzanines-proxies-and-media-analyses.md) | Mezzanines, proxies, media analyses and media settings | Accepted |
 | [0020](0020-timeline-rendering-and-view-state.md) | Timeline rendering and view state | Accepted |
 | [0021](0021-timeline-editing-commands-and-ripple-rules.md) | Timeline editing: intent commands, edit plans, placement and ripple rules | Accepted |
+| [0022](0022-rendering-engine-evaluation-decoding-compositing.md) | Rendering engine: evaluation, frame-accurate decoding, compositing and golden frames | Accepted |
 
 ## Template
 
