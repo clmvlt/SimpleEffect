@@ -26,7 +26,8 @@ pub(crate) fn asset_duration(project: &Project, id: AssetId) -> Option<Flicks> {
 }
 
 /// Removes the transitions of the tracks at `locations` that join `item` and no longer fit,
-/// in list order; records an [`AddTransition`] at the same position for each.
+/// in list order; records an [`AddTransition`] at the same position for each, last removal
+/// first, so that replaying them puts every transition back at its index.
 pub(crate) fn drop_broken_transitions(
     project: &mut Project,
     locations: &[TrackLocation],
@@ -37,15 +38,19 @@ pub(crate) fn drop_broken_transitions(
         if locations[..position].contains(location) {
             continue;
         }
+        let mut additions = Vec::new();
         while let Some(index) = first_broken(project, *location, item) {
             let track = location.get_mut(project);
             let transition = track.transitions.remove(index);
             effect.touched.tracks.insert(track.id);
-            effect.undo_with(AddTransition {
+            additions.push(AddTransition {
                 track: track.id,
                 index: Some(index),
                 transition,
             });
+        }
+        for addition in additions.into_iter().rev() {
+            effect.undo_with(addition);
         }
     }
 }
@@ -265,6 +270,32 @@ mod tests {
         };
         assert_eq!(dissolve.left_item, item(100));
         assert_eq!(dissolve.duration, millis(1000));
+    }
+
+    #[test]
+    fn removing_an_item_with_a_transition_on_each_side_undoes_in_order() {
+        // Clip 2 gets a second transition at its end (towards a clip 10 at 14 s).
+        let mut project = example();
+        let tail = crate::test_support::item(
+            10,
+            range_ms(14_000, 2000),
+            crate::ItemKind::MediaClip(crate::MediaClip {
+                source_start: millis(30_000),
+                ..crate::MediaClip::new(crate::test_support::example_ids::VIDEO_ASSET)
+            }),
+        );
+        project.sequences[0].tracks[0].items.push(tail);
+        let mut second = dissolves(&project)[0].clone();
+        second.id = crate::TransitionId::from_test_index(2);
+        second.left_item = item(2);
+        second.right_item = item(10);
+        project.sequences[0].tracks[0].transitions.insert(0, second);
+        let removal = RemoveItem {
+            item: item(2),
+            expected_revision: None,
+        };
+        let applied = apply_ok(&project, removal);
+        assert_eq!(dissolves(&applied.project), []);
     }
 
     #[test]
