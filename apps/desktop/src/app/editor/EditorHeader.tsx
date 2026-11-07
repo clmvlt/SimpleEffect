@@ -8,6 +8,7 @@ import {
   selectProjectName,
   useProjectSelector,
 } from '../../shared/project-store';
+import { ShortcutsButton } from '../shortcuts/ShortcutsButton';
 import { historyLabel } from './history-label';
 import { useHistoryCommands } from './use-history-commands';
 
@@ -64,6 +65,7 @@ export function EditorHeader({ projectId, onHome }: EditorHeaderProps) {
           onClick={redo}
         />
         <Separator orientation="vertical" className="h-5 self-center" />
+        <ShortcutsButton />
         <SettingsButton projectId={projectId} />
       </div>
     </header>

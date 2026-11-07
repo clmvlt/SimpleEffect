@@ -1,21 +1,20 @@
 import type { KeyboardPlatform } from '@se/ui';
 
 import { matchesShortcut, parseShortcut, type Shortcut } from './shortcut';
+import {
+  actionKeys,
+  SHORTCUT_ACTIONS,
+  type ShortcutActionId,
+  type ShortcutActionTable,
+  type ShortcutContext,
+} from './shortcut-actions';
 
-/** A shortcut and what it does. */
-export interface ShortcutBinding {
-  /** The combination, e.g. `mod+z` (see `parseShortcut`). */
-  readonly keys: string;
-  /** Runs when the combination is pressed outside text fields. */
+interface Handler {
+  readonly action: ShortcutActionId;
   readonly run: () => void;
 }
 
-interface RegisteredBinding {
-  readonly shortcut: Shortcut;
-  readonly run: () => void;
-}
-
-/** Whether keys typed in `target` belong to it (text fields keep their own undo). */
+/** Whether keys typed in `target` belong to it (text fields keep their own undo and arrows). */
 function isEditable(target: EventTarget | null): boolean {
   if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) {
     return false;
@@ -29,40 +28,95 @@ function isEditable(target: EventTarget | null): boolean {
 }
 
 /**
- * The app's global keyboard shortcuts. Minimal for now (prompt 07: undo/redo); prompt 10 adds
- * scopes (timeline, viewer) and user-visible listings.
+ * The app's keyboard shortcuts: named actions (`SHORTCUT_ACTIONS`) with default keys adapted to
+ * the OS, handlers bound by components while mounted, and the active context (the region last
+ * clicked or focused). A key press runs the latest handler of the action it matches, if that
+ * action is global or belongs to the active context; never inside text fields.
  */
 export class ShortcutRegistry {
-  readonly #platform: KeyboardPlatform;
-  readonly #bindings: RegisteredBinding[] = [];
+  readonly platform: KeyboardPlatform;
+  readonly actions: ShortcutActionTable;
+  readonly #shortcuts: ReadonlyMap<ShortcutActionId, readonly Shortcut[]>;
+  readonly #handlers: Handler[] = [];
+  readonly #listeners = new Set<() => void>();
+  #activeContext: ShortcutContext | null = null;
 
-  constructor(platform: KeyboardPlatform) {
-    this.#platform = platform;
+  constructor(platform: KeyboardPlatform, actions: ShortcutActionTable = SHORTCUT_ACTIONS) {
+    this.platform = platform;
+    this.actions = actions;
+    this.#shortcuts = new Map(
+      (Object.keys(actions) as ShortcutActionId[]).map((id) => [
+        id,
+        actionKeys(actions[id], platform).map(parseShortcut),
+      ]),
+    );
   }
 
-  /** Adds a binding; the latest one wins when two share a combination. Returns its removal. */
-  register(binding: ShortcutBinding): () => void {
-    const registered = { shortcut: parseShortcut(binding.keys), run: binding.run };
-    this.#bindings.push(registered);
+  /** The parsed combinations of `action` on this platform (first = the one to show). */
+  shortcutsOf(action: ShortcutActionId): readonly Shortcut[] {
+    return this.#shortcuts.get(action) ?? [];
+  }
+
+  /** Binds `run` to `action`; the latest binding of an action wins. Returns its removal. */
+  bind(action: ShortcutActionId, run: () => void): () => void {
+    const handler = { action, run };
+    this.#handlers.push(handler);
     return () => {
-      const index = this.#bindings.indexOf(registered);
-      if (index !== -1) this.#bindings.splice(index, 1);
+      const index = this.#handlers.indexOf(handler);
+      if (index !== -1) this.#handlers.splice(index, 1);
     };
   }
 
-  /** Runs the binding matching `event`, if any; returns whether one ran. */
+  /** The region whose shortcuts are live (`null`: only global ones). */
+  get activeContext(): ShortcutContext | null {
+    return this.#activeContext;
+  }
+
+  /** Makes `context` the live region and tells subscribers when it changes. */
+  setActiveContext(context: ShortcutContext | null): void {
+    if (context === this.#activeContext) return;
+    this.#activeContext = context;
+    for (const listener of this.#listeners) listener();
+  }
+
+  /** Calls `listener` when the active context changes; returns the unsubscription. */
+  subscribe(listener: () => void): () => void {
+    this.#listeners.add(listener);
+    return () => {
+      this.#listeners.delete(listener);
+    };
+  }
+
+  /** Runs the handler of the action matching `event`, if any; returns whether one ran. */
   handleKeyDown(event: KeyboardEvent): boolean {
     if (event.defaultPrevented || isEditable(event.target)) {
       return false;
     }
-    const binding = this.#bindings.findLast(({ shortcut }) =>
-      matchesShortcut(event, shortcut, this.#platform),
+    const handler = this.#handlers.findLast(
+      ({ action }) => this.#isLive(action) && this.#matches(action, event),
     );
-    if (binding === undefined) {
+    if (handler === undefined) {
       return false;
     }
     event.preventDefault();
-    binding.run();
+    if (event.repeat && this.actions[handler.action].repeats !== true) {
+      return false;
+    }
+    handler.run();
     return true;
+  }
+
+  #isLive(action: ShortcutActionId): boolean {
+    const { contexts } = this.actions[action];
+    return (
+      contexts.includes('global') ||
+      (this.#activeContext !== null && contexts.includes(this.#activeContext))
+    );
+  }
+
+  #matches(action: ShortcutActionId, event: KeyboardEvent): boolean {
+    return this.shortcutsOf(action).some((shortcut) =>
+      matchesShortcut(event, shortcut, this.platform),
+    );
   }
 }

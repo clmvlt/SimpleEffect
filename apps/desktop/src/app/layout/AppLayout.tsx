@@ -1,8 +1,12 @@
 import { Outlet } from 'react-router';
 
+import { ShortcutsDialogHost } from '../shortcuts/ShortcutsDialogHost';
 import { StatusBar } from '../status-bar/StatusBar';
 
-/** The window frame shared by every route: the page above, the status bar below. */
+/**
+ * The window frame shared by every route: the page above, the status bar below, and the keyboard
+ * shortcuts help (`?`).
+ */
 export function AppLayout() {
   return (
     <div className="flex h-screen flex-col bg-bg text-text">
@@ -10,6 +14,7 @@ export function AppLayout() {
         <Outlet />
       </div>
       <StatusBar />
+      <ShortcutsDialogHost />
     </div>
   );
 }

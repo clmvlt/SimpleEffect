@@ -4,11 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { useCoreClient } from '../../shared/core';
 import { errorMessageKey } from '../../shared/errors';
 import { selectHistory, useProjectSelector } from '../../shared/project-store';
-import { useShortcut } from '../../shared/shortcuts';
+import { useShortcutAction } from '../../shared/shortcuts';
 
 /**
- * Undo and redo of the open project, bound to Ctrl/⌘+Z and Ctrl/⌘+Maj+Z. The core does the
- * work; the result arrives as a patch.
+ * Undo and redo of the open project, bound to the `undo`/`redo` shortcut actions (Ctrl/⌘+Z,
+ * Ctrl/⌘+Maj+Z, Ctrl+Y off Apple). The core does the work; the result arrives as a patch.
  */
 export function useHistoryCommands(projectId: string) {
   const client = useCoreClient();
@@ -25,7 +25,7 @@ export function useHistoryCommands(projectId: string) {
   const redo = () => {
     if (history?.canRedo === true) run('redo');
   };
-  useShortcut('mod+z', undo);
-  useShortcut('mod+shift+z', redo);
+  useShortcutAction('undo', undo);
+  useShortcutAction('redo', redo);
   return { history, undo, redo };
 }
