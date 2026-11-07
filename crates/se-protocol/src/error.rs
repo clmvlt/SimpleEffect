@@ -90,6 +90,19 @@ pub enum ErrorCode {
     NothingToUndo,
     /// There is no undone transaction to redo.
     NothingToRedo,
+    /// The project has no asset with that id.
+    AssetNotFound,
+    /// No file exists at the given media path.
+    MediaNotFound,
+    /// The file is not a video, audio or image file ffprobe can read.
+    MediaUnsupported,
+    /// The replacement file holds another kind of media than the asset (video vs audio vs image).
+    MediaKindMismatch,
+    /// ffmpeg or ffprobe could not be found: run `pnpm fetch-binaries` (development) or reinstall
+    /// the app, or set the folder holding them.
+    MediaToolsMissing,
+    /// No job with that id is queued or running.
+    JobNotFound,
 }
 
 #[cfg(test)]

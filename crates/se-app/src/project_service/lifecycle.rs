@@ -122,6 +122,7 @@ impl ProjectService {
                 return Err(error);
             }
             open.push(handle.clone());
+            self.notify_opened(&handle).await;
             handle
         };
         let session = session_of(&handle).await?;
@@ -161,7 +162,7 @@ impl ProjectService {
                 .ok_or(AppError::ProjectNotOpen { project_id })?;
             open.remove(index)
         };
-        let closed = handle.close().await;
+        let closed = self.close_handle(&handle).await;
         self.deps
             .events
             .publish(CoreEvent::ProjectClosed { project_id });
@@ -173,7 +174,7 @@ impl ProjectService {
         let handles = std::mem::take(&mut *self.open.lock().await);
         for handle in handles {
             let project_id = handle.project_id();
-            if let Err(error) = handle.close().await {
+            if let Err(error) = self.close_handle(&handle).await {
                 tracing::error!(%error, %project_id, "closing a project at shutdown failed");
             }
             self.deps

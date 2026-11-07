@@ -55,6 +55,14 @@ jobs:
 
       - run: cargo build --release -p se-core
 
+      # ffmpeg/ffprobe pinned in scripts/binaries.manifest.json, cached until the manifest changes.
+      - uses: actions/cache@v6
+        with:
+          path: resources/bin
+          key: sidecars-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/binaries.manifest.json') }}
+
+      - run: pnpm fetch-binaries --yes
+
       - name: Build the installer
         run: pnpm package
         env:

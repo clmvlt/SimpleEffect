@@ -1,10 +1,12 @@
 //! In-memory fakes of every port (feature `test-support`), so use cases and the actor are
 //! tested without IO, and deterministic ids and clocks.
 
+mod media_fakes;
 mod memory_library;
 mod memory_repository;
 mod runtime_fakes;
 
+pub use media_fakes::{FakeJobRunner, FakeMedia, fingerprint, probed_audio, probed_video};
 pub use memory_library::InMemoryAppLibrary;
 pub use memory_repository::{InMemoryProjectRepository, StoredFolder};
 pub use runtime_fakes::{FixedClock, RecordingEventSink, SequentialIds};

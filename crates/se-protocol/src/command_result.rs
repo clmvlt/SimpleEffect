@@ -4,7 +4,9 @@ use se_domain::SequenceId;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{NewProjectDefaults, ProjectSession, RecentProject};
+use crate::{
+    ImportReport, JobSnapshot, NewProjectDefaults, ProjectSession, RecentProject, RelinkOutcome,
+};
 
 /// The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -48,6 +50,24 @@ pub enum CommandResult {
     Undo,
     /// Answer to [`crate::Command::Redo`]: committed (the patch arrives as an event).
     Redo,
+    /// Answer to [`crate::Command::ImportMedia`].
+    ImportMedia(ImportReport),
+    /// Answer to [`crate::Command::RelinkAsset`].
+    RelinkAsset {
+        /// Whether the asset was relinked or the user must confirm first.
+        outcome: RelinkOutcome,
+    },
+    /// Answer to [`crate::Command::RemoveAsset`]: committed (the patch arrives as an event).
+    RemoveAsset,
+    /// Answer to [`crate::Command::ListJobs`].
+    ListJobs {
+        /// Oldest first.
+        jobs: Vec<JobSnapshot>,
+    },
+    /// Answer to [`crate::Command::CancelJob`]: cancelled (`jobCancelled` follows).
+    CancelJob,
+    /// Answer to [`crate::Command::ReportDecodability`]: recorded.
+    ReportDecodability,
 }
 
 /// Facts about the running core, shown in the UI and useful in bug reports.

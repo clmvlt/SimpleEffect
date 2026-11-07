@@ -155,14 +155,40 @@ async fn an_open_project_cannot_be_opened_again_until_released() {
     repository.open(&path).await.unwrap();
 }
 
-#[tokio::test]
-async fn version_1_documents_load_through_the_migrations() {
+/// Loads `tests/fixtures/<name>` as the snapshot of a new project.
+async fn load_fixture(name: &str) -> se_domain::Project {
     let parent = tempfile::tempdir().unwrap();
     let (repository, path) = created(&parent).await;
-    let fixture = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/project-v1.json");
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures")
+        .join(name);
     fs::copy(fixture, ProjectLayout::new(&path).snapshot()).unwrap();
     let store = repository.open(&path).await.unwrap();
-    assert_eq!(store.load_snapshot().await.unwrap(), example_project());
+    store.load_snapshot().await.unwrap()
+}
+
+#[tokio::test]
+async fn version_1_documents_load_through_the_migrations() {
+    // Version 1 knew neither fingerprints nor codec levels, tags, pixel formats or audio profiles.
+    let mut expected = example_project();
+    for asset in &mut expected.assets {
+        asset.fingerprint = None;
+        let info = asset.media_info.as_mut().unwrap();
+        if let Some(video) = info.video_stream.as_mut() {
+            video.level = None;
+            video.codec_tag = None;
+            video.pixel_format = None;
+        }
+        for audio in &mut info.audio_streams {
+            audio.profile = None;
+        }
+    }
+    assert_eq!(load_fixture("project-v1.json").await, expected);
+}
+
+#[tokio::test]
+async fn version_2_documents_load_as_they_are() {
+    assert_eq!(load_fixture("project-v2.json").await, example_project());
 }
 
 #[tokio::test]
@@ -181,7 +207,7 @@ async fn newer_or_broken_documents_are_refused_with_explanations() {
         error,
         StorageError::SchemaTooNew {
             found: 999,
-            supported: 1,
+            supported: 2,
             ..
         }
     ));

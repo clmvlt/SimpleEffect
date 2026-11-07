@@ -1,12 +1,6 @@
 import type { RecentProject } from '@se/protocol';
 
-/** `text` lowercased without accents, so « eté » finds « Été ». */
-function searchable(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase();
-}
+import { searchable } from '../../../shared/text';
 
 /** The projects whose name or folder contains `query` (accents and case ignored). */
 export function filterProjects(

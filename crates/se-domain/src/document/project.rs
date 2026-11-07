@@ -8,7 +8,9 @@ use crate::ids::ProjectId;
 
 /// Version of the document format written by this build. Persistence (prompt 07) migrates older
 /// documents up to it and refuses newer ones.
-pub const CURRENT_SCHEMA_VERSION: u32 = 1;
+///
+/// Version 2 (prompt 08): assets carry a content fingerprint and a decodability per stream.
+pub const CURRENT_SCHEMA_VERSION: u32 = 2;
 
 /// The whole editable state of a project, serialized as `project.json` (ADR-0006).
 ///

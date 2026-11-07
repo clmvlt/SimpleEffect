@@ -1,8 +1,13 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
+import type { AssetId } from "./AssetId";
 import type { CreateProjectRequest } from "./CreateProjectRequest";
+import type { DecodabilityReport } from "./DecodabilityReport";
 import type { Format } from "./Format";
+import type { ImportMediaRequest } from "./ImportMediaRequest";
+import type { JobId } from "./JobId";
 import type { ProjectId } from "./ProjectId";
+import type { RelinkAssetRequest } from "./RelinkAssetRequest";
 
 /**
  * A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -63,4 +68,20 @@ projectId: ProjectId, } | { "kind": "redo",
 /**
  * The open project.
  */
-projectId: ProjectId, };
+projectId: ProjectId, } | { "kind": "importMedia" } & ImportMediaRequest | { "kind": "relinkAsset" } & RelinkAssetRequest | { "kind": "removeAsset", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The asset.
+ */
+assetId: AssetId, } | { "kind": "listJobs", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, } | { "kind": "cancelJob", 
+/**
+ * The job.
+ */
+jobId: JobId, } | { "kind": "reportDecodability" } & DecodabilityReport;

@@ -1,5 +1,7 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
+import type { JobProgress } from "./JobProgress";
+import type { JobSnapshot } from "./JobSnapshot";
 import type { ProjectHistory } from "./ProjectHistory";
 import type { ProjectId } from "./ProjectId";
 import type { ProjectPatch } from "./ProjectPatch";
@@ -23,4 +25,20 @@ missedEvents: number, } | { "kind": "projectOpened" } & ProjectSession | { "kind
 /**
  * The project.
  */
-projectId: ProjectId, } | { "kind": "historyChanged" } & ProjectHistory;
+projectId: ProjectId, } | { "kind": "historyChanged" } & ProjectHistory | { "kind": "jobQueued", 
+/**
+ * The job.
+ */
+job: JobSnapshot, } | { "kind": "jobProgress" } & JobProgress | { "kind": "jobCompleted", 
+/**
+ * The job.
+ */
+job: JobSnapshot, } | { "kind": "jobFailed", 
+/**
+ * The job.
+ */
+job: JobSnapshot, } | { "kind": "jobCancelled", 
+/**
+ * The job.
+ */
+job: JobSnapshot, };

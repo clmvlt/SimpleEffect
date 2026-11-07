@@ -6,12 +6,13 @@
 //! (`se_app::AppError` converts with `?`).
 
 pub mod editing;
+pub mod media;
 pub mod projects;
 pub mod system;
 
 use std::{path::Path, sync::Arc};
 
-use se_app::ProjectService;
+use se_app::{MediaService, ProjectService};
 use se_protocol::{ErrorCode, ProtocolError};
 
 use crate::app_paths::AppPaths;
@@ -25,6 +26,8 @@ pub struct HandlerContext {
     pub paths: AppPaths,
     /// Project use cases.
     pub projects: Arc<ProjectService>,
+    /// Media use cases (also observes project openings and closings).
+    pub media: Arc<MediaService>,
 }
 
 /// A path sent by a client, refused unless absolute (a relative path would depend on the

@@ -15,6 +15,19 @@ codec: string,
  */
 profile: string | null, 
 /**
+ * Codec level as the prober reports it (H.264 `41` for 4.1, HEVC `153` for 5.1, AV1
+ * `seq_level_idx`), when known. Needed to build WebCodecs codec strings.
+ */
+level: number | null, 
+/**
+ * Four-character codec tag of the container (`avc1`, `hvc1`, `hev1`…), when set.
+ */
+codecTag: string | null, 
+/**
+ * Pixel format as the prober names it (`yuv420p`, `yuv422p10le`…), when known.
+ */
+pixelFormat: string | null, 
+/**
  * Bits per colour component (8, 10, 12), when known.
  */
 bitDepth: number | null, 

@@ -1,4 +1,9 @@
-import { type CoreEndpointSource, resolveEndpoint, rpcSocketUrl } from './core-endpoint';
+import {
+  type CoreEndpoint,
+  type CoreEndpointSource,
+  resolveEndpoint,
+  rpcSocketUrl,
+} from './core-endpoint';
 import { CoreRequestError } from './core-request-error';
 import type {
   ClientMessage,
@@ -76,6 +81,7 @@ export class CoreClient {
   readonly #stateListeners = new Set<(state: ConnectionState) => void>();
   #state: ConnectionState = 'connecting';
   #socket: WebSocketLike | null = null;
+  #endpoint: CoreEndpoint | null = null;
   #nextRequestId = 1;
   #consecutiveFailures = 0;
   #hasBeenOpen = false;
@@ -102,6 +108,15 @@ export class CoreClient {
   /** Current connection state. */
   get state(): ConnectionState {
     return this.#state;
+  }
+
+  /**
+   * The endpoint of the latest connection attempt (`null` before the first one resolves). Media
+   * URLs are built from it; it changes when the core restarts, which is always followed by a
+   * state change to `open`.
+   */
+  get endpoint(): CoreEndpoint | null {
+    return this.#endpoint;
   }
 
   /** Calls `listener` on every state change; returns the unsubscribe function. */
@@ -159,6 +174,7 @@ export class CoreClient {
   #attempt(): void {
     resolveEndpoint(this.#source).then(
       (endpoint) => {
+        this.#endpoint = endpoint;
         this.#open(rpcSocketUrl(endpoint));
       },
       (error: unknown) => {

@@ -18,6 +18,8 @@ mod envelope;
 mod error;
 mod event;
 mod handshake;
+mod jobs;
+mod media;
 mod project_entities;
 mod project_session;
 
@@ -30,6 +32,11 @@ pub use envelope::{
 pub use error::{ErrorCode, ProtocolError};
 pub use event::CoreEvent;
 pub use handshake::CoreHandshake;
+pub use jobs::{JobKind, JobProgress, JobSnapshot, JobState};
+pub use media::{
+    DecodabilityReport, DuplicateMedia, ImportFailure, ImportMediaRequest, ImportReport,
+    RelinkAssetRequest, RelinkOutcome, ThumbnailSheet,
+};
 pub use project_entities::{
     EntityDeletes, EntityUpserts, ItemEntity, MarkerEntity, ProjectHeader, ProjectPatch,
     ProjectSnapshot, SequenceEntity, TrackEntity,

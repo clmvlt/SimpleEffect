@@ -9,7 +9,8 @@ use super::{
     lookup::{all_items, find_asset},
 };
 use crate::{
-    Asset, AssetId, Decodability, DerivedMedia, DomainError, ItemKind, MediaInfo, Project,
+    Asset, AssetId, ContentFingerprint, Decodability, DerivedMedia, DomainError, ItemKind,
+    MediaInfo, Project,
 };
 
 /// Adds an asset. Inverse: [`RemoveAsset`].
@@ -54,6 +55,8 @@ pub struct AssetPatch {
     pub relative_hint: Option<Assign<Option<String>>>,
     /// Probe results, or none.
     pub media_info: Option<Assign<Option<MediaInfo>>>,
+    /// Another content fingerprint (relinking to a file), or none.
+    pub fingerprint: Option<Assign<Option<ContentFingerprint>>>,
     /// Other mezzanine and proxy states.
     pub derived: Option<DerivedMedia>,
     /// Another decodability.
@@ -71,10 +74,14 @@ impl AssetPatch {
         let media_info = self.media_info.as_ref().map(|assign| Assign {
             value: std::mem::replace(&mut asset.media_info, assign.value.clone()),
         });
+        let fingerprint = self.fingerprint.as_ref().map(|assign| Assign {
+            value: std::mem::replace(&mut asset.fingerprint, assign.value.clone()),
+        });
         Self {
             original_path: swap_field(&mut asset.original_path, self.original_path.as_ref()),
             relative_hint,
             media_info,
+            fingerprint,
             derived: swap_field(&mut asset.derived, self.derived.as_ref()),
             decodability: swap_field(&mut asset.decodability, self.decodability.as_ref()),
             missing: swap_field(&mut asset.missing, self.missing.as_ref()),

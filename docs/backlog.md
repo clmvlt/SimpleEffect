@@ -40,6 +40,14 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Rename the project folder along with the project (today only the document's name changes).
 - Single-instance app (`app.requestSingleInstanceLock`), or several windows each with their project.
 
+## Media
+- Bump the Linux ffmpeg build (BtbN monthly build, kept two years) before 2028-10, and the macOS Intel one when Martin Riedl stops publishing them (January 2027); `scripts/binaries.manifest.json`.
+- Notarize or re-sign the bundled ffmpeg/ffprobe with the app's identity once macOS builds are signed; publish the GPL source offer with installers that bundle them.
+- Show more than the first sound stream in waveforms (pro files with several mono tracks), and keep more than 2 channels when useful.
+- Thumbnails of long-GOP footage follow the keyframe interval: add a slower exact mode if scrubbing short screen recordings needs it.
+- Windows: put se-core in a kill-on-close job at startup. process-wrap creates each sidecar suspended, then assigns it to its own job: if se-core is killed in that instant (seen once in a test that killed the core right after queuing a job), the child stays suspended forever. Graceful shutdown is not affected.
+- A settings field for `media.toolsDir` (the folder of ffmpeg/ffprobe chosen by the user); the core reads it at startup today.
+
 ## Platform
 - Light theme.
 - Additional UI languages (English first).

@@ -44,17 +44,17 @@ pub use changeset::{Changeset, ChangesetEntry, Conflict, RevertPlan, plan_revert
 pub use color::{Color, ColorParseError};
 pub use document::{
     Animatable, Asset, AssetKind, AudioStreamInfo, BrandKit, CURRENT_SCHEMA_VERSION, CaptionItem,
-    DEFAULT_SAMPLE_RATE, Decodability, DerivedFile, DerivedMedia, DerivedStatus, Easing,
-    EasingPreset, Format, FormatPreset, ImageItem, Item, ItemKind, Keyframe, Marker, MarkerColor,
-    MediaClip, MediaInfo, MotionTemplate, Origin, Project, ProjectSettings, Reframe, Sequence,
-    ShapeGeometry, ShapeItem, TemplateItem, TemplateParamValue, TextItem, TextStyle, Track,
-    TrackKind, Transform2D, VideoStreamInfo,
+    ContentFingerprint, DEFAULT_SAMPLE_RATE, Decodability, DerivedFile, DerivedMedia,
+    DerivedStatus, Easing, EasingPreset, FingerprintError, Format, FormatPreset, ImageItem, Item,
+    ItemKind, Keyframe, Marker, MarkerColor, MediaClip, MediaInfo, MotionTemplate, Origin, Project,
+    ProjectSettings, Reframe, Sequence, ShapeGeometry, ShapeItem, StreamDecodability, TemplateItem,
+    TemplateParamValue, TextItem, TextStyle, Track, TrackKind, Transform2D, VideoStreamInfo,
 };
 pub use error::{DomainError, DomainErrorCode};
 pub use history::{History, HistoryStep};
 pub use ids::{
-    AssetId, ChangesetId, IdError, ItemId, LinkGroupId, MarkerId, ProjectId, SequenceId, TaskId,
-    TemplateId, TrackId, TransactionId, Uuid,
+    AssetId, ChangesetId, IdError, ItemId, JobId, LinkGroupId, MarkerId, ProjectId, SequenceId,
+    TaskId, TemplateId, TrackId, TransactionId, Uuid,
 };
 pub use operation::{
     AddAsset, AddItem, AddMarker, AddSequence, AddTrack, AnimatableProperty, Applied, AssetPatch,

@@ -5,7 +5,7 @@ expression: example_project()
 {
   "id": "00000000-0001-7000-8000-000000000000",
   "name": "Example",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "revision": 42,
   "settings": {
     "defaultFormat": {
@@ -30,6 +30,9 @@ expression: example_project()
         "videoStream": {
           "codec": "h264",
           "profile": "High",
+          "level": 40,
+          "codecTag": "avc1",
+          "pixelFormat": "yuv420p",
           "bitDepth": 8,
           "chromaSubsampling": "4:2:0",
           "width": 1920,
@@ -43,10 +46,16 @@ expression: example_project()
         "audioStreams": [
           {
             "codec": "aac",
+            "profile": "LC",
             "channels": 2,
             "sampleRate": 48000
           }
         ]
+      },
+      "fingerprint": {
+        "sizeBytes": 13000000,
+        "modifiedUnixMs": 1700000000000,
+        "sampleHash": "0000000000c667fc"
       },
       "derived": {
         "mezzanine": null,
@@ -57,7 +66,10 @@ expression: example_project()
           }
         }
       },
-      "decodability": "decodable",
+      "decodability": {
+        "video": "decodable",
+        "audio": "decodable"
+      },
       "missing": false
     },
     {
@@ -72,16 +84,25 @@ expression: example_project()
         "audioStreams": [
           {
             "codec": "pcm_s24le",
+            "profile": null,
             "channels": 2,
             "sampleRate": 48000
           }
         ]
       },
+      "fingerprint": {
+        "sizeBytes": 9000000,
+        "modifiedUnixMs": 1700000000000,
+        "sampleHash": "0000000000895efc"
+      },
       "derived": {
         "mezzanine": null,
         "proxy": null
       },
-      "decodability": "decodable",
+      "decodability": {
+        "video": "noStream",
+        "audio": "decodable"
+      },
       "missing": false
     },
     {
@@ -95,6 +116,9 @@ expression: example_project()
         "videoStream": {
           "codec": "png",
           "profile": null,
+          "level": null,
+          "codecTag": null,
+          "pixelFormat": "rgba",
           "bitDepth": 8,
           "chromaSubsampling": null,
           "width": 512,
@@ -104,11 +128,19 @@ expression: example_project()
         },
         "audioStreams": []
       },
+      "fingerprint": {
+        "sizeBytes": 8000000,
+        "modifiedUnixMs": 1700000000000,
+        "sampleHash": "00000000007a1cbc"
+      },
       "derived": {
         "mezzanine": null,
         "proxy": null
       },
-      "decodability": "decodable",
+      "decodability": {
+        "video": "decodable",
+        "audio": "noStream"
+      },
       "missing": false
     }
   ],

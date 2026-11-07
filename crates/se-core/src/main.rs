@@ -19,8 +19,10 @@ mod app_paths;
 mod error;
 mod handshake;
 mod logging;
+mod media_routes;
 mod rpc;
 mod server;
+mod services;
 mod shutdown;
 mod system_ports;
 

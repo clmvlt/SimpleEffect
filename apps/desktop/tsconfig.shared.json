@@ -2,7 +2,8 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": ".tsbuild/shared"
+    "outDir": ".tsbuild/shared",
+    "lib": ["ES2023", "DOM"]
   },
   "include": ["electron/shared"]
 }

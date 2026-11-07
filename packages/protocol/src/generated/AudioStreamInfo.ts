@@ -10,6 +10,10 @@ export type AudioStreamInfo = {
  */
 codec: string, 
 /**
+ * Codec profile (e.g. `LC`, `HE-AAC`), when known. Needed to build WebCodecs codec strings.
+ */
+profile: string | null, 
+/**
  * Number of channels (1 mono, 2 stereo…).
  */
 channels: number, 

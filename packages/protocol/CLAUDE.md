@@ -9,9 +9,10 @@ TypeScript side of the se-core protocol: the types generated from the Rust crate
 - **`CoreClient`** (`core-client.ts`):
   - `CoreClient.connect(source, options?)`: `source` is `{ url, token }` or `() => Promise<{ url, token }>` (called before every attempt). Options: `requestTimeoutMs` (30 s), `reconnectDelay` (250 ms doubling, 5 s cap), `openSocket` (fake in tests), `logger`.
   - `send(command, { timeoutMs? })` → `Promise<ResultFor<kind>>`; rejects with `CoreRequestError { code, command, details }`.
-  - `on(kind, handler)` → unsubscribe; `state` and `onStateChange(listener)` → unsubscribe; `close()`.
+  - `on(kind, handler)` → unsubscribe; `state` and `onStateChange(listener)` → unsubscribe; `endpoint` (the endpoint of the latest attempt, for media URLs); `close()`.
   - Requests sent while not `open` are queued; requests in flight when the connection drops fail with `CONNECTION_LOST`; `close()` fails everything with `CLIENT_CLOSED`.
 - `rpcSocketUrl(endpoint)`, `CoreRequestError`, `WebSocketLike` / `WebSocketFactory`.
+- **Media** (`media-url.ts`, `waveform-peaks.ts`): `assetMediaPath(assetId, file)` (`original`, `thumbnails` JSON, `thumbnailSheet`, `poster`, `{ peaks: level }`), `mediaUrl(endpoint, path, version?)` (adds `?t=`), `PEAK_LEVELS` (256, 1024, 4096 — mirror of `se_media::peaks::PEAK_LEVELS`), `decodeWaveformPeaks(buffer)` → `WaveformPeaks` (the `SEPK` format of `crates/se-media/CLAUDE.md`).
 
 ## Layout
 | File | Role |
@@ -20,6 +21,7 @@ TypeScript side of the se-core protocol: the types generated from the Rust crate
 | `pending-requests.ts` | In-flight/queued requests, timeouts, result-kind check |
 | `server-message.ts` | Envelope validation of incoming frames |
 | `core-endpoint.ts`, `reconnect-delay.ts`, `web-socket-like.ts`, `core-request-error.ts` | Small pure helpers and types |
+| `media-url.ts`, `waveform-peaks.ts` | `/media` URLs and the `SEPK` decoder (`media.test.ts`) |
 | `test-support/fake-web-socket.ts` | `FakeWebSocket` playing the se-core side in tests (not exported) |
 
 ## Rules and invariants

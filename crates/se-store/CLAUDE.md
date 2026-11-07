@@ -15,7 +15,7 @@ Persistence adapter: project folders, `project.json` snapshots, the project and 
 | `layout.rs` | `ProjectLayout`: `project.json`, `.tmp`, `.bak.N`, `project.db`, `.lock`, `cache/`, `exports/` |
 | `folder_name.rs` | Folder names from project names (Windows-forbidden characters → `-`, reserved names, length) |
 | `snapshot_file.rs` | `read_snapshot` (JSON → migrations → `Project`), `write_snapshot` (backup rotation + `write_atomically`) |
-| `document_migrations.rs` | `MIGRATIONS` (`migrate_vN_to_vN+1`, none yet: v1 is the base), `migrate_document` — the recipe for a new version is in its doc comment |
+| `document_migrations.rs` | `MIGRATIONS` (`migrate_vN_to_vN+1`; v1 → v2 gives assets `fingerprint: null` and a per-stream `decodability`), `migrate_document` — the recipe for a new version is in its doc comment |
 | `sqlite.rs` | `open_database(path, migrations)`: WAL, `synchronous = FULL`, foreign keys, busy timeout, `user_version` migrations |
 | `project_db.rs` | `project.db` schema v1 (`op_journal`, `tasks`, `task_events`, `transcripts`, `transcript_search` FTS5, `analyses`) and journal queries |
 | `library.rs` | `SqliteAppLibrary` |
@@ -39,5 +39,5 @@ Persistence adapter: project folders, `project.json` snapshots, the project and 
 ## How to test
 - `cargo test -p se-store`
 - Unit tests in-file (folder names, migrations runner, SQLite migrations).
-- `tests/project_folders.rs` (temporary folders): layout, atomic writes and backups, journal survives a dropped store, lock, v1 fixture (`tests/fixtures/project-v1.json`), newer/broken documents, duplication, FTS5. `tests/app_library.rs`: recent list and settings.
+- `tests/project_folders.rs` (temporary folders): layout, atomic writes and backups, journal survives a dropped store, lock, version fixtures (`tests/fixtures/project-v1.json` migrated, `project-v2.json` as is), newer/broken documents, duplication, FTS5. `tests/app_library.rs`: recent list and settings.
 - `trashing_moves_the_folder_to_the_os_trash` is `#[ignore]`d because it uses the real OS trash: `cargo test -p se-store -- --ignored`.

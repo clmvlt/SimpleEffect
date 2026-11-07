@@ -10,6 +10,9 @@ mod editing;
 mod library;
 mod lifecycle;
 mod loading;
+mod observer;
+
+pub use observer::ProjectObserver;
 
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
@@ -53,6 +56,8 @@ pub struct ProjectService {
     /// Open projects. Held for the whole of open/close/rename/duplicate/trash so two commands
     /// never race on the same folder.
     open: Mutex<Vec<ProjectActorHandle>>,
+    /// Told about openings and closings (see [`ProjectObserver`]).
+    observers: Vec<Arc<dyn ProjectObserver>>,
 }
 
 impl ProjectService {
@@ -63,6 +68,7 @@ impl ProjectService {
             deps,
             config,
             open: Mutex::new(Vec::new()),
+            observers: Vec::new(),
         }
     }
 

@@ -4,7 +4,7 @@ use se_domain::ProjectId;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{ProjectHistory, ProjectPatch, ProjectSession};
+use crate::{JobProgress, JobSnapshot, ProjectHistory, ProjectPatch, ProjectSession};
 
 /// An event pushed inside a [`crate::EventEnvelope`], tagged by `kind` (camelCase).
 ///
@@ -42,6 +42,30 @@ pub enum CoreEvent {
     },
     /// What undo and redo would do changed for an open project.
     HistoryChanged(ProjectHistory),
+    // Job events carry the snapshot in a `job` field: flattened, its own `kind` (the job kind)
+    // would collide with the event tag.
+    /// A background job was queued (again, with `attempt: 2`, for its automatic retry).
+    JobQueued {
+        /// The job.
+        job: JobSnapshot,
+    },
+    /// A job started or made progress.
+    JobProgress(JobProgress),
+    /// A job finished; its outputs are served by `/media`.
+    JobCompleted {
+        /// The job.
+        job: JobSnapshot,
+    },
+    /// A job failed after its retry.
+    JobFailed {
+        /// The job.
+        job: JobSnapshot,
+    },
+    /// A job was cancelled (by the user or because its project closed).
+    JobCancelled {
+        /// The job.
+        job: JobSnapshot,
+    },
 }
 
 #[cfg(test)]
@@ -64,6 +88,22 @@ mod tests {
             json,
             r#"{"kind":"projectClosed","projectId":"00000000-0001-7000-8000-000000000000"}"#
         );
+    }
+
+    #[test]
+    fn job_events_keep_their_own_kind() {
+        let job = JobSnapshot {
+            id: se_domain::JobId::from_test_index(1),
+            project_id: ProjectId::from_test_index(1),
+            asset_id: None,
+            kind: crate::JobKind::Thumbnails,
+            state: crate::JobState::Completed,
+            attempt: 1,
+        };
+        let json: serde_json::Value =
+            serde_json::to_value(CoreEvent::JobCompleted { job }).unwrap();
+        assert_eq!(json["kind"], "jobCompleted");
+        assert_eq!(json["job"]["kind"], "thumbnails");
     }
 
     #[test]

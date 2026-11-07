@@ -1,4 +1,4 @@
-# Runs everything `pnpm check` runs, on Linux and Windows.
+# Runs everything `pnpm check` runs, on Linux and Windows, with the pinned ffmpeg sidecars.
 name: CI
 
 on:
@@ -42,4 +42,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # ffmpeg/ffprobe pinned in scripts/binaries.manifest.json, cached until the manifest changes.
+      - uses: actions/cache@v6
+        with:
+          path: resources/bin
+          key: sidecars-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/binaries.manifest.json') }}
+
+      - run: pnpm fetch-binaries --yes
+
+      # With the sidecars present, the ffmpeg integration tests run instead of being skipped.
       - run: pnpm check

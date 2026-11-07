@@ -5,9 +5,13 @@
   "description": "Rendering engine shared by preview and export: evaluate, decode, composite, audio, export.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./capabilities": "./src/capabilities/index.ts"
   },
   "scripts": {
     "test": "vitest run"
+  },
+  "devDependencies": {
+    "@se/protocol": "workspace:*"
   }
 }

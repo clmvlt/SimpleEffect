@@ -1,6 +1,6 @@
 import { isAbsolute } from 'node:path';
 
-import type { ChooseFolderOptions } from '../shared/bridge-api';
+import type { ChooseFilesOptions, ChooseFolderOptions } from '../shared/bridge-api';
 
 /**
  * Validation of IPC arguments coming from the renderer. The renderer is sandboxed but still
@@ -23,6 +23,38 @@ export function parseChooseFolderOptions(value: unknown): ChooseFolderOptions {
     throw new TypeError('chooseFolder expects `defaultPath` to be a string when present');
   }
   return { title, buttonLabel, defaultPath };
+}
+
+/** Options of the file picker, checked. */
+export function parseChooseFilesOptions(value: unknown): ChooseFilesOptions {
+  if (typeof value !== 'object' || value === null) {
+    throw new TypeError('chooseFiles expects an options object');
+  }
+  const { title, buttonLabel, filterName, extensions, allFilesName } = value as Record<
+    string,
+    unknown
+  >;
+  const strings = [title, buttonLabel, filterName, allFilesName];
+  if (!strings.every((text) => typeof text === 'string')) {
+    throw new TypeError(
+      'chooseFiles expects string `title`, `buttonLabel`, `filterName` and `allFilesName`',
+    );
+  }
+  const validExtensions =
+    Array.isArray(extensions) &&
+    extensions.every(
+      (extension) => typeof extension === 'string' && /^[a-z0-9]+$/i.test(extension),
+    );
+  if (!validExtensions) {
+    throw new TypeError('chooseFiles expects `extensions` to be a list of letters and digits');
+  }
+  return {
+    title: title as string,
+    buttonLabel: buttonLabel as string,
+    filterName: filterName as string,
+    allFilesName: allFilesName as string,
+    extensions: extensions as string[],
+  };
 }
 
 /** A path to reveal in the file manager: an absolute path string. */

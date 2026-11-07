@@ -109,7 +109,7 @@ impl ProjectService {
         let mut open = self.open.lock().await;
         if let Some(index) = open.iter().position(|handle| handle.path() == path) {
             let handle = open.remove(index);
-            if let Err(error) = handle.close().await {
+            if let Err(error) = self.close_handle(&handle).await {
                 tracing::warn!(%error, "saving a project before trashing it failed");
             }
             self.deps.events.publish(CoreEvent::ProjectClosed {
