@@ -1,11 +1,9 @@
-import type { AssetId, Flicks, ItemId } from '@se/protocol';
+import type { AssetId, Flicks } from '@se/protocol';
 import { describe, expect, it } from 'vitest';
 
-import type { Compositor, Picture, PictureSet } from '../composite/compositor';
 import { DecoderPool } from '../decode/decoder-pool';
 import { DecodeError } from '../decode/decode-error';
 import { FrameTracker } from '../decode/frame-tracker';
-import type { FrameGraph } from '../evaluate/frame-graph';
 import {
   assetTable,
   clip,
@@ -16,22 +14,9 @@ import {
   videoTrack,
 } from '../testing/document';
 import { FakeFrame, FakeVideoSource, settle } from '../testing/fake-decoding';
+import { RecordingCompositor } from '../testing/recording-compositor';
 import { createEngineWith } from './engine';
 import { FrameRenderer, type RenderScene } from './frame-renderer';
-
-/** Records what it was asked to draw. */
-class RecordingCompositor implements Compositor {
-  readonly draws: { graph: FrameGraph; pictures: Map<ItemId, Picture> }[] = [];
-  destroyed = false;
-  resize(): void {}
-  setBackground(): void {}
-  render(graph: FrameGraph, pictures: PictureSet): void {
-    this.draws.push({ graph, pictures: new Map(pictures) });
-  }
-  destroy(): void {
-    this.destroyed = true;
-  }
-}
 
 /** 25 fps like the fake source, so lookup times land on its frames. */
 const asset = videoAsset({

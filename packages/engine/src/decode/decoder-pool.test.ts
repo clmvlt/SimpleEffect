@@ -46,7 +46,7 @@ describe('DecoderPool: video frames', () => {
     (await pool.videoFrame({ ...clip, url: 'u2' }, 0))?.release();
     expect(sources.map((source) => source.url)).toEqual(['u1', 'p1', 'u2']);
     expect(sources[0]?.disposed).toBe(true);
-    expect(sources[0]?.frames[0]?.closed).toBe(true);
+    expect(sources[0]?.decodedFrames[0]?.closed).toBe(true);
     expect(pool.stats().openSources).toBe(2);
   });
 
@@ -137,7 +137,7 @@ describe('DecoderPool: frame lifetimes', () => {
     expect(tracker.counts().videoFrames).toBe(pool.stats().cachedPictures);
     pool.destroy();
     expect(tracker.counts()).toEqual({ videoFrames: 0, images: 0 });
-    const decoded = sources.flatMap((source) => source.frames);
+    const decoded = sources.flatMap((source) => source.decodedFrames);
     expect(decoded.every((frame) => frame.closed)).toBe(true);
   });
 

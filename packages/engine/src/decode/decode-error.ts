@@ -1,6 +1,6 @@
-/** Why a picture could not be decoded. */
+/** Why a picture (or a sound) could not be decoded. */
 export type DecodeFailure =
-  'noVideoTrack' | 'codecNotDecodable' | 'readFailed' | 'imageNotDecodable';
+  'noVideoTrack' | 'noAudioTrack' | 'codecNotDecodable' | 'readFailed' | 'imageNotDecodable';
 
 /**
  * A decoding failure with an actionable message (read by users in the viewer and by agents).
