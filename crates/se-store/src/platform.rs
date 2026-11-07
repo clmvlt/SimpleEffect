@@ -11,6 +11,10 @@ pub fn sync_directory(directory: &Path) -> io::Result<()> {
 /// Makes a rename inside `directory` durable. NTFS journals renames itself, and Windows cannot
 /// open a directory as a file, so there is nothing to do.
 #[cfg(not(unix))]
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "same signature as the Unix version, which can fail"
+)]
 pub fn sync_directory(_directory: &Path) -> io::Result<()> {
     Ok(())
 }
