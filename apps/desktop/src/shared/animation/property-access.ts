@@ -4,6 +4,7 @@ import type {
   Color,
   ItemKind,
   PropertyAnimation,
+  Reframe,
   Vec2,
 } from '@se/protocol';
 import {
@@ -22,6 +23,7 @@ export interface PropertyValues {
   readonly opacity: number;
   readonly blur: number;
   readonly volumeDb: number;
+  readonly reframeFocus: Vec2;
   readonly fontSize: number;
   readonly fillColor: Color;
   readonly letterSpacing: number;
@@ -52,6 +54,7 @@ export const ANIMATABLE_PROPERTIES: readonly AnimatableProperty[] = [
   'opacity',
   'blur',
   'volumeDb',
+  'reframeFocus',
   'fontSize',
   'fillColor',
   'letterSpacing',
@@ -65,6 +68,11 @@ export const ANIMATABLE_PROPERTIES: readonly AnimatableProperty[] = [
 ];
 
 type AnyAnimatable = Animatable<number> | Animatable<Vec2> | Animatable<Color>;
+
+/** The focus of a clip that fills the frame (ADR-0026); `null` for the other modes. */
+function reframeFocusOf(reframe: Reframe): Animatable<Vec2> | null {
+  return reframe.kind === 'fill' || reframe.kind === 'tracked' ? reframe.focus : null;
+}
 
 /** The field of `property` on `kind`, or `null` when the kind has none (mirror of Rust). */
 function slot(kind: ItemKind, property: AnimatableProperty): AnyAnimatable | null {
@@ -81,6 +89,8 @@ function slot(kind: ItemKind, property: AnimatableProperty): AnyAnimatable | nul
       return transform?.[property] ?? null;
     case 'volumeDb':
       return kind.kind === 'mediaClip' ? kind.volumeDb : null;
+    case 'reframeFocus':
+      return kind.kind === 'mediaClip' ? reframeFocusOf(kind.reframe) : null;
     case 'fontSize':
       return text?.style.fontSize ?? null;
     case 'letterSpacing':
@@ -137,6 +147,7 @@ export function interpolatorOf<P extends AnimatableProperty>(
       case 'scale':
       case 'anchor':
       case 'shadowOffset':
+      case 'reframeFocus':
         return interpolateVec2;
       case 'fillColor':
       case 'strokeColor':
@@ -167,6 +178,11 @@ export function withAnimation(kind: ItemKind, animation: PropertyAnimation): Ite
   }
   if (kind.kind === 'mediaClip' && property === 'volumeDb')
     return { ...kind, volumeDb: animation.value };
+  if (kind.kind === 'mediaClip' && property === 'reframeFocus') {
+    const { reframe } = kind;
+    if (reframe.kind !== 'fill' && reframe.kind !== 'tracked') return kind;
+    return { ...kind, reframe: { ...reframe, focus: animation.value } };
+  }
   if (kind.kind === 'shape') {
     if (property === 'fillColor') return { ...kind, fill: animation.value };
     const field = property === 'strokeColor' ? 'color' : 'width';

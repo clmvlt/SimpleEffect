@@ -9,29 +9,43 @@ import {
 } from '@se/ui';
 import { useTranslation } from 'react-i18next';
 
-import type { useNewProjectForm } from '../hooks/use-new-project-form';
-import { CUSTOM_RESOLUTION, resolutionValue } from '../services/form-choices';
+import { CUSTOM_RESOLUTION, resolutionValue } from '../format-choices';
+import type { FormatDraft } from '../format-draft';
+import type { Resolution } from '../resolutions';
 
 /** Props of {@link ResolutionFields}. */
 export interface ResolutionFieldsProps {
-  readonly form: ReturnType<typeof useNewProjectForm>;
+  readonly value: FormatDraft;
+  /** The resolutions offered for the draft's ratio. */
+  readonly resolutions: readonly Resolution[];
+  /** Whether the width and height fields show. */
+  readonly customSize: boolean;
+  readonly onChoose: (resolution: Resolution | 'custom') => void;
+  readonly onSize: (size: Partial<Resolution>) => void;
+  /** Shown under the width when the size is refused. */
+  readonly error?: string | undefined;
 }
 
-/** The resolution choice of the new project form, with width and height when custom. */
-export function ResolutionFields({ form }: ResolutionFieldsProps) {
+/** The resolution choice of a format, with width and height when custom. */
+export function ResolutionFields({
+  value,
+  resolutions,
+  customSize,
+  onChoose,
+  onSize,
+  error,
+}: ResolutionFieldsProps) {
   const { t } = useTranslation();
-  const { values, resolutions, customSize, errors } = form;
-  const sizeError = errors.size && t(`projects.newDialog.errors.${errors.size}`);
   return (
     <div className="flex flex-col gap-2">
       <Select
-        value={customSize ? CUSTOM_RESOLUTION : resolutionValue(values)}
-        onValueChange={(value) => {
-          const chosen = resolutions.find((resolution) => resolutionValue(resolution) === value);
-          form.chooseResolution(chosen ?? 'custom');
+        value={customSize ? CUSTOM_RESOLUTION : resolutionValue(value)}
+        onValueChange={(chosen) => {
+          const resolution = resolutions.find((entry) => resolutionValue(entry) === chosen);
+          onChoose(resolution ?? 'custom');
         }}
       >
-        <Field label={t('projects.newDialog.resolution')}>
+        <Field label={t('format.resolution')}>
           <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
@@ -42,32 +56,30 @@ export function ResolutionFields({ form }: ResolutionFieldsProps) {
               {`${String(resolution.width)} × ${String(resolution.height)}`}
             </SelectItem>
           ))}
-          <SelectItem value={CUSTOM_RESOLUTION}>
-            {t('projects.newDialog.customResolution')}
-          </SelectItem>
+          <SelectItem value={CUSTOM_RESOLUTION}>{t('format.customResolution')}</SelectItem>
         </SelectContent>
       </Select>
       {customSize && (
         <div className="flex gap-2">
-          <Field className="flex-1" label={t('projects.newDialog.width')} error={sizeError}>
+          <Field className="flex-1" label={t('format.width')} error={error}>
             <Input
               type="number"
               min={2}
               step={2}
-              value={values.width}
+              value={value.width}
               onChange={(event) => {
-                form.setSize({ width: event.target.valueAsNumber });
+                onSize({ width: event.target.valueAsNumber });
               }}
             />
           </Field>
-          <Field className="flex-1" label={t('projects.newDialog.height')}>
+          <Field className="flex-1" label={t('format.height')}>
             <Input
               type="number"
               min={2}
               step={2}
-              value={values.height}
+              value={value.height}
               onChange={(event) => {
-                form.setSize({ height: event.target.valueAsNumber });
+                onSize({ height: event.target.valueAsNumber });
               }}
             />
           </Field>

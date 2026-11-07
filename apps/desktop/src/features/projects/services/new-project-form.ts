@@ -1,19 +1,18 @@
-import type { CreateProjectRequest, FrameRate, NewProjectDefaults } from '@se/protocol';
+import type { CreateProjectRequest, NewProjectDefaults } from '@se/protocol';
 import type { AspectRatio } from '@se/ui';
 
-import { aspectRatioOf } from './format-label';
-import { defaultResolutionFor, isValidResolution } from './resolutions';
+import {
+  draftFromFormat,
+  draftToFormat,
+  isDraftSizeValid,
+  withDraftRatio,
+  type FormatDraft,
+} from '../../../shared/format';
 
-/** What the « new project » dialog edits. */
-export interface NewProjectFormValues {
+/** What the « new project » dialog edits: a name, a folder and a format. */
+export interface NewProjectFormValues extends FormatDraft {
   readonly name: string;
   readonly parentDir: string;
-  readonly ratio: AspectRatio;
-  readonly width: number;
-  readonly height: number;
-  readonly frameRate: FrameRate;
-  /** Audio sample rate, kept from the defaults (not edited yet). */
-  readonly sampleRate: number;
 }
 
 /** Translation keys of the form's errors, by field. */
@@ -25,21 +24,12 @@ export interface NewProjectFormErrors {
 
 /** The form as it opens: empty name, the core's proposed folder and format. */
 export function initialNewProjectForm(defaults: NewProjectDefaults): NewProjectFormValues {
-  const { format } = defaults;
-  return {
-    name: '',
-    parentDir: defaults.parentDir,
-    ratio: aspectRatioOf(format.width, format.height),
-    width: format.width,
-    height: format.height,
-    frameRate: format.frameRate,
-    sampleRate: format.sampleRate,
-  };
+  return { name: '', parentDir: defaults.parentDir, ...draftFromFormat(defaults.format) };
 }
 
 /** The form with another ratio and that ratio's default resolution. */
 export function withRatio(values: NewProjectFormValues, ratio: AspectRatio): NewProjectFormValues {
-  return { ...values, ratio, ...defaultResolutionFor(ratio) };
+  return withDraftRatio(values, ratio);
 }
 
 /** What is wrong with the form; empty when it can be submitted. */
@@ -47,7 +37,7 @@ export function validateNewProjectForm(values: NewProjectFormValues): NewProject
   return {
     ...(values.name.trim() === '' ? { name: 'nameRequired' } : {}),
     ...(values.parentDir.trim() === '' ? { parentDir: 'locationRequired' } : {}),
-    ...(isValidResolution(values) ? {} : { size: 'invalidSize' }),
+    ...(isDraftSizeValid(values) ? {} : { size: 'invalidSize' }),
   };
 }
 
@@ -61,11 +51,6 @@ export function toCreateProjectRequest(values: NewProjectFormValues): CreateProj
   return {
     name: values.name.trim(),
     parentDir: values.parentDir.trim(),
-    format: {
-      width: values.width,
-      height: values.height,
-      frameRate: values.frameRate,
-      sampleRate: values.sampleRate,
-    },
+    format: draftToFormat(values),
   };
 }

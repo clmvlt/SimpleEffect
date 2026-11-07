@@ -1,11 +1,10 @@
 import type { CreateProjectRequest, NewProjectDefaults } from '@se/protocol';
-import { AspectRatioPicker, Button, DialogClose, DialogFooter, Field, Input } from '@se/ui';
+import { Button, DialogClose, DialogFooter, Field, Input } from '@se/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FormatFields } from '../../../shared/format';
 import { useNewProjectForm } from '../hooks/use-new-project-form';
-import { FrameRateSelect } from './FrameRateSelect';
-import { ResolutionFields } from './ResolutionFields';
 
 /** Props of {@link NewProjectForm}. */
 export interface NewProjectFormProps {
@@ -76,22 +75,11 @@ export function NewProjectForm({ defaults, chooseFolder, onCreate }: NewProjectF
           {t('projects.newDialog.chooseLocation')}
         </Button>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-text">{t('projects.newDialog.format')}</span>
-        <AspectRatioPicker
-          value={values.ratio}
-          onChange={form.setRatio}
-          label={t('projects.newDialog.format')}
-          customLabel={t('projects.newDialog.customRatio')}
-          customWidthLabel={t('projects.newDialog.ratioWidth')}
-          customHeightLabel={t('projects.newDialog.ratioHeight')}
-        />
-      </div>
-      <ResolutionFields form={form} />
-      <FrameRateSelect
-        rates={defaults.frameRates}
-        value={values.frameRate}
-        onChange={form.setFrameRate}
+      <FormatFields
+        value={values}
+        onChange={form.setFormat}
+        frameRates={defaults.frameRates}
+        sizeError={errors.size && t(`projects.newDialog.errors.${errors.size}`)}
       />
       <DialogFooter>
         <DialogClose asChild>

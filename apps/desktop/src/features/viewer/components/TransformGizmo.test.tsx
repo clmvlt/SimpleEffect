@@ -73,8 +73,8 @@ function drawLayout(engine: FakePreviewEngine) {
       time: 0 as Flicks,
       frame: { width: 1920, height: 1080 },
       layers: [
-        { itemId: 'title', transform, box: { width: 600, height: 200 } },
-        { itemId: 'plain', transform, box: { width: 400, height: 120 } },
+        { itemId: 'title', transform, box: { width: 600, height: 200 }, crop: null },
+        { itemId: 'plain', transform, box: { width: 400, height: 120 }, crop: null },
       ],
     });
   });

@@ -4,6 +4,7 @@ import type {
   ItemAnimation,
   ItemEntity,
   ItemPatch,
+  PropertyAnimation,
   SequenceEntity,
 } from '@se/protocol';
 import { toast } from '@se/ui';
@@ -29,6 +30,12 @@ import { setPlayheadTime } from '../../timeline';
 import { inspectorApi } from '../api';
 import { keyframeTolerance, localTime } from '../services/inspector-values';
 
+/** A patch of one item and the properties set with it (one step). */
+export interface ItemEdit {
+  readonly patch: ItemPatch;
+  readonly animations: readonly PropertyAnimation[];
+}
+
 /** Edits of the inspected items at the playhead, each one command (one undo step). */
 export interface PropertyEditor {
   readonly items: readonly ItemEntity[];
@@ -51,6 +58,8 @@ export interface PropertyEditor {
   ) => (() => void) | undefined;
   /** Sends one typed patch per item (`patchOf` returns `null` to leave an item out). */
   readonly patch: (patchOf: (item: ItemEntity) => ItemPatch | null) => void;
+  /** Sends one patch per item with properties set in the same step (`null` leaves it out). */
+  readonly edit: (editOf: (item: ItemEntity) => ItemEdit | null) => void;
 }
 
 /** The property editor of `items` of `sequence` at `playhead`, sending to `projectId`. */
@@ -132,6 +141,18 @@ export function usePropertyEditor(
         return patch === null ? [] : [{ itemId: item.id, patch }];
       });
       if (updates.length > 0) api.updateItems(updates).catch(report);
+    },
+    edit: (editOf) => {
+      const edits = items.flatMap((item) => {
+        const edit = editOf(item);
+        return edit === null ? [] : [{ item, edit }];
+      });
+      if (edits.length === 0) return;
+      const updates = edits.map(({ item, edit }) => ({ itemId: item.id, patch: edit.patch }));
+      const animations = edits.flatMap(({ item, edit }) =>
+        edit.animations.map((animation) => ({ itemId: item.id, animation })),
+      );
+      api.updateItems(updates, animations).catch(report);
     },
   };
 }

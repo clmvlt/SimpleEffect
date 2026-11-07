@@ -14,20 +14,27 @@ import { useTranslation } from 'react-i18next';
 import { GraphicsTools } from '../../graphics';
 import {
   VIEWER_ZOOMS,
+  guidesOf,
   setViewerPreferences,
   type ViewerPreferences,
   type ViewerZoom,
 } from '../store/viewer-store';
+import { GuidesMenu } from './GuidesMenu';
 
 /** Props of {@link ViewerToolbar}. */
 export interface ViewerToolbarProps {
   readonly preferences: ViewerPreferences;
+  /** The active sequence (guides are remembered per sequence). */
+  readonly sequenceId: string;
 }
 
 const zoomValue = (zoom: ViewerZoom) => String(zoom);
 
-/** The viewer options: zoom level, proxy playback, transparency checkerboard, performance HUD. */
-export function ViewerToolbar({ preferences }: ViewerToolbarProps) {
+/**
+ * The viewer options: zoom level, guides (safe areas, thirds, centre), proxy playback,
+ * transparency checkerboard, performance HUD.
+ */
+export function ViewerToolbar({ preferences, sequenceId }: ViewerToolbarProps) {
   const { t } = useTranslation();
   const zoomLabel = (zoom: ViewerZoom) =>
     zoom === 'fit'
@@ -55,6 +62,7 @@ export function ViewerToolbar({ preferences }: ViewerToolbarProps) {
         </SelectContent>
       </Select>
       <Toolbar label={t('editor.viewer.toolbar.label')}>
+        <GuidesMenu sequenceId={sequenceId} guides={guidesOf(preferences, sequenceId)} />
         <Tooltip content={t('editor.viewer.toolbar.proxy')}>
           <ToolbarButton
             icon={Gauge}

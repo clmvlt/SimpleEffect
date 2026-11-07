@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ShortcutRegion, useActiveShortcutContext } from '../../../shared/shortcuts';
+import { SequenceDialogs, openSequenceDialog, useSequenceActions } from '../../sequences';
 import { useEditActions } from '../hooks/use-edit-actions';
 import { useEditShortcuts } from '../hooks/use-edit-shortcuts';
 import { useTransitionActions } from '../hooks/use-transition-actions';
@@ -18,7 +19,7 @@ import { useTimelinePersistence } from '../hooks/use-timeline-persistence';
 import { useTimelineShortcuts } from '../hooks/use-timeline-shortcuts';
 import { useTimelineViewport } from '../hooks/use-timeline-viewport';
 import { TRACK_HEIGHT_PRESETS } from '../services/track-height';
-import { clearSelection } from '../store/selection-store';
+import { clearSelection, selectItems } from '../store/selection-store';
 import { setActiveSequence, setTrackHeights } from '../store/timeline-view-store';
 import { SequenceTabs } from './SequenceTabs';
 import { TimelineToolbar } from './TimelineToolbar';
@@ -66,6 +67,16 @@ function TimelineEditor({ model }: { readonly model: TimelineModel }) {
   useEditShortcuts(actions);
   const transitionActions = useTransitionActions(model, commands, playhead.time);
   useEffect(() => connectEditPreferences(uiPreferencesStorage()), []);
+  const sequenceActions = useSequenceActions({
+    onActivate: (sequenceId) => {
+      clearSelection();
+      setActiveSequence(sequenceId);
+    },
+    onSelectItems: (sequenceId, itemIds) => {
+      setActiveSequence(sequenceId);
+      selectItems(itemIds);
+    },
+  });
   const active = useActiveShortcutContext() === 'timeline';
   return (
     <ShortcutRegion context="timeline" claimOnMount className="size-full">
@@ -90,7 +101,15 @@ function TimelineEditor({ model }: { readonly model: TimelineModel }) {
                 if (sequenceId !== null) setActiveSequence(sequenceId);
               });
             }}
+            onRename={(sequenceId, name) => {
+              void sequenceActions.rename(sequenceId, name);
+            }}
+            onAction={(action, sequenceId) => {
+              if (action === 'duplicate') void sequenceActions.duplicate(sequenceId);
+              else openSequenceDialog({ kind: action, sequenceId });
+            }}
           />
+          <SequenceDialogs actions={sequenceActions} />
           <TimelineToolbar
             sequence={model.sequence}
             api={api}
