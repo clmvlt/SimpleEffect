@@ -12,7 +12,7 @@ use std::{
 use async_trait::async_trait;
 use se_domain::{Project, Transaction};
 
-use super::{AnalysisStore, StorageError};
+use super::{AnalysisStore, StorageError, TaskStore};
 
 /// Project folders on disk (implemented by se-store).
 #[async_trait]
@@ -88,6 +88,9 @@ pub trait ProjectStore: Send + Sync {
 
     /// The analyses of this project's assets (same database, shareable outside the actor).
     fn analyses(&self) -> Arc<dyn AnalysisStore>;
+
+    /// The AI tasks of this project (same database, shareable outside the actor).
+    fn tasks(&self) -> Arc<dyn TaskStore>;
 
     /// Releases the lock. The store must not be used afterwards.
     ///

@@ -2,7 +2,7 @@
 //!
 //! Application layer of SimpleEffect: use cases, ports (traits implemented by adapters),
 //! the `ProjectActor` (single writer of a project), the `JobQueue` and the media use cases, and
-//! later the `TaskScheduler` (prompt 17).
+//! the AI task service (`TaskScheduler` of the architecture).
 //!
 //! Allowed workspace dependencies: `se-domain`, `se-protocol` (see `docs/architecture.md` §3).
 //! Adapters (`se-store`, `se-media`, `se-transcribe`, `se-vision`, `se-agents`, `se-export`, `se-mcp`)
@@ -13,7 +13,8 @@
 //!   [`ports::AppLibraryRepository`], [`ports::EventSink`], [`ports::Clock`],
 //!   [`ports::IdGenerator`], [`ports::MediaProber`], [`ports::MediaFiles`],
 //!   [`ports::MediaJobRunner`], [`ports::FrameExtractor`], [`ports::MediaTools`],
-//!   [`ports::AnalysisStore`].
+//!   [`ports::AnalysisStore`], [`ports::TaskStore`], [`ports::AgentProvider`],
+//!   [`ports::AgentWorkspaces`].
 //! - [`project_actor`]: [`ProjectActorHandle`], the single writer of an open project.
 //! - [`project_service`]: [`ProjectService`], the project use cases behind the protocol.
 //! - [`project_view`]: the document as clients see it (snapshot, patches, undo state).
@@ -21,6 +22,8 @@
 //! - [`media_service`]: [`MediaService`], media import, relinking, decodability, jobs,
 //!   mezzanines, proxies, analyses, settings and the project cache.
 //! - [`media_policy`]: which mezzanine and proxy an asset needs (pure decisions).
+//! - [`tasks`]: [`TaskService`], AI tasks run in the background by an AI CLI (queue, concurrency
+//!   limit, cancellation, retries, follow-ups, persistence), the AI status and settings.
 //! - [`new_project`], [`recovery`]: new documents and crash recovery (pure).
 //!
 //! ## Rules
@@ -39,6 +42,7 @@ pub mod project_actor;
 pub mod project_service;
 pub mod project_view;
 pub mod recovery;
+pub mod tasks;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
 
@@ -52,3 +56,4 @@ pub use project_service::{
     animation_preset_infos, graphic_track, item_labels, marker_labels, sequence_labels,
     track_labels, transition_labels,
 };
+pub use tasks::{TaskService, TaskServiceDeps};
