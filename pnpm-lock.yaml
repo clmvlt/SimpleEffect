@@ -214,6 +214,9 @@ importers:
       '@rolldown/plugin-babel':
         specifier: 0.3.0
         version: 0.3.0(@babel/core@7.29.13(supports-color@7.2.0))(@babel/runtime@7.29.13)(rolldown@1.2.16)(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0))
+      '@se/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
       '@se/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
@@ -287,7 +290,11 @@ importers:
         specifier: 5.0.16
         version: 5.0.16(@types/react@19.3.0)(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
 
-  packages/engine: {}
+  packages/engine:
+    devDependencies:
+      '@se/protocol':
+        specifier: workspace:*
+        version: link:../protocol
 
   packages/protocol: {}
 

@@ -17,6 +17,7 @@
   "devDependencies": {
     "@babel/core": "7.29.13",
     "@rolldown/plugin-babel": "0.3.0",
+    "@se/engine": "workspace:*",
     "@se/protocol": "workspace:*",
     "@se/ui": "workspace:*",
     "@tailwindcss/vite": "4.3.4",
