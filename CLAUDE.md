@@ -70,7 +70,7 @@ Adapters depend on `se-app` and `se-domain`, never on each other. `se-core` depe
 | `pnpm set-version <semver>` | Write the version into every `package.json` and `Cargo.toml` (used by the release workflow) |
 | `pnpm codegen` | Regenerate `packages/protocol/src/generated/` from Rust (`se-codegen`); `--check` fails if stale |
 | `pnpm storybook` | Design system playground (`@se/ui` Storybook on http://localhost:6006, a11y addon) |
-| `pnpm fetch-binaries` | Download ffmpeg/ffprobe/whisper binaries into `resources/bin/<platform>/` (asks before downloading) — added by prompt 08 |
+| `pnpm fetch-binaries` | Download the pinned ffmpeg/ffprobe builds (`scripts/binaries.manifest.json`, SHA-256 checked) into `resources/bin/<platform>/`; asks first (`--yes` for CI, `--platform <key>`, `--all`). Whisper arrives with prompt 21 |
 
 ## Code conventions
 
@@ -150,7 +150,8 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
 - **Flicks in JSON:** exact as JS numbers up to ±2^53 (~147 days); the domain rejects larger values.
 - **WebCodecs support differs per machine** (GPU/OS): always check `isConfigSupported()`; fall back to mezzanines.
 - **`VideoFrame` leaks GPU memory** if not closed; the decoder pool owns frame lifetimes.
-- **Binaries** (ffmpeg, ffprobe, whisper) are not committed: `pnpm fetch-binaries`.
+- **Binaries** (ffmpeg, ffprobe, whisper) are not committed: `pnpm fetch-binaries`. Tests needing ffmpeg skip themselves (with a message) when it is absent; CI fetches it (cached) so they run there.
+- **A running app locks `target/debug/se-core.exe` on Windows**: close `pnpm dev` (or the test build) before `cargo test`, or it fails with « Accès refusé ».
 - **Never** log or persist AI CLI credentials or tokens; MCP task tokens are redacted in logs.
 - **TypeScript is pinned to 6.0.x**: TypeScript 7 (native) has no JS API, and `typescript-eslint` (typed lint) supports `<6.1`. Upgrade only when `typescript-eslint` supports 7.
 - **Electron binary**: since Electron 45 it is not downloaded at install time; the desktop `dev` script runs `install-electron` (idempotent) first. electron-builder downloads its own copy for packaging.

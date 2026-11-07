@@ -26,6 +26,45 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-07 — Prompt 08: Médias 1 : import, bin, jobs, miniatures, waveforms — Done
+
+**Branch**: `feature/08-medias-import`, merged into `dev` (merge commit recorded in the next `dev` commit)
+
+**Done**
+- `pnpm fetch-binaries` (`scripts/fetch-binaries.mjs` + pure `scripts/lib/binaries.mjs`, tested): FFmpeg 9.0.2 pinned by URL, size and SHA-256 in `scripts/binaries.manifest.json` (Gyan.dev essentials for Windows, Martin Riedl for macOS arm64/x64, BtbN GPL 9.0 for Linux), plan shown (size, source, licence) and confirmation asked (`--yes` for CI, `--platform`, `--all`), extraction with system `tar`/`unzip`, stamp file for idempotence. `ci.yml` and `release.yml` fetch them (cached by manifest hash); electron-builder bundles them in `resources/bin` next to se-core.
+- se-domain: `ContentFingerprint` (validated sample hash, `same_content`, `cache_key`), per-stream `Decodability { video, audio }` (`StreamDecodability`), `Asset.fingerprint`, `MediaInfo` codec `level`/`codecTag`/`pixelFormat` and audio `profile`, `AssetPatch.fingerprint`, `Actor::System`, `JobId`; **schema version 2** with `migrate_v1_to_v2` (se-store) and fixtures `project-v1.json` (migrated) / `project-v2.json`.
+- se-protocol: commands `importMedia`, `relinkAsset`, `removeAsset`, `listJobs`, `cancelJob`, `reportDecodability`; events `jobQueued`, `jobProgress`, `jobCompleted`, `jobFailed`, `jobCancelled`; `ImportReport`, `RelinkOutcome`, `JobSnapshot`/`JobState`/`JobKind`, `ThumbnailSheet` (codegen root); codes `ASSET_NOT_FOUND`, `MEDIA_NOT_FOUND`, `MEDIA_UNSUPPORTED`, `MEDIA_KIND_MISMATCH`, `MEDIA_TOOLS_MISSING`, `JOB_NOT_FOUND`.
+- se-app: media ports (`MediaProber`, `MediaFiles`, `MediaJobRunner`, `ProgressSink`, `MediaError`) with fakes; generic `JobQueue` (priorities, concurrency per kind, cancellation by aborting the task, one retry, per-percent progress, `cancel_project` waiting for tasks to stop); `MediaService` (import with fingerprint dedup and 4 concurrent probes, one `Import media` transaction, relink with content check and `force`, undoable removal, decodability as system transactions, missing-media check at opening with silent relink through the relative hint, jobs for missing outputs only); `ProjectObserver` hook on `ProjectService` (opened before the session is returned, closing before saving).
+- se-media: `ToolLocator` (user folder → executable folder → `resources/bin/<platform>` in an ancestor → `PATH`), `Sidecar` spawn helper over `process-wrap` (job object + `CREATE_NO_WINDOW` / process group, tree killed on drop, stderr tail in errors), `FfprobeProber` + pure `parse_probe_output`, `FsMediaFiles` + xxh3 fingerprints, `FfmpegJobRunner`: thumbnails (≤ 40 tiles 90 px high, keyframes beyond 30 s, real tile times through the `metadata` filter, 8-column sheet, 360 px poster) and waveform peaks (PCM f32 from stdout, 256/1024/4096 levels, `SEPK` files); atomic outputs in `cache/media/<key>/`.
+- se-core: `services.rs` wiring (setting `media.toolsDir`), media handlers, `/media` routes (original, thumbnails JSON/sheet/poster, peaks) with tower-http `ServeFile` (Range 206/416, conditional requests), explicit content types, `no-cache`, behind the token guard.
+- `@se/protocol`: `CoreClient.endpoint`, `assetMediaPath`, `mediaUrl`, `PEAK_LEVELS`, `decodeWaveformPeaks`. `@se/engine/capabilities`: codec strings (avc1, hvc1/hev1, vp09, av01, vp8, mp4a, opus, flac, PCM…) and `checkDecodability`.
+- Electron: `chooseFiles` (native multi-select with filter, validated IPC) and `getPathForFile` (`webUtils`). Renderer: `shared/core` `useCoreEndpoint`, `shared/text` (`searchable`, moved from projects), `shared/time` (duration display); `features/media-bin` (import button and OS drop with overlay, grid/list, poster + hover scrub through the sheet, waveform previews, kind filter, accent-insensitive search, job progress/failure indicators, details panel, « Manquant » badge, « Relier… » with confirmation for other content, remove/reveal menus, decodability reporter, toasts); history labels and error messages translated.
+- Tests: se-domain 165 + properties (generator covers fingerprints/decodability), se-store migrations, se-app 19 unit + 5 job-queue + 9 media-service, se-media 26 unit + 5 fixtures (ffprobe JSON recorded from ffmpeg-generated H.264, HEVC Main 10 rotated, ProRes 422 HQ + PCM, WAV, PNG) + 3 with real ffmpeg (sheet/poster/peaks of a video, an image, a refused text file, cancelling a 4K job), se-core router/route unit tests + 3 process tests (`/media` token 401, import → thumbnails/peaks served with Range 206/416, rename → missing on reopening → relink), protocol/engine/desktop Vitest (codec strings, decodability, peaks decoder, URLs, job reducer, scrub/waveform maths, jobs sync, panel behaviour with drop).
+- Verified in the built app on Windows (isolated profile, CDP): dropping « Plage 4K.mp4 » (3840×2160), a WAV and a PNG imports 3 media with a visible progress bar on the 4K card, then poster, hover scrub through the 12-tile sheet, waveform and image thumbnail; dropping the same file and a copy reports « 2 médias déjà présents » and imports only the new one; WebCodecs reports H.264/AAC decodable (« Lecture directe : Oui »); renaming the WAV then reopening shows « Manquant » (relinking itself checked by the process test: the native dialog cannot be driven over CDP). No CSP or core warnings in the logs.
+- Docs: ADR-0018, `docs/architecture.md` §3/§4.2/§4.4/§5.3/§5.4/§6/§7/§11, glossary (13 terms), backlog (Media section), CLAUDE.md of se-media (cache formats, `SEPK`, jobs), se-app, se-core, se-protocol, se-domain, se-store, `@se/protocol`, `@se/engine`, desktop and root.
+
+**Deviations from the prompt**
+- Thumbnails and peaks are **not** recorded in the document: they are cache keyed by content, regenerated when missing (ADR-0018); mezzanines/proxies stay in `DerivedMedia` for prompt 09.
+- Decodability is per stream (the prompt 05 TODO), which changed the document format: schema version 2 with a migration. `ReportDecodability` also carries the `projectId`.
+- Job events carry `{ job: JobSnapshot }` (a flattened snapshot's `kind` overwrote the event tag — caught by the e2e process test); an extra `jobCancelled` event.
+- Peaks progress is computed from the samples read: ffmpeg's stdout carries the PCM, so `-progress pipe:1` is used only for thumbnails. Peaks keep at most 2 channels.
+- `/media` thumbnail routes are `/thumbnails` (JSON), `/thumbnails/sheet` and `/thumbnails/poster` rather than `/thumbnails/{index}`.
+- The user-configured tools folder is the library setting `media.toolsDir` read at startup (no UI before prompt 09's settings).
+- Removing an asset does not cancel its jobs (their cached outputs serve an undo).
+
+**Follow-ups**
+- Prompt 09: mezzanine policy from the per-stream decodability, proxies, analyses (new job kinds in `JobKind` + runner), the settings screen (`media.toolsDir`, cache cleanup).
+- Prompts 10/11/14: draw waveforms in the timeline from `decodeWaveformPeaks` (`media-bin/services/waveform-path.ts` can move to `shared`), drag media from the bin to the timeline.
+- Backlog (Media section): bump the Linux ffmpeg build before 2028-10, macOS signing/notarization and GPL source offer for distributed installers, several sound streams.
+- `release.yml` macOS/Linux packaging with the bundled tools is still unverified (needs a tag run).
+
+**Notes for the next agent**
+- ffmpeg's `metadata=mode=print` only prints frames that carry metadata: `metadata=mode=add:key=…` first. Filter file paths are relative to the run's working folder (no Windows escaping).
+- `-display_rotation` on a lavfi input rotates the pictures themselves (autorotate); to generate a rotated test file, remux with `-display_rotation:v:0 N -i in.mp4 -c copy`.
+- Real OS drag and drop over CDP: `Input.dispatchDragEvent` with `data.files` (absolute paths) — the page gets `File`s that `webUtils.getPathForFile` resolves.
+- Heredocs in the Bash tool can collapse backslashes and choke on backticks: write scripts with the Write tool instead.
+- The ffprobe fixtures were recorded with ffprobe 9.0.2; `format.filename` is stripped to the base name.
+
 ## 2026-11-07 — Prompt 07: Persistance et gestion des projets — Done
 
 **Branch**: `feature/07-persistance-projets`, merged into `dev` at `b17b02a`

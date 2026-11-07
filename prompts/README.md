@@ -42,7 +42,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | [x] | 06 | [Domaine : opérations, historique, changesets](06-domaine-operations.md) ⚠️ | 05 | 03, 04 |
 | [x] | 07 | [Persistance et gestion des projets](07-persistance-projets.md) | 02, 04, 06 | — |
 | **Phase 2 — Médias** |||||
-| [ ] | 08 | [Médias 1 : import, bin, jobs, miniatures, waveforms](08-medias-import.md) | 07 | 17 |
+| [x] | 08 | [Médias 1 : import, bin, jobs, miniatures, waveforms](08-medias-import.md) | 07 | 17 |
 | [ ] | 09 | [Médias 2 : codecs pro, mezzanines, proxies, analyses](09-medias-pro-analyses.md) | 08 | 10, 17 |
 | **Phase 3 — Montage** |||||
 | [ ] | 10 | [Timeline A : affichage et navigation](10-timeline-affichage.md) | 08 | 09, 17 |

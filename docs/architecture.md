@@ -117,12 +117,12 @@ se-domain  ◄── se-protocol
 | `se-domain` | serde, thiserror, uuid, ts-rs (derive only); dev: proptest, insta, serde_json | do IO, use async/tokio, read the clock, spawn anything |
 | `se-protocol` | se-domain, serde, serde_json, ts-rs | contain logic |
 | `se-app` | se-domain, se-protocol, tokio, async-trait, tracing | touch `std::fs`, `std::process`, network, concrete adapters |
-| adapters | se-app, se-domain, their IO libraries | depend on another adapter crate |
+| adapters | se-app, se-domain, se-protocol (DTOs they write, e.g. `ThumbnailSheet`), their IO libraries | depend on another adapter crate |
 | `se-mcp` | se-app, se-domain, rmcp, schemars | mutate documents except through se-app use cases |
 | `se-core` | everything | contain domain logic |
 | `se-codegen` | se-protocol, se-domain, ts-rs | be depended on, ship in the app |
 
-Adapters implement **ports** declared in `se-app::ports`: `ProjectRepository` (+ `ProjectStore`, one open and locked project), `AppLibraryRepository`, `MediaProber`, `MediaJobRunner`, `Transcriber`, `SubjectDetector`, `AgentProvider`, `Exporter`, `EventSink`, `Clock`, `IdGenerator`. Small ports with no adapter crate (`Clock`, `IdGenerator`, `EventSink` over the event bus) are implemented in se-core (`system_ports.rs`).
+Adapters implement **ports** declared in `se-app::ports`: `ProjectRepository` (+ `ProjectStore`, one open and locked project), `AppLibraryRepository`, `MediaProber`, `MediaFiles` (existence, fingerprints), `MediaJobRunner`, `Transcriber`, `SubjectDetector`, `AgentProvider`, `Exporter`, `EventSink`, `Clock`, `IdGenerator`. Small ports with no adapter crate (`Clock`, `IdGenerator`, `EventSink` over the event bus) are implemented in se-core (`system_ports.rs`).
 Every port has an in-memory/fake implementation in `se-app` (feature `test-support`) so use cases are tested without IO.
 
 ## 4. TypeScript packages and rules
@@ -146,6 +146,7 @@ Every port has an in-memory/fake implementation in `se-app` (feature `test-suppo
 - `app/` is the composition root and the shell: `main.tsx` creates the core client, the i18n instance and a **hash router** (React Router, library mode) from `createAppRoutes()`: `/` home (`features/projects`), `/project/:projectId` editor. The editor layout (`app/editor/EditorPage.tsx`) nests `Dock`s around the feature panels — media left, viewer centre, inspector and AI tabs right, timeline bottom — and the status bar shows the core connection, AI availability and version.
 - Panel sizes are machine preferences saved in `localStorage` under `se.ui.` (`shared/storage/`), never in projects.
 - `shared/` modules created by prompt 07: `project-store/` (read-only Zustand mirror of the open project, fed by the core, §5.6), `shortcuts/` (global key bindings: `useShortcut('mod+z', run)`, ignored in text fields), `desktop/` (the Electron bridge through context: folder picker, reveal in folder), `routing/` (screen paths), `errors/` (one translation key per protocol error code, `errors.<CODE>` in `fr.json`).
+- `features/media-bin` (prompt 08): the media panel — import by button (native dialog) or by dropping files from the OS, grid/list with posters, hover scrubbing through the thumbnail sheet and waveforms (fetched from `/media`), kind filter and accent-insensitive search, job progress from the job events (`store/jobs-store.ts`), details of the selected asset, « Manquant » badge and « Relier… ». It reports decodability for assets with an `unknown` stream (`@se/engine/capabilities`). Media URLs come from `useCoreEndpoint()` (`shared/core`) and carry the token as `?t=`.
 - The editor (`app/editor/`) loads the project named by `/project/:projectId` (`getProjectSnapshot`, or reopens it from the recent list after a reload or a core restart), shows its name and active sequence, binds Ctrl/⌘+Z and Ctrl/⌘+Maj+Z to `undo`/`redo`, and closes the project when the user goes back home.
 
 ### 4.3 Features
@@ -167,7 +168,7 @@ features/<name>/
 ### 4.4 Electron (`apps/desktop/electron`)
 
 - `main/`: app lifecycle, windows, menus, dialogs, `CoreSupervisor` (spawn se-core, read the handshake line `{"port":…,"token":…,"version":…}` on stdout, restart on crash with exponential backoff, stop it by closing its stdin when the app quits).
-- `preload/`: exposes a minimal typed API via `contextBridge` as `window.simpleEffect`: `getCoreConnection()`, `chooseFolder({ title, buttonLabel, defaultPath? })` (native folder picker), `showInFolder(path)` (later `getPathForFile(file)`). Main validates every IPC argument (`ipc-arguments.ts`). Built as CommonJS because sandboxed preloads cannot be ES modules.
+- `preload/`: exposes a minimal typed API via `contextBridge` as `window.simpleEffect`: `getCoreConnection()`, `chooseFolder({ title, buttonLabel, defaultPath? })` (native folder picker), `chooseFiles({ title, buttonLabel, filterName, extensions, allFilesName })` (native multi-file picker), `showInFolder(path)`, `getPathForFile(file)` (absolute path of a file dropped from the OS, `webUtils.getPathForFile`). Main validates every IPC argument (`ipc-arguments.ts`). Built as CommonJS because sandboxed preloads cannot be ES modules.
 - `shared/`: the bridge contract (types and IPC channel names) bundled into main, preload and renderer.
 - Security: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, no pop-ups or navigation, strict CSP written as a meta tag at build time (`tooling/`): production connects only to `127.0.0.1`, scripts come only from the app bundle; inline `<style>` elements are allowed because Radix and sonner insert them (ADR-0013).
 
@@ -196,8 +197,8 @@ UUIDv7 newtypes over `uuid::Uuid` (`ProjectId`, `SequenceId`, `TrackId`, `ItemId
 
 ```
 Project { id, name, schema_version, revision, settings: ProjectSettings { default_format }, assets, sequences, templates, brand_kit: Option<BrandKit> }
-Asset { id, original_path, relative_hint, kind: Video|Audio|Image, media_info: Option<MediaInfo>, derived: DerivedMedia, decodability, missing }
-MediaInfo { duration: Option<Flicks>, container, video_stream: Option<VideoStreamInfo>, audio_streams }
+Asset { id, original_path, relative_hint, kind: Video|Audio|Image, media_info: Option<MediaInfo>, fingerprint: Option<ContentFingerprint { size_bytes, modified_unix_ms, sample_hash }>, derived: DerivedMedia, decodability: Decodability { video, audio: Unknown|Decodable|Undecodable|NoStream }, missing }
+MediaInfo { duration: Option<Flicks>, container, video_stream: Option<VideoStreamInfo { codec, profile, level, codec_tag, pixel_format, bit_depth, chroma_subsampling, width, height, frame_rate, rotation }>, audio_streams: [AudioStreamInfo { codec, profile, channels, sample_rate }] }
 DerivedMedia { mezzanine, proxy: Option<DerivedFile { relative_path, status: Pending|Ready|Failed{message} }> }
 Sequence { id, name, format: Format { width, height, frame_rate, sample_rate }, tracks, markers }
 Track { id, kind: Video|Audio, name, muted, solo, locked, hidden, volume_db, pan, items }
@@ -264,7 +265,7 @@ Operations on one item take an optional `expectedRevision` (`REVISION_CONFLICT` 
 
 **`apply(&Project, &Operation) -> Result<Applied { project, inverse, touched }, DomainError>`** is pure and deterministic: ids it needs are in the operation. The result always passes `validate_project` (otherwise `INVALID_DOCUMENT` and no change); `apply` does not touch revisions, so applying the `inverse` operations in order gives back exactly the original project. Item edits are inverted by `RestoreItem` snapshots; split, ripple delete and insert gap run as primitive steps whose inverses replay backwards. Rules: no overlap on a track, items sorted by start, no edit of items on a locked track and no removal of a locked track; a trimmed edge keeps its fade (shortened to fit), a cut edge gets none; keyframes stay at their instants (those left outside are dropped, a property left without keyframes keeps the value it held). `TouchedEntities` lists the items, tracks, sequences, markers and assets added, changed or removed, for the UI patches (§5.6).
 
-**Transactions.** `Transaction { id, actor: Actor (user | aiTask { taskId }), label, ops }`. `commit(&Project, &Transaction) -> Result<Committed { project, inverse: Transaction, touched }, DomainError>` applies all operations or none, then bumps the project revision by 1 and the revision of every touched item that still exists by 1.
+**Transactions.** `Transaction { id, actor: Actor (user | aiTask { taskId } | system), label, ops }`. `system` transactions record facts the app observed (missing media at opening, decodability reports): journaled, never undone, never in a changeset. `commit(&Project, &Transaction) -> Result<Committed { project, inverse: Transaction, touched }, DomainError>` applies all operations or none, then bumps the project revision by 1 and the revision of every touched item that still exists by 1.
 
 **History.** `History` (default depth 200) keeps the user's transactions only (AI work is reverted per task). `record` stores each user transaction's inverse operations and empties the redo stack (transactions that changed nothing are skipped); `undo(&Project, TransactionId)` / `redo` commit the stored operations as a new user transaction (to journal), and keep the entry if it fails. `can_undo`, `can_redo`, `undo_label`, `redo_label` feed the menus.
 
@@ -301,17 +302,23 @@ Conventions and their rationale: ADR-0010 and ADR-0012.
 - Client side: `CoreClient` (`@se/protocol`) correlates ids, times requests out (30 s default), reconnects with a capped exponential backoff (re-resolving the endpoint each time), queues requests while disconnected and fails in-flight ones with `CONNECTION_LOST`. The renderer creates one client in `src/shared/core/` and exposes it through React context and hooks.
 - Project commands (prompt 07): `getNewProjectDefaults`, `createProject`, `openProject { path }`, `closeProject { projectId }`, `listRecentProjects`, `renameProject { path, name }`, `duplicateProject { path, name }`, `trashProject { path }`, `getProjectSnapshot { projectId }`, `createSequence { projectId, name, format? }`, `undo`, `redo`. Events: `projectOpened` (session), `projectPatched`, `projectClosed`, `historyChanged`. Paths are absolute strings.
 - se-core runs every request in its own task: a slow command never delays events or other requests, and requests of one client may complete in any order (ADR-0017).
-- Errors carry a stable `code` (`ErrorCode`) and a human/agent-readable message: `INVALID_REQUEST`, `UNKNOWN_COMMAND`, `INTERNAL`, project codes `PROJECT_NOT_FOUND`, `PROJECT_LOCKED`, `SCHEMA_TOO_NEW`, `PROJECT_CORRUPTED`, `PROJECT_ALREADY_EXISTS`, `PROJECT_NOT_OPEN`, `STORAGE_FAILED`, edit codes `EDIT_REJECTED` (`details.domainCode` holds the `DomainErrorCode`), `NOTHING_TO_UNDO`, `NOTHING_TO_REDO`; later `REVISION_CONFLICT`, `OUT_OF_SCOPE`. Codes raised by clients (`TIMEOUT`, `CONNECTION_LOST`, `CLIENT_CLOSED`) are part of the same enum. The renderer translates every code (`errors.<CODE>`).
+- Media commands (prompt 08): `importMedia { projectId, paths }` → `ImportReport { imported, duplicates, failures }` (one user transaction `Import media`; per-file failures carry a code), `relinkAsset { projectId, assetId, path, force }` → `outcome: relinked | contentDiffers`, `removeAsset`, `listJobs { projectId }`, `cancelJob { jobId }`, `reportDecodability { projectId, assetId, video, audio }`. Events: `jobQueued { job }`, `jobProgress { jobId, projectId, assetId, progress }`, `jobCompleted { job }`, `jobFailed { job }`, `jobCancelled { job }` (`JobSnapshot { id, projectId, assetId, kind, state, attempt }`).
+- Errors carry a stable `code` (`ErrorCode`) and a human/agent-readable message: `INVALID_REQUEST`, `UNKNOWN_COMMAND`, `INTERNAL`, project codes `PROJECT_NOT_FOUND`, `PROJECT_LOCKED`, `SCHEMA_TOO_NEW`, `PROJECT_CORRUPTED`, `PROJECT_ALREADY_EXISTS`, `PROJECT_NOT_OPEN`, `STORAGE_FAILED`, edit codes `EDIT_REJECTED` (`details.domainCode` holds the `DomainErrorCode`), `NOTHING_TO_UNDO`, `NOTHING_TO_REDO`, media codes `ASSET_NOT_FOUND`, `MEDIA_NOT_FOUND`, `MEDIA_UNSUPPORTED`, `MEDIA_KIND_MISMATCH`, `MEDIA_TOOLS_MISSING`, `JOB_NOT_FOUND`; later `REVISION_CONFLICT`, `OUT_OF_SCOPE`. Codes raised by clients (`TIMEOUT`, `CONNECTION_LOST`, `CLIENT_CLOSED`) are part of the same enum. The renderer translates every code (`errors.<CODE>`).
 
 ## 7. Media pipeline (`se-media`)
 
-- Binaries: `ffmpeg`, `ffprobe` resolved from `resources/bin/<platform>/` (packaged) or a user override; fetched in development with `pnpm fetch-binaries`.
-- Import: probe → `Asset` → renderer checks `VideoDecoder.isConfigSupported()` / `AudioDecoder.isConfigSupported()` and reports decodability → core schedules jobs.
-- Job kinds: `Thumbnails`, `WaveformPeaks`, `AudioAnalysis` (silences, loudness), `SceneDetection`, `Mezzanine`, `Proxy`, `Transcription`, `SubjectDetection`, `OverlayRender`.
-- `JobQueue` (se-app): priorities, concurrency per kind, progress events, cancellation, retry; outputs cached under `cache/` keyed by a fast content hash (size + mtime + xxhash of first/last MiB).
-- Decode source selection: original if decodable; otherwise mezzanine; preview may switch to proxy.
-- `/media` routes (token as `?t=` query for `<img>`/media elements, header otherwise):
-  `/media/assets/{id}/original|mezzanine|proxy`, `/media/assets/{id}/thumbnails/{index}`, `/media/assets/{id}/peaks/{level}`, `/media/renders/{job}` (upload of rendered chunks).
+Decisions: ADR-0007 (sidecars, mezzanines) and ADR-0018 (import, jobs, cache). File formats: `crates/se-media/CLAUDE.md`.
+
+- **Binaries**: `ffmpeg`, `ffprobe` looked up on every use (`ToolLocator`): the folder set by the user (library setting `media.toolsDir`) → the folder of se-core (packaged: `resources/bin/`, bundled by electron-builder) → `resources/bin/<platform>/` in an ancestor (development, filled by `pnpm fetch-binaries`: FFmpeg 9.0.2 pinned by SHA-256) → `PATH`. Missing → `MEDIA_TOOLS_MISSING`.
+- **Processes**: one helper (`se_media::process::Sidecar`): no stdin, no console window, job object (Windows) or process group (Unix); dropping it before exit kills the tree (cancellation = dropping the job's future).
+- **Import** (`MediaService::import_files`): each path is checked, fingerprinted (size + mtime + xxh3 of the first and last MiB) and compared with the project's assets (same content → `duplicates`), then probed (`ffprobe -show_format -show_streams`, 4 at a time) → `Asset` (absolute path, relative hint to the project folder, kind, `MediaInfo`, fingerprint, decodability `unknown`/`noStream` per stream). New assets form one user transaction; their jobs are queued.
+- **Decodability**: the renderer builds WebCodecs codec strings from `MediaInfo` (`@se/engine/capabilities`: avc1, hvc1/hev1, vp09, av01, vp8; mp4a, opus, flac, PCM…), asks `VideoDecoder`/`AudioDecoder.isConfigSupported` (`ImageDecoder.isTypeSupported` for stills) and sends `reportDecodability` (a system transaction). Prompt 09 decides mezzanines from it.
+- **Opening a project**: originals found at their path clear `missing`; those found through their relative hint with the same content are relinked silently; others get `missing` (system transaction). Then missing derived files are queued. `relinkAsset` checks the fingerprint (other content → `contentDiffers`, confirm with `force`) and the kind.
+- **Jobs** (`se_app::JobQueue`): generic `JobWork` futures with a kind (concurrency per kind: thumbnails 2, peaks 2), a priority (thumbnails > peaks; FIFO within a priority), one automatic retry, cancellation, events `jobQueued/Progress/Completed/Failed/Cancelled`; a project's jobs are cancelled and forgotten when it closes. Job kinds today: `Thumbnails`, `WaveformPeaks`; prompt 09 adds mezzanines, proxies and analyses (`AudioAnalysis`, `SceneDetection`), later `Transcription`, `SubjectDetection`, `OverlayRender`.
+- **Thumbnails**: up to 40 tiles 90 px high (keyframes only beyond 30 s), 8 per row in `thumbnails.jpg`, their source times in `thumbnails.json` (`ThumbnailSheet`), a poster up to 360 px high at 10 % of the duration. **Peaks**: PCM `f32` from ffmpeg's stdout, min/max per channel (≤ 2) per 256/1024/4096 samples, `peaks-<level>.sepk`.
+- **Cache**: `<project>/cache/media/<cache key>/` (key = `<hash>-<size>-<mtime>`), files written under temporary names then renamed; never recorded in the document (regenerated when missing). Mezzanines and proxies (prompt 09) are recorded in `DerivedMedia`.
+- Decode source selection (prompts 12/13): original if decodable; otherwise mezzanine; preview may switch to proxy.
+- **`/media` routes** (se-core, token as `?t=`): `/media/assets/{id}/original`, `/thumbnails` (JSON), `/thumbnails/sheet`, `/thumbnails/poster`, `/peaks/{256|1024|4096}`; Range (206/416), `HEAD`, conditional requests, `Cache-Control: no-cache`; 404 for unknown assets and outputs not generated yet. Later: `/mezzanine`, `/proxy`, `/media/renders/{job}` (upload of rendered chunks).
 
 ## 8. Rendering engine (`@se/engine`)
 
@@ -416,7 +423,7 @@ Only `crates/se-agents/src/providers/<provider>/` knows a concrete CLI. Everythi
 ├─ project.json.bak.1 previous snapshots (.bak.1 newest … .bak.3)
 ├─ project.db         SQLite (WAL, synchronous=FULL): op_journal, tasks, task_events, transcripts + transcript_search (FTS5), analyses
 ├─ .lock              held with an OS file lock while the project is open (never deleted)
-├─ cache/             regenerable derived files (mezzanines, proxies, thumbnails, peaks, overlay renders)
+├─ cache/             regenerable derived files: media/<cache key>/ (thumbnails, peaks), later mezzanines, proxies, overlay renders
 └─ exports/
 ```
 
@@ -425,7 +432,8 @@ Only `crates/se-agents/src/providers/<provider>/` knows a concrete CLI. Everythi
 - Crash recovery: on open, load `project.json` then replay journal entries with `revision > snapshot.revision` (`se_app::recovery::replay`); the recovered state is saved as the new snapshot.
 - Snapshots are written 2 s after the last commit and on close (also when the core shuts down); the journal is truncated after a successful snapshot.
 - Trash: the OS trash through the `trash` crate (NSFileManager on macOS, no automation prompt); never a permanent deletion.
-- App data dir (`SE_DATA_DIR`, i.e. Electron's `userData`): `library.db` (recent projects, settings such as `projects.lastParentDir`; later provider config), `templates/`, `brand-kits/`, `models/`, `logs/`. New projects are proposed in `<Documents>/SimpleEffect`.
+- Document schema version 2 (prompt 08): assets carry a `fingerprint` and a per-stream `decodability` (`migrate_v1_to_v2`).
+- App data dir (`SE_DATA_DIR`, i.e. Electron's `userData`): `library.db` (recent projects, settings such as `projects.lastParentDir` and `media.toolsDir`; later provider config), `templates/`, `brand-kits/`, `models/`, `logs/`. New projects are proposed in `<Documents>/SimpleEffect`.
 
 ## 12. Export (`se-export`)
 

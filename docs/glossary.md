@@ -23,7 +23,19 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Revision** | Monotonic counter bumped once per committed transaction: for the project, and for each item the transaction touched | `revision` |
 | **Asset** | A media file imported into a project (video, audio, image), referenced by path | `Asset` |
 | **Media info** | What probing an asset revealed: duration, container, video and audio streams | `MediaInfo` |
-| **Decodability** | Whether the renderer can decode an asset's original with WebCodecs, or needs its mezzanine | `Decodability` |
+| **Decodability** | Whether the renderer of this machine can decode each stream (picture, sound) of an asset's original with WebCodecs, as it reported: `unknown`, `decodable`, `undecodable` (needs a mezzanine) or `noStream` | `Decodability`, `StreamDecodability` |
+| **Content fingerprint** | Quick identity of a file's content: size, modification time and xxh3 of its first and last MiB; same size and hash = same content (deduplication, relinking) | `ContentFingerprint` |
+| **Cache key** | Name of an asset's cache folder, `<hash>-<size>-<mtime>` from its fingerprint | `ContentFingerprint::cache_key` |
+| **Media cache** | `<project>/cache/media/<cache key>/`: regenerable derived files of a content (thumbnails, peaks), never recorded in the document | `media_cache_dir`, `se_media::cache_layout` |
+| **Missing media** | An asset whose original was found neither at its path nor through its relative hint when the project opened | `Asset::missing` |
+| **Relink** | Pointing an asset at another file (a moved or renamed original); other content needs the user's confirmation | `relinkAsset`, `MediaService::relink_asset` |
+| **Relative hint** | The original's path relative to the project folder, used to find media moved together with their project | `Asset::relative_hint` |
+| **Thumbnail sheet** | One JPEG holding up to 40 small pictures (90 px high) sampled along a video, 8 per row, with its JSON layout and source times; hovering a card scrubs through it | `ThumbnailSheet` |
+| **Poster** | One larger picture (up to 360 px high) representing an asset in the media bin | `poster.jpg` |
+| **Waveform peaks** | Minimum and maximum sample values per channel over blocks of 256, 1024 or 4096 samples, in `SEPK` files | `Peaks`, `WaveformPeaks` |
+| **Job** | A background task of the core (thumbnails, waveform peaks; later mezzanines, analyses) with a kind, a priority, progress and one automatic retry | `JobQueue`, `JobSnapshot` |
+| **Sidecar** | A tool run as a separate process (ffmpeg, ffprobe, later whisper), stopped with its whole process tree when cancelled | `se_media::process::Sidecar` |
+| **System transaction** | A transaction recording facts the app observed (missing media, decodability), journaled but never undone | `Actor::System` |
 | **Original** | The user's source file of an asset | `Asset::original_path` |
 | **Mezzanine** | High-quality, WebCodecs-decodable copy of an asset whose codec Chromium cannot decode | `DerivedMedia::mezzanine` |
 | **Proxy** | Low-resolution copy of an asset for smooth playback | `DerivedMedia::proxy` |

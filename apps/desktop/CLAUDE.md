@@ -4,9 +4,9 @@
 The Electron application: the main process supervises se-core and manages windows; the preload exposes a minimal typed bridge; the renderer is the React app. No business logic in `electron/`: the core owns the document, and the renderer sends commands to it.
 
 ## Public API
-- `electron/shared/bridge-api.ts`: the contract shared by main, preload and renderer (`CoreConnection`, `ChooseFolderOptions`, `SimpleEffectBridge`, `IPC_CHANNELS`).
+- `electron/shared/bridge-api.ts`: the contract shared by main, preload and renderer (`CoreConnection`, `ChooseFolderOptions`, `ChooseFilesOptions`, `SimpleEffectBridge`, `IPC_CHANNELS`). Its tsconfig has the DOM lib (`File`).
 - `window.simpleEffect.getCoreConnection()`: resolves with `{ url, token, version }` of the running core, waiting while it (re)starts. `CoreClient` calls it before every connection attempt (a restarted core has a new port and token).
-- `window.simpleEffect.chooseFolder({ title, buttonLabel, defaultPath? })`: native folder picker (absolute path or `null`); `showInFolder(path)`: reveals a file or folder in the OS file manager. Renderer code reaches the bridge through `useDesktopBridge()` (`src/shared/desktop/`), never `window` directly (except `main.tsx`).
+- `window.simpleEffect.chooseFolder({ title, buttonLabel, defaultPath? })`: native folder picker (absolute path or `null`); `chooseFiles({ title, buttonLabel, filterName, extensions, allFilesName })`: native multi-file picker (absolute paths, empty if cancelled); `showInFolder(path)`: reveals a file or folder in the OS file manager; `getPathForFile(file)`: absolute path of a `File` dropped from the OS (`webUtils.getPathForFile`, empty for files not on disk). Renderer code reaches the bridge through `useDesktopBridge()` (`src/shared/desktop/`), never `window` directly (except `main.tsx`).
 - Renderer code talks to se-core only through `src/shared/core/` hooks and `@se/protocol` types: `useCoreClient().send({ kind: 'getCoreInfo' })` resolves with the typed result.
 
 ## Layout
@@ -15,7 +15,7 @@ The Electron application: the main process supervises se-core and manages window
 | `electron/main/index.ts` | App lifecycle: start the supervisor, register IPC, open the window, stop the core before quitting |
 | `electron/main/core-supervisor.ts` | Spawns se-core (with `SE_DATA_DIR` = `userData`), reads the handshake, restarts with backoff, stops it gracefully (stdin close) |
 | `electron/main/core-environment.ts` | Pure: the core's environment (`SE_DATA_DIR`) |
-| `electron/main/ipc-handlers.ts`, `ipc-arguments.ts` | IPC handlers (core connection, folder dialog, reveal) and the validation of their arguments |
+| `electron/main/ipc-handlers.ts`, `ipc-arguments.ts` | IPC handlers (core connection, folder and file dialogs, reveal) and the validation of their arguments |
 | `electron/main/core-handshake.ts` | Pure parser of the handshake line (type `CoreHandshake` generated in `@se/protocol`) |
 | `electron/main/restart-backoff.ts` | Pure backoff delays (250 ms doubling, 10 s cap) |
 | `electron/main/core-binary-path.ts` | Locates the binary: `target/debug` in dev (`SE_CORE_PATH` override), `resources/bin` when packaged |
@@ -31,14 +31,16 @@ The Electron application: the main process supervises se-core and manages window
 | `src/app/editor/EditorLayout.tsx` | Editor layout: nested `Dock`s (ids `editor.rows`, `editor.columns`) holding the feature panels; Inspecteur and IA share the right panel as tabs |
 | `src/app/status-bar/` | `StatusBar` (core connection announced as a `status`, AI availability, `__APP_VERSION__`) and the pure `connectionIndicator(state)` |
 | `src/app/styles.css` | Only imports `@se/ui/styles.css` |
-| `src/shared/core/` | The core connection: `createCoreClient(bridge)`, `CoreClientProvider`, `useCoreClient()`, `useConnectionStatus()`, `useCoreEvent(kind, handler)`, `useCoreInfo()` (logic in `watch-core-info.ts`) |
+| `src/shared/core/` | The core connection: `createCoreClient(bridge)`, `CoreClientProvider`, `useCoreClient()`, `useConnectionStatus()`, `useCoreEndpoint()` (origin + token of the current core, for `/media` URLs), `useCoreEvent(kind, handler)`, `useCoreInfo()` (logic in `watch-core-info.ts`) |
+| `src/shared/text/` | `searchable(text)`: accent- and case-insensitive search normalisation |
+| `src/shared/time/` | Display helpers for flicks: `FLICKS_PER_SECOND`, `flicksToSeconds`, `formatDuration` (`M:SS` / `H:MM:SS`); timecodes arrive with prompt 10 |
 | `src/shared/project-store/` | Read-only mirror of the open project (ADR-0017): `createProjectStore()` (Zustand vanilla), `connectProjectSync(client, store)` (patches in revision order, history, close; resync on gap / `resyncRequired` / reconnection; reopen after a core restart), pure `mirrorFromSession` / `applyPatch`, selectors, `useProjectSelector(selector)`, `useProjectSync()` (for `app/editor` only); fixtures in `testing/` |
 | `src/shared/shortcuts/` | `ShortcutRegistry` (`mod+shift+z` syntax, latest binding wins, ignored in text fields), `ShortcutProvider` (window `keydown`), `useShortcut(keys, run, enabled?)` |
 | `src/shared/desktop/` | `DesktopBridgeProvider`, `useDesktopBridge()` |
 | `src/shared/routing/` | `PROJECT_ROUTE_PATTERN`, `projectPath(id)`, `HOME_PATH` |
 | `src/shared/errors/` | `errorMessageKey(error)` → `errors.<CODE>` / `errors.unknown`; `ERROR_CODES` (compile-time check that every protocol code is listed) |
 | `src/shared/storage/` | `createNamespacedStorage(storage, namespace)` (errors swallowed) and `uiPreferencesStorage()` (`localStorage` under `se.ui.`): panel sizes and other machine preferences |
-| `src/features/<name>/` | One folder per feature (`components/`, `hooks/`, `store/`, `services/`, `api.ts`, `index.ts`; create only what is needed). Today: `projects` (`HomePage`: recent grid with search and menus, `NewProjectDialog`, rename and trash dialogs; `api.ts`, `store/recent-projects-store.ts`, `hooks/use-project-actions.ts`, pure `services/` for the form, resolutions, labels, search), `media-bin` (`MediaBinPanel`), `viewer` (`ViewerPanel`), `inspector` (`InspectorView`), `ai` (`AiView`), `timeline` (`TimelinePanel`), each an empty state with a `TODO(prompt-NN)` |
+| `src/features/<name>/` | One folder per feature (`components/`, `hooks/`, `store/`, `services/`, `api.ts`, `index.ts`; create only what is needed). Today: `projects` (`HomePage`: recent grid with search and menus, `NewProjectDialog`, rename and trash dialogs; `api.ts`, `store/recent-projects-store.ts`, `hooks/use-project-actions.ts`, pure `services/` for the form, resolutions, labels, search), `media-bin` (`MediaBinPanel`: import by dialog or OS drop, grid/list with posters, hover scrub through the thumbnail sheet, waveforms, kind filter and search, job progress, details, missing media and « Relier… » with confirmation for other content, decodability reports; `api.ts`, `store/jobs-store.ts` + `hooks/jobs-sync.ts` (listJobs + job events), `store/media-bin-store.ts` (view, filter, search, selection), `hooks/use-asset-media.ts` (versioned `/media` URLs, sheet JSON and peaks fetching), pure `services/`, fixtures in `testing/`), `viewer` (`ViewerPanel`), `inspector` (`InspectorView`), `ai` (`AiView`), `timeline` (`TimelinePanel`), each an empty state with a `TODO(prompt-NN)` |
 | `src/i18n/` | `createI18n()` (synchronous, bundled resources), `locales/fr.json` (keys by area: `app`, `home`, `projects`, `editor`, `statusBar`, `errors`, `common`), `i18next.d.ts` (typed keys) |
 
 ## Rules and invariants
@@ -67,7 +69,9 @@ The Electron application: the main process supervises se-core and manages window
 ## How to test
 - `pnpm vitest run --project desktop` (or `pnpm test` at the root): `electron/**/*.test.ts`, `tooling/**/*.test.ts`, `src/**/*.test.{ts,tsx}`. Tests run in Node; a test that renders React starts with a `/** @vitest-environment jsdom */` docblock (`vitest.setup.ts` adds jest-dom matchers, cleanup and jsdom stubs).
 - Shell tests (`src/app/app-shell.test.tsx`) render `AppProviders` + a memory router from `createAppRoutes`, with a real `CoreClient` whose endpoint never resolves (stays « connecting », opens no socket), an idle bridge, a project store preloaded with `shared/project-store/testing/session-fixture.ts` for editor routes, and an in-memory layout storage. Inside docks, drive tabs with the keyboard: in jsdom the panel library takes clicks for resize grabs.
-- Logic taking the core client is tested with small fakes of `send`/`on` (`project-sync.test.ts`, `load-editor-project.test.ts`); dialogs take their effects as props (`NewProjectDialog.test.tsx`).
+- Logic taking the core client is tested with small fakes of `send`/`on` (`project-sync.test.ts`, `load-editor-project.test.ts`, `media-bin/hooks/hooks.test.ts`); dialogs take their effects as props (`NewProjectDialog.test.tsx`).
+- `MediaBinPanel.test.tsx` renders the panel with the providers it needs, a never-connecting `CoreClient` (spy `send` to answer) and a fake bridge; it drops files with `fireEvent.drop` and a `dataTransfer` of `File`s.
+- Real drag and drop in the built app: CDP `Input.dispatchDragEvent` with `data.files` (absolute paths) gives the page `File`s whose path `webUtils.getPathForFile` knows (used for prompt 08's check).
 - Manual: `pnpm dev` from the root (builds se-core, downloads the Electron binary on first run, opens the window).
 - Built app with an isolated profile (as done for prompt 07 on macOS): `pnpm exec electron-vite build --outDir <tmp>/out`, add `<tmp>/out/package.json` with `{"type":"module","main":"main/index.js"}`, then `SE_CORE_PATH=<repo>/target/debug/se-core pnpm exec electron <tmp>/out --user-data-dir=<tmp>/profile --remote-debugging-port=9223` and drive it through `http://127.0.0.1:9223/json` (CDP). After rebuilding, reload with `Page.reload { ignoreCache: true }` (a plain reload keeps the old `index.html`).
 - Packaging: `pnpm package` from the root → `apps/desktop/release/` (config in `electron-builder.yml`).
