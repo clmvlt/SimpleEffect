@@ -165,12 +165,31 @@ export interface Tolerance {
 export const DEFAULT_TOLERANCE: Tolerance = { channel: 16, ratio: 0.005 };
 
 /**
- * Tolerance of frames with text: glyph anti-aliasing and hinting differ between the platform
- * font rasterisers (DirectWrite, FreeType, CoreText) even for the same font file, so frames are
- * compared as 4 × 4 block averages: a wrong colour, outline, shadow, plate or placement still
- * fails, sub-pixel glyph edges do not.
+ * Tolerance of frames with text: glyph anti-aliasing, hinting and advances differ between the
+ * platform font rasterisers (DirectWrite, FreeType, CoreText) even for the same font file (Linux
+ * CI differed from Windows on 1.3 % of 4 × 4 blocks), so frames are compared as block averages
+ * with room for that: a missing or misplaced text still fails. Text tests also check their
+ * styles with platform-independent pixel measures (colours, extents, alignment).
  */
-export const TEXT_TOLERANCE: Tolerance = { channel: 24, ratio: 0.01, downsample: 4 };
+export const TEXT_TOLERANCE: Tolerance = { channel: 32, ratio: 0.03, downsample: 4 };
+
+/** Left and right edges of the bright pixels (luminance > 128) in a region, or `null`. */
+export function litExtent(
+  pixels: ImageData,
+  region: { readonly x0: number; readonly x1: number; readonly y0: number; readonly y1: number },
+): { readonly left: number; readonly right: number } | null {
+  let left = Infinity;
+  let right = -Infinity;
+  for (let y = region.y0; y < region.y1; y += 1) {
+    for (let x = region.x0; x < region.x1; x += 1) {
+      if (luminanceAt(pixels, x, y) > 128) {
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+      }
+    }
+  }
+  return left === Infinity ? null : { left, right };
+}
 
 /** Averages of `factor` × `factor` blocks of `pixels`. */
 export function downsample(pixels: ImageData, factor: number): ImageData {

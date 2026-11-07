@@ -21,6 +21,7 @@ import inter from './fixtures/inter-latin.woff2?url';
 import {
   TEXT_TOLERANCE,
   expectGolden,
+  litExtent,
   luminanceAt,
   renderScene,
   type Rendered,
@@ -234,6 +235,27 @@ describe('graphics golden frames', () => {
       }
     }
     expect(blue).toBeGreaterThan(100);
+    // The yellow « Ombre » is yellow.
+    let yellow = 0;
+    for (let y = 40; y < 105; y += 1) {
+      for (let x = 400; x < 600; x += 1) {
+        const offset = (y * 640 + x) * 4;
+        const [r, g, b] = [
+          pixels.data[offset] ?? 0,
+          pixels.data[offset + 1] ?? 0,
+          pixels.data[offset + 2] ?? 0,
+        ];
+        if (r > 180 && g > 150 && b < 90) yellow += 1;
+      }
+    }
+    expect(yellow).toBeGreaterThan(200);
+    // « ESPACÉ » (24 px, 8 px of letter spacing) is spread wider than its glyphs alone.
+    const spaced = litExtent(pixels, { x0: 320, x1: 640, y0: 185, y1: 212 });
+    expect((spaced?.right ?? 0) - (spaced?.left ?? 0)).toBeGreaterThan(120);
+    // The wrapped paragraph starts on its anchor, 5 % from the left edge (x = 32).
+    const paragraph = litExtent(pixels, { x0: 0, x1: 320, y0: 268, y1: 318 });
+    expect(paragraph?.left).toBeGreaterThanOrEqual(31);
+    expect(paragraph?.left).toBeLessThanOrEqual(36);
     // Half of « Machine à écrire » is typed: its right part is still dark.
     expect(luminanceAt(pixels, 0.75 * 640 + 80, 0.85 * 360)).toBeLessThan(20);
   });
