@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-07 — Prompt 07: Persistance et gestion des projets — Done
 
-**Branch**: `feature/07-persistance-projets`, merged into `dev`
+**Branch**: `feature/07-persistance-projets`, merged into `dev` at `b17b02a`
 
 **Done**
 - `se-protocol`: commands `getNewProjectDefaults`, `createProject`, `openProject`, `closeProject`, `listRecentProjects`, `renameProject`, `duplicateProject`, `trashProject`, `getProjectSnapshot`, `createSequence`, `undo`, `redo`; events `projectOpened` (session), `projectPatched`, `projectClosed`, `historyChanged`; normalised DTOs (`ProjectSnapshot`, `ProjectHeader`, `SequenceEntity { trackIds, markerIds }`, `TrackEntity { sequenceId, itemIds }`, `ItemEntity`/`MarkerEntity` with the domain type flattened, `ProjectPatch { upserts, deletes }`, `ProjectSession`, `HistoryState`, `RecentProject`, `NewProjectDefaults`); error codes `PROJECT_NOT_FOUND`, `PROJECT_LOCKED`, `SCHEMA_TOO_NEW`, `PROJECT_CORRUPTED`, `PROJECT_ALREADY_EXISTS`, `PROJECT_NOT_OPEN`, `STORAGE_FAILED`, `EDIT_REJECTED` (`details.domainCode`), `NOTHING_TO_UNDO`, `NOTHING_TO_REDO`.
