@@ -90,6 +90,8 @@ export class TextNode implements LayerNode {
     const layout = this.measure(layer);
     const shown = revealedLines(layout.lines, layer.reveal);
     this.syncTexts(shown.length, Math.max(1, scale));
+    // Pixi draws glyphs half its stroke in (twice the outline width, see `drawingOptions`):
+    // shifting by the outline width keeps their origin where an unoutlined text has it.
     const halfStroke = layer.stroke?.width ?? 0;
     shown.forEach((line, index) => {
       const text = this.texts[index];
