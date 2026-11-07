@@ -1,6 +1,6 @@
 import { describe, expectTypeOf, it } from 'vitest';
 
-import type { CoreInfo } from './generated';
+import type { CoreInfo, ProjectPatch, ProjectSession } from './generated';
 import type {
   CommandKind,
   CommandsWithoutResult,
@@ -14,18 +14,41 @@ import type {
 describe('derived protocol types', () => {
   it('pairs every command with a result of the same kind', () => {
     expectTypeOf<CommandsWithoutResult>().toBeNever();
-    expectTypeOf<CommandKind>().toEqualTypeOf<'ping' | 'getCoreInfo'>();
+    expectTypeOf<CommandKind>().toEqualTypeOf<
+      | 'ping'
+      | 'getCoreInfo'
+      | 'getNewProjectDefaults'
+      | 'createProject'
+      | 'openProject'
+      | 'closeProject'
+      | 'listRecentProjects'
+      | 'renameProject'
+      | 'duplicateProject'
+      | 'trashProject'
+      | 'getProjectSnapshot'
+      | 'createSequence'
+      | 'undo'
+      | 'redo'
+    >();
   });
 
   it('derives the result type from the command kind', () => {
     expectTypeOf<ResultFor<'ping'>>().toEqualTypeOf<{ kind: 'ping' }>();
     expectTypeOf<ResultFor<'getCoreInfo'>>().toExtend<CoreInfo>();
+    expectTypeOf<ResultFor<'openProject'>>().toExtend<ProjectSession>();
   });
 
   it('derives the event type from the event kind', () => {
     expectTypeOf<CoreEventKind>().toEqualTypeOf<
-      'coreReady' | 'coreShuttingDown' | 'resyncRequired'
+      | 'coreReady'
+      | 'coreShuttingDown'
+      | 'resyncRequired'
+      | 'projectOpened'
+      | 'projectPatched'
+      | 'projectClosed'
+      | 'historyChanged'
     >();
+    expectTypeOf<CoreEventOf<'projectPatched'>>().toExtend<ProjectPatch>();
     expectTypeOf<CoreEventOf<'resyncRequired'>['missedEvents']>().toEqualTypeOf<number>();
   });
 });
