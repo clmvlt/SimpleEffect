@@ -27,6 +27,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0020](0020-timeline-rendering-and-view-state.md) | Timeline rendering and view state | Accepted |
 | [0021](0021-timeline-editing-commands-and-ripple-rules.md) | Timeline editing: intent commands, edit plans, placement and ripple rules | Accepted |
 | [0022](0022-rendering-engine-evaluation-decoding-compositing.md) | Rendering engine: evaluation, frame-accurate decoding, compositing and golden frames | Accepted |
+| [0023](0023-playback-audio-clock-and-av-sync.md) | Real-time playback: audio master clock, sequential decoding, chunked audio scheduling | Accepted |
 
 ## Template
 

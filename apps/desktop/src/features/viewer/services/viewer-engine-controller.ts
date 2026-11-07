@@ -1,10 +1,11 @@
 import type { Flicks } from '@se/protocol';
 import type {
   CompositorBackground,
-  DecoderPoolStats,
   MediaLocator,
   PreviewEngine,
+  PreviewPlayback,
   PreviewState,
+  PreviewStats,
   RenderScene,
 } from '@se/engine/preview';
 
@@ -27,6 +28,7 @@ interface Settings {
   background: CompositorBackground;
   pixels: Size;
   locator: MediaLocator;
+  playback: PreviewPlayback | null;
 }
 
 /**
@@ -48,6 +50,7 @@ export class ViewerEngineController {
     background: 'black',
     pixels: { width: 1, height: 1 },
     locator: () => null,
+    playback: null,
   };
 
   constructor(private readonly factory: PreviewEngineFactory) {}
@@ -123,6 +126,12 @@ export class ViewerEngineController {
     this.engine?.resize(pixels.width, pixels.height);
   }
 
+  /** Playback state (`null` when paused): the engine decodes ahead and draws at once. */
+  setPlayback(playback: PreviewPlayback | null): void {
+    this.settings.playback = playback;
+    this.engine?.setPlayback(playback);
+  }
+
   /** New media URLs (a restarted core, changed assets): redraws with them. */
   setLocator(locator: MediaLocator): void {
     this.settings.locator = locator;
@@ -136,19 +145,20 @@ export class ViewerEngineController {
     return () => this.listeners.delete(listener);
   };
 
-  /** Decoder counters of the running engine (dev leak check); `null` before it runs. */
-  stats(): DecoderPoolStats | null {
+  /** Decoder and playback counters of the running engine (HUD, dev leak check). */
+  stats(): PreviewStats | null {
     return this.engine?.stats() ?? null;
   }
 
   private start(engine: PreviewEngine): void {
     this.engine = engine;
-    const { pixels, proxy, background, scene, time } = this.settings;
+    const { pixels, proxy, background, scene, time, playback } = this.settings;
     engine.resize(pixels.width, pixels.height);
     engine.setProxy(proxy);
     engine.setBackground(background);
     engine.setScene(scene);
     engine.setTime(time);
+    engine.setPlayback(playback);
     this.unsubscribe = engine.subscribe((preview) => {
       this.setStatus({ kind: 'running', preview });
     });

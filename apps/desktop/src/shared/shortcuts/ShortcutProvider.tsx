@@ -21,22 +21,32 @@ export interface ShortcutProviderProps {
 }
 
 /**
- * Dispatches key presses on the window to `registry`, and makes the region last clicked or
- * focused (or none) the active shortcut context.
+ * Dispatches key presses and releases on the window to `registry`, and makes the region last
+ * clicked or focused (or none) the active shortcut context.
  */
 export function ShortcutProvider({ registry, children }: ShortcutProviderProps) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       registry.handleKeyDown(event);
     };
+    const onKeyUp = (event: KeyboardEvent) => {
+      registry.handleKeyUp(event);
+    };
+    const onBlur = () => {
+      registry.releaseKeys();
+    };
     const onActivate = (event: Event) => {
       registry.setActiveContext(contextOf(event.target));
     };
     window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
     window.addEventListener('pointerdown', onActivate, true);
     window.addEventListener('focusin', onActivate, true);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
       window.removeEventListener('pointerdown', onActivate, true);
       window.removeEventListener('focusin', onActivate, true);
     };

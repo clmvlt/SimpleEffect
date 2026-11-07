@@ -15,6 +15,12 @@ export interface ViewerPreferences {
   readonly proxy: boolean;
   /** Show transparent areas over a checkerboard (instead of black). */
   readonly checkerboard: boolean;
+  /** Loop playback over the in/out span (the whole content without one). */
+  readonly loop: boolean;
+  /** Play short snippets of sound when the paused playhead moves. */
+  readonly scrubAudio: boolean;
+  /** Show the performance HUD over the picture. */
+  readonly hud: boolean;
 }
 
 /** Defaults on a new machine. */
@@ -22,7 +28,13 @@ export const DEFAULT_VIEWER_PREFERENCES: ViewerPreferences = {
   zoom: 'fit',
   proxy: false,
   checkerboard: false,
+  loop: false,
+  scrubAudio: true,
+  hud: false,
 };
+
+/** The on/off preferences, read back from storage the same way. */
+type ViewerFlag = 'proxy' | 'checkerboard' | 'loop' | 'scrubAudio' | 'hud';
 
 const STORAGE_KEY = 'viewer.v1';
 
@@ -49,13 +61,17 @@ export function parseViewerPreferences(text: string | null): ViewerPreferences {
   }
   if (typeof value !== 'object' || value === null) return DEFAULT_VIEWER_PREFERENCES;
   const saved = value as Record<string, unknown>;
+  const flag = (name: ViewerFlag) => {
+    const stored = saved[name];
+    return typeof stored === 'boolean' ? stored : DEFAULT_VIEWER_PREFERENCES[name];
+  };
   return {
     zoom: isZoom(saved['zoom']) ? saved['zoom'] : DEFAULT_VIEWER_PREFERENCES.zoom,
-    proxy: typeof saved['proxy'] === 'boolean' ? saved['proxy'] : DEFAULT_VIEWER_PREFERENCES.proxy,
-    checkerboard:
-      typeof saved['checkerboard'] === 'boolean'
-        ? saved['checkerboard']
-        : DEFAULT_VIEWER_PREFERENCES.checkerboard,
+    proxy: flag('proxy'),
+    checkerboard: flag('checkerboard'),
+    loop: flag('loop'),
+    scrubAudio: flag('scrubAudio'),
+    hud: flag('hud'),
   };
 }
 

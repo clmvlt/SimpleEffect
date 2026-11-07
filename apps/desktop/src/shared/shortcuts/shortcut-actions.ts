@@ -38,6 +38,13 @@ export const SHORTCUT_ACTIONS = {
     repeats: true,
   },
   showShortcuts: { contexts: ['global'], keys: ['?'] },
+  togglePlay: { contexts: TIME_CONTEXTS, keys: ['space'] },
+  // JKL: J plays in reverse, K pauses, L plays forward (repeated presses speed up); holding K
+  // while pressing J or L steps one frame.
+  shuttleReverse: { contexts: TIME_CONTEXTS, keys: ['j'] },
+  shuttlePause: { contexts: TIME_CONTEXTS, keys: ['k'] },
+  shuttleForward: { contexts: TIME_CONTEXTS, keys: ['l'] },
+  toggleLoop: { contexts: TIME_CONTEXTS, keys: ['mod+l'] },
   goToStart: { contexts: TIME_CONTEXTS, keys: ['home'] },
   goToEnd: { contexts: TIME_CONTEXTS, keys: ['end'] },
   previousFrame: { contexts: TIME_CONTEXTS, keys: ['arrowleft'], repeats: true },

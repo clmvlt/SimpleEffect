@@ -1,14 +1,13 @@
 import type { SequenceEntity } from '@se/protocol';
-import { useRef, type CSSProperties } from 'react';
+import type { MediaLocator } from '@se/engine/preview';
+import { useRef, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useCoreEndpoint } from '../../../shared/core';
 import { useElementSize } from '../hooks/use-element-size';
 import { useViewerEngine } from '../hooks/use-viewer-engine';
-import { useViewerScene } from '../hooks/use-viewer-scene';
-import { createMediaLocator } from '../services/media-locator';
-import type { PreviewEngineFactory } from '../services/preview-engine-factory';
+import type { ViewerEngineController } from '../services/viewer-engine-controller';
 import { viewerLayout } from '../services/viewer-layout';
+import type { PlaybackScene } from '../services/viewer-scene';
 import type { ViewerPreferences } from '../store/viewer-store';
 import { ViewerOverlays } from './ViewerOverlays';
 
@@ -21,32 +20,40 @@ const CHECKERBOARD: CSSProperties = {
 
 /** Props of {@link ViewerStage}. */
 export interface ViewerStageProps {
+  readonly controller: ViewerEngineController;
   readonly sequence: SequenceEntity;
+  readonly scene: PlaybackScene | null;
+  readonly locator: MediaLocator;
   readonly preferences: ViewerPreferences;
-  readonly createEngine: PreviewEngineFactory;
+  /** Extra overlays over the picture (the performance HUD). */
+  readonly children?: ReactNode;
 }
 
 /**
  * The picture area: the engine's canvas at the sequence ratio, fitted to the panel or at a fixed
  * zoom (scrolling when larger), with the loading and media indicators over it.
  */
-export function ViewerStage({ sequence, preferences, createEngine }: ViewerStageProps) {
+export function ViewerStage({
+  controller,
+  sequence,
+  scene,
+  locator,
+  preferences,
+  children,
+}: ViewerStageProps) {
   const { t } = useTranslation();
   const stage = useRef<HTMLDivElement | null>(null);
   const stageSize = useElementSize(stage);
-  const endpoint = useCoreEndpoint();
-  const scene = useViewerScene(sequence);
   const layout = viewerLayout(
     stageSize,
     sequence.format,
     preferences.zoom,
     window.devicePixelRatio,
   );
-  const { host, status } = useViewerEngine({
-    createEngine,
+  const { host, status } = useViewerEngine(controller, {
     sequenceId: sequence.id,
     scene,
-    locator: createMediaLocator(endpoint, scene?.assets ?? {}),
+    locator,
     proxy: preferences.proxy,
     background: preferences.checkerboard ? 'transparent' : 'black',
     pixels: layout.pixels,
@@ -70,6 +77,7 @@ export function ViewerStage({ sequence, preferences, createEngine }: ViewerStage
         </div>
       </div>
       <ViewerOverlays status={status} />
+      {children}
     </div>
   );
 }

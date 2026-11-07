@@ -106,7 +106,7 @@ describe('app shell', () => {
       within(screen.getByRole('region', { name: 'Médias' })).getByText('Aucun média'),
     ).toBeInTheDocument();
     const viewer = screen.getByRole('region', { name: 'Viewer' });
-    expect(within(viewer).getByText('1920 × 1080 · 25 i/s')).toBeInTheDocument();
+    expect(within(viewer).getByRole('toolbar', { name: 'Transport' })).toBeInTheDocument();
     // jsdom has no WebCodecs: the viewer explains it instead of loading the engine.
     expect(await within(viewer).findByText('Aperçu indisponible')).toBeInTheDocument();
     const timeline = screen.getByRole('region', { name: 'Timeline' });

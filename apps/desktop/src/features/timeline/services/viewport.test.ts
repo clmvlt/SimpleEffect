@@ -8,6 +8,7 @@ import {
   DEFAULT_PIXELS_PER_SECOND,
   fitViewport,
   maxScrollTime,
+  pageTo,
   revealTime,
   scrollByPixels,
   sliderToZoom,
@@ -81,6 +82,13 @@ describe('scroll', () => {
     expect(revealTime(shown, seconds(15), seconds(60))).toBe(shown);
     expect(revealTime(shown, seconds(40), seconds(60)).scrollTime).toBe(seconds(31));
     expect(revealTime(shown, seconds(5), seconds(60)).scrollTime).toBe(seconds(4));
+  });
+
+  it('pages while playing: the playhead restarts near the leading edge', () => {
+    const shown = view(100, 10);
+    expect(pageTo(shown, seconds(19), 1, seconds(60))).toBe(shown);
+    expect(pageTo(shown, seconds(21), 1, seconds(60)).scrollTime).toBe(seconds(20.5));
+    expect(pageTo(view(100, 30), seconds(25), -1, seconds(60)).scrollTime).toBe(seconds(15.5));
   });
 });
 

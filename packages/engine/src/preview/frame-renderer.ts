@@ -23,6 +23,11 @@ export interface FrameRequest {
   readonly time: Flicks;
   /** Prefer ready proxies (viewer option). */
   readonly proxy: boolean;
+  /**
+   * Drawn during playback: missing frames come from the sequential readers decoding ahead
+   * (`DecoderPool.prefetch`) rather than from a random-access decode each.
+   */
+  readonly playback?: boolean | undefined;
 }
 
 /** What happened to a request. */
@@ -30,6 +35,12 @@ export type RenderOutcome =
   | { readonly kind: 'drawn'; readonly issues: readonly MediaIssue[] }
   /** A newer request replaced it before its pictures were ready: nothing was drawn. */
   | { readonly kind: 'superseded' };
+
+/** How missing pictures are fetched. */
+interface FetchMode {
+  readonly signal: AbortSignal;
+  readonly playback: boolean;
+}
 
 /** A picture layer whose pictures must be fetched, and the file to read. */
 interface PictureNeed {
@@ -76,7 +87,10 @@ export class FrameRenderer {
     }
     if (missing.length > 0) {
       onLoading();
-      await this.fetchAll(missing, leases, issues, controller.signal);
+      await this.fetchAll(missing, leases, issues, {
+        signal: controller.signal,
+        playback: request.playback === true,
+      });
       if (controller.signal.aborted) {
         releaseAll(leases);
         return { kind: 'superseded' };
@@ -141,19 +155,20 @@ export class FrameRenderer {
       : this.pool.peekImage(need.file);
   }
 
-  private fetch(need: PictureNeed, signal: AbortSignal): Promise<PictureLease | null> {
-    return need.layer.kind === 'video'
-      ? this.pool.videoFrame(need.file, need.lookupTime, signal)
-      : this.pool.image(need.file);
+  private fetch(need: PictureNeed, mode: FetchMode): Promise<PictureLease | null> {
+    if (need.layer.kind !== 'video') return this.pool.image(need.file);
+    return mode.playback
+      ? this.pool.playbackFrame(need.file, need.layer.itemId, need.lookupTime, mode.signal)
+      : this.pool.videoFrame(need.file, need.lookupTime, mode.signal);
   }
 
   private async fetchAll(
     missing: readonly PictureNeed[],
     leases: Map<ItemId, PictureLease>,
     issues: MediaIssues,
-    signal: AbortSignal,
+    mode: FetchMode,
   ): Promise<void> {
-    const results = await Promise.allSettled(missing.map((need) => this.fetch(need, signal)));
+    const results = await Promise.allSettled(missing.map((need) => this.fetch(need, mode)));
     results.forEach((result, index) => {
       const need = missing[index];
       if (need === undefined) return;

@@ -52,8 +52,6 @@ export function TimelineToolbar({
   onTrackHeights,
 }: TimelineToolbarProps) {
   const { t } = useTranslation();
-  const rate = sequence.format.frameRate;
-  const time = usePlayheadTime(sequence.id);
   const snapping = useStore(timelineViewStore, (state) => state.snapping);
   const zoomInTip = useActionTooltip(t('editor.timeline.toolbar.zoomIn'), 'zoomIn');
   const zoomOutTip = useActionTooltip(t('editor.timeline.toolbar.zoomOut'), 'zoomOut');
@@ -61,20 +59,7 @@ export function TimelineToolbar({
   const snapTip = useActionTooltip(t('editor.timeline.toolbar.snapping'), 'toggleSnapping');
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
-      <TimecodeInput
-        size="xs"
-        className="w-28"
-        label={t('editor.timeline.toolbar.playhead')}
-        value={time}
-        format={(value) => formatTimecode(value as typeof time, rate)}
-        parse={(text) => {
-          const parsed = parseTimecode(text, rate);
-          return parsed.ok ? parsed.value : null;
-        }}
-        onCommit={(value) => {
-          playhead.moveTo(value as typeof time, true);
-        }}
-      />
+      <PlayheadTimecodeField sequence={sequence} playhead={playhead} />
       <Toolbar label={t('editor.timeline.toolbar.label')} className="ml-auto">
         <ToolbarGroup label={t('editor.timeline.toolbar.tracks')}>
           <DropdownMenu>
@@ -167,5 +152,34 @@ export function TimelineToolbar({
         </ToolbarGroup>
       </Toolbar>
     </div>
+  );
+}
+
+/**
+ * The playhead timecode field, alone in its component: it re-renders on every playhead move
+ * (each frame during playback), the rest of the toolbar does not.
+ */
+function PlayheadTimecodeField({
+  sequence,
+  playhead,
+}: Pick<TimelineToolbarProps, 'sequence' | 'playhead'>) {
+  const { t } = useTranslation();
+  const rate = sequence.format.frameRate;
+  const time = usePlayheadTime(sequence.id);
+  return (
+    <TimecodeInput
+      size="xs"
+      className="w-28"
+      label={t('editor.timeline.toolbar.playhead')}
+      value={time}
+      format={(value) => formatTimecode(value as typeof time, rate)}
+      parse={(text) => {
+        const parsed = parseTimecode(text, rate);
+        return parsed.ok ? parsed.value : null;
+      }}
+      onCommit={(value) => {
+        playhead.moveTo(value as typeof time, true);
+      }}
+    />
   );
 }

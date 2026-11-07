@@ -39,6 +39,7 @@ export class ShortcutRegistry {
   readonly #shortcuts: ReadonlyMap<ShortcutActionId, readonly Shortcut[]>;
   readonly #handlers: Handler[] = [];
   readonly #listeners = new Set<() => void>();
+  readonly #heldKeys = new Set<string>();
   #activeContext: ShortcutContext | null = null;
 
   constructor(platform: KeyboardPlatform, actions: ShortcutActionTable = SHORTCUT_ACTIONS) {
@@ -87,8 +88,27 @@ export class ShortcutRegistry {
     };
   }
 
+  /**
+   * Whether `key` (as `KeyboardEvent.key`, case-insensitive) is held down now: actions combining
+   * keys read it (K held while pressing J or L steps one frame).
+   */
+  isKeyHeld(key: string): boolean {
+    return this.#heldKeys.has(key.toLowerCase());
+  }
+
+  /** A key was released. */
+  handleKeyUp(event: Pick<KeyboardEvent, 'key'>): void {
+    this.#heldKeys.delete(event.key.toLowerCase());
+  }
+
+  /** The window lost the focus: no key is held anymore (their release will not be seen). */
+  releaseKeys(): void {
+    this.#heldKeys.clear();
+  }
+
   /** Runs the handler of the action matching `event`, if any; returns whether one ran. */
   handleKeyDown(event: KeyboardEvent): boolean {
+    this.#heldKeys.add(event.key.toLowerCase());
     if (event.defaultPrevented || isEditable(event.target)) {
       return false;
     }

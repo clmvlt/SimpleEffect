@@ -2,26 +2,30 @@ import { EmptyState, Panel, PanelBody, PanelHeader, PanelTitle } from '@se/ui';
 import { MonitorPlay } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
-import { ShortcutRegion } from '../../../shared/shortcuts';
 import { useActiveSequence } from '../../timeline';
 import { useViewerPreferences } from '../hooks/use-viewer-preferences';
+import { createAudioEngine, type AudioEngineFactory } from '../services/audio-engine-factory';
 import { createPreviewEngine, type PreviewEngineFactory } from '../services/preview-engine-factory';
-import { ViewerFooter } from './ViewerFooter';
-import { ViewerStage } from './ViewerStage';
 import { ViewerToolbar } from './ViewerToolbar';
+import { ViewerWorkspace } from './ViewerWorkspace';
 
 /** Props of {@link ViewerPanel}. */
 export interface ViewerPanelProps {
   /** Starts the engine (tests inject a fake; the app uses `@se/engine/preview`). */
   readonly createEngine?: PreviewEngineFactory | undefined;
+  /** Starts the audio engine (tests inject a fake; the app uses `@se/engine/audio`). */
+  readonly createAudio?: AudioEngineFactory | undefined;
 }
 
 /**
  * The program viewer: the exact frame of the active sequence at the playhead, drawn by
- * `@se/engine` (the code path export uses). Time shortcuts work here too (context `viewer`).
- * TODO(prompt-13): playback, audio and the transport bar.
+ * `@se/engine` (the code path export uses), real-time playback with sound, the transport bar and
+ * the performance HUD. Time and playback shortcuts work here too (context `viewer`).
  */
-export function ViewerPanel({ createEngine = createPreviewEngine }: ViewerPanelProps) {
+export function ViewerPanel({
+  createEngine = createPreviewEngine,
+  createAudio = createAudioEngine,
+}: ViewerPanelProps) {
   const { t } = useTranslation();
   const sequence = useActiveSequence();
   const preferences = useViewerPreferences();
@@ -39,14 +43,12 @@ export function ViewerPanel({ createEngine = createPreviewEngine }: ViewerPanelP
             description={t('editor.viewer.empty.description')}
           />
         ) : (
-          <ShortcutRegion context="viewer" className="flex size-full flex-col">
-            <ViewerStage
-              sequence={sequence}
-              preferences={preferences}
-              createEngine={createEngine}
-            />
-            <ViewerFooter sequence={sequence} />
-          </ShortcutRegion>
+          <ViewerWorkspace
+            sequence={sequence}
+            preferences={preferences}
+            createEngine={createEngine}
+            createAudio={createAudio}
+          />
         )}
       </PanelBody>
     </Panel>

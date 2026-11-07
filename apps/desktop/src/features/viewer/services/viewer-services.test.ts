@@ -103,10 +103,14 @@ describe('summarizeIssues', () => {
 
 describe('parseViewerPreferences', () => {
   it('reads saved preferences and ignores malformed values', () => {
-    expect(parseViewerPreferences('{"zoom":2,"proxy":true,"checkerboard":true}')).toEqual({
+    expect(
+      parseViewerPreferences('{"zoom":2,"proxy":true,"checkerboard":true,"loop":true}'),
+    ).toEqual({
+      ...DEFAULT_VIEWER_PREFERENCES,
       zoom: 2,
       proxy: true,
       checkerboard: true,
+      loop: true,
     });
     expect(parseViewerPreferences('{"zoom":3,"proxy":"yes"}')).toEqual(DEFAULT_VIEWER_PREFERENCES);
     expect(parseViewerPreferences('not json')).toEqual(DEFAULT_VIEWER_PREFERENCES);

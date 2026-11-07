@@ -14,6 +14,8 @@ export default defineProject({
     name: 'engine-browser',
     include: ['test/**/*.browser.test.ts'],
     testTimeout: 60_000,
+    // One file at a time: the real-time A/V sync test must not share the CPU with SwiftShader.
+    fileParallelism: false,
     provide: { updateGolden: process.env.SE_UPDATE_GOLDEN === '1' },
     browser: {
       enabled: true,
@@ -21,7 +23,13 @@ export default defineProject({
       screenshotFailures: false,
       provider: playwright({
         launchOptions: {
-          args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+          args: [
+            '--use-gl=angle',
+            '--use-angle=swiftshader',
+            '--enable-unsafe-swiftshader',
+            // The A/V sync test plays sound without a user gesture.
+            '--autoplay-policy=no-user-gesture-required',
+          ],
         },
       }),
       instances: [{ browser: 'chromium' }],

@@ -142,6 +142,26 @@ export function revealTime(viewport: Viewport, time: Flicks, contentEnd: Flicks)
   return clampScroll({ ...viewport, scrollTime: clampFlicks(Math.max(0, scrollTime)) }, contentEnd);
 }
 
+/**
+ * The viewport after the playhead reached `time` while playing in `direction` (page scrolling):
+ * unchanged while `time` is visible; otherwise the next page shows `time` near its leading edge
+ * (forward: the left, reverse: the right), so the playhead crosses a whole page before the next
+ * jump.
+ */
+export function pageTo(
+  viewport: Viewport,
+  time: Flicks,
+  direction: 1 | -1,
+  contentEnd: Flicks,
+): Viewport {
+  const x = timeToX(time, viewport);
+  if (x >= 0 && x <= viewport.width) return viewport;
+  const visible = pixelsToFlicks(viewport.width, viewport.pixelsPerSecond);
+  const margin = visible * 0.05;
+  const scrollTime = direction > 0 ? time - margin : time - (visible - margin);
+  return clampScroll({ ...viewport, scrollTime: clampFlicks(Math.max(0, scrollTime)) }, contentEnd);
+}
+
 /** Slider positions of the zoom control (logarithmic: each step is the same zoom ratio). */
 export const ZOOM_SLIDER_MAX = 1000;
 

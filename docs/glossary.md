@@ -126,6 +126,22 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Media issue** | Why a picture layer was drawn without its media (preparing, missing, mezzanine failed, decode failed), reported per asset | `MediaIssue` |
 | **Compositor** | The component drawing a frame graph to a canvas (PixiJS today, behind an interface) | `Compositor`, `createPixiCompositor` |
 | **Preview engine** | The viewer's engine outside React: scene, time and options in, one coalesced draw per animation frame, a state out | `PreviewEngine`, `ViewerEngineController` |
+| **Master clock** | The clock playback follows: the audio context time of the sample being heard (pictures follow the sound) | `audioContextClock`, `PlaybackClock` |
+| **Transport** | Where playback stands: an anchor (sequence time at a clock time) and a rate; every position is derived from it, never accumulated | `Transport`, `transportPosition` |
+| **Shuttle (JKL)** | J plays in reverse, K pauses, L plays forward; repeated presses go 1×, 2×, 4×; K held with J or L steps one frame | `nextShuttleRate`, `shuttle*` actions |
+| **Playback controller** | Drives playback on each display refresh: reads the master clock, reports the frame to show, skips late frames, loops, stops at the edges | `PlaybackController` |
+| **Presentation lead** | Playback picks the frame for the next display refresh (the measured refresh period ahead), when what is drawn now appears | `RefreshPeriod` |
+| **Dropped frame** | A frame playback skipped because it was not drawn in time (beyond those a fast speed skips anyway) | `skippedFrames`, `PlaybackStatsCounter` |
+| **Sequential reader** | A decoder running through a file for playback, kept ahead of the playhead and fed by prefetch requests | `FrameReader`, `DecoderPool.prefetch` |
+| **Read-ahead budget** | Frames and bytes a sequential reader may hold ahead of the playhead (its share of the picture cache) | `ReadAheadBudget` |
+| **Prefetch window** | How far ahead playback decodes, adapted to late frames (0.25–2 s) | `PrefetchWindow`, `prefetchSpans` |
+| **Audio chunk** | One second of an asset's decoded sound in one `AudioBuffer`, joined to its neighbours on the sample | `AudioChunk`, `AudioChunkPool` |
+| **Audio piece** | Part of a chunk of a clip started as one voice at a context time | `AudioPiece`, `planPieces` |
+| **Anticipation** | How far ahead of the audio render edge sound is scheduled (200 ms) | `SCHEDULE_AHEAD_SECONDS` |
+| **Audio scrub** | Short snippets of sound played when the paused playhead moves | `AudioScheduler.scrub` |
+| **Level meter** | Peak and RMS per channel of the master, measured in an AudioWorklet and shown in dBFS | `AudioMeter`, `Meter` |
+| **Playback session** | The viewer's playback outside React: controller, audio engine, playhead store, picture engine | `PlaybackSession` |
+| **Performance HUD** | The viewer overlay with real frames per second, dropped frames, decoding work and caches | `PerformanceHud` |
 | **Golden frame** | A reference PNG a rendered test scene must match within a tolerance (`packages/engine/test/golden/references/`) | `expectGolden` |
 | **Premiere package** | Export folder with FCP7 XML, OTIO, overlay renders and SRT | — |
 | **Core** | The Rust process `se-core` | — |

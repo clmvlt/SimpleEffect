@@ -38,7 +38,12 @@ interface PendingDecode {
 /** A constant-rate video of `frameCount` frames at `fps`, decoded by the test's rules. */
 export class FakeVideoSource implements VideoFrameSource {
   readonly decodedTimes: number[] = [];
-  readonly frames: FakeFrame[] = [];
+  /** Start times of the sequential reads (`frames`). */
+  readonly readStarts: number[] = [];
+  /** Frames decoded by sequential reads, in order. */
+  readonly readIndexes: number[] = [];
+  /** Every frame decoded, by either path. */
+  readonly decodedFrames: FakeFrame[] = [];
   readonly pending: PendingDecode[] = [];
   disposed = false;
   /** When true, each decode waits until the test calls `pending[i].resolve()`. */
@@ -59,8 +64,27 @@ export class FakeVideoSource implements VideoFrameSource {
     this.decodedTimes.push(time);
     const index = Math.min(Math.floor(time * this.fps), this.frameCount - 1);
     if (index < 0) return null;
+    return this.decode(index);
+  }
+
+  async *frames(start: number): AsyncGenerator<DecodedVideoFrame, void, undefined> {
+    this.readStarts.push(start);
+    for (let index = Math.max(0, Math.floor(start * this.fps)); index < this.frameCount; index++) {
+      if (this.failure !== null) throw this.failure;
+      if (this.manual)
+        await new Promise<void>((resolve) =>
+          this.pending.push({ time: index / this.fps, resolve }),
+        );
+      // Lets the reader's consumer run between frames, like a real decoder.
+      await Promise.resolve();
+      this.readIndexes.push(index);
+      yield this.decode(index);
+    }
+  }
+
+  private decode(index: number): DecodedVideoFrame {
     const frame = new FakeFrame(index);
-    this.frames.push(frame);
+    this.decodedFrames.push(frame);
     return {
       frame: frame as unknown as VideoFrame,
       start: index / this.fps,

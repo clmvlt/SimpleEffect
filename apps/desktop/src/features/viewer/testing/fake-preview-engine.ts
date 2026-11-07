@@ -2,7 +2,9 @@ import type { Flicks } from '@se/protocol';
 import type {
   CompositorBackground,
   PreviewEngine,
+  PreviewPlayback,
   PreviewState,
+  PreviewStats,
   RenderScene,
 } from '@se/engine/preview';
 
@@ -19,6 +21,9 @@ export class FakePreviewEngine implements PreviewEngine {
   background: CompositorBackground = 'black';
   size: readonly [number, number] = [0, 0];
   sceneUpdates = 0;
+  playback: PreviewPlayback | null = null;
+  /** Every time set, in order (playback draws). */
+  readonly times: Flicks[] = [];
   destroyed = false;
   private state: PreviewState = { status: 'idle', issues: [], error: null };
   private readonly listeners = new Set<(state: PreviewState) => void>();
@@ -31,6 +36,10 @@ export class FakePreviewEngine implements PreviewEngine {
   }
   setTime(time: Flicks): void {
     this.time = time;
+    this.times.push(time);
+  }
+  setPlayback(playback: PreviewPlayback | null): void {
+    this.playback = playback;
   }
   setProxy(enabled: boolean): void {
     this.proxy = enabled;
@@ -48,12 +57,17 @@ export class FakePreviewEngine implements PreviewEngine {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
-  stats() {
+  stats(): PreviewStats {
     return {
       open: { videoFrames: 0, images: 0 },
-      cachedPictures: 0,
-      cachedBytes: 0,
-      openSources: 0,
+      cachedPictures: 3,
+      cachedBytes: 24 * 1024 * 1024,
+      openSources: 1,
+      readers: 1,
+      queuedDecodes: 0,
+      framesPerSecond: this.playback === null ? 0 : 25,
+      droppedFrames: 2,
+      prefetchSeconds: 0.5,
     };
   }
   settled(): Promise<void> {

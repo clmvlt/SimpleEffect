@@ -7,6 +7,7 @@ import { useEditActions } from '../hooks/use-edit-actions';
 import { useEditShortcuts } from '../hooks/use-edit-shortcuts';
 import { inOutControls } from '../hooks/use-in-out';
 import { usePlayheadControls } from '../hooks/use-playhead-controls';
+import { usePlayheadFollow } from '../hooks/use-playhead-follow';
 import { useTimelineCommands } from '../hooks/use-timeline-commands';
 import { useTimelineModel, type TimelineModel } from '../hooks/use-timeline-model';
 import { useTimelinePersistence } from '../hooks/use-timeline-persistence';
@@ -55,6 +56,7 @@ function TimelineEditor({ model }: { readonly model: TimelineModel }) {
     api.reveal,
   );
   const inOut = inOutControls(model.sequence);
+  usePlayheadFollow(model.sequence.id, api.page);
   useTimelineShortcuts({ model, viewport: api, playhead, inOut, commands });
   const actions = useEditActions(model, commands, playhead.time);
   useEditShortcuts(actions);

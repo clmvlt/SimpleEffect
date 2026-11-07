@@ -14,7 +14,10 @@ export {
   type PreviewEngine,
   type PreviewEngineOptions,
   type PreviewState,
+  type PreviewStats,
 } from './engine';
+export type { PlaybackPrefetchStats, PreviewPlayback } from './playback-prefetcher';
+export { prefetchSpans, type PrefetchSpan } from './prefetch-plan';
 export { createPreviewEngine } from './preview-engine';
 export type { CompositorBackground, RenderCanvas } from '../composite/compositor';
 export type { DecoderPoolStats } from '../decode/decoder-pool';

@@ -1,4 +1,4 @@
-import { ALL_FORMATS, Input, UrlSource, VideoSampleSink } from 'mediabunny';
+import { ALL_FORMATS, Input, UrlSource, VideoSampleSink, type VideoSample } from 'mediabunny';
 
 import type { PictureRotation } from '../composite/layout';
 import { DecodeError, asDecodeError } from './decode-error';
@@ -21,6 +21,12 @@ export interface VideoFrameSource {
    * `DecodeError` when the file cannot be read or its codec cannot be decoded here.
    */
   frameAt(time: number): Promise<DecodedVideoFrame | null>;
+  /**
+   * The frames from the one shown at `start` onwards, in presentation order, decoded by one
+   * decoder (playback). Closing the iterator (`return()`) stops decoding; frames it yielded are
+   * owned by the caller. Rejects like `frameAt`.
+   */
+  frames(start: number): AsyncGenerator<DecodedVideoFrame, void, undefined>;
   /** Stops reading and frees the demuxer (pending reads reject). */
   dispose(): void;
 }
@@ -37,6 +43,22 @@ interface OpenTrack {
   readonly offset: number;
 }
 
+/** Copies `sample` into a `VideoFrame` the caller owns, and closes the sample. */
+function decodedFrame(sample: VideoSample, offset: number): DecodedVideoFrame {
+  try {
+    const start = sample.timestamp - offset;
+    return {
+      frame: sample.toVideoFrame(),
+      start,
+      end: start + sample.duration,
+      rotation: rotationOf(sample.rotation),
+      mirrored: sample.flip,
+    };
+  } finally {
+    sample.close();
+  }
+}
+
 function rotationOf(degrees: number): PictureRotation {
   const normalised = ((degrees % 360) + 360) % 360;
   return normalised === 90 || normalised === 180 || normalised === 270 ? normalised : 0;
@@ -48,8 +70,8 @@ function rotationOf(degrees: number): PictureRotation {
  * timestamp (or 0 when frames before it are hidden by an edit list), as for ffmpeg, so an
  * original and its transcoded mezzanine or proxy share times.
  *
- * TODO(prompt-13): sequential playback reuses one decoder (`samplesAtTimestamps`/`samples`);
- * `getSample` configures a decoder per call, which is fine for scrubbing.
+ * `frameAt` (scrubbing) configures a decoder per call and decodes from the previous key frame;
+ * `frames` (playback) keeps one decoder running through the file.
  */
 export class MediabunnyVideoSource implements VideoFrameSource {
   private readonly input: Input;
@@ -78,17 +100,25 @@ export class MediabunnyVideoSource implements VideoFrameSource {
       throw asDecodeError(error, 'readFailed', 'Reading or decoding the video failed.');
     }
     if (sample === null) return null;
+    return decodedFrame(sample, offset);
+  }
+
+  async *frames(start: number): AsyncGenerator<DecodedVideoFrame, void, undefined> {
+    const { sink, offset } = await this.openTrack();
+    const samples = sink.samples(offset + start);
     try {
-      const start = sample.timestamp - offset;
-      return {
-        frame: sample.toVideoFrame(),
-        start,
-        end: start + sample.duration,
-        rotation: rotationOf(sample.rotation),
-        mirrored: sample.flip,
-      };
+      for (;;) {
+        let next;
+        try {
+          next = await samples.next();
+        } catch (error: unknown) {
+          throw asDecodeError(error, 'readFailed', 'Reading or decoding the video failed.');
+        }
+        if (next.done === true) return;
+        yield decodedFrame(next.value, offset);
+      }
     } finally {
-      sample.close();
+      await samples.return();
     }
   }
 

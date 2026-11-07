@@ -3,11 +3,14 @@ import type { AssetId } from '@se/protocol';
 import type { Picture } from '../composite/compositor';
 import { DecodeQueue } from './decode-queue';
 import { FrameCache, type PictureLease } from './frame-cache';
+import { FrameReader, type ReadAheadBudget } from './frame-reader';
 import { pictureTracker, type FrameTracker, type OpenPictureCounts } from './frame-tracker';
 import { fetchImageBitmap, type ImageLoader } from './image-loader';
 import type { MediaVariant } from './media-variant';
+import { planRead, type ReadWindow } from './read-plan';
 import {
   createMediabunnyVideoSource,
+  type DecodedVideoFrame,
   type VideoFrameSource,
   type VideoSourceFactory,
 } from './video-source';
@@ -33,13 +36,32 @@ export interface DecoderPoolOptions {
   readonly tracker?: FrameTracker;
 }
 
-/** What a pool holds, for dev tools and leak tests. */
+/** What a pool holds, for dev tools, the performance HUD and leak tests. */
 export interface DecoderPoolStats {
   readonly open: OpenPictureCounts;
   readonly cachedPictures: number;
   readonly cachedBytes: number;
   readonly openSources: number;
+  /** Sequential readers decoding ahead for playback. */
+  readonly readers: number;
+  /** Random-access decodes waiting or running. */
+  readonly queuedDecodes: number;
 }
+
+/**
+ * A stretch of a file playback will show soon (`DecoderPool.prefetch`): one per clip on screen
+ * or coming up, in media seconds.
+ */
+export interface PrefetchRequest extends ReadWindow {
+  /** The reading it continues (a clip): a new key starts a new decoder. */
+  readonly key: string;
+  readonly file: MediaFileRef;
+}
+
+/** Share of the cache sequential readers may fill ahead of the time on screen. */
+const READ_AHEAD_SHARE = 0.75;
+
+const UNBOUNDED: ReadAheadBudget = { frames: Infinity, bytes: Infinity };
 
 interface VideoSlot {
   readonly id: string;
@@ -49,6 +71,17 @@ interface VideoSlot {
   readonly source: VideoFrameSource;
   readonly queue: DecodeQueue;
   lastUse: number;
+}
+
+/** A sequential reader and the source it reads. */
+interface PlaybackReader {
+  readonly reader: FrameReader;
+  readonly slotId: string;
+}
+
+/** A sequential reader: one per playback key and file content. */
+function readerKey(request: Pick<PrefetchRequest, 'key' | 'file'>): string {
+  return `${request.key}|${cacheId(request.file)}`;
 }
 
 /** The decoder of a file: one per (asset, variant). */
@@ -80,6 +113,9 @@ export class DecoderPool {
   private readonly cache: FrameCache;
   private readonly tracker: FrameTracker;
   private readonly videos = new Map<string, VideoSlot>();
+  private readonly readers = new Map<string, PlaybackReader>();
+  private readonly maxCachedPictures: number;
+  private readonly cacheBudgetBytes: number;
   private readonly images = new Map<string, Promise<void>>();
   private readonly maxOpenSources: number;
   private readonly createVideoSource: VideoSourceFactory;
@@ -89,10 +125,12 @@ export class DecoderPool {
 
   constructor(options: DecoderPoolOptions = {}) {
     this.tracker = options.tracker ?? pictureTracker;
+    this.maxCachedPictures = options.maxCachedPictures ?? 48;
+    this.cacheBudgetBytes = options.cacheBudgetBytes ?? 256 * 1024 * 1024;
     this.cache = new FrameCache(
       {
-        budgetBytes: options.cacheBudgetBytes ?? 256 * 1024 * 1024,
-        maxEntries: options.maxCachedPictures ?? 48,
+        budgetBytes: this.cacheBudgetBytes,
+        maxEntries: this.maxCachedPictures,
       },
       (picture) => {
         this.tracker.close(picture.source);
@@ -128,6 +166,55 @@ export class DecoderPool {
     return slot.queue.enqueue(() => this.decode(slot, time), signal);
   }
 
+  /**
+   * Keeps sequential readers decoding the stretches playback will show (`docs/architecture.md`
+   * §8): a reader per request key, kept, extended or restarted as the window moves (`planRead`);
+   * readers whose key is no longer requested stop. `prefetch([])` stops them all (pause).
+   */
+  prefetch(requests: readonly PrefetchRequest[]): void {
+    if (this.destroyed) return;
+    const wanted = new Map(requests.map((request) => [readerKey(request), request]));
+    for (const [key, { reader }] of this.readers) {
+      if (!wanted.has(key) || !reader.running) {
+        reader.stop();
+        this.readers.delete(key);
+      }
+    }
+    const budget = this.readAheadBudget(wanted.size);
+    for (const [key, request] of wanted) this.follow(key, request, budget);
+    this.dropPassedFrames(requests);
+  }
+
+  /** What each of `readers` sequential readers may decode ahead: its share of the cache. */
+  readAheadBudget(readers: number): ReadAheadBudget {
+    const share = READ_AHEAD_SHARE / Math.max(1, readers);
+    return {
+      frames: Math.max(2, Math.floor(this.maxCachedPictures * share)),
+      bytes: Math.floor(this.cacheBudgetBytes * share),
+    };
+  }
+
+  /**
+   * The frame of `file` shown at `time` during playback: from the cache, else from the reader of
+   * `key` when it is about to decode it, else by random access like `videoFrame`.
+   */
+  async playbackFrame(
+    file: MediaFileRef,
+    key: string,
+    time: number,
+    signal?: AbortSignal,
+  ): Promise<PictureLease | null> {
+    const cached = this.peekVideoFrame(file, time);
+    if (cached !== null || this.destroyed) return cached;
+    const reader = this.readers.get(readerKey({ key, file }))?.reader;
+    if (reader !== undefined && (await reader.waitFor(time, signal))) {
+      const delivered = this.peekVideoFrame(file, time);
+      if (delivered !== null) return delivered;
+    }
+    if (signal?.aborted === true) return null;
+    return this.videoFrame(file, time, signal);
+  }
+
   /** The cached image of `file`, without loading. */
   peekImage(file: MediaFileRef): PictureLease | null {
     if (this.destroyed) return null;
@@ -158,6 +245,8 @@ export class DecoderPool {
       cachedPictures: cache.entries,
       cachedBytes: cache.bytes,
       openSources: this.videos.size,
+      readers: this.readers.size,
+      queuedDecodes: [...this.videos.values()].reduce((sum, slot) => sum + slot.queue.size, 0),
     };
   }
 
@@ -165,6 +254,8 @@ export class DecoderPool {
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
+    for (const { reader } of this.readers.values()) reader.stop();
+    this.readers.clear();
     for (const slot of this.videos.values()) slot.source.dispose();
     this.videos.clear();
     this.cache.clear();
@@ -175,6 +266,11 @@ export class DecoderPool {
     if (again !== null) return again;
     const decoded = await slot.source.frameAt(time);
     if (decoded === null) return null;
+    return this.store(slot.cacheId, decoded);
+  }
+
+  /** Adopts a decoded frame into the cache and leases it (`null` once destroyed: it is closed). */
+  private store(cacheKey: string, decoded: DecodedVideoFrame): PictureLease | null {
     const frame = this.tracker.adopt(decoded.frame, 'videoFrame');
     if (this.destroyed) {
       this.tracker.close(frame);
@@ -186,7 +282,47 @@ export class DecoderPool {
       mirrored: decoded.mirrored,
     };
     const bytes = frame.displayWidth * frame.displayHeight * 4;
-    return this.cache.insert(slot.cacheId, picture, decoded.start, decoded.end, bytes);
+    return this.cache.insert(cacheKey, picture, decoded.start, decoded.end, bytes);
+  }
+
+  /**
+   * Closes the cached frames forward playback has passed (before the earliest time on screen of
+   * each file): held frames are what stalls hardware decoders, and passed ones will not be shown.
+   */
+  private dropPassedFrames(requests: readonly PrefetchRequest[]): void {
+    const earliest = new Map<string, number>();
+    for (const request of requests) {
+      if (request.direction < 0) continue;
+      const id = cacheId(request.file);
+      earliest.set(id, Math.min(earliest.get(id) ?? Infinity, request.from));
+    }
+    for (const [id, time] of earliest) this.cache.dropBefore(id, time);
+  }
+
+  /** Keeps, extends or restarts the reader of `key` for `request`. */
+  private follow(key: string, request: PrefetchRequest, budget: ReadAheadBudget): void {
+    const existing = this.readers.get(key)?.reader;
+    const progress =
+      existing === undefined ? null : { start: existing.start, position: existing.decodedUntil };
+    const decision = planRead(progress, request);
+    // A reverse chunk is sized by its window (`prefetchRequests`) and must reach its end.
+    const ahead = request.direction > 0 ? budget : UNBOUNDED;
+    if (decision.kind === 'keep' && existing !== undefined) {
+      if (request.direction > 0) existing.extend(request.from, request.to, ahead);
+      return;
+    }
+    existing?.stop();
+    const slot = this.slotFor(request.file);
+    const reader = new FrameReader({
+      source: slot.source,
+      start: decision.kind === 'restart' ? decision.from : request.from,
+      until: decision.kind === 'restart' ? decision.to : request.to,
+      budget: ahead,
+      deliver: (decoded) => {
+        this.store(slot.cacheId, decoded)?.release();
+      },
+    });
+    this.readers.set(key, { reader, slotId: slot.id });
   }
 
   private async load(id: string, url: string): Promise<void> {
@@ -231,8 +367,9 @@ export class DecoderPool {
    * frames stay: they are still valid pictures).
    */
   private closeIdleSources(wanted: VideoSlot): void {
+    const reading = new Set([...this.readers.values()].map((entry) => entry.slotId));
     const idle = [...this.videos.values()]
-      .filter((slot) => slot !== wanted && slot.queue.size === 0)
+      .filter((slot) => slot !== wanted && slot.queue.size === 0 && !reading.has(slot.id))
       .sort((left, right) => left.lastUse - right.lastUse);
     for (const slot of idle) {
       if (this.videos.size <= this.maxOpenSources) return;

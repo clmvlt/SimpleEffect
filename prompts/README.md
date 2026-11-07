@@ -48,7 +48,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | [x] | 10 | [Timeline A : affichage et navigation](10-timeline-affichage.md) | 08 | 09, 17 |
 | [x] | 11 | [Timeline B : édition](11-timeline-edition.md) | 10 | 17 |
 | [x] | 12 | [Moteur A : évaluation, décodage, compositing, viewer](12-moteur-rendu.md) ⚠️ | 09, 11 | 17 |
-| [ ] | 13 | [Moteur B : lecture temps réel, audio, synchro A/V](13-moteur-lecture.md) ⚠️ | 12 | 17 |
+| [x] | 13 | [Moteur B : lecture temps réel, audio, synchro A/V](13-moteur-lecture.md) ⚠️ | 12 | 17 |
 | [ ] | 14 | [Édition audio, transitions, blancs](14-edition-audio.md) | 13 | 15, 17 |
 | [ ] | 15 | [Textes, graphiques et keyframes](15-textes-keyframes.md) ⚠️ | 13 | 14, 17 |
 | [ ] | 16 | [Formats, séquences multiples, safe areas](16-formats-sequences.md) | 15 | 17 |

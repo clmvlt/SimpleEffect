@@ -8,7 +8,7 @@ import {
   ToolbarButton,
   Tooltip,
 } from '@se/ui';
-import { Gauge, Grid2x2 } from '@se/ui/icons';
+import { Activity, Gauge, Grid2x2 } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -25,7 +25,7 @@ export interface ViewerToolbarProps {
 
 const zoomValue = (zoom: ViewerZoom) => String(zoom);
 
-/** The viewer options: zoom level, proxy playback, transparency checkerboard. */
+/** The viewer options: zoom level, proxy playback, transparency checkerboard, performance HUD. */
 export function ViewerToolbar({ preferences }: ViewerToolbarProps) {
   const { t } = useTranslation();
   const zoomLabel = (zoom: ViewerZoom) =>
@@ -70,6 +70,16 @@ export function ViewerToolbar({ preferences }: ViewerToolbarProps) {
             pressed={preferences.checkerboard}
             onClick={() => {
               setViewerPreferences({ checkerboard: !preferences.checkerboard });
+            }}
+          />
+        </Tooltip>
+        <Tooltip content={t('editor.viewer.toolbar.hud')}>
+          <ToolbarButton
+            icon={Activity}
+            label={t('editor.viewer.toolbar.hud')}
+            pressed={preferences.hud}
+            onClick={() => {
+              setViewerPreferences({ hud: !preferences.hud });
             }}
           />
         </Tooltip>

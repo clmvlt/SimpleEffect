@@ -200,7 +200,8 @@
         "zoomFit": "Ajuster",
         "zoomPercent": "{{percent}} %",
         "proxy": "Lire les proxys",
-        "checkerboard": "Damier de transparence"
+        "checkerboard": "Damier de transparence",
+        "hud": "Statistiques de lecture"
       },
       "picture": "Image de la séquence",
       "playhead": "Position de la tête de lecture",
@@ -220,6 +221,35 @@
         "title": "Aperçu indisponible",
         "unsupported": "Cette machine ne permet pas de décoder la vidéo (WebCodecs absent).",
         "error": "Le moteur de rendu n’a pas pu démarrer : {{message}}"
+      },
+      "transport": {
+        "toolbar": "Transport",
+        "goToStart": "Aller au début",
+        "previousFrame": "Image précédente",
+        "play": "Lecture",
+        "pause": "Pause",
+        "stop": "Arrêt (retour au point de départ)",
+        "nextFrame": "Image suivante",
+        "goToEnd": "Aller à la fin",
+        "loop": "Lecture en boucle (entre les points d’entrée et de sortie)",
+        "options": "Options de lecture",
+        "scrubAudio": "Son pendant le déplacement de la tête de lecture",
+        "duration": "Durée de la séquence"
+      },
+      "meter": {
+        "label": "Niveau de sortie",
+        "left": "Gauche",
+        "right": "Droite"
+      },
+      "hud": {
+        "label": "Statistiques de lecture",
+        "fps": "{{fps}} i/s affichées",
+        "dropped_one": "{{count}} image perdue",
+        "dropped_other": "{{count}} images perdues",
+        "decoding": "Décodage : {{readers}} lecteur(s) séquentiel(s), {{queued}} en attente",
+        "cache": "Cache d’images : {{size}} ({{count}} images)",
+        "prefetch": "Pré-chargement : {{seconds}} s",
+        "audio": "Cache audio : {{size}}, {{voices}} voix"
       }
     },
     "inspector": {
@@ -575,6 +605,11 @@
       "undo": "Annuler",
       "redo": "Rétablir",
       "showShortcuts": "Afficher les raccourcis clavier",
+      "togglePlay": "Lecture / pause",
+      "shuttleReverse": "Lecture arrière (répéter pour accélérer ; avec K maintenue : image précédente)",
+      "shuttlePause": "Pause",
+      "shuttleForward": "Lecture avant (répéter pour accélérer ; avec K maintenue : image suivante)",
+      "toggleLoop": "Activer ou désactiver la lecture en boucle",
       "goToStart": "Aller au début",
       "goToEnd": "Aller à la fin",
       "previousFrame": "Image précédente",
