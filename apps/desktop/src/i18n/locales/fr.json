@@ -26,7 +26,7 @@
       "viewerSide": "Redimensionner les panneaux Viewer et Inspecteur",
       "workspaceTimeline": "Redimensionner la timeline"
     },
-    "sidePanel": "Inspecteur et IA",
+    "sidePanel": "Inspecteur, animations et IA",
     "media": {
       "title": "Médias",
       "empty": {
@@ -104,7 +104,8 @@
         "reveal": "Afficher dans le dossier",
         "remove": "Retirer du projet",
         "details": "Détails",
-        "generateProxy": "Générer un proxy"
+        "generateProxy": "Générer un proxy",
+        "addAtPlayhead": "Ajouter à la tête de lecture"
       },
       "relinkConfirm": {
         "title": "Le contenu est différent",
@@ -250,6 +251,12 @@
         "cache": "Cache d’images : {{size}} ({{count}} images)",
         "prefetch": "Pré-chargement : {{seconds}} s",
         "audio": "Cache audio : {{size}}, {{voices}} voix"
+      },
+      "missingFonts_one": "Police manquante, remplacée par Inter : {{families}}",
+      "missingFonts_other": "{{count}} polices manquantes, remplacées par Inter : {{families}}",
+      "gizmo": {
+        "handle": "Poignée de transformation",
+        "editText": "Modifier le texte (Ctrl+Entrée pour valider, Échap pour annuler)"
       }
     },
     "inspector": {
@@ -269,6 +276,97 @@
           "linear": "Linéaire",
           "constantPower": "Puissance constante",
           "logarithmic": "Logarithmique"
+        }
+      },
+      "keyframes": {
+        "toggle": "Image clé : {{property}}",
+        "previous": "Image clé précédente",
+        "next": "Image clé suivante"
+      },
+      "axis": {
+        "x": "{{property}} X",
+        "y": "{{property}} Y"
+      },
+      "transform": {
+        "title": "Transformation",
+        "position": "Position",
+        "scale": "Échelle",
+        "rotation": "Rotation",
+        "anchor": "Point d’ancrage"
+      },
+      "opacity": {
+        "title": "Opacité",
+        "opacity": "Opacité",
+        "blur": "Flou"
+      },
+      "text": {
+        "title": "Texte",
+        "content": "Contenu du texte",
+        "font": "Police",
+        "bundledFonts": "Polices intégrées",
+        "systemFonts": "Polices installées",
+        "missingFont": "Police « {{family}} » introuvable sur cette machine : le texte s’affiche avec Inter.",
+        "weight": "Graisse",
+        "weights": {
+          "100": "Thin (100)",
+          "200": "Extra Light (200)",
+          "300": "Light (300)",
+          "400": "Regular (400)",
+          "500": "Medium (500)",
+          "600": "Semi Bold (600)",
+          "700": "Bold (700)",
+          "800": "Extra Bold (800)",
+          "900": "Black (900)"
+        },
+        "italic": "Italique",
+        "size": "Taille",
+        "letterSpacing": "Interlettrage",
+        "lineHeight": "Interligne",
+        "align": "Alignement",
+        "aligns": {
+          "left": "Aligner à gauche",
+          "center": "Centrer",
+          "right": "Aligner à droite"
+        },
+        "wrap": "Retour à la ligne",
+        "case": "Casse",
+        "cases": {
+          "normal": "Aa",
+          "uppercase": "AA"
+        },
+        "reveal": "Révélation"
+      },
+      "effects": {
+        "title": "Effets du texte",
+        "stroke": "Contour",
+        "strokeColor": "Couleur du contour",
+        "strokeWidth": "Épaisseur du contour",
+        "shadow": "Ombre",
+        "shadowColor": "Couleur de l’ombre",
+        "shadowBlur": "Flou de l’ombre",
+        "shadowOffset": "Décalage de l’ombre",
+        "background": "Fond",
+        "backgroundColor": "Couleur du fond",
+        "padding": "Marge interne",
+        "cornerRadius": "Arrondi des coins"
+      },
+      "shape": {
+        "title": "Forme",
+        "width": "Largeur",
+        "height": "Hauteur",
+        "length": "Longueur",
+        "thickness": "Épaisseur",
+        "cornerRadius": "Arrondi des coins",
+        "fill": "Remplissage",
+        "coverFrame": "Couvrir l’image"
+      },
+      "image": {
+        "title": "Image",
+        "fit": "Ajustement",
+        "fits": {
+          "fit": "Ajuster à l’image",
+          "fill": "Remplir l’image",
+          "natural": "Taille d’origine"
         }
       }
     },
@@ -397,6 +495,32 @@
           "end": "Finit à la coupe"
         },
         "remove": "Supprimer la transition"
+      },
+      "keyframes": {
+        "toggle": "Afficher les images clés",
+        "lane": "Images clés de {{name}}",
+        "keyframe": "Image clé à {{time}}",
+        "easing": "Courbe d’accélération",
+        "delete": "Supprimer les images clés",
+        "properties": {
+          "position": "Position",
+          "scale": "Échelle",
+          "rotation": "Rotation",
+          "anchor": "Ancrage",
+          "opacity": "Opacité",
+          "blur": "Flou",
+          "volumeDb": "Volume",
+          "fontSize": "Taille",
+          "fillColor": "Couleur",
+          "letterSpacing": "Interlettrage",
+          "reveal": "Révélation",
+          "strokeColor": "Couleur du contour",
+          "strokeWidth": "Contour",
+          "shadowColor": "Couleur de l’ombre",
+          "shadowBlur": "Flou de l’ombre",
+          "shadowOffset": "Décalage de l’ombre",
+          "backgroundColor": "Couleur du fond"
+        }
       }
     },
     "loading": "Ouverture du projet…",
@@ -462,7 +586,51 @@
       "changeKeyframes": "Images clés",
       "addTransitions": "Ajout de transitions",
       "changeTransition": "Réglage d’une transition",
-      "removeTransitions": "Suppression de transitions"
+      "removeTransitions": "Suppression de transitions",
+      "transformItems": "Transformer les éléments",
+      "addText": "Ajouter un texte",
+      "addShape": "Ajouter une forme",
+      "addImage": "Ajouter une image",
+      "applyAnimation": "Appliquer une animation"
+    },
+    "graphics": {
+      "tools": "Outils de création",
+      "addText": "Ajouter un texte",
+      "addShape": "Ajouter une forme",
+      "duration": "Durée des nouveaux éléments",
+      "defaultText": "Titre",
+      "shapes": {
+        "rectangle": "Rectangle",
+        "roundedRectangle": "Rectangle arrondi",
+        "ellipse": "Ellipse",
+        "line": "Ligne"
+      }
+    },
+    "animations": {
+      "title": "Animations",
+      "customDuration": "Durée personnalisée",
+      "duration": "Durée de l’animation",
+      "selectHint": "Sélectionnez un ou plusieurs éléments visuels pour leur appliquer une animation.",
+      "loading": "Chargement des animations…",
+      "swatch": "Aa",
+      "phases": {
+        "in": "Entrée",
+        "out": "Sortie",
+        "emphasis": "Emphase"
+      },
+      "presets": {
+        "fade": "Fondu",
+        "slideFromLeft": "Glissé depuis la gauche",
+        "slideFromRight": "Glissé depuis la droite",
+        "slideFromTop": "Glissé depuis le haut",
+        "slideFromBottom": "Glissé depuis le bas",
+        "pop": "Pop",
+        "blur": "Flou → net",
+        "typewriter": "Machine à écrire",
+        "bounce": "Rebond",
+        "shake": "Secousse",
+        "pulse": "Pulsation"
+      }
     }
   },
   "statusBar": {
@@ -688,7 +856,8 @@
       "nudgeLeft": "Décaler la sélection d’une image vers la gauche",
       "nudgeRight": "Décaler la sélection d’une image vers la droite",
       "nudgeLeftTen": "Décaler la sélection de dix images vers la gauche",
-      "nudgeRightTen": "Décaler la sélection de dix images vers la droite"
+      "nudgeRightTen": "Décaler la sélection de dix images vers la droite",
+      "addText": "Ajouter un texte à la tête de lecture"
     }
   }
 }

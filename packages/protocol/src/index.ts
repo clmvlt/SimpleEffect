@@ -21,7 +21,7 @@ export type {
   CoreEventOf,
   ResultFor,
 } from './protocol-types';
-export { assetMediaPath, mediaUrl, PEAK_LEVELS } from './media-url';
+export { assetMediaPath, fontMediaPath, mediaUrl, PEAK_LEVELS } from './media-url';
 export type { AssetMediaFile, PeakLevel } from './media-url';
 export type { ReconnectDelayOptions } from './reconnect-delay';
 export { decodeWaveformPeaks } from './waveform-peaks';

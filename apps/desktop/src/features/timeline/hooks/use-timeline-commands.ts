@@ -50,6 +50,7 @@ export function useTimelineCommands(projectId: string): TimelineCommands {
     resizeGap: guard(api.resizeGap),
     updateItems: guard(api.updateItems),
     setItemAnimation: guard(api.setItemAnimation),
+    setItemAnimations: guard(api.setItemAnimations),
     addTransitions: guard(api.addTransitions),
     updateTransition: guard(api.updateTransition),
     removeTransitions: guard(api.removeTransitions),

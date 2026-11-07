@@ -1,10 +1,13 @@
 import type { ItemEntity, TrackKind } from '@se/protocol';
 import { ClipBadge, ClipShell, cn } from '@se/ui';
+import { Diamond } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
 import { useAssetSilences } from '../hooks/use-asset-silences';
 import { mediaClipOf, silencesInItem } from '../services/audio-edits';
 import type { ItemBox } from '../services/item-geometry';
+import { animatedProperties } from '../services/keyframe-lane';
+import { toggleKeyframeLane } from '../store/keyframe-store';
 import { isAiMade, type ItemDisplay } from '../services/item-display';
 import type { ClipEdit } from '../services/preview';
 import { LABEL_BAR_HEIGHT } from '../services/volume-line';
@@ -33,6 +36,8 @@ export interface TimelineItemProps {
   readonly edit?: ClipEdit | undefined;
   /** Hatch the silences of its sound (audio tracks). */
   readonly showSilences?: boolean | undefined;
+  /** Its keyframe lane is unfolded below it. */
+  readonly keyframesShown?: boolean | undefined;
 }
 
 /** Narrower clips draw no pictures: nothing would be legible, and zoomed out there are many. */
@@ -67,6 +72,7 @@ export function TimelineItem({
   trackKind,
   edit,
   showSilences = false,
+  keyframesShown = false,
 }: TimelineItemProps) {
   const { t } = useTranslation();
   const clip = mediaClipOf(item);
@@ -85,6 +91,7 @@ export function TimelineItem({
     width: box.width,
   };
   const trimmable = editable && box.width >= MIN_TRIM_WIDTH;
+  const animated = trackKind === 'video' && animatedProperties(item.kind).length > 0;
   return (
     <div
       role="option"
@@ -127,6 +134,26 @@ export function TimelineItem({
           edit={edit}
           silences={silencesInItem(item, silences)}
         />
+      )}
+      {animated && box.width >= MIN_TRIM_WIDTH * 2 && (
+        <button
+          type="button"
+          data-keyframes-toggle=""
+          aria-pressed={keyframesShown}
+          aria-label={t('editor.timeline.keyframes.toggle')}
+          className={cn(
+            'absolute top-0.5 right-2 z-20 flex size-4 items-center justify-center rounded-xs',
+            keyframesShown ? 'bg-accent text-accent-foreground' : 'text-text-muted hover:bg-hover',
+          )}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+          }}
+          onClick={() => {
+            toggleKeyframeLane(item.id);
+          }}
+        >
+          <Diamond className="size-2.5" />
+        </button>
       )}
       {trimmable && box.startVisible && <TrimHandle edge="start" />}
       {trimmable && box.endVisible && <TrimHandle edge="end" />}

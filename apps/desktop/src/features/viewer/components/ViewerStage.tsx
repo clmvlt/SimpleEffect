@@ -9,6 +9,7 @@ import type { ViewerEngineController } from '../services/viewer-engine-controlle
 import { viewerLayout } from '../services/viewer-layout';
 import type { PlaybackScene } from '../services/viewer-scene';
 import type { ViewerPreferences } from '../store/viewer-store';
+import { TransformGizmo } from './TransformGizmo';
 import { ViewerOverlays } from './ViewerOverlays';
 
 /** Transparent areas over a checkerboard of two surface tokens. */
@@ -63,17 +64,25 @@ export function ViewerStage({
       <div ref={stage} className="absolute inset-0 overflow-auto">
         <div className="flex h-max min-h-full w-max min-w-full items-center justify-center p-2">
           <div
-            ref={host}
-            role="img"
-            aria-label={t('editor.viewer.picture')}
-            data-viewer-picture=""
-            className="shrink-0"
-            style={{
-              width: layout.display.width,
-              height: layout.display.height,
-              ...(preferences.checkerboard ? CHECKERBOARD : {}),
-            }}
-          />
+            className="relative shrink-0"
+            style={{ width: layout.display.width, height: layout.display.height }}
+          >
+            <div
+              ref={host}
+              role="img"
+              aria-label={t('editor.viewer.picture')}
+              data-viewer-picture=""
+              className="absolute inset-0"
+              style={preferences.checkerboard ? CHECKERBOARD : undefined}
+            />
+            {status.kind === 'running' && (
+              <TransformGizmo
+                controller={controller}
+                sequence={sequence}
+                displayScale={layout.scale}
+              />
+            )}
+          </div>
         </div>
       </div>
       <ViewerOverlays status={status} />

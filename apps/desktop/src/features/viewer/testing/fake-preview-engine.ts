@@ -1,6 +1,8 @@
 import type { Flicks } from '@se/protocol';
 import type {
   CompositorBackground,
+  FontLoader,
+  FrameLayout,
   PreviewEngine,
   PreviewPlayback,
   PreviewState,
@@ -25,8 +27,11 @@ export class FakePreviewEngine implements PreviewEngine {
   /** Every time set, in order (playback draws). */
   readonly times: Flicks[] = [];
   destroyed = false;
-  private state: PreviewState = { status: 'idle', issues: [], error: null };
+  fonts: FontLoader | null = null;
+  private state: PreviewState = { status: 'idle', issues: [], missingFonts: [], error: null };
   private readonly listeners = new Set<(state: PreviewState) => void>();
+  private layout: FrameLayout | null = null;
+  private readonly layoutListeners = new Set<(layout: FrameLayout) => void>();
 
   constructor(readonly request: PreviewEngineRequest) {}
 
@@ -49,6 +54,16 @@ export class FakePreviewEngine implements PreviewEngine {
   }
   resize(width: number, height: number): void {
     this.size = [width, height];
+  }
+  setFonts(fonts: FontLoader | null): void {
+    this.fonts = fonts;
+  }
+  getLayout(): FrameLayout | null {
+    return this.layout;
+  }
+  subscribeLayout(listener: (layout: FrameLayout) => void): () => void {
+    this.layoutListeners.add(listener);
+    return () => this.layoutListeners.delete(listener);
   }
   getState(): PreviewState {
     return this.state;
@@ -75,6 +90,12 @@ export class FakePreviewEngine implements PreviewEngine {
   }
   destroy(): void {
     this.destroyed = true;
+  }
+
+  /** Simulates a drawn frame with this layout (the gizmo's input). */
+  emitLayout(layout: FrameLayout): void {
+    this.layout = layout;
+    for (const listener of this.layoutListeners) listener(layout);
   }
 
   /** Simulates an engine state change (loading, issues…). */

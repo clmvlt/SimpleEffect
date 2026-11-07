@@ -1,18 +1,37 @@
-import { EmptyState } from '@se/ui';
+import { EmptyState, ScrollArea } from '@se/ui';
 import { SlidersHorizontal } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
 import { useAudioClip } from '../hooks/use-audio-clip';
+import { useInspection } from '../hooks/use-inspection';
 import { AudioSection } from './AudioSection';
+import { ImageSection, ShapeSection, TextEffectsSection } from './StyleSections';
+import { TextSection } from './TextSection';
+import { TransformSection } from './TransformSection';
 
 /**
- * Content of the « Inspecteur » tab: the « Audio » section when the selection holds one audio
- * clip, else an empty state.
- * TODO(prompt-15): property groups of every selection (transform, text, keyframes).
+ * Content of the « Inspecteur » tab: for selected visual items (texts, shapes, images, clips of
+ * video tracks) the sections their kinds share — transform and opacity always, text, effects,
+ * shape or image when every item is of that kind —; the « Audio » section for one audio clip;
+ * else an empty state. Values follow the playhead; animatable ones have keyframe buttons.
  */
 export function InspectorView() {
   const { t } = useTranslation();
   const audio = useAudioClip();
+  const inspection = useInspection();
+  if (inspection !== null) {
+    const { kind } = inspection;
+    return (
+      <ScrollArea className="h-full">
+        {kind === 'text' && <TextSection inspection={inspection} />}
+        {kind === 'text' && <TextEffectsSection inspection={inspection} />}
+        {kind === 'shape' && <ShapeSection inspection={inspection} />}
+        {kind === 'image' && <ImageSection inspection={inspection} />}
+        <TransformSection inspection={inspection} />
+        {audio !== null && <AudioSection editor={audio} />}
+      </ScrollArea>
+    );
+  }
   if (audio !== null) return <AudioSection editor={audio} />;
   return (
     <EmptyState

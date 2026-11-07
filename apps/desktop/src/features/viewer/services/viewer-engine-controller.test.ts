@@ -45,10 +45,10 @@ describe('ViewerEngineController', () => {
     controller.setLocator(() => 'http://127.0.0.1/media');
     expect(engine?.sceneUpdates).toBe(updates + 1);
     expect(engine?.request.locator('a', 'original')).toBe('http://127.0.0.1/media');
-    engine?.emit({ status: 'loading', issues: [], error: null });
+    engine?.emit({ status: 'loading', issues: [], missingFonts: [], error: null });
     expect(controller.getStatus()).toEqual({
       kind: 'running',
-      preview: { status: 'loading', issues: [], error: null },
+      preview: { status: 'loading', issues: [], missingFonts: [], error: null },
     });
   });
 

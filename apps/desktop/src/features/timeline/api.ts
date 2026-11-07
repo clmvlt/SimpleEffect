@@ -2,6 +2,7 @@ import type {
   AssetId,
   CoreClient,
   Flicks,
+  ItemAnimation,
   ItemId,
   ItemPlacement,
   ItemTrim,
@@ -69,6 +70,7 @@ export interface TimelineApi {
   readonly resizeGap: (gap: GapBounds, duration: Flicks) => Promise<void>;
   readonly updateItems: (updates: readonly ItemUpdate[]) => Promise<void>;
   readonly setItemAnimation: (itemId: ItemId, animation: PropertyAnimation) => Promise<void>;
+  readonly setItemAnimations: (animations: readonly ItemAnimation[]) => Promise<void>;
   readonly addTransitions: (transitions: readonly NewTransition[]) => Promise<TransitionId[]>;
   readonly updateTransition: (transitionId: TransitionId, patch: TransitionPatch) => Promise<void>;
   readonly removeTransitions: (transitionIds: readonly TransitionId[]) => Promise<void>;
@@ -128,6 +130,9 @@ export function timelineApi(client: Pick<CoreClient, 'send'>, projectId: string)
     },
     updateItems: async (updates) => {
       await client.send({ kind: 'updateItems', projectId, updates: [...updates] });
+    },
+    setItemAnimations: async (animations) => {
+      await client.send({ kind: 'setItemAnimations', projectId, animations: [...animations] });
     },
     setItemAnimation: async (itemId, animation) => {
       await client.send({ kind: 'setItemAnimation', projectId, itemId, animation });

@@ -113,11 +113,16 @@ describe('app shell', () => {
     expect(within(timeline).getByRole('group', { name: 'Piste track-v1' })).toBeInTheDocument();
     expect(within(timeline).getByRole('option', { name: 'item-1' })).toBeInTheDocument();
 
-    const side = screen.getByRole('region', { name: 'Inspecteur et IA' });
+    const side = screen.getByRole('region', { name: 'Inspecteur, animations et IA' });
     expect(within(side).getByText('Aucune sélection')).toBeInTheDocument();
     // Keyboard, not a click: in jsdom every element measures 0 px, so the panel library takes any
     // press for a resize grab on a panel edge and swallows it.
     within(side).getByRole('tab', { name: 'Inspecteur' }).focus();
+    await user.keyboard('{ArrowRight}');
+    expect(within(side).getByRole('tab', { name: 'Animations' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await user.keyboard('{ArrowRight}');
     expect(within(side).getByText('Assistant IA non configuré')).toBeInTheDocument();
 

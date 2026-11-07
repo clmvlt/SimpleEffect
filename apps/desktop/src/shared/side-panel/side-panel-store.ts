@@ -2,7 +2,7 @@ import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 
 /** Tabs of the editor's right panel. */
-export type SidePanelTab = 'inspector' | 'ai';
+export type SidePanelTab = 'inspector' | 'animations' | 'ai';
 
 /** The tab shown in the editor's right panel (features ask for one, e.g. « Propriétés »). */
 export interface SidePanelState {
@@ -19,7 +19,7 @@ export function showSidePanelTab(tab: SidePanelTab): void {
 
 /** Whether `value` names a side panel tab. */
 export function isSidePanelTab(value: string): value is SidePanelTab {
-  return value === 'inspector' || value === 'ai';
+  return value === 'inspector' || value === 'animations' || value === 'ai';
 }
 
 /** The tab shown in the right panel. */

@@ -46,6 +46,11 @@ export function assetMediaPath(assetId: string, file: AssetMediaFile): string {
   }
 }
 
+/** Path of a font face of the catalogue (`listFonts`), e.g. `/media/fonts/bundled-inter-latin-wght-normal`. */
+export function fontMediaPath(faceId: string): string {
+  return `/media/fonts/${encodeURIComponent(faceId)}`;
+}
+
 /**
  * Absolute URL of a `/media` path on `endpoint`, with the session token as `t` (media elements
  * and `<img>` cannot send headers). `version` is appended as `v` to defeat caches when the file

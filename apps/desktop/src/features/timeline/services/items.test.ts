@@ -175,7 +175,13 @@ describe('item display', () => {
 
   it('labels texts, captions and templates by their content', () => {
     const text = testItem('t', 'v1', 0, 1, {
-      kind: { kind: 'text', content: ' Titre ', style: null as never, transform: null as never },
+      kind: {
+        kind: 'text',
+        content: ' Titre ',
+        style: null as never,
+        transform: null as never,
+        reveal: null as never,
+      },
     });
     expect(itemDisplay(text, 'video', assets, [])).toMatchObject({
       tone: 'graphic',

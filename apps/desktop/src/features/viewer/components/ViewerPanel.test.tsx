@@ -129,7 +129,8 @@ describe('ViewerPanel', () => {
     await user.click(screen.getByRole('combobox', { name: 'Zoom du viewer' }));
     await user.click(screen.getByRole('option', { name: '50 %' }));
     const picture = screen.getByRole('img', { name: 'Image de la séquence' });
-    expect(picture).toHaveStyle({ width: '960px', height: '540px' });
+    // The picture fills a wrapper of the displayed size (the transform handles sit over it).
+    expect(picture.parentElement).toHaveStyle({ width: '960px', height: '540px' });
     expect(engine.size).toEqual([960, 540]);
     await user.click(screen.getByRole('button', { name: 'Lire les proxys' }));
     expect(engine.proxy).toBe(true);
@@ -233,7 +234,7 @@ describe('ViewerPanel', () => {
     const engine = await runningEngine(engines);
     vi.useFakeTimers();
     act(() => {
-      engine.emit({ status: 'loading', issues: [], error: null });
+      engine.emit({ status: 'loading', issues: [], missingFonts: [], error: null });
     });
     expect(screen.queryByRole('status', { name: 'Décodage de l’image…' })).toBeNull();
     act(() => {
@@ -241,7 +242,12 @@ describe('ViewerPanel', () => {
     });
     expect(screen.getByRole('status', { name: 'Décodage de l’image…' })).toBeInTheDocument();
     act(() => {
-      engine.emit({ status: 'ready', issues: [{ assetId: 'a', kind: 'missing' }], error: null });
+      engine.emit({
+        status: 'ready',
+        issues: [{ assetId: 'a', kind: 'missing' }],
+        missingFonts: [],
+        error: null,
+      });
     });
     expect(screen.queryByRole('status', { name: 'Décodage de l’image…' })).toBeNull();
     expect(screen.getByText('1 média hors ligne')).toBeInTheDocument();
