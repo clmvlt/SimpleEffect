@@ -57,6 +57,7 @@ describe('CoreClient requests', () => {
     const { client, socket } = await openClient();
     expect(socket().url).toBe('ws://127.0.0.1:4000/rpc?t=secret');
     expect(client.state).toBe('open');
+    expect(client.endpoint).toEqual(ENDPOINT);
   });
 
   it('correlates out-of-order responses with their requests by id', async () => {
