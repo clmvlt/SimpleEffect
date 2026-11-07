@@ -193,6 +193,33 @@
       "empty": {
         "title": "Aucune séquence ouverte",
         "description": "Ouvrez une séquence pour la prévisualiser ici."
+      },
+      "toolbar": {
+        "label": "Options du viewer",
+        "zoom": "Zoom du viewer",
+        "zoomFit": "Ajuster",
+        "zoomPercent": "{{percent}} %",
+        "proxy": "Lire les proxys",
+        "checkerboard": "Damier de transparence"
+      },
+      "picture": "Image de la séquence",
+      "playhead": "Position de la tête de lecture",
+      "format": "{{width}} × {{height}} · {{fps}} i/s",
+      "loading": "Décodage de l’image…",
+      "issues": {
+        "preparing_one": "{{count}} média en préparation",
+        "preparing_other": "{{count}} médias en préparation",
+        "missing_one": "{{count}} média hors ligne",
+        "missing_other": "{{count}} médias hors ligne",
+        "mezzanineFailed_one": "{{count}} média illisible (mezzanine en échec)",
+        "mezzanineFailed_other": "{{count}} médias illisibles (mezzanine en échec)",
+        "decodeFailed_one": "{{count}} média n’a pas pu être décodé",
+        "decodeFailed_other": "{{count}} médias n’ont pas pu être décodés"
+      },
+      "failed": {
+        "title": "Aperçu indisponible",
+        "unsupported": "Cette machine ne permet pas de décoder la vidéo (WebCodecs absent).",
+        "error": "Le moteur de rendu n’a pas pu démarrer : {{message}}"
       }
     },
     "inspector": {
