@@ -26,6 +26,43 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-07 — Prompt 15: Textes, graphiques et keyframes — Done
+
+**Branch**: `feature/15-textes-keyframes`, merged into `dev` at `<merge>`
+
+**Done**
+- se-domain (ADR-0025): full `TextStyle` (weight, italic, animatable size and colour, `Stroke`, `TextShadow`, `TextBackground`, letter spacing, line height, alignment, wrapping width, case) and `TextItem.reveal`; shapes `Line`, outline, `cover_frame`; images `ImageFit` (fit, fill, natural); `Transform2D.blur`. `AnimatableProperty` (17 properties) with typed slots `ItemKind::property`/`property_mut`, shared by `SetKeyframes`, presets and validation (`allowed_range`, `graphic_rules.rs` for static styles); `PropertyAnimation` generated per property. **Presets as data** (`assets/animation-presets.json`: fade, 4 slides, pop, blur → sharp, typewriter, bounce, shake, pulse) expanded by `expand_preset` / `ApplyAnimationPreset { item, preset, phase, duration, start }` (span placement and clamping, base read as a hold, keyframes inside the span replaced, exits mirrored); `preset_samples`; errors `UNKNOWN_ANIMATION_PRESET`, `PRESET_PHASE_NOT_SUPPORTED`; `Animatable` reads bare values (old journals). Schema version 5 + migration + fixture; property tests generate presets; insta snapshot of every expansion.
+- se-app / se-protocol / se-core: `addGraphicItem` (highest free video track above what plays, or a new one on top), `setItemAnimations` (one step for several properties/items), `applyAnimationPreset`, `listAnimationPresets` (with samples), `listFonts`; port `FontCatalog`; new adapter **se-fonts** (Inter, Montserrat, Oswald, Playfair Display, Bebas Neue, Permanent Marker latin/latin-ext WOFF2 embedded with their licences + installed fonts via `fontdb`, read in the background at startup); route `GET /media/fonts/{id}`; labels `Transform items`, `Add text/shape/image`, `Apply animation`.
+- @se/engine: text layers with their whole style; Pixi text node laid out once (whole text, no outline/shadow) and drawn line by line (reveal never moves the text, outline outside), plates; outlined shapes, line capsules, frame-covering boxes; natural images; blur filter; `Compositor.render` returns boxes → `FrameLayout` published by the preview engine; `@se/engine/fonts` `FontRegistry` (catalogue faces as `FontFace`, loaded before drawing, missing families reported). Golden frames `shapes-strokes-lines`, `rotation-anchor-blur`, `slide-in-midway`, `text-styles` (bundled Inter, `TEXT_TOLERANCE` = 4 × 4 block averages + pixel checks of outline, shadow, plate, reveal).
+- Renderer: `shared/animation` (property access mirror, keyframe edits with auto-keyframing, easing ↔ curve, `propertyPreviewStore`), `shared/fonts`; inspector rewritten (sections Texte, Effets du texte, Forme, Image, Transformation/Opacité; `KeyframeButton` with previous/next on every animatable row; one command per gesture; multi-selection patches); **transform gizmo** in the viewer (click/Shift selection, move with snapping to centre/edges, side/corner scale with Shift proportional, rotation with Shift 15°, anchor drag, Escape cancels, double-click text editing in place, hidden while playing); missing-font badge; **keyframe lanes** in the timeline (toggle on animated items, rows per property, select/drag by frames/`Suppr`, easing popover with `EasingCurveEditor`); feature `graphics`: Texte (`T`) and Forme tools + length of new graphics in the viewer toolbar, « Ajouter à la tête de lecture » for images in the media bin, tab « Animations » (presets by phase, hover previews from the core's samples, custom duration, applicability per selection); CSP `font-src` allows the core and `data:` (inlined UI font subsets were blocked before).
+- Tests: se-domain 220 unit + property tests; se-app `item_edits/graphics.rs` (4) and unit tests; se-fonts 7; se-core font route + router; engine Node 201 + browser 27; desktop 375 (shared animation, fonts, gizmo geometry/gestures, inspector, gizmo, keyframe lane, graphics tools and presets).
+- Verified in the built app on Windows (isolated profile, CDP): a project made through the core with a text (Montserrat 800 from the catalogue, yellow) and a rounded rectangle on a new V3; click selects the text (outline, 8 handles, rotation and anchor handles, inspector « Texte »); a drag previews live and leaves one undo step « Transformer les éléments »; the keyframe lane shows the pulse and fade-out keyframes; « Pop » from the Animations tab overshoots at 0.36 s; `T` adds « Titre » at the playhead on a new V4, selected.
+- Docs: ADR-0025, architecture §2/§3/§5.3/§5.4/§6/§7/§8, glossary (19 terms), backlog, CLAUDE.md of root, se-domain (preset format), se-app, se-protocol, se-core, se-store, se-fonts (new), @se/engine, @se/protocol, desktop.
+
+**Deviations from the prompt**
+- A rounded rectangle is a rectangle with a corner radius (`ShapeKind::RoundedRectangle` only picks the default); shape dimensions stay static (animate `scale`), gradients in the backlog.
+- « Flou → net » uses a new animatable `blur` on every visual item (a Pixi blur filter).
+- `ApplyAnimationPreset` takes an optional `start` (emphasis at the playhead from the panel); preset bases read existing keyframes as holds (the domain never interpolates).
+- Graphics go on the highest unlocked, visible video track free over their span *with nothing above it*, else on a new track on top, so they always show over the picture.
+- The keyframe lane unfolds per item (diamond button) inside the track row (rows grow), not as a separate track.
+- `setItemAnimations` and `listFonts`/`/media/fonts` were added alongside the prompt's operations; the font catalogue is a new adapter crate (`se-fonts`) with fonts embedded in the binary (no packaging change).
+- Text goldens compare block averages (platform rasterisers differ at glyph edges even with the same font).
+
+**Follow-ups**
+- Prompt 16: formats — `coverFrame` shapes already follow the frame; texts may need re-layout in 9:16.
+- Prompt 19: MCP tools map onto `addGraphicItem`, `updateItems`, `setItemAnimations`, `applyAnimationPreset`, `listAnimationPresets`, `listFonts`.
+- Prompt 23: caption styles replace `CAPTION_LOOK` (now a full `TextItem` style).
+- Prompt 27: export must set the `FontRegistry` on its `FrameRenderer` (texts wait for fonts) and reuse the returned layouts only if needed.
+- Backlog: marquee/copy of keyframes, value graph editor, motion paths, gizmo snapping to other items, per-character text animations, user presets, embedding installed fonts in projects.
+
+**Notes for the next agent**
+- Edit Rust files with LF endings: Python's text mode on Windows writes CRLF (`newline=''` keeps LF); `.gitattributes` normalises on commit but rustfmt/prettier see the working copy.
+- ts-rs warns on `#[serde(alias)]` (a build-time warning): keep field names stable instead.
+- The raw-colour guard also scans tests: build document colours with `documentColor('ffffff')` (`shared/project-store/testing/graphics-fixture.ts`).
+- jsdom measures 0 px: viewer tests needing a display scale save `{ "zoom": 0.5 }` under `se.ui.viewer.v1` before rendering (the viewer restores its preferences on mount).
+- Pixi v8 leaves `container.filters` undefined until assigned (`LayerBlur` tracks attachment itself).
+- CDP recipe used here: `scratchpad`-style `drive.mjs` (core socket from `getCoreConnection()`, `createProject`, `location.hash`, commands) and `Input.dispatchMouseEvent` / `Input.dispatchKeyEvent` for real pointer and key input.
+
 ## 2026-11-07 — Prompt 14: Édition audio, transitions, blancs — Done
 
 **Branch**: `feature/14-edition-audio`, merged into `dev` at `7bb9573`
