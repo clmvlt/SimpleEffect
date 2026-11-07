@@ -44,6 +44,7 @@ This codebase is developed and maintained by AI agents. Optimise every change fo
 | `crates/se-export` | FCP7 XML, OTIO, SRT, render orchestration | Writers are pure functions |
 | `crates/se-core` | Binary: composition root, axum (`/rpc`, `/media`, `/mcp`) | Wiring only |
 | `crates/se-codegen` | Dev tool behind `pnpm codegen` (ts-rs export) | Never shipped, never depended on |
+| `crates/se-devtools` | Dev tools: `pnpm generate-test-project` (large test projects) | Never shipped, never depended on |
 | `packages/protocol` | `@se/protocol`: generated types + `CoreClient` | No React |
 | `packages/engine` | `@se/engine`: evaluate, decode, composite, audio, export | No React, no UI |
 | `packages/ui` | `@se/ui`: design system | No domain knowledge |
@@ -70,6 +71,7 @@ Adapters depend on `se-app` and `se-domain`, never on each other. `se-core` depe
 | `pnpm set-version <semver>` | Write the version into every `package.json` and `Cargo.toml` (used by the release workflow) |
 | `pnpm codegen` | Regenerate `packages/protocol/src/generated/` from Rust (`se-codegen`); `--check` fails if stale |
 | `pnpm storybook` | Design system playground (`@se/ui` Storybook on http://localhost:6006, a11y addon) |
+| `pnpm generate-test-project` | Write a valid 500-item project with generated media into `target/test-projects/` (`--items`, `--out`, `--name`, `--seed`; needs `pnpm fetch-binaries`) for timeline and performance work |
 | `pnpm fetch-binaries` | Download the pinned ffmpeg/ffprobe builds (`scripts/binaries.manifest.json`, SHA-256 checked) into `resources/bin/<platform>/`; asks first (`--yes` for CI, `--platform <key>`, `--all`). Whisper arrives with prompt 21 |
 
 ## Code conventions

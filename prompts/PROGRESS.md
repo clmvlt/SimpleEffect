@@ -26,6 +26,43 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-07 — Prompt 10: Timeline A : affichage et navigation — Done
+
+**Branch**: `feature/10-timeline-affichage`, merged into `dev` at `MERGE_SHA`
+
+**Done**
+- se-protocol: commands `addTrack { projectId, sequenceId, trackKind, index }` → `trackId`, `removeTrack`, `updateTrack { patch: TrackPatch }`, `reorderTracks`, `addMarker { time, label, color }` → `markerId`, `updateMarker { patch: MarkerPatch }`, `removeMarker` (`Command` is no longer `Eq`); `TrackPatch`/`MarkerPatch` fields optional in TypeScript (`#[ts(optional_fields)]`).
+- se-app: `ProjectService::{add_track, remove_track, update_track, reorder_tracks, add_marker, update_marker, remove_marker}`, each one user transaction through `commit_user_edit`, new tracks named after the next free `V<n>`/`A<n>`, labels per changed field (`track_labels`, `marker_labels`: `Mute track`, `Rename marker`…), `NewIds::marker`, public `new_project::empty_track`. se-core: `rpc/handlers/timeline.rs` and router arms.
+- `@se/ui`: `ClipShell` + `ClipBadge` (story, test, axe), marker colour tokens `marker-*` (Premiere's eight colours).
+- Renderer `shared/time`: flicks, frame rates, rounding modes, `parseTimecode`/`formatTimecode`, pixels at a zoom — **parity tests replay `docs/test-vectors/flicks.json` and `timecode.json`** (same error codes as Rust). `shared/canvas`: cached `tokenValue`, `prepareCanvas`.
+- Renderer `shared/shortcuts` rebuilt: `SHORTCUT_ACTIONS` (named actions, contexts `global`/`timeline`/`viewer`, OS-adapted keys, repeat policy), registry bound by `useShortcutAction`, active context from the `ShortcutRegion` last clicked or focused, conflict detection (default table tested conflict-free), key caps in tooltips (`useShortcutHint`), « Raccourcis clavier » help dialog (`?`, header button). Undo/redo moved to the actions (`Ctrl+Y` also redoes off Apple).
+- `features/timeline`: sequence tabs with « + » (creates and shows « Séquence N »), toolbar (playhead timecode field accepting typed times, add video/audio track, track height presets, snapping toggle, zoom buttons/slider/fit), ruler (adaptive graduations on round timecodes, canvas; click/drag moves the playhead with snapping; Maj+drag marks in/out), markers (flags, label on hover, `M` at the playhead, double-click to rename, context menu: colour, go to, delete), track headers (kind icon, inline rename, hide/lock on video, mute/solo/lock on audio, bottom edge resize, Alt+wheel, context menu add above/below, rename, delete, drag to reorder within a kind), lanes with virtualisation, clips (`ClipShell`, thumbnail strip from the sheet, waveform canvas at the peak level of the zoom, AI badge, selected/dimmed states), selection (click with linked items, Maj adds, Ctrl/⌘ toggles, Alt alone, rectangle from empty space, Ctrl/⌘+A, Ctrl/⌘+Maj+A), in/out points (`I`, `O`, `Alt+X`, shaded on lanes and ruler, `useInOutSpan` exported for prompt 20), playhead (own store, moves by style; ←/→, Maj+←/→, ↑/↓ edit points, Début/Fin), zoom (Ctrl/⌘+wheel around the pointer, `+`/`-`, `Maj+Z` fit) and scroll (Maj+wheel, swipe), overview strip (minimap: drag to scroll, edges to zoom, click to jump), active panel outline. The editor header shows the active sequence (`useActiveSequence`; `selectActiveSequence` is gone).
+- `crates/se-devtools` + `pnpm generate-test-project`: a valid project (500 items by default, V1–V3/A1–A3, linked clips, texts, captions, music, AI-made items, 12 markers) built from the domain types over six ffmpeg-generated media probed like an import (reused by prompt 29).
+- Verified in the built app on Windows (isolated profile, CDP) with the 500-item project: thumbnails, waveforms, markers and minimap appear; frame times measured over CDP while wheel-zooming/scrolling the lanes: **zoom and scroll at 144 Hz (p95 7 ms)**, horizontal swipe with all 500 items in view p95 14 ms; `I`/`O` shade the span, `M` adds a marker (« Annuler : Ajout de marqueur »), rename (double-click + Entrée), mute (« Piste rendue muette »), add above (V4 on top), drag reorder (« Réorganisation des pistes »), Ctrl+Z, a rectangle selected 20 items, `?` opens the help, « Nouvelle séquence » adds a tab and the header follows; zoom, scroll and track state survive a reload.
+- Tests: se-app 3 integration (`timeline_edits.rs`) + unit labels/names, se-protocol shape test, se-core routing test, se-devtools 2; desktop 265 (time parity 98, shortcuts 13, timeline services 38, persistence 3, `TimelinePanel` 7: order of tracks, click/Maj/Ctrl/Alt selection, rectangle, I/O/Alt+X, M, rename and mute commands, edit-point navigation); ui 475 (ClipShell + axe).
+- Docs: ADR-0020, `docs/architecture.md` §2/§3/§4.2/§6, glossary (15 terms), backlog (Timeline items), CLAUDE.md of root, desktop, `@se/ui`, se-protocol, se-app, se-domain, se-devtools (new).
+
+**Deviations from the prompt**
+- Extras chosen by the user: timecode jump field, shortcuts help dialog, playhead snapping (`S`), overview strip (minimap), marker colours menu, « + » in the sequence tabs, quick track heights (Alt+wheel, presets).
+- View state (zoom, scroll, in/out points, playhead, track heights, active sequence, snapping) is a **machine preference saved per project in `localStorage`**, not project data (user's choice, ADR-0020): no undo step for it.
+- Header toggles depend on the track kind (video: hide + lock; audio: mute + solo + lock): mute/solo mean nothing for picture tracks.
+- `ClipShell` was missing from prompt 04 (ADR-0009 listed it with Ruler, Playhead and TrackHeader): only `ClipShell`/`ClipBadge` became `@se/ui` widgets; the ruler, playhead and headers stay timeline components (domain-shaped).
+- `addTrack` takes `trackKind` (a struct-variant field cannot be named `kind`, the tag).
+- The out point is placed after the frame under the playhead (`I` then `O` on one frame gives a one-frame span).
+
+**Follow-ups**
+- Prompt 11: clip gestures plug into `useLaneSelection` (pointer-down on an item stops before the marquee), ephemeral drag state in the timeline; maybe a generic edit command for clip operations (ADR-0020 alternatives).
+- Prompts 12/13: the viewer reads `useActiveSequence` and `playheadStore` (`index.ts`); playback moves the playhead store (lines already update by style); the time actions already list the `viewer` context, wrap the viewer in `ShortcutRegion context="viewer"`.
+- Prompt 20: `useInOutSpan(sequenceId, contentEnd)` is the AI scope; the selection store holds the selected items.
+- Prompt 29: `pnpm generate-test-project` and the CDP frame-time measurement (recipe in `apps/desktop/CLAUDE.md`).
+- Backlog (Editing): peaks decoding in a worker, keyboard navigation between clips, user-defined shortcuts, waveforms on video tracks, view state across machines.
+
+**Notes for the next agent**
+- `getComputedStyle(...).getPropertyValue` on every canvas draw forced style recalculation and cost more than all of React during zoom: use `tokenValue`. Resizing a canvas reallocates it: `prepareCanvas` only resizes on change (waveform canvases in 128 px steps). `contain: strict` on clip boxes removed the remaining layout spikes.
+- CDP-synthesised drags get a `pointercancel` when the real mouse moves inside the window: keep hands off the test window (real drags work).
+- Heredocs in the Bash tool break on backticks: write edit scripts with the Write tool (as noted before). Vite `?raw` imports read JSON outside the TS project (`docs/test-vectors`) without adding it to `tsconfig`.
+- `ShortcutRegion claimOnMount` makes the timeline the active context when the editor opens; tests rely on it to press `I`, `M`, arrows.
+
 ## 2026-11-07 — Prompt 09: Médias 2 : codecs pro, mezzanines, proxies, analyses — Done
 
 **Branch**: `feature/09-medias-pro-analyses`, merged into `dev` at `f755755`

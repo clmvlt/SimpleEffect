@@ -138,3 +138,18 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Gesture commit** | The single `onCommit` an editor widget emits at the end of a drag, key press or pick (live updates go through `onChange`), so one gesture is one undo step | `onCommit` |
 | **Shell** | The renderer's frame: routes (home, editor), editor layout and status bar | `apps/desktop/src/app/` |
 | **Translation key** | Dotted id of a UI string in `src/i18n/locales/fr.json` (`home.newProject`), typed for `t()` | `t('…')` |
+| **Active sequence** | The sequence the editor shows (timeline, header, later the viewer): the tab chosen in the timeline, or the project's first sequence | `useActiveSequence`, `timeline-view-store` |
+| **Viewport (timeline)** | The visible window of the timeline: zoom in pixels per second, time at the left edge, lanes width | `Viewport` |
+| **Lane** | The row of a track in the timeline, holding its items in view | `TrackLane` |
+| **Virtualisation** | Rendering only the items crossing the visible range (plus overscan), found by binary search | `visibleItems` |
+| **Playhead** | The current instant of a sequence, always on a frame start; moved by the ruler, the arrows and the timecode field | `playhead-store` |
+| **Edit point** | The start of a sequence or an edge (start or end) of an item: targets of ↑/↓ and of snapping | `editPoints` |
+| **Snapping** | The dragged playhead jumping to a nearby edit point, marker or in/out point (8 px); toggled with `S` | `snapTime`, `snapping` |
+| **In/out points** | The half-open span of a sequence marked with `I`/`O` (or Maj+drag on the ruler), the scope of AI requests; a machine preference, not project data | `InOutPoints`, `useInOutSpan` |
+| **Marquee selection** | Selecting the items a rectangle drawn from empty lane space touches | `itemsInRect` |
+| **Linked selection** | Clicking an item also selects the items of its link group (Alt selects it alone) | `linkedItems` |
+| **Overview strip (minimap)** | The thin bar under the timeline showing the whole sequence and the visible window, which scrolls and zooms the timeline | `Minimap` |
+| **Peak level** | The waveform resolution fetched for a zoom: the coarsest of 256/1024/4096 samples per peak giving a peak per pixel | `peakLevelFor` |
+| **Shortcut action** | A named command with default keys per OS, contexts and repeat policy, in one table | `SHORTCUT_ACTIONS`, `useShortcutAction` |
+| **Shortcut context** | Where a shortcut applies: `global`, or the region (timeline, viewer) last clicked or focused | `ShortcutContext`, `ShortcutRegion` |
+| **Test project** | A large generated project (500 items by default) for timeline and performance work | `pnpm generate-test-project`, `se-devtools` |
