@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  parseChooseFileOptions,
   parseChooseFilesOptions,
   parseChooseFolderOptions,
+  parseExternalUrl,
   parseRevealPath,
 } from './ipc-arguments';
 
@@ -52,5 +54,32 @@ describe('parseRevealPath', () => {
     expect(parseRevealPath('/projects/Film.seproj')).toBe('/projects/Film.seproj');
     expect(() => parseRevealPath('Film.seproj')).toThrow(TypeError);
     expect(() => parseRevealPath(42)).toThrow(TypeError);
+  });
+});
+
+describe('parseChooseFileOptions', () => {
+  it('keeps valid options and refuses others', () => {
+    expect(parseChooseFileOptions({ title: 'T', buttonLabel: 'B' })).toEqual({
+      title: 'T',
+      buttonLabel: 'B',
+    });
+    expect(() => parseChooseFileOptions({ title: 'T' })).toThrow(TypeError);
+  });
+});
+
+describe('parseExternalUrl', () => {
+  it('opens https pages only', () => {
+    expect(parseExternalUrl('https://code.claude.com/docs/en/setup')).toBe(
+      'https://code.claude.com/docs/en/setup',
+    );
+    for (const url of [
+      'http://example.com',
+      'file:///etc/passwd',
+      'https://u:p@x.com',
+      'nope',
+      3,
+    ]) {
+      expect(() => parseExternalUrl(url)).toThrow(TypeError);
+    }
   });
 });

@@ -6,6 +6,7 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
 import {
   IPC_CHANNELS,
+  type ChooseFileOptions,
   type ChooseFilesOptions,
   type ChooseFolderOptions,
   type CoreConnection,
@@ -19,6 +20,10 @@ const bridge: SimpleEffectBridge = {
     ipcRenderer.invoke(IPC_CHANNELS.chooseFolder, options) as Promise<string | null>,
   chooseFiles: (options: ChooseFilesOptions) =>
     ipcRenderer.invoke(IPC_CHANNELS.chooseFiles, options) as Promise<string[]>,
+  chooseFile: (options: ChooseFileOptions) =>
+    ipcRenderer.invoke(IPC_CHANNELS.chooseFile, options) as Promise<string | null>,
+  openExternal: (url: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.openExternal, url) as Promise<void>,
   showInFolder: (path: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.showInFolder, path) as Promise<void>,
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
