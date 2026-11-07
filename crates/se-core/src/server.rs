@@ -51,6 +51,7 @@ pub async fn run(
         paths,
         projects: Arc::clone(&services.projects),
         media: Arc::clone(&services.media),
+        tasks: Arc::clone(&services.tasks),
         fonts: Arc::clone(&services.fonts),
     });
     let state = RpcState::new(router, events.clone(), stopping.clone());

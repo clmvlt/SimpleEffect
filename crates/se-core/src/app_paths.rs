@@ -21,6 +21,9 @@ const LOGS_DIR_NAME: &str = "logs";
 /// File name of the app library (recent projects, settings) inside the app data folder.
 const LIBRARY_FILE_NAME: &str = "library.db";
 
+/// Folder of the working folders of AI agent runs, inside the app data folder.
+const AGENT_WORKDIRS_DIR_NAME: &str = "agent-workdirs";
+
 /// Folder proposed for new projects, inside the user's documents folder.
 const PROJECTS_DIR_NAME: &str = "SimpleEffect";
 
@@ -58,6 +61,11 @@ impl AppPaths {
     /// The app library database: `<data_dir>/library.db`.
     pub fn library_db(&self) -> PathBuf {
         self.data_dir.join(LIBRARY_FILE_NAME)
+    }
+
+    /// The working folders of AI agent runs: `<data_dir>/agent-workdirs`.
+    pub fn agent_workdirs(&self) -> PathBuf {
+        self.data_dir.join(AGENT_WORKDIRS_DIR_NAME)
     }
 
     /// Folder proposed for new projects: `<Documents>/SimpleEffect`, or `<data_dir>/projects`
@@ -118,6 +126,10 @@ mod tests {
     fn projects_go_to_the_documents_folder_or_the_data_folder() {
         let paths = AppPaths::under(Path::new("/data"));
         assert_eq!(paths.library_db(), Path::new("/data").join("library.db"));
+        assert_eq!(
+            paths.agent_workdirs(),
+            Path::new("/data").join("agent-workdirs")
+        );
         assert_eq!(
             paths.projects_dir_in(Some(PathBuf::from("/docs"))),
             Path::new("/docs").join("SimpleEffect")

@@ -1,11 +1,12 @@
-//! Wiring of the use cases to their adapters: projects over se-store, media over se-media, both
-//! publishing to the event bus.
+//! Wiring of the use cases to their adapters: projects over se-store, media over se-media, AI
+//! tasks over se-agents, all publishing to the event bus.
 
 use std::{path::PathBuf, sync::Arc};
 
+use se_agents::{FsAgentWorkspaces, providers::claude_code::ClaudeCodeProvider};
 use se_app::{
     DEFAULT_SAVE_DELAY, JobQueue, JobQueueConfig, MediaService, MediaServiceDeps, ProjectService,
-    ProjectServiceConfig, ProjectServiceDeps,
+    ProjectServiceConfig, ProjectServiceDeps, TaskService, TaskServiceDeps,
     media_service::settings::keys::TOOLS_DIR,
     ports::{AppLibraryRepository, FontCatalog, IdGenerator},
 };
@@ -26,6 +27,8 @@ pub struct Services {
     pub projects: Arc<ProjectService>,
     /// Media (import, relink, jobs, `/media` lookups).
     pub media: Arc<MediaService>,
+    /// AI tasks, the AI provider's status and the AI settings.
+    pub tasks: Arc<TaskService>,
     /// Bundled and installed fonts (`listFonts`, `/media/fonts`).
     pub fonts: Arc<dyn FontCatalog>,
 }
@@ -45,6 +48,7 @@ pub async fn build(paths: &AppPaths, events: &EventBus) -> Result<Services, Core
         }
     };
     let media = Arc::new(media_service(tools_dir, events, library.clone()));
+    let tasks = Arc::new(task_service(paths, events, library.clone()).await);
     let deps = ProjectServiceDeps {
         repository: Arc::new(FsProjectRepository),
         library,
@@ -56,12 +60,43 @@ pub async fn build(paths: &AppPaths, events: &EventBus) -> Result<Services, Core
         default_parent_dir: paths.default_projects_dir(),
         save_delay: DEFAULT_SAVE_DELAY,
     };
-    let projects = ProjectService::new(deps, config).with_observer(media.clone());
+    let projects = ProjectService::new(deps, config)
+        .with_observer(media.clone())
+        .with_observer(tasks.clone());
     Ok(Services {
         projects: Arc::new(projects),
         media,
+        tasks,
         fonts: font_catalog(),
     })
+}
+
+/// The AI task service over Claude Code, with the stored AI settings applied and the provider
+/// checked in the background right away (so the status bar shows it without waiting).
+async fn task_service(
+    paths: &AppPaths,
+    events: &EventBus,
+    library: Arc<dyn AppLibraryRepository>,
+) -> TaskService {
+    let workspaces = FsAgentWorkspaces::new(paths.agent_workdirs());
+    workspaces.remove_leftovers().await;
+    let tasks = TaskService::new(TaskServiceDeps {
+        providers: vec![Arc::new(ClaudeCodeProvider::new())],
+        workspaces: Arc::new(workspaces),
+        library,
+        events: Arc::new(events.clone()),
+        clock: Arc::new(SystemClock),
+        ids: Arc::new(UuidV7Ids),
+    });
+    if let Err(error) = tasks.start().await {
+        tracing::warn!(%error, "reading the AI settings failed; defaults apply");
+    }
+    let warm_up = tasks.clone();
+    tokio::spawn(async move {
+        let status = warm_up.refresh_ai_status().await;
+        tracing::info!(installation = ?status.installation, auth = ?status.auth, "AI provider checked");
+    });
+    tasks
 }
 
 /// The font catalogue, reading the installed fonts in the background right away so the first
