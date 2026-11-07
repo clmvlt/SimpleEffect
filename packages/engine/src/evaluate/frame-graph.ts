@@ -8,6 +8,14 @@ export interface Size {
   readonly height: number;
 }
 
+/** A rectangle normalised in an upright picture (`(0, 0)` top-left, `(1, 1)` bottom-right). */
+export interface Crop {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 /**
  * A transform with every keyframe resolved at the evaluated time, in the domain's units
  * (ADR-0015): `position` normalised in the sequence frame, `anchor` normalised in the layer's box,
@@ -62,10 +70,13 @@ export interface VideoLayer extends LayerBase {
   /** Time in the asset whose frame is shown (`0` = its first frame). */
   readonly sourceTime: Flicks;
   /**
-   * The picture's natural box in sequence pixels: the asset's display size fitted or filled into
-   * the frame (`reframe`). It does not depend on the decoded variant, so proxies keep the framing.
+   * The picture's natural box in sequence pixels, from the asset's display size and the clip's
+   * reframe mode (`reframedPicture`): fitted into the frame, the frame itself when filling, or
+   * the natural size. It does not depend on the decoded variant, so proxies keep the framing.
    */
   readonly box: Size;
+  /** The part of the upright picture stretched over the box (fill modes); `null` = all of it. */
+  readonly crop: Crop | null;
 }
 
 /** A still image asset, fitted into the frame at scale 1. */

@@ -9,8 +9,8 @@ mod code;
 pub use code::DomainErrorCode;
 
 use crate::{
-    AnimatableProperty, AnimationPhase, AssetId, Flicks, ItemEdge, ItemId, MarkerId, SequenceId,
-    TaskId, TrackId, TransitionId, Violation,
+    AnimatableProperty, AnimationPhase, AssetId, Flicks, FrameRate, ItemEdge, ItemId, MarkerId,
+    SequenceId, TaskId, TrackId, TransitionId, Violation,
 };
 
 /// A refused change. Nothing was modified.
@@ -320,6 +320,26 @@ pub enum DomainError {
         /// What is wrong with it.
         reason: String,
     },
+    /// A frame-rate change of a sequence that already holds items.
+    #[error(
+        "sequence {sequence} already holds items placed at {current} fps, so its frame rate          cannot change to {requested} fps; keep {current} fps, or start from an empty sequence"
+    )]
+    FrameRateLocked {
+        /// The sequence.
+        sequence: SequenceId,
+        /// Its frame rate.
+        current: FrameRate,
+        /// The frame rate asked for.
+        requested: FrameRate,
+    },
+    /// The removal of the only sequence of a project.
+    #[error(
+        "sequence {sequence} is the only sequence of the project; create or duplicate another          sequence before removing it"
+    )]
+    LastSequence {
+        /// The sequence.
+        sequence: SequenceId,
+    },
     /// A transaction recorded in the changeset of another task.
     #[error("only transactions of AI task {task} can be recorded in its changeset")]
     WrongChangeset {
@@ -369,6 +389,8 @@ impl DomainError {
             Self::NothingToUndo => DomainErrorCode::NothingToUndo,
             Self::NothingToRedo => DomainErrorCode::NothingToRedo,
             Self::WrongChangeset { .. } => DomainErrorCode::WrongChangeset,
+            Self::FrameRateLocked { .. } => DomainErrorCode::FrameRateLocked,
+            Self::LastSequence { .. } => DomainErrorCode::LastSequence,
         }
     }
 }

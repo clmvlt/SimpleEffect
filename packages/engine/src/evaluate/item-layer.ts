@@ -1,8 +1,10 @@
 import type { Asset, AssetId, Flicks, Item, ItemKind, TextItem, Transform2D } from '@se/protocol';
 
 import type { Layer, Size } from './frame-graph';
-import { assetDisplaySize, imageBox, reframedBox } from './geometry';
+import { interpolateVec2, valueAt } from '../animation/interpolate';
+import { assetDisplaySize, imageBox } from './geometry';
 import { shapeLayerStyle, textLayerStyle, type GraphicContext } from './graphic-layers';
+import { CENTRE_FOCUS, reframedPicture } from './reframe';
 import { clipSourceTime, fadeFactor } from './timing';
 import { isInvisible, resolveTransform } from './transform';
 
@@ -22,6 +24,9 @@ export interface LayerContext {
   /** Extra opacity factor (a dissolve's weight); 1 when absent. */
   readonly opacity?: number;
 }
+
+/** Widest caption block in design pixels (narrower frames get 90 % of their width). */
+const CAPTION_MAX_WIDTH = 1600;
 
 /**
  * Fixed look of captions until caption styles exist: white Inter 56 px, bottom centre.
@@ -54,7 +59,7 @@ const CAPTION_LOOK: Omit<TextItem, 'content'> = {
     letterSpacing: { kind: 'static', value: 0 },
     lineHeight: 1.2,
     align: 'center',
-    maxWidth: 1600,
+    maxWidth: CAPTION_MAX_WIDTH,
     textCase: 'normal',
   },
   transform: {
@@ -68,6 +73,13 @@ const CAPTION_LOOK: Omit<TextItem, 'content'> = {
   reveal: { kind: 'static', value: 1 },
 };
 
+/** The caption look for `content`, no wider than 90 % of the frame (portrait formats). */
+function captionLook(content: string, context: LayerContext): TextItem {
+  const frameWidth = context.frame.width / context.designScale;
+  const maxWidth = Math.min(CAPTION_MAX_WIDTH, Math.floor(frameWidth * 0.9));
+  return { ...CAPTION_LOOK, content, style: { ...CAPTION_LOOK.style, maxWidth } };
+}
+
 function mediaClipLayer(
   clip: Extract<ItemKind, { kind: 'mediaClip' }>,
   context: LayerContext,
@@ -77,12 +89,25 @@ function mediaClipLayer(
   const range = context.item.timelineRange;
   const localTime = (context.time - range.start) as Flicks;
   const fade = fadeFactor(clip, range.duration, localTime) * (context.opacity ?? 1);
+  const { reframe } = clip;
+  const focus =
+    reframe.kind === 'fill' || reframe.kind === 'tracked'
+      ? valueAt(reframe.focus, localTime, interpolateVec2, CENTRE_FOCUS)
+      : CENTRE_FOCUS;
+  const picture = reframedPicture(
+    assetDisplaySize(asset),
+    context.frame,
+    reframe.kind,
+    focus,
+    context.designScale,
+  );
   return {
     kind: 'video',
     itemId: context.item.id,
     assetId: clip.assetId,
     sourceTime: clipSourceTime(clip, range, context.time),
-    box: reframedBox(assetDisplaySize(asset), context.frame, clip.reframe.kind),
+    box: picture.box,
+    crop: picture.crop,
     transform: resolveTransform(clip.transform, localTime, fade, context.designScale),
   };
 }
@@ -120,7 +145,7 @@ function layerOfKind(kind: ItemKind, context: LayerContext, localTime: Flicks): 
     case 'caption':
       return {
         itemId,
-        ...textLayerStyle({ ...CAPTION_LOOK, content: kind.text }, graphic),
+        ...textLayerStyle(captionLook(kind.text, context), graphic),
         transform: placed(CAPTION_LOOK.transform),
       };
     case 'motionTemplate':

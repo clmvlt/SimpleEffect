@@ -204,6 +204,19 @@
         "checkerboard": "Damier de transparence",
         "hud": "Statistiques de lecture"
       },
+      "reframe": {
+        "hint": "Faites glisser l’image pour choisir la partie gardée",
+        "offClip": "Placez la tête de lecture sur le clip pour le recadrer",
+        "done": "Terminer"
+      },
+      "guides": {
+        "label": "Repères et zones de sécurité",
+        "safeAreas": "Zones de sécurité",
+        "none": "Aucune",
+        "thirds": "Grille des tiers",
+        "centre": "Croix centrale",
+        "mismatch": "Zones {{platform}} prévues pour un autre format : indicatives"
+      },
       "picture": "Image de la séquence",
       "playhead": "Position de la tête de lecture",
       "format": "{{width}} × {{height}} · {{fps}} i/s",
@@ -360,6 +373,20 @@
         "fill": "Remplissage",
         "coverFrame": "Couvrir l’image"
       },
+      "reframe": {
+        "title": "Cadrage",
+        "mode": "Mode",
+        "modeLabel": "Mode de cadrage",
+        "modes": {
+          "fit": "Ajuster",
+          "fill": "Remplir",
+          "custom": "Personnalisé"
+        },
+        "tracked": "Recadrage automatique : la zone gardée suit le sujet (images clés modifiables).",
+        "custom": "Taille d’origine de l’image : cadrez-la avec la transformation.",
+        "focus": "Zone gardée",
+        "inViewer": "Recadrer dans le viewer"
+      },
       "image": {
         "title": "Image",
         "fit": "Ajustement",
@@ -510,6 +537,7 @@
           "opacity": "Opacité",
           "blur": "Flou",
           "volumeDb": "Volume",
+          "reframeFocus": "Cadrage",
           "fontSize": "Taille",
           "fillColor": "Couleur",
           "letterSpacing": "Interlettrage",
@@ -542,6 +570,11 @@
     },
     "history": {
       "createSequence": "Création de séquence",
+      "renameSequence": "Renommage de séquence",
+      "changeSequenceFormat": "Format de la séquence",
+      "duplicateSequence": "Duplication de séquence",
+      "createVersion": "Création d’une version",
+      "removeSequence": "Suppression de séquence",
       "renameProject": "Renommage du projet",
       "importMedia": "Import de médias",
       "relinkMedia": "Reliaison d’un média",
@@ -591,7 +624,67 @@
       "addText": "Ajouter un texte",
       "addShape": "Ajouter une forme",
       "addImage": "Ajouter une image",
-      "applyAnimation": "Appliquer une animation"
+      "applyAnimation": "Appliquer une animation",
+      "reframeItems": "Recadrage"
+    },
+    "sequences": {
+      "copyName": "{{name}} (copie)",
+      "versionCreated": "Version « {{name}} » créée",
+      "independent": "Elle est indépendante : les modifications de l’une ne sont pas reportées sur l’autre.",
+      "dialog": {
+        "title": {
+          "format": "Format de « {{name}} »",
+          "version": "Créer une version de « {{name}} »"
+        },
+        "description": {
+          "format": "Positions et tailles sont relatives au cadre : textes et graphiques gardent leur place dans le nouveau format.",
+          "version": "La nouvelle séquence est indépendante : les modifications de l’une ne sont pas reportées sur l’autre."
+        },
+        "name": "Nom de la version",
+        "frameRateLocked": "La séquence contient déjà des éléments : sa cadence ne peut plus changer.",
+        "invalidSize": "Largeur et hauteur doivent être des nombres pairs entre 2 et 16 384.",
+        "clips": "Cadrage des clips",
+        "policies": {
+          "fill": "Remplir le cadre (recadrer au centre)",
+          "fit": "Ajuster (image entière, avec des bandes)",
+          "keep": "Garder le cadrage de chaque clip"
+        },
+        "fitTexts": "Adapter la largeur des textes au nouveau cadre",
+        "cancel": "Annuler",
+        "confirm": {
+          "format": "Appliquer",
+          "version": "Créer la version"
+        }
+      },
+      "remove": {
+        "title": "Supprimer « {{name}} » ?",
+        "description": "La séquence et tout ce qu’elle contient sont supprimés. Vous pourrez annuler avec Ctrl+Z.",
+        "cancel": "Annuler",
+        "confirm": "Supprimer"
+      },
+      "leaving": {
+        "title_one": "{{count}} élément sort du cadre",
+        "title_other": "{{count}} éléments sortent du cadre",
+        "select": "Sélectionner",
+        "quoted": "« {{text}} »",
+        "kinds": {
+          "mediaClip": "clip",
+          "text": "texte",
+          "shape": "forme",
+          "image": "image",
+          "motionTemplate": "modèle animé",
+          "caption": "sous-titre"
+        }
+      },
+      "menu": {
+        "label": "Actions de la séquence",
+        "rename": "Renommer",
+        "format": "Format de la séquence…",
+        "version": "Créer une version…",
+        "duplicate": "Dupliquer",
+        "remove": "Supprimer…",
+        "renameField": "Nom de la séquence"
+      }
     },
     "graphics": {
       "tools": "Outils de création",
@@ -675,16 +768,6 @@
       "namePlaceholder": "Mon film",
       "location": "Emplacement",
       "chooseLocation": "Choisir…",
-      "format": "Format",
-      "customRatio": "Personnalisé",
-      "ratioWidth": "Largeur du ratio",
-      "ratioHeight": "Hauteur du ratio",
-      "resolution": "Résolution",
-      "customResolution": "Personnalisée",
-      "width": "Largeur (px)",
-      "height": "Hauteur (px)",
-      "frameRate": "Cadence",
-      "frameRateValue": "{{value}} i/s",
       "create": "Créer le projet",
       "cancel": "Annuler",
       "errors": {
@@ -744,8 +827,22 @@
       "OVERLAPPING_ITEMS": "Les éléments se chevaucheraient : déplacez ou rognez l’un d’eux, ou utilisez une autre piste.",
       "TRACK_LOCKED": "Cette piste est verrouillée : déverrouillez-la pour la modifier.",
       "TRIM_BEYOND_SOURCE": "Le média ne va pas plus loin : impossible de rallonger davantage ce clip.",
-      "INVALID_EDIT_POINT": "Ce point de montage est en dehors de l’élément."
+      "INVALID_EDIT_POINT": "Ce point de montage est en dehors de l’élément.",
+      "FRAME_RATE_LOCKED": "La séquence contient déjà des éléments : sa cadence ne peut plus changer.",
+      "LAST_SEQUENCE": "C’est la seule séquence du projet : créez-en une autre avant de la supprimer."
     }
+  },
+  "format": {
+    "ratio": "Format",
+    "customRatio": "Personnalisé",
+    "ratioWidth": "Largeur du ratio",
+    "ratioHeight": "Hauteur du ratio",
+    "resolution": "Résolution",
+    "customResolution": "Personnalisée",
+    "width": "Largeur (px)",
+    "height": "Hauteur (px)",
+    "frameRate": "Cadence",
+    "frameRateValue": "{{value}} i/s"
   },
   "common": {
     "notifications": "Notifications",

@@ -47,7 +47,7 @@ pub mod labels {
     pub const RESIZE_GAP: &str = "Resize gap";
     /// Fades or their shapes changed.
     pub const CHANGE_FADES: &str = "Change fades";
-    /// Other content of items changed (speed, reframing, text…).
+    /// Other content of items changed (speed, text…).
     pub const EDIT_ITEMS: &str = "Edit items";
     /// A clip's volume (static or keyframed) changed.
     pub const CHANGE_VOLUME: &str = "Change volume";
@@ -63,6 +63,8 @@ pub mod labels {
     pub const ADD_IMAGE: &str = "Add image";
     /// An animation preset was applied.
     pub const APPLY_ANIMATION: &str = "Apply animation";
+    /// The reframe mode or focus of clips changed (inspector « Cadrage », viewer reframing).
+    pub const REFRAME: &str = "Reframe items";
 }
 
 impl ProjectService {

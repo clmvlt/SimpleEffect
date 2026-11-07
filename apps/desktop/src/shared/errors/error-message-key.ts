@@ -43,6 +43,8 @@ export const EDIT_DETAIL_CODES = [
   'TRACK_LOCKED',
   'TRIM_BEYOND_SOURCE',
   'INVALID_EDIT_POINT',
+  'FRAME_RATE_LOCKED',
+  'LAST_SEQUENCE',
 ] as const;
 
 /** A domain code with its own message. */

@@ -8,6 +8,7 @@ import type { DecodabilityReport } from "./DecodabilityReport";
 import type { DecoderCapabilities } from "./DecoderCapabilities";
 import type { Flicks } from "./Flicks";
 import type { Format } from "./Format";
+import type { FormatAdaptation } from "./FormatAdaptation";
 import type { GenerateDerivedRequest } from "./GenerateDerivedRequest";
 import type { ImportMediaRequest } from "./ImportMediaRequest";
 import type { ItemAnimation } from "./ItemAnimation";
@@ -85,7 +86,63 @@ name: string,
 /**
  * Its format; `null` uses the project's default format.
  */
-format: Format | null, } | { "kind": "undo", 
+format: Format | null, } | { "kind": "renameSequence", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The sequence.
+ */
+sequenceId: SequenceId, 
+/**
+ * The new name (not empty).
+ */
+name: string, } | { "kind": "setSequenceFormat", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The sequence.
+ */
+sequenceId: SequenceId, 
+/**
+ * Its new format.
+ */
+format: Format, 
+/**
+ * How its items adapt.
+ */
+adaptation: FormatAdaptation, } | { "kind": "duplicateSequence", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The sequence copied.
+ */
+sequenceId: SequenceId, 
+/**
+ * Name of the copy (not empty).
+ */
+name: string, 
+/**
+ * Format of the copy; `null` keeps the source's (same frame rate once it holds items).
+ */
+format: Format | null, 
+/**
+ * How the copied items adapt to the copy's format.
+ */
+adaptation: FormatAdaptation, } | { "kind": "removeSequence", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The sequence.
+ */
+sequenceId: SequenceId, } | { "kind": "undo", 
 /**
  * The open project.
  */
@@ -300,7 +357,11 @@ projectId: ProjectId,
 /**
  * One typed patch per item (its kind must match the item's), each item once.
  */
-updates: Array<ItemUpdate>, } | { "kind": "setItemAnimation", 
+updates: Array<ItemUpdate>, 
+/**
+ * Properties set after the patches (may be omitted).
+ */
+animations?: Array<ItemAnimation>, } | { "kind": "setItemAnimation", 
 /**
  * The open project.
  */

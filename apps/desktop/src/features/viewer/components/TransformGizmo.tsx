@@ -3,6 +3,7 @@ import { useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { usePlaybackRate } from '../../../shared/playback';
+import { startReframing } from '../../../shared/reframe';
 import { useSelectedItemIds } from '../../timeline';
 import { useGizmoPointer } from '../hooks/use-gizmo-pointer';
 import {
@@ -37,7 +38,8 @@ const points = (list: readonly Vec2[], scale: number) =>
  * Transform handles over the picture: the outline of each selected layer and, for one, scale
  * handles on its corners and sides (Shift: proportional), a rotation handle above it (Shift: 15°)
  * and its anchor (drag to re-anchor without moving it). Clicking selects layers; dragging moves
- * them with snapping to the frame's centre and edges; double-clicking a text edits it in place.
+ * them with snapping to the frame's centre and edges; double-clicking a text edits it in place,
+ * double-clicking a clip that fills the frame starts reframing it.
  * Hidden while playing.
  */
 export function TransformGizmo({ controller, sequence, displayScale }: TransformGizmoProps) {
@@ -68,6 +70,8 @@ export function TransformGizmo({ controller, sequence, displayScale }: Transform
       onDoubleClick={(event) => {
         const text = pointer.textAt(event);
         if (text !== null) setEditing(text);
+        const filling = pointer.fillingClipAt(event);
+        if (filling !== null) startReframing(filling);
       }}
     >
       <svg aria-hidden className="pointer-events-none absolute inset-0 size-full overflow-visible">

@@ -13,9 +13,10 @@
 //! version 3 (prompt 09) gave them `analysis` summaries; version 4 (prompt 14) gave tracks their
 //! `transitions` and media clips their fade shapes; version 5 (prompt 15) gave texts their full
 //! style and `reveal`, shapes an outline, images a fit and transforms a blur, and made font
-//! sizes, text colours and shape fills animatable. Journals need no migration: no transaction
-//! touched assets before version 2, every field added since has a serde default (empty, linear,
-//! off), and `Animatable` reads the bare values of properties that became animatable.
+//! sizes, text colours and shape fills animatable; version 6 (prompt 16) gave media clips that
+//! fill the frame a `focus`. Journals need no migration: no transaction touched assets before
+//! version 2, every field added since has a serde default (empty, linear, off, centred), and
+//! `Animatable` reads the bare values of properties that became animatable.
 
 use serde_json::{Map, Value, json};
 
@@ -29,6 +30,7 @@ pub const MIGRATIONS: &[DocumentMigration] = &[
     migrate_v2_to_v3,
     migrate_v3_to_v4,
     migrate_v4_to_v5,
+    migrate_v5_to_v6,
 ];
 
 /// Version 1 → 2: every asset gets `fingerprint: null` and its single decodability becomes one
@@ -121,6 +123,32 @@ fn migrate_v4_to_v5(mut document: Value) -> Result<Value, String> {
             }
             Some("shape") => make_static(kind, "fill"),
             _ => {}
+        }
+    }
+    Ok(document)
+}
+
+/// Version 5 → 6: media clips that fill the frame get a static focus on the picture's centre
+/// (what version 5 showed).
+fn migrate_v5_to_v6(mut document: Value) -> Result<Value, String> {
+    let Some(sequences) = document.get_mut("sequences").and_then(Value::as_array_mut) else {
+        return Err("`sequences` is missing or not a list".to_owned());
+    };
+    let reframes = sequences
+        .iter_mut()
+        .filter_map(|sequence| sequence.get_mut("tracks").and_then(Value::as_array_mut))
+        .flatten()
+        .filter_map(|track| track.get_mut("items").and_then(Value::as_array_mut))
+        .flatten()
+        .filter_map(|item| {
+            item.pointer_mut("/kind/reframe")
+                .and_then(Value::as_object_mut)
+        });
+    for reframe in reframes {
+        if reframe.get("kind").and_then(Value::as_str) == Some("fill") {
+            reframe
+                .entry("focus")
+                .or_insert_with(|| json!({ "kind": "static", "value": { "x": 0.5, "y": 0.5 } }));
         }
     }
     Ok(document)
@@ -254,6 +282,27 @@ mod tests {
     fn there_is_one_migration_per_version_after_the_first() {
         let expected = se_domain::CURRENT_SCHEMA_VERSION - 1;
         assert_eq!(MIGRATIONS.len(), usize::try_from(expected).unwrap());
+    }
+
+    #[test]
+    fn version_6_centres_the_focus_of_clips_that_fill_the_frame() {
+        let clip = |reframe: Value| json!({ "kind": { "kind": "mediaClip", "reframe": reframe } });
+        let document = json!({
+            "schemaVersion": 5,
+            "sequences": [{ "tracks": [{ "items": [
+                clip(json!({ "kind": "fill" })),
+                clip(json!({ "kind": "fit" })),
+                { "kind": { "kind": "text" } }
+            ] }] }]
+        });
+        let migrated = migrate_document(document, MIGRATIONS, 6).unwrap();
+        let items = &migrated["sequences"][0]["tracks"][0]["items"];
+        assert_eq!(
+            items[0]["kind"]["reframe"],
+            json!({ "kind": "fill", "focus": { "kind": "static", "value": { "x": 0.5, "y": 0.5 } } })
+        );
+        assert_eq!(items[1]["kind"]["reframe"], json!({ "kind": "fit" }));
+        assert_eq!(items[2], json!({ "kind": { "kind": "text" } }));
     }
 
     #[test]

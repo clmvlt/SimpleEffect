@@ -1,0 +1,23 @@
+{
+  "id": "tiktok",
+  "name": "TikTok",
+  "aspect": { "width": 9, "height": 16 },
+  "reference": { "width": 1080, "height": 1920 },
+  "source": "TikTok In-Feed safe-zone template as measured by Socialync (TikTok publishes no pixel figures; the action-button column was measured from the template). Margins: top 240 px, bottom 660 px, 120 px on each side.",
+  "url": "https://www.socialync.io/tools/safe-zones/tiktok",
+  "measuredOn": "2026-11-07",
+  "zones": [
+    { "id": "top", "kind": "covered", "rect": { "x": 0, "y": 0, "width": 1080, "height": 240 } },
+    {
+      "id": "bottom",
+      "kind": "covered",
+      "rect": { "x": 0, "y": 1260, "width": 1080, "height": 660 }
+    },
+    { "id": "left", "kind": "covered", "rect": { "x": 0, "y": 240, "width": 120, "height": 1020 } },
+    {
+      "id": "right",
+      "kind": "covered",
+      "rect": { "x": 960, "y": 240, "width": 120, "height": 1020 }
+    }
+  ]
+}

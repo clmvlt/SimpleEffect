@@ -1,4 +1,4 @@
-import type { Flicks } from '@se/protocol';
+import type { Flicks, Reframe } from '@se/protocol';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -180,14 +180,45 @@ describe('evaluate: properties and boxes', () => {
     expect(layer.transform.position).toEqual({ x: 0.5, y: 0.5 });
   });
 
-  it('fits or fills the display size into the frame', () => {
-    const fit = item(0 as Flicks, seconds(1), clip(video.id, { reframe: 'fit' }));
-    const fill = item(0 as Flicks, seconds(1), clip(video.id, { reframe: 'fill' }));
-    const vertical = (entry: typeof fit) =>
-      videoLayer(evaluate(sequence(1080, 1920, [videoTrack([entry])]), assets, 0 as Flicks).layers)
-        .box;
-    expect(vertical(fit)).toEqual({ width: 1080, height: 607.5 });
-    expect(vertical(fill)).toEqual({ width: 3413.333333333333, height: 1920 });
+  it('fits, fills (cropped around the focus) or shows the natural size', () => {
+    const vertical = (reframe: Reframe | 'fit' | 'fill' | 'custom') =>
+      videoLayer(
+        evaluate(
+          sequence(1080, 1920, [
+            videoTrack([item(0 as Flicks, seconds(1), clip(video.id, { reframe }))]),
+          ]),
+          assets,
+          0 as Flicks,
+        ).layers,
+      );
+    expect(vertical('fit')).toMatchObject({ box: { width: 1080, height: 607.5 }, crop: null });
+    const fill = vertical('fill');
+    expect(fill.box).toEqual({ width: 1080, height: 1920 });
+    expect(fill.crop?.width).toBeCloseTo(0.3164, 4);
+    expect(fill.crop?.x).toBeCloseTo((1 - 0.3164) / 2, 4);
+    expect(vertical('custom')).toMatchObject({ box: { width: 1920, height: 1080 }, crop: null });
+  });
+
+  it('animates the focus of a filled clip with its keyframes', () => {
+    const focus = {
+      kind: 'keyframed' as const,
+      keyframes: [
+        { time: 0 as Flicks, value: { x: 0, y: 0.5 }, easing: { kind: 'linear' as const } },
+        { time: seconds(1), value: { x: 1, y: 0.5 }, easing: { kind: 'linear' as const } },
+      ],
+    };
+    const moving = item(
+      0 as Flicks,
+      seconds(2),
+      clip(video.id, { reframe: { kind: 'fill', focus } }),
+    );
+    const cropAt = (time: number) =>
+      videoLayer(
+        evaluate(sequence(1080, 1920, [videoTrack([moving])]), assets, seconds(time)).layers,
+      ).crop;
+    expect(cropAt(0)?.x).toBe(0);
+    expect(cropAt(0.5)?.x).toBeCloseTo(0.5 - 0.3164 / 2, 4);
+    expect(cropAt(1.5)?.x).toBeCloseTo(1 - 0.3164, 4);
   });
 
   it('turns the display size of rotated footage upright', () => {

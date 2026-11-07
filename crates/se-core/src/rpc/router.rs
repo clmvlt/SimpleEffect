@@ -88,6 +88,45 @@ impl RpcRouter {
                 name,
                 format,
             } => editing::create_sequence(context, *project_id, name, *format).await,
+            Command::RenameSequence {
+                project_id,
+                sequence_id,
+                name,
+            } => editing::rename_sequence(context, *project_id, *sequence_id, name).await,
+            Command::SetSequenceFormat {
+                project_id,
+                sequence_id,
+                format,
+                adaptation,
+            } => {
+                editing::set_sequence_format(
+                    context,
+                    *project_id,
+                    *sequence_id,
+                    *format,
+                    *adaptation,
+                )
+                .await
+            }
+            Command::DuplicateSequence {
+                project_id,
+                sequence_id,
+                name,
+                format,
+                adaptation,
+            } => {
+                let copy = editing::SequenceCopy {
+                    sequence_id: *sequence_id,
+                    name,
+                    format: *format,
+                    adaptation: *adaptation,
+                };
+                editing::duplicate_sequence(context, *project_id, copy).await
+            }
+            Command::RemoveSequence {
+                project_id,
+                sequence_id,
+            } => editing::remove_sequence(context, *project_id, *sequence_id).await,
             Command::Undo { project_id } => editing::undo(context, *project_id).await,
             Command::Redo { project_id } => editing::redo(context, *project_id).await,
             Command::AddTrack {
@@ -203,7 +242,11 @@ impl RpcRouter {
             Command::UpdateItems {
                 project_id,
                 updates,
-            } => sound::update_items(context, *project_id, updates).await,
+                animations,
+            } => {
+                let animations = animations.as_deref().unwrap_or_default();
+                sound::update_items(context, *project_id, updates, animations).await
+            }
             Command::SetItemAnimation {
                 project_id,
                 item_id,

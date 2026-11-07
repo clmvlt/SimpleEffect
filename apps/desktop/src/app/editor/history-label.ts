@@ -2,13 +2,18 @@ import type { TFunction } from 'i18next';
 
 /**
  * Translation keys of the labels se-core gives the user transactions it builds itself
- * (`RENAME_LABEL`, `CREATE_SEQUENCE_LABEL`, `tracks::labels`, `markers::labels`, `items::labels`,
- * `transitions::labels` in `crates/se-app/src/project_service/`, `labels` in
+ * (`RENAME_LABEL`, `sequences::sequence_labels`, `tracks::labels`, `markers::labels`,
+ * `items::labels`, `transitions::labels` in `crates/se-app/src/project_service/`, `labels` in
  * `crates/se-app/src/media_service.rs`). Keep
  * both sides in step. Other labels (from AI agents, later from the UI) are shown as they are.
  */
 const CORE_LABEL_KEYS = {
   'Create sequence': 'editor.history.createSequence',
+  'Rename sequence': 'editor.history.renameSequence',
+  'Change sequence format': 'editor.history.changeSequenceFormat',
+  'Duplicate sequence': 'editor.history.duplicateSequence',
+  'Create version': 'editor.history.createVersion',
+  'Remove sequence': 'editor.history.removeSequence',
   'Rename project': 'editor.history.renameProject',
   'Import media': 'editor.history.importMedia',
   'Relink media': 'editor.history.relinkMedia',
@@ -56,6 +61,7 @@ const CORE_LABEL_KEYS = {
   'Add shape': 'editor.history.addShape',
   'Add image': 'editor.history.addImage',
   'Apply animation': 'editor.history.applyAnimation',
+  'Reframe items': 'editor.history.reframeItems',
   'Add transitions': 'editor.history.addTransitions',
   'Change transition': 'editor.history.changeTransition',
   'Remove transitions': 'editor.history.removeTransitions',

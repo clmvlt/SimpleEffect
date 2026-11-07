@@ -11,7 +11,10 @@ use crate::ids::ProjectId;
 ///
 /// Version 2 (prompt 08): assets carry a content fingerprint and a decodability per stream.
 /// Version 3 (prompt 09): assets carry the summaries of their analyses (`analysis`).
-pub const CURRENT_SCHEMA_VERSION: u32 = 5;
+/// Version 4 (prompt 14): tracks carry transitions, media clips fade shapes.
+/// Version 5 (prompt 15): full text styles, outlines, image fits, blur, animatable colours.
+/// Version 6 (prompt 16): media clips that fill the frame carry a focus (`reframe.focus`).
+pub const CURRENT_SCHEMA_VERSION: u32 = 6;
 
 /// The whole editable state of a project, serialized as `project.json` (ADR-0006).
 ///

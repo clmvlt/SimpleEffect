@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ResolvedTransform } from '../evaluate/frame-graph';
-import { layerPlacement, outputScale, pictureFit } from './layout';
+import { codedCrop, layerPlacement, outputScale, pictureFit } from './layout';
 
 const frame = { width: 1920, height: 1080 };
 
@@ -70,5 +70,25 @@ describe('pictureFit', () => {
 describe('outputScale', () => {
   it('maps sequence pixels onto the output on each axis', () => {
     expect(outputScale(frame, { width: 960, height: 540 })).toEqual({ x: 0.5, y: 0.5 });
+  });
+});
+
+describe('codedCrop', () => {
+  const leftHalf = { x: 0, y: 0, width: 0.5, height: 1 };
+
+  it('is the crop itself for upright pixels', () => {
+    expect(codedCrop(leftHalf, 0, false)).toEqual(leftHalf);
+  });
+
+  it('follows the display rotation back to the decoded pixels', () => {
+    // Turned a quarter clockwise, the bottom of the decoded pixels becomes the left side.
+    expect(codedCrop(leftHalf, 90, false)).toEqual({ x: 0, y: 0.5, width: 1, height: 0.5 });
+    expect(codedCrop(leftHalf, 180, false)).toEqual({ x: 0.5, y: 0, width: 0.5, height: 1 });
+    expect(codedCrop(leftHalf, 270, false)).toEqual({ x: 0, y: 0, width: 1, height: 0.5 });
+  });
+
+  it('undoes the mirror before the rotation', () => {
+    expect(codedCrop(leftHalf, 0, true)).toEqual({ x: 0.5, y: 0, width: 0.5, height: 1 });
+    expect(codedCrop(leftHalf, 90, true)).toEqual({ x: 0, y: 0, width: 1, height: 0.5 });
   });
 });

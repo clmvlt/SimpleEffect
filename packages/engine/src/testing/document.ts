@@ -12,6 +12,7 @@ import type {
   FrameRate,
   ImageFit,
   ItemKind,
+  Reframe,
   ShapeItem,
   Stroke,
   TextItem,
@@ -138,13 +139,21 @@ export function item(start: Flicks, duration: Flicks, kind: ItemKind): Evaluable
   return { id: testId(), timelineRange: { start, duration }, kind };
 }
 
+/** A reframe mode: a name (fill centred) or the domain value. */
+function reframeOf(reframe: Reframe | 'fit' | 'fill' | 'custom'): Reframe {
+  if (typeof reframe !== 'string') return reframe;
+  return reframe === 'fill'
+    ? { kind: 'fill', focus: still({ x: 0.5, y: 0.5 }) }
+    : { kind: reframe };
+}
+
 /** A media clip of `assetId` starting at `sourceStart` in the asset. */
 export function clip(
   assetId: AssetId,
   options: {
     readonly sourceStart?: Flicks;
     readonly speed?: number;
-    readonly reframe?: 'fit' | 'fill';
+    readonly reframe?: Reframe | 'fit' | 'fill' | 'custom';
     readonly fadeIn?: Flicks;
     readonly fadeOut?: Flicks;
     readonly fadeInShape?: FadeShape;
@@ -164,7 +173,7 @@ export function clip(
     fadeOut: options.fadeOut ?? (0 as Flicks),
     fadeInShape: options.fadeInShape ?? 'linear',
     fadeOutShape: options.fadeOutShape ?? 'linear',
-    reframe: { kind: options.reframe ?? 'fit' },
+    reframe: reframeOf(options.reframe ?? 'fit'),
   };
 }
 

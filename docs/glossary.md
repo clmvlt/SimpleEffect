@@ -79,11 +79,18 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Animatable** | A property that is either static or keyframed | `Animatable<T>` |
 | **Easing** | Interpolation curve between keyframes | `Easing` |
 | **Animation preset** | Named, reusable set of keyframes (fade in, slide, pop, typewriter…) | `AnimationPreset` |
-| **Reframe** | How a clip fits a sequence format (fit, fill, custom crop/position, keyframed tracking) | `Reframe` |
+| **Reframe** | How a clip's picture fits the sequence frame before its transform: `fit` (whole picture, bands), `fill` (cropped to the frame around a focus), `custom` (natural size, one picture pixel per design pixel, framed by the transform), `tracked` (a fill whose focus follows the subject, prompt 26) | `Reframe`, `reframedPicture` |
+| **Reframe focus** | The point of a clip's picture (normalised in it) a fill keeps at the frame's centre as far as the picture allows; animatable, independent of the frame's aspect | `AnimatableProperty::ReframeFocus`, `fillCrop` |
+| **Crop (picture)** | The part of an upright picture a filling clip shows, normalised in it; the compositor maps it to the decoded pixels | `Crop`, `VideoLayer.crop`, `codedCrop` |
+| **Format adaptation** | How items follow a sequence into another format: the clips' reframe policy (keep, fit, fill) and narrowing texts wider than 90 % of the new frame | `FormatAdaptation`, `ClipReframePolicy`, `adapted_patch` |
+| **Version (sequence)** | An independent copy of a sequence in another format (« Créer une version… »), with fresh ids and adapted items; later edits of one never reach the other | `sequence_version`, `duplicateSequence` |
+| **Out-of-frame warning** | After a format change or a version, the items that left the frame although they were inside before, with « Sélectionner » | `itemsLeavingFrame` |
+| **Reframing mode** | The viewer state where dragging moves a filling clip's picture under the frame (its whole picture outlined, its thumbnail dimmed around) | `reframeModeStore`, `ReframeOverlay` |
 | **Transform** | Position, scale, rotation, anchor and opacity of a visual item, each animatable | `Transform2D` |
 | **Normalised position** | A point in the sequence frame where `(0, 0)` is the top-left and `(1, 1)` the bottom-right corner, whatever the format | `Vec2` |
 | **Design pixel** | Size unit: a pixel of a frame whose shorter side is 1080, so 1 design px = 1 px in 1080-class formats, 2 px in 4K (ADR-0015) | `DesignPixels` |
-| **Safe area** | Platform UI zones to keep clear (TikTok, Reels, Shorts, YouTube) | `SafeAreaPreset` |
+| **Safe area** | Zones a platform's interface covers (TikTok, Instagram Reels, YouTube Shorts) or broadcast title/action safe areas (YouTube 16:9); data with source and date, drawn by the viewer per sequence, never exported | `@se/engine/safe-areas`, `SafeAreaPlatform`, `FrameGuides` |
+| **Frame guides** | What the viewer can draw over the picture: a platform's safe areas, a rule-of-thirds grid, a centre cross (machine preferences per sequence) | `ViewerGuides`, `GuidesMenu` |
 | **Schema version** | Version of the `project.json` format a document was written with | `schema_version`, `CURRENT_SCHEMA_VERSION` |
 | **Violation** | A broken document invariant found by validation, with a stable code, a path and a message | `Violation`, `ViolationCode` |
 | **Operation** | One intent-level edit of the document, applied by the pure `apply`, with exact inverse operations | `Operation`, `apply` |
@@ -133,7 +140,7 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Agent instructions** | Provider-agnostic markdown guidance composed into the agent's system prompt | `agent-instructions/` |
 | **Frame graph** | Everything visible in a sequence at one instant: layers bottom first, transforms resolved, sizes in sequence pixels; the pure output of `evaluate` | `FrameGraph` |
 | **Layer** | One drawable item in a frame graph: `video`, `image`, `shape` or `text` (captions draw as text until prompt 23) | `Layer` |
-| **Natural box** | The box a picture fills at scale 1: the asset's upright display size fitted or filled into the frame (images always fit); independent of the decoded variant | `VideoLayer.box`, `reframedBox` |
+| **Natural box** | The box a picture fills at scale 1: the asset's upright display size fitted into the frame, the frame itself for a filling clip (which shows a crop), or the natural size in design pixels (`custom` clips, `natural` images); independent of the decoded variant | `VideoLayer.box`, `reframedPicture` |
 | **Media variant** | The file of an asset the engine decodes: original, mezzanine or proxy | `MediaVariant`, `chooseVariant` |
 | **Media locator** | Gives the engine the URL of an asset's variant (se-core's `/media`, with the token and a content version) | `MediaLocator`, `createMediaLocator` |
 | **Decoder pool** | Owns the engine's decoders (one per asset and variant) and every decoded picture, with an LRU cache and cancellation of obsolete requests | `DecoderPool` |

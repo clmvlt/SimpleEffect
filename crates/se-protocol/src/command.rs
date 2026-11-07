@@ -1,9 +1,9 @@
 //! Commands a client asks `se-core` to execute.
 
 use se_domain::{
-    AnimationPhase, AssetId, Flicks, Format, ItemId, JobId, MarkerColor, MarkerId, MarkerPatch,
-    ProjectId, PropertyAnimation, SequenceId, TrackId, TrackKind, TrackPatch, TransitionId,
-    TransitionPatch,
+    AnimationPhase, AssetId, Flicks, Format, FormatAdaptation, ItemId, JobId, MarkerColor,
+    MarkerId, MarkerPatch, ProjectId, PropertyAnimation, SequenceId, TrackId, TrackKind,
+    TrackPatch, TransitionId, TransitionPatch,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -89,6 +89,55 @@ pub enum Command {
         name: String,
         /// Its format; `null` uses the project's default format.
         format: Option<Format>,
+    },
+    /// Renames a sequence (one undo step). Answered by [`crate::CommandResult::RenameSequence`].
+    RenameSequence {
+        /// The open project.
+        project_id: ProjectId,
+        /// The sequence.
+        sequence_id: SequenceId,
+        /// The new name (not empty).
+        name: String,
+    },
+    /// Gives a sequence another format and adapts its items (one undo step): positions are
+    /// normalised and sizes design pixels, so texts and graphics keep their relative places;
+    /// `adaptation` sets the reframe mode of video clips and may narrow texts. Items on locked
+    /// tracks stay. The frame rate cannot change once the sequence holds items
+    /// (`FRAME_RATE_LOCKED`). Answered by [`crate::CommandResult::SetSequenceFormat`].
+    SetSequenceFormat {
+        /// The open project.
+        project_id: ProjectId,
+        /// The sequence.
+        sequence_id: SequenceId,
+        /// Its new format.
+        format: Format,
+        /// How its items adapt.
+        adaptation: FormatAdaptation,
+    },
+    /// Copies a sequence into a new, independent sequence placed after it (one undo step): in
+    /// the same format (`format: null`) or as a version in another format, its items adapted as
+    /// `adaptation` says. Later edits of one never reach the other. Answered by
+    /// [`crate::CommandResult::DuplicateSequence`].
+    DuplicateSequence {
+        /// The open project.
+        project_id: ProjectId,
+        /// The sequence copied.
+        sequence_id: SequenceId,
+        /// Name of the copy (not empty).
+        name: String,
+        /// Format of the copy; `null` keeps the source's (same frame rate once it holds items).
+        format: Option<Format>,
+        /// How the copied items adapt to the copy's format.
+        adaptation: FormatAdaptation,
+    },
+    /// Removes a sequence and everything in it (one undo step); refused for the project's only
+    /// sequence (`LAST_SEQUENCE`) or with a locked track. Answered by
+    /// [`crate::CommandResult::RemoveSequence`].
+    RemoveSequence {
+        /// The open project.
+        project_id: ProjectId,
+        /// The sequence.
+        sequence_id: SequenceId,
     },
     /// Undoes the latest user transaction of an open project. Answered by
     /// [`crate::CommandResult::Undo`].
@@ -269,13 +318,19 @@ pub enum Command {
         /// Its new length (0 closes it).
         duration: Flicks,
     },
-    /// Changes the content of items (one undo step): fades and their shapes, speed, reframing…
-    /// Answered by [`crate::CommandResult::UpdateItems`].
+    /// Changes the content of items (one undo step): fades and their shapes, speed, reframe
+    /// modes… then, in the same step, the animatable properties listed in `animations` (a clip
+    /// switched to a fill mode with its focus, a scale keeping its size). Answered by
+    /// [`crate::CommandResult::UpdateItems`].
     UpdateItems {
         /// The open project.
         project_id: ProjectId,
         /// One typed patch per item (its kind must match the item's), each item once.
         updates: Vec<ItemUpdate>,
+        /// Properties set after the patches (may be omitted).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        animations: Option<Vec<ItemAnimation>>,
     },
     /// Sets the keyframes (or the static value) of one animatable property of an item, e.g. a
     /// clip's volume curve (one undo step). Answered by
@@ -462,6 +517,36 @@ mod tests {
         };
         assert_eq!(patch.label.as_deref(), Some("Intro"));
         assert_eq!(patch.time, None);
+    }
+
+    #[test]
+    fn sequence_versions_carry_their_format_and_adaptation() {
+        let json = r#"{"kind":"duplicateSequence","projectId":"00000000-0001-7000-8000-000000000000","sequenceId":"00000000-0002-7000-8000-000000000000","name":"Short","format":{"width":1080,"height":1920,"frameRate":{"numerator":25,"denominator":1},"sampleRate":48000},"adaptation":{"clipReframe":"fill","fitTextWidths":true}}"#;
+        let Command::DuplicateSequence {
+            format, adaptation, ..
+        } = serde_json::from_str(json).unwrap()
+        else {
+            panic!("duplicateSequence must parse as Command::DuplicateSequence");
+        };
+        assert_eq!(format.map(|format| format.height), Some(1920));
+        assert_eq!(
+            adaptation,
+            FormatAdaptation {
+                clip_reframe: se_domain::ClipReframePolicy::Fill,
+                fit_text_widths: true,
+            }
+        );
+    }
+
+    #[test]
+    fn item_updates_may_omit_their_animations() {
+        let json = r#"{"kind":"updateItems","projectId":"00000000-0001-7000-8000-000000000000","updates":[]}"#;
+        let command: Command = serde_json::from_str(json).unwrap();
+        let Command::UpdateItems { animations, .. } = &command else {
+            panic!("updateItems must parse as Command::UpdateItems");
+        };
+        assert_eq!(animations, &None);
+        assert_eq!(serde_json::to_string(&command).unwrap(), json);
     }
 
     #[test]

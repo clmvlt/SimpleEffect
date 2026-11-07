@@ -46,6 +46,8 @@ export interface GizmoPointer {
   readonly onPointerUp: (event: ReactPointerEvent<HTMLDivElement>) => void;
   /** The text item under a double click, if any. */
   readonly textAt: (event: ReactMouseEvent<HTMLDivElement>) => ItemId | null;
+  /** The clip filling the frame (fill or tracked mode) under the pointer, or `null`. */
+  readonly fillingClipAt: (event: ReactMouseEvent<HTMLDivElement>) => ItemId | null;
 }
 
 function actionOf(handle: string | null): GizmoAction | null {
@@ -180,6 +182,14 @@ export function useGizmoPointer(input: GizmoPointerInput): GizmoPointer {
     textAt: (event) => {
       const hit = hitTest(layers, frame, framePoint(event));
       return hit !== null && mirror?.items[hit]?.kind.kind === 'text' ? hit : null;
+    },
+    fillingClipAt: (event) => {
+      const hit = hitTest(layers, frame, framePoint(event));
+      const kind = hit === null ? undefined : mirror?.items[hit]?.kind;
+      const filling =
+        kind?.kind === 'mediaClip' &&
+        (kind.reframe.kind === 'fill' || kind.reframe.kind === 'tracked');
+      return filling ? hit : null;
     },
   };
 }

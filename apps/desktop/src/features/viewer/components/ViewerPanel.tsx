@@ -33,7 +33,7 @@ export function ViewerPanel({
     <Panel>
       <PanelHeader>
         <PanelTitle>{t('editor.viewer.title')}</PanelTitle>
-        {sequence !== null && <ViewerToolbar preferences={preferences} />}
+        {sequence !== null && <ViewerToolbar preferences={preferences} sequenceId={sequence.id} />}
       </PanelHeader>
       <PanelBody scrollable={false} className="bg-bg">
         {sequence === null ? (

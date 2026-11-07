@@ -17,4 +17,4 @@ export {
   selectProjectId,
   selectProjectName,
 } from './selectors';
-export { useProjectSelector, useProjectSync } from './use-project-store';
+export { useProjectMirrorReader, useProjectSelector, useProjectSync } from './use-project-store';

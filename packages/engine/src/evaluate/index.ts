@@ -8,6 +8,7 @@ export {
 export {
   DISSOLVE_COMPOSITING,
   isPictureLayer,
+  type Crop,
   type DissolveRole,
   type FrameGraph,
   type ImageLayer,
@@ -27,6 +28,14 @@ export {
   shapeBox,
 } from './geometry';
 export type { AssetTable } from './item-layer';
+export {
+  CENTRE_FOCUS,
+  fillCrop,
+  reframeScale,
+  reframedPicture,
+  type ReframeMode,
+  type ReframedPicture,
+} from './reframe';
 export { clipSourceTime, fadeFactor } from './timing';
 export { isInvisible, resolveTransform } from './transform';
 export {

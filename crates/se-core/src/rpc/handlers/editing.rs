@@ -1,6 +1,6 @@
 //! Commands on an open project: snapshot, sequences, undo and redo.
 
-use se_domain::{Format, ProjectId};
+use se_domain::{Format, FormatAdaptation, ProjectId, SequenceId};
 use se_protocol::{CommandResult, ProtocolError};
 
 use super::HandlerContext;
@@ -26,6 +26,79 @@ pub async fn create_sequence(
         .create_sequence(project_id, name, format)
         .await?;
     Ok(CommandResult::CreateSequence { sequence_id })
+}
+
+/// `renameSequence`.
+pub async fn rename_sequence(
+    context: &HandlerContext,
+    project_id: ProjectId,
+    sequence_id: SequenceId,
+    name: &str,
+) -> Result<CommandResult, ProtocolError> {
+    context
+        .projects
+        .rename_sequence(project_id, sequence_id, name)
+        .await?;
+    Ok(CommandResult::RenameSequence)
+}
+
+/// `setSequenceFormat`.
+pub async fn set_sequence_format(
+    context: &HandlerContext,
+    project_id: ProjectId,
+    sequence_id: SequenceId,
+    format: Format,
+    adaptation: FormatAdaptation,
+) -> Result<CommandResult, ProtocolError> {
+    context
+        .projects
+        .set_sequence_format(project_id, sequence_id, format, adaptation)
+        .await?;
+    Ok(CommandResult::SetSequenceFormat)
+}
+
+/// What a sequence copy is made of (`duplicateSequence`).
+pub struct SequenceCopy<'a> {
+    /// The sequence copied.
+    pub sequence_id: SequenceId,
+    /// Name of the copy.
+    pub name: &'a str,
+    /// Its format (`None`: the source's).
+    pub format: Option<Format>,
+    /// How its items adapt.
+    pub adaptation: FormatAdaptation,
+}
+
+/// `duplicateSequence`.
+pub async fn duplicate_sequence(
+    context: &HandlerContext,
+    project_id: ProjectId,
+    copy: SequenceCopy<'_>,
+) -> Result<CommandResult, ProtocolError> {
+    let sequence_id = context
+        .projects
+        .duplicate_sequence(
+            project_id,
+            copy.sequence_id,
+            copy.name,
+            copy.format,
+            copy.adaptation,
+        )
+        .await?;
+    Ok(CommandResult::DuplicateSequence { sequence_id })
+}
+
+/// `removeSequence`.
+pub async fn remove_sequence(
+    context: &HandlerContext,
+    project_id: ProjectId,
+    sequence_id: SequenceId,
+) -> Result<CommandResult, ProtocolError> {
+    context
+        .projects
+        .remove_sequence(project_id, sequence_id)
+        .await?;
+    Ok(CommandResult::RemoveSequence)
 }
 
 /// `undo`.

@@ -15,6 +15,7 @@
     "./fonts": "./src/fonts/index.ts",
     "./playback": "./src/playback/index.ts",
     "./preview": "./src/preview/index.ts",
+    "./safe-areas": "./src/safe-areas/index.ts",
     "./sources": "./src/sources/index.ts"
   },
   "scripts": {

@@ -37,6 +37,14 @@ macro_rules! property_animations {
                 }
             }
 
+            /// Whether the new value has keyframes (rather than a static value).
+            #[must_use]
+            pub const fn is_keyframed(&self) -> bool {
+                match self {
+                    $(Self::$variant { value } => value.is_keyframed(),)*
+                }
+            }
+
             /// The current value of `property` read through `slot`, as an animation (`None`
             /// when the slot does not hold that property's type).
             #[must_use]
@@ -72,6 +80,7 @@ property_animations! {
     Opacity: f64 => Number;
     Blur: DesignPixels => Pixels;
     VolumeDb: f64 => Number;
+    ReframeFocus: Vec2 => Point;
     FontSize: DesignPixels => Pixels;
     FillColor: Color => Color;
     LetterSpacing: DesignPixels => Pixels;

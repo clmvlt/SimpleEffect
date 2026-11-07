@@ -3,7 +3,7 @@
 //! `se_app::ProjectService`.
 
 use se_domain::{ItemId, ProjectId, PropertyAnimation, TransitionId, TransitionPatch};
-use se_protocol::{CommandResult, ItemUpdate, NewTransition, ProtocolError};
+use se_protocol::{CommandResult, ItemAnimation, ItemUpdate, NewTransition, ProtocolError};
 
 use super::HandlerContext;
 
@@ -12,8 +12,12 @@ pub async fn update_items(
     context: &HandlerContext,
     project_id: ProjectId,
     updates: &[ItemUpdate],
+    animations: &[ItemAnimation],
 ) -> Result<CommandResult, ProtocolError> {
-    context.projects.update_items(project_id, updates).await?;
+    context
+        .projects
+        .update_items(project_id, updates, animations)
+        .await?;
     Ok(CommandResult::UpdateItems)
 }
 

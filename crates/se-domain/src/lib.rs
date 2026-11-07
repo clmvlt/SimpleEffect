@@ -16,6 +16,8 @@
 //! - [`validation`]: [`validate_project`], the cross-entity invariants.
 //! - [`operation`]: [`Operation`] and [`apply`], pure and invertible edits (`docs/architecture.md`
 //!   §5.4, ADR-0005).
+//! - [`reformat`]: sequences in other formats ([`format_change`], [`sequence_version`],
+//!   [`copy_sequence`]; ADR-0026).
 //! - [`transaction`]: [`Transaction`] and [`commit`], atomic groups of operations by one
 //!   [`Actor`].
 //! - [`history`]: [`History`], the user's undo/redo stacks.
@@ -37,6 +39,7 @@ pub mod error;
 pub mod history;
 pub mod ids;
 pub mod operation;
+pub mod reformat;
 pub mod spatial;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
@@ -81,6 +84,10 @@ pub use operation::{
     ShapePatch, SplitItem, TemplatePatch, TextPatch, TouchedEntities, TrackPatch, TransitionPatch,
     TransitionSnapshot, TrimItem, UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker,
     UpdateSequence, UpdateTrack, UpdateTransition, apply, apply_all,
+};
+pub use reformat::{
+    ClipReframePolicy, FormatAdaptation, SequenceIds, TEXT_WIDTH_SHARE, adapted_patch,
+    copy_sequence, format_change, sequence_version,
 };
 pub use spatial::{DESIGN_REFERENCE_SIDE, DesignPixels, Vec2};
 pub use time::{
