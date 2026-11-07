@@ -33,6 +33,9 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Viewer gizmo: snapping to other items' edges and centres, rotation of several items around their common centre, keyboard nudges of the selection in the viewer, editing text in place with the real font (a field over the text today).
 - Presets: user presets saved from keyframes, preset previews on the selected item instead of « Aa », more presets (wipe/mask reveals need masks).
 - Fonts: per-project embedding of the installed fonts a project uses (so it renders the same elsewhere), more bundled families, font previews in the font menu.
+- Formats (ADR-0026): preview the items that would leave the frame inside the format dialog (today a warning after the change), adapt wide shapes and images too (only texts are narrowed), propagate chosen edits from a sequence to its versions (versions are independent today), a « one-click » 9:16 export flow from the 16:9 edit.
+- Reframing: crop margins and a rule-of-thirds placement for fills, reframe keyframes from the viewer while playing, a reframing mode for several clips at once, a live picture (not the sheet thumbnail) in the hidden parts.
+- Safe areas: user-defined safe areas, more platforms (Snapchat Spotlight, Facebook Reels, LinkedIn), re-measuring the published ones (interfaces change; files carry their date).
 
 ## AI
 - Additional AI providers: Gemini CLI, Codex CLI, opencode (one adapter each, see architecture §15).

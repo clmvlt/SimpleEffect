@@ -30,6 +30,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0023](0023-playback-audio-clock-and-av-sync.md) | Real-time playback: audio master clock, sequential decoding, chunked audio scheduling | Accepted |
 | [0024](0024-transitions-fades-and-sound-levels.md) | Transitions on tracks that follow their items, fade shapes, gain envelopes and isolated dissolves | Accepted |
 | [0025](0025-graphics-keyframes-presets-and-fonts.md) | Graphics, animatable styles, data-defined animation presets and the font catalogue | Accepted |
+| [0026](0026-reframing-formats-and-sequence-versions.md) | Reframing, format changes, sequence versions and safe areas | Accepted |
 
 ## Template
 
