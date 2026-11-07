@@ -1,18 +1,17 @@
 import type { AssetId, Flicks, TrackId } from '@se/protocol';
 
-import { interpolateNumber, valueAt } from '../animation/interpolate';
 import { playbackSegments, type PlaybackBounds, type Transport } from '../playback/transport';
-import { FLICKS_PER_SECOND } from '../time/flicks';
 import type { AudioChunk } from './audio-chunk';
 import { sameClips, type AudioClip } from './audio-clips';
 import {
   CHUNK_SECONDS,
   planPieces,
+  sequenceTimeOf,
   sourceSecondsAt,
   trimPiece,
   type AudioPiece,
 } from './audio-plan';
-import { dbToGain } from './mix';
+import { clipGainAt, gainEnvelope, type GainPoint } from './clip-gain';
 
 /** How far ahead of the render edge sound is scheduled (the anticipation). */
 export const SCHEDULE_AHEAD_SECONDS = 0.2;
@@ -40,8 +39,11 @@ export interface AudioVoiceRequest {
   /** The clip's speed (pitch follows). */
   readonly playbackRate: number;
   readonly trackId: TrackId;
-  /** Linear clip gain. */
-  readonly gain: number;
+  /**
+   * The clip's linear gain over the voice (`at` seconds after `when`): one point when it holds,
+   * else points to ramp linearly between (volume curve, fades, cross-fades).
+   */
+  readonly gain: readonly GainPoint[];
   /** Fade in and out length in seconds (scrub snippets), 0 for none. */
   readonly fade: number;
 }
@@ -142,9 +144,9 @@ export class AudioScheduler {
     this.lastScrub = now;
     const generation = this.generation;
     for (const clip of this.clips) {
-      if (time < clip.start || time >= clip.end) continue;
+      if (time < clip.playStart || time >= clip.playEnd) continue;
       const sourceStart = sourceSecondsAt(clip, time);
-      const limit = sourceSecondsAt(clip, clip.end);
+      const limit = sourceSecondsAt(clip, clip.playEnd);
       const piece: AudioPiece = {
         clip,
         chunkIndex: Math.floor(sourceStart / CHUNK_SECONDS),
@@ -154,7 +156,7 @@ export class AudioScheduler {
       };
       this.withChunk(piece, generation, (chunk) => {
         if (this.output.currentTime() - now > SCRUB_MAX_DELAY_SECONDS) return;
-        this.start(chunk, piece, SCRUB_FADE_SECONDS);
+        this.start(chunk, piece, SCRUB_FADE_SECONDS, [{ at: 0, gain: clipGainAt(clip, time) }]);
       });
     }
   }
@@ -178,7 +180,7 @@ export class AudioScheduler {
 
   private schedule(piece: AudioPiece): void {
     this.withChunk(piece, this.generation, (chunk) => {
-      this.start(chunk, piece, 0);
+      this.start(chunk, piece, 0, null);
     });
   }
 
@@ -198,10 +200,23 @@ export class AudioScheduler {
     });
   }
 
-  private start(chunk: AudioChunk, planned: AudioPiece, fade: number): void {
+  /** Starts the voice of `planned` (trimmed when late); `gain` defaults to the clip's envelope. */
+  private start(
+    chunk: AudioChunk,
+    planned: AudioPiece,
+    fade: number,
+    gain: readonly GainPoint[] | null,
+  ): void {
     const piece = trimPiece(planned, this.output.currentTime() + START_MARGIN_SECONDS);
     if (piece === null) return;
     const { clip } = piece;
+    const envelope =
+      gain ??
+      gainEnvelope(
+        clip,
+        sequenceTimeOf(clip, piece.sourceStart),
+        sequenceTimeOf(clip, piece.sourceEnd),
+      );
     const voice = this.output.play(
       {
         buffer: chunk.buffer,
@@ -210,7 +225,7 @@ export class AudioScheduler {
         duration: piece.sourceEnd - piece.sourceStart,
         playbackRate: clip.speed,
         trackId: clip.trackId,
-        gain: clipGain(clip, piece),
+        gain: envelope,
         fade,
       },
       () => this.voices.delete(voice),
@@ -222,8 +237,8 @@ export class AudioScheduler {
   private preload(transport: Transport, bounds: PlaybackBounds, from: number, to: number): void {
     for (const segment of playbackSegments(transport, bounds, from, to)) {
       for (const clip of this.clips) {
-        const sliceStart = Math.max(segment.timeStart, clip.start);
-        const sliceEnd = Math.min(segment.timeEnd, clip.end);
+        const sliceStart = Math.max(segment.timeStart, clip.playStart);
+        const sliceEnd = Math.min(segment.timeEnd, clip.playEnd);
         if (sliceEnd <= sliceStart) continue;
         const first = Math.floor(sourceSecondsAt(clip, sliceStart) / CHUNK_SECONDS);
         const last = Math.floor(sourceSecondsAt(clip, sliceEnd) / CHUNK_SECONDS);
@@ -234,13 +249,4 @@ export class AudioScheduler {
       }
     }
   }
-}
-
-/**
- * The clip's gain where `piece` starts. TODO(prompt-14): volume keyframes become gain ramps
- * (today a keyframed volume is sampled once per piece).
- */
-function clipGain(clip: AudioClip, piece: AudioPiece): number {
-  const local = Math.round((piece.sourceStart * FLICKS_PER_SECOND - clip.sourceStart) / clip.speed);
-  return dbToGain(valueAt(clip.volumeDb, local as Flicks, interpolateNumber, 0));
 }

@@ -7,6 +7,7 @@ import { frameStart } from '../playback/frame-pacing';
 import {
   assetTable,
   clip,
+  crossFade,
   item,
   seconds,
   sequence,
@@ -77,6 +78,26 @@ describe('prefetchSpans', () => {
       { itemId: first.id, assetId: asset.id, from: seconds(4.5), to: seconds(5) - 1 },
       { itemId: second.id, assetId: other.id, from: 0, to: seconds(1) - 2 },
     ]);
+  });
+
+  it('includes what clips joined by a dissolve play beyond their edges', () => {
+    const late = item(seconds(4), seconds(4), clip(other.id, { sourceStart: seconds(2) }));
+    const dissolve = crossFade(first, late, seconds(2));
+    const joined = sequence(1920, 1080, [videoTrack([first, late], false, [dissolve])]);
+    // At 4.5 s the outgoing clip still plays (until 5 s), past its end in its media (5 s → 5.5 s).
+    const spans = prefetchSpans(joined, seconds(4.5), 1, 0.25);
+    expect(spans).toEqual([
+      { itemId: first.id, assetId: asset.id, from: seconds(5.5), to: seconds(5.75) - 1 },
+      { itemId: late.id, assetId: other.id, from: seconds(2.5), to: seconds(2.75) - 1 },
+    ]);
+    // Before the cut, the incoming clip is needed from where the dissolve starts (3 s).
+    const early = prefetchSpans(joined, seconds(2.5), 1, 1);
+    expect(early.at(-1)).toEqual({
+      itemId: late.id,
+      assetId: other.id,
+      from: seconds(1),
+      to: seconds(1.5) - 1,
+    });
   });
 
   it('looks before the time in reverse and skips hidden tracks', () => {

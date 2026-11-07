@@ -1,5 +1,6 @@
 import type { Flicks, MediaClip, TimeRange } from '@se/protocol';
 
+import { fadeCurve } from '../animation/fade-curve';
 import { roundToFlicks } from '../time/flicks';
 
 /**
@@ -15,22 +16,24 @@ export function clipSourceTime(
 }
 
 /**
- * Picture opacity factor of a clip's fades at item-relative `localTime`: a linear ramp from 0 over
- * `fadeIn` at the start and down to 0 over `fadeOut` at the end ("from/to black" over the frame's
- * black background; translucent over lower tracks).
+ * Level of a clip's fades at item-relative `localTime` (its picture's opacity factor and its
+ * sound's gain factor): from 0 over `fadeIn` at the start and down to 0 over `fadeOut` at the end,
+ * along each fade's shape (`fadeCurve`). Times beyond the item's edges (played during a
+ * transition) take the level at the nearest edge. Overlapping fades take the lower level.
  */
 export function fadeFactor(
-  clip: Pick<MediaClip, 'fadeIn' | 'fadeOut'>,
+  clip: Pick<MediaClip, 'fadeIn' | 'fadeOut' | 'fadeInShape' | 'fadeOutShape'>,
   duration: Flicks,
-  localTime: Flicks,
+  localTime: number,
 ): number {
+  const time = Math.min(duration, Math.max(0, localTime));
   let factor = 1;
-  if (clip.fadeIn > 0 && localTime < clip.fadeIn) {
-    factor = Math.min(factor, localTime / clip.fadeIn);
+  if (clip.fadeIn > 0 && time < clip.fadeIn) {
+    factor = Math.min(factor, fadeCurve(clip.fadeInShape, time / clip.fadeIn));
   }
-  const remaining = duration - localTime;
+  const remaining = duration - time;
   if (clip.fadeOut > 0 && remaining < clip.fadeOut) {
-    factor = Math.min(factor, remaining / clip.fadeOut);
+    factor = Math.min(factor, fadeCurve(clip.fadeOutShape, remaining / clip.fadeOut));
   }
-  return Math.min(1, Math.max(0, factor));
+  return factor;
 }

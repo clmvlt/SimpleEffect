@@ -7,6 +7,7 @@ import { chooseVariant, type MediaLocator } from '../decode/media-variant';
 import type { EvaluableItem, EvaluableSequence } from '../evaluate/evaluate';
 import type { AssetTable } from '../evaluate/item-layer';
 import { clipSourceTime } from '../evaluate/timing';
+import { playExtensions, trackTransitionSpans } from '../evaluate/transitions';
 import { FLICKS_PER_SECOND } from '../time/flicks';
 
 /** Source time of a clip playback will show soon: `[from, to]` in the asset, in flicks. */
@@ -34,6 +35,7 @@ function firstEndingAfter(items: readonly EvaluableItem[], time: number): number
  * The video clips on visible tracks that playback at `rate` from `time` shows during the next
  * `windowSeconds` of real time, with the source time each will need (pure). Forward, the window
  * lies after `time` (upcoming clips included, so a cut does not stall); in reverse, before it.
+ * Clips joined by a cross dissolve play beyond their edges: those parts are included.
  */
 export function prefetchSpans(
   sequence: EvaluableSequence,
@@ -48,13 +50,18 @@ export function prefetchSpans(
   const spans: PrefetchSpan[] = [];
   for (const track of sequence.tracks) {
     if (track.kind !== 'video' || track.hidden) continue;
-    for (let index = firstEndingAfter(track.items, low); index < track.items.length; index++) {
+    const extensions = playExtensions(trackTransitionSpans(track.items, track.transitions ?? []));
+    // The item before the first one ending after `low` may play past its end (a dissolve).
+    const firstIndex = Math.max(0, firstEndingAfter(track.items, low) - 1);
+    for (let index = firstIndex; index < track.items.length; index++) {
       const item = track.items[index];
-      if (item === undefined || item.timelineRange.start >= high) break;
+      const extension = item === undefined ? undefined : extensions.get(item.id);
+      const before = extension?.before ?? 0;
+      if (item === undefined || item.timelineRange.start - before >= high) break;
       if (item.kind.kind !== 'mediaClip') continue;
       const range = item.timelineRange;
-      const first = Math.max(low, range.start);
-      const last = Math.min(high, range.start + range.duration) - 1;
+      const first = Math.max(low, range.start - before);
+      const last = Math.min(high, range.start + range.duration + (extension?.after ?? 0)) - 1;
       if (last < first) continue;
       spans.push({
         itemId: item.id,

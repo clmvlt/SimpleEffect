@@ -61,7 +61,7 @@ export class AudioGraph implements AudioOutput {
     source.buffer = request.buffer;
     source.playbackRate.value = request.playbackRate;
     const gain = this.context.createGain();
-    envelope(gain.gain, request);
+    scheduleVoiceGain(gain.gain, request);
     source.connect(gain);
     gain.connect(this.stripOf(request.trackId).gain);
     source.onended = () => {
@@ -100,16 +100,29 @@ export class AudioGraph implements AudioOutput {
   }
 }
 
-/** A voice's gain: constant, or faded in and out (scrub snippets never click). */
-function envelope(param: AudioParam, request: AudioVoiceRequest): void {
-  if (request.fade <= 0) {
-    param.value = request.gain;
+/**
+ * A voice's gain: its envelope (constant, or linear ramps between its points), or for scrub
+ * snippets its level faded in and out so they never click.
+ */
+export function scheduleVoiceGain(
+  param: Pick<AudioParam, 'value' | 'setValueAtTime' | 'linearRampToValueAtTime'>,
+  request: AudioVoiceRequest,
+): void {
+  const [first, ...rest] = request.gain;
+  const level = first?.gain ?? 1;
+  if (request.fade > 0) {
+    const end = request.when + request.duration / request.playbackRate;
+    const fade = Math.min(request.fade, (end - request.when) / 2);
+    param.setValueAtTime(0, request.when);
+    param.linearRampToValueAtTime(level, request.when + fade);
+    param.setValueAtTime(level, end - fade);
+    param.linearRampToValueAtTime(0, end);
     return;
   }
-  const end = request.when + request.duration / request.playbackRate;
-  const fade = Math.min(request.fade, (end - request.when) / 2);
-  param.setValueAtTime(0, request.when);
-  param.linearRampToValueAtTime(request.gain, request.when + fade);
-  param.setValueAtTime(request.gain, end - fade);
-  param.linearRampToValueAtTime(0, end);
+  if (rest.length === 0) {
+    param.value = level;
+    return;
+  }
+  param.setValueAtTime(level, request.when + (first?.at ?? 0));
+  for (const point of rest) param.linearRampToValueAtTime(point.gain, request.when + point.at);
 }

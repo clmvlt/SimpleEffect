@@ -31,14 +31,15 @@ export function sourceSecondsAt(clip: AudioClip, time: number): number {
 }
 
 /** Sequence time (flicks, not rounded) at which `clip` plays media second `source`. */
-function sequenceTimeOf(clip: AudioClip, source: number): number {
+export function sequenceTimeOf(clip: AudioClip, source: number): number {
   return clip.start + (source * FLICKS_PER_SECOND - clip.sourceStart) / clip.speed;
 }
 
 /**
  * The pieces of sound starting inside a scheduling window (pure, real-time forward playback).
  *
- * Each clip's sound is cut at chunk boundaries, clip edges and where playback stops or wraps;
+ * Each clip's sound (its item extended through its cross-fades, `playStart`–`playEnd`) is cut at
+ * chunk boundaries, clip edges and where playback stops or wraps;
  * a piece is scheduled in the window where it starts and plays to its end, even past the window,
  * so consecutive windows never cut sound mid-chunk. The only pieces starting before their chunk
  * are those where a run of sound begins: the first window after a (re)start, a clip's start,
@@ -54,15 +55,15 @@ export function planPieces(
   for (const segment of segments) {
     const passStarts = segment.clockStart > window.from || window.fresh;
     for (const clip of clips) {
-      const sliceStart = Math.max(segment.timeStart, clip.start);
-      const sliceEnd = Math.min(segment.timeEnd, clip.end);
+      const sliceStart = Math.max(segment.timeStart, clip.playStart);
+      const sliceEnd = Math.min(segment.timeEnd, clip.playEnd);
       if (sliceEnd <= sliceStart) continue;
       const runStarts =
-        sliceStart === clip.start || (passStarts && sliceStart === segment.timeStart);
+        sliceStart === clip.playStart || (passStarts && sliceStart === segment.timeStart);
       const slice = {
         from: sourceSecondsAt(clip, sliceStart),
         to: sourceSecondsAt(clip, sliceEnd),
-        limit: sourceSecondsAt(clip, Math.min(clip.end, window.spanEnd)),
+        limit: sourceSecondsAt(clip, Math.min(clip.playEnd, window.spanEnd)),
       };
       for (
         let chunk = Math.floor(slice.from / CHUNK_SECONDS);

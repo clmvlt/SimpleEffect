@@ -9,13 +9,18 @@ import { isInvisible, resolveTransform } from './transform';
 /** Assets of the project by id (the renderer mirror's shape). */
 export type AssetTable = Readonly<Record<AssetId, Asset>>;
 
-/** What a layer is built from: the item, the evaluated time, the frame and the assets. */
+/**
+ * What a layer is built from: the item, the evaluated time (outside the item's range when it plays
+ * through a transition), the frame and the assets.
+ */
 export interface LayerContext {
   readonly item: Pick<Item, 'id' | 'timelineRange'>;
   readonly time: Flicks;
   readonly frame: Size;
   readonly designScale: number;
   readonly assets: AssetTable;
+  /** Extra opacity factor (a dissolve's weight); 1 when absent. */
+  readonly opacity?: number;
 }
 
 /**
@@ -43,7 +48,7 @@ function mediaClipLayer(
   if (asset?.kind !== 'video') return null;
   const range = context.item.timelineRange;
   const localTime = (context.time - range.start) as Flicks;
-  const fade = fadeFactor(clip, range.duration, localTime);
+  const fade = fadeFactor(clip, range.duration, localTime) * (context.opacity ?? 1);
   return {
     kind: 'video',
     itemId: context.item.id,
@@ -57,6 +62,7 @@ function mediaClipLayer(
 /** Builds the layer of one kind of item at the context's time; `null` when it draws nothing. */
 function layerOfKind(kind: ItemKind, context: LayerContext, localTime: Flicks): Layer | null {
   const base = { itemId: context.item.id };
+  const weight = context.opacity ?? 1;
   switch (kind.kind) {
     case 'mediaClip':
       return mediaClipLayer(kind, context);
@@ -64,13 +70,13 @@ function layerOfKind(kind: ItemKind, context: LayerContext, localTime: Flicks): 
       const asset = context.assets[kind.assetId];
       if (asset?.kind !== 'image') return null;
       const box = reframedBox(assetDisplaySize(asset), context.frame, 'fit');
-      const transform = resolveTransform(kind.transform, localTime);
+      const transform = resolveTransform(kind.transform, localTime, weight);
       return { ...base, kind: 'image', assetId: kind.assetId, box, transform };
     }
     case 'shape': {
       const { box, cornerRadius } = shapeBox(kind.geometry, context.designScale);
       const fill = parseColor(kind.fill) ?? BLACK;
-      const transform = resolveTransform(kind.transform, localTime);
+      const transform = resolveTransform(kind.transform, localTime, weight);
       return {
         ...base,
         kind: 'shape',
@@ -89,7 +95,7 @@ function layerOfKind(kind: ItemKind, context: LayerContext, localTime: Flicks): 
         fontFamily: kind.style.fontFamily,
         fontSize: kind.style.fontSize * context.designScale,
         color: parseColor(kind.style.color) ?? BLACK,
-        transform: resolveTransform(kind.transform, localTime),
+        transform: resolveTransform(kind.transform, localTime, weight),
       };
     case 'caption':
       return {
@@ -99,7 +105,7 @@ function layerOfKind(kind: ItemKind, context: LayerContext, localTime: Flicks): 
         fontFamily: CAPTION_LOOK.fontFamily,
         fontSize: CAPTION_LOOK.fontSize * context.designScale,
         color: CAPTION_LOOK.color,
-        transform: resolveTransform(CAPTION_LOOK.transform, localTime),
+        transform: resolveTransform(CAPTION_LOOK.transform, localTime, weight),
       };
     case 'motionTemplate':
       // TODO(prompt-24): motion templates render through the template runtime.

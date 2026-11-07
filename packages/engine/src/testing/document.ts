@@ -12,10 +12,13 @@ import type {
   FrameRate,
   ItemKind,
   Transform2D,
+  TransitionAlignment,
+  TransitionKind,
   Vec2,
 } from '@se/protocol';
 
 import type { EvaluableItem, EvaluableSequence, EvaluableTrack } from '../evaluate/evaluate';
+import type { EvaluableTransition } from '../evaluate/transitions';
 import { FLICKS_PER_SECOND } from '../time/flicks';
 
 /** `count` seconds in flicks. */
@@ -140,9 +143,33 @@ export function image(assetId: AssetId, spec: TransformSpec = {}): ItemKind {
   return { kind: 'image', assetId, transform: transform(spec) };
 }
 
-/** A video track holding `items` (sorted by start). */
-export function videoTrack(items: readonly EvaluableItem[], hidden = false): EvaluableTrack {
-  return { kind: 'video', hidden, items };
+/** A video track holding `items` (sorted by start) and `transitions`. */
+export function videoTrack(
+  items: readonly EvaluableItem[],
+  hidden = false,
+  transitions: readonly EvaluableTransition[] = [],
+): EvaluableTrack {
+  return { kind: 'video', hidden, items, transitions };
+}
+
+/** A cross-fade of `duration` on the cut between `left` and `right`. */
+export function crossFade(
+  left: EvaluableItem,
+  right: EvaluableItem,
+  duration: Flicks,
+  options: {
+    readonly alignment?: TransitionAlignment;
+    readonly kind?: TransitionKind;
+  } = {},
+): EvaluableTransition {
+  return {
+    id: testId(),
+    kind: options.kind ?? 'crossDissolve',
+    leftItem: left.id,
+    rightItem: right.id,
+    duration,
+    alignment: options.alignment ?? 'center',
+  };
 }
 
 /** A sequence of `width` × `height` whose tracks stack bottom first. */
