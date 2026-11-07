@@ -151,7 +151,8 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
 
 ## Gotchas
 
-- **Windows:** `claude` is usually a `.cmd` shim. Resolve executables with the `which` crate (PATHEXT aware) and support a user override path. Spawn without a console window and kill the whole process tree on cancel.
+- **Windows:** `claude` is usually a `.cmd` shim. Resolve executables with the `which` crate (PATHEXT aware) and support a user override path. Spawn without a console window and kill the whole process tree on cancel. Rust refuses arguments with line breaks for `.cmd` files: prompts go on stdin, instructions in a file.
+- **Desktop apps lack the shell's PATH** (macOS gives `/usr/bin:/bin:/usr/sbin:/sbin`): user-installed CLIs are also searched in their usual install folders (`se-agents` provider `platform.rs`). On the dev Mac, `claude` may only exist as the Claude desktop app's internal copy: set its path in « Réglages → IA » or install the CLI.
 - **Flicks in JSON:** exact as JS numbers up to ±2^53 (~147 days); the domain rejects larger values.
 - **WebCodecs support differs per machine** (GPU/OS): always check `isConfigSupported()`; fall back to mezzanines.
 - **`VideoFrame` leaks GPU memory** if not closed; the decoder pool owns frame lifetimes.

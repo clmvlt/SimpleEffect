@@ -5,7 +5,7 @@ Persistence adapter: project folders, `project.json` snapshots, the project and 
 
 ## Public API
 - `FsProjectRepository` (implements `ProjectRepository`): `locate` (canonical path via `dunce`, needs a `project.json`), `create` (`<parent>/<name>.seproj`, refuses an existing folder), `duplicate` (numbered folder next to the source, `VACUUM INTO` copy of `project.db` without journal), `open` (takes the OS lock, opens `project.db`), `trash` (OS trash).
-- `FsProjectStore` (implements `ProjectStore`, returned by `open`): snapshot read (migrated) and atomic write, journal append/read/truncate, `analyses()` (an `FsAnalysisStore` sharing its connection), `close` releases the lock.
+- `FsProjectStore` (implements `ProjectStore`, returned by `open`): snapshot read (migrated) and atomic write, journal append/read/truncate, `analyses()` (an `FsAnalysisStore` sharing its connection), `tasks()` (an `FsTaskStore` sharing it too), `close` releases the lock.
 - `SqliteAppLibrary::open(path)` (implements `AppLibraryRepository`): `library.db` with `recent_projects` and `settings`.
 - `ProjectLayout` (paths inside a folder), `ProjectDatabase` (direct access, tests and diagnostics), `BACKUP_COUNT`, `PROJECT_EXTENSION`.
 
@@ -17,8 +17,9 @@ Persistence adapter: project folders, `project.json` snapshots, the project and 
 | `snapshot_file.rs` | `read_snapshot` (JSON → migrations → `Project`), `write_snapshot` (backup rotation + `write_atomically`) |
 | `document_migrations.rs` | `MIGRATIONS` (`migrate_vN_to_vN+1`; v1 → v2 gives assets `fingerprint: null` and a per-stream `decodability`; v2 → v3 gives them empty `analysis` summaries; v3 → v4 gives tracks empty `transitions` and media clips linear fade shapes; v4 → v5 wraps the bare font size and colour of texts and the fill of shapes into static animatable values; v5 → v6 gives media clips that fill the frame a static focus on the centre), `migrate_document` — the recipe for a new version is in its doc comment |
 | `sqlite.rs` | `open_database(path, migrations)`: WAL, `synchronous = FULL`, foreign keys, busy timeout, `user_version` migrations |
-| `project_db.rs`, `project_db/analyses.rs` | `project.db` schemas (v1: `op_journal`, `tasks`, `task_events`, `transcripts`, `transcript_search` FTS5, `analyses`; v2: `analyses.content_key` and `format_version`), journal queries, `save_analysis`/`load_analysis` (rows of a newer payload format are ignored) |
+| `project_db.rs`, `project_db/analyses.rs` | `project.db` schemas (v1: `op_journal`, `tasks`, `task_events`, `transcripts`, `transcript_search` FTS5, `analyses`; v2: `analyses.content_key` and `format_version`; v3: `tasks.format_version`, `task_events.run` and `format_version`), journal queries, `save_analysis`/`load_analysis` (rows of a newer payload format are ignored) |
 | `fs_analysis_store.rs` | `FsAnalysisStore`: the `AnalysisStore` port on the blocking pool |
+| `project_db/tasks.rs`, `fs_task_store.rs` | AI tasks (schema v3): `save_task` (upsert of the `Task` JSON + status kind), `load_tasks` (oldest first), `append_task_event` (numbered with `MAX(sequence) + 1` in the insert, `RETURNING`), `load_task_events`; rows of a newer `format_version` are skipped; `FsTaskStore` is the `TaskStore` port on the blocking pool |
 | `library.rs` | `SqliteAppLibrary` |
 | `project_lock.rs` | `ProjectLock`: `File::try_lock` on `.lock` |
 | `fs_repository.rs`, `fs_store.rs` | The port implementations |
@@ -35,10 +36,10 @@ Persistence adapter: project folders, `project.json` snapshots, the project and 
 - Never delete user data: trashing uses the OS trash.
 
 ## Allowed dependencies
-`se-app`, `se-domain` and storage libraries (`rusqlite` bundled, `serde_json`, `dunce`, `trash`, `tokio` for `spawn_blocking`). Never another adapter crate. See `docs/architecture.md` §3.
+`se-app`, `se-domain`, `se-protocol` (the task DTOs it stores as JSON) and storage libraries (`rusqlite` bundled, `serde_json`, `dunce`, `trash`, `tokio` for `spawn_blocking`). Never another adapter crate. See `docs/architecture.md` §3.
 
 ## How to test
 - `cargo test -p se-store`
 - Unit tests in-file (folder names, migrations runner, SQLite migrations).
-- `tests/project_folders.rs` (temporary folders): layout, atomic writes and backups, journal survives a dropped store, lock, version fixtures (`tests/fixtures/project-v1.json` to `project-v5.json` migrated, `project-v6.json` as is: the body of the domain's example-project snapshot), newer/broken documents, duplication, FTS5. `tests/app_library.rs`: recent list and settings.
+- `tests/project_folders.rs` (temporary folders): layout, atomic writes and backups, journal survives a dropped store, lock, version fixtures (`tests/fixtures/project-v1.json` to `project-v5.json` migrated, `project-v6.json` as is: the body of the domain's example-project snapshot), newer/broken documents, duplication, FTS5. `tests/app_library.rs`: recent list and settings. `tests/project_tasks.rs`: tasks and their event logs survive a dropped store and a reopening.
 - `trashing_moves_the_folder_to_the_os_trash` is `#[ignore]`d because it uses the real OS trash: `cargo test -p se-store -- --ignored`.

@@ -131,11 +131,20 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Job** | A background processing unit (thumbnails, peaks, mezzanine, transcription…) | `Job` |
 | **Analysis** | Derived data about an asset: silences, loudness, scene changes, faces | `Analysis` |
 | **Transcript** | Word-level timed text of an asset's speech | `Transcript` |
-| **AI provider** | An adapter for one AI CLI (Claude Code first) | `AgentProvider` |
-| **Task** | One user request to an AI, with a prompt, a scope and one or more runs | `Task` |
-| **Run** | One execution of an AI CLI process for a task (initial or follow-up) | `AgentRun` |
+| **AI provider** | An adapter for one AI CLI (Claude Code first), describing itself to the UI (name, command, login command, help page) | `AgentProvider`, `ProviderInfo` |
+| **Task** | One user request to an AI, with a prompt, a scope and one or more runs; its status is its latest run's (`queued → running → completed / failed / cancelled`) | `Task`, `TaskStatus` |
+| **Run** | One execution of an AI CLI process for a task: the initial run, a retry or a follow-up | `TaskRun`, `RunKind`, `AgentRun` |
+| **Task service** | The scheduler of AI tasks: one FIFO queue for every open project, a limit of runs at once (1–8, default 3), cancellation, retries, follow-ups, persistence (ADR-0027) | `TaskService` |
+| **Follow-up** | A new prompt sent to a finished task's agent, resuming its session | `followUpTask`, `RunKind::FollowUp` |
+| **Retry** | The last prompt of a failed or cancelled task run again (resuming its session once an earlier run completed) | `retryTask`, `RunKind::Retry` |
+| **Interrupted task** | A task a stopped core left queued or running, failed with `interrupted` when its project reopens | `AgentFailureKind::Interrupted` |
+| **Task event log** | The events of a task's runs, numbered and stored in `project.db`, published as `taskEventAppended` | `TaskEventRecord`, `TaskStore` |
+| **Agent event** | What an agent run reports: session started, text, tool calls, usage, then completed or failed | `AgentEvent` |
+| **Agent workspace** | The empty working folder of a task's runs, `<app data>/agent-workdirs/<task id>/` | `AgentWorkspaces`, `FsAgentWorkspaces` |
+| **AI status** | What is known about the AI provider: installed (path, version), logged in, capabilities | `AiStatus` |
+| **Replay provider** | Test provider replaying scripted agent runs with simulated delays | `ReplayProvider`, `ReplayScript` |
 | **Scope** | The part of the project a task may edit: sequence, time range, tracks | `TaskScope` |
-| **Agent session** | The AI CLI's conversation id, used to resume a task | `AgentSessionId` |
+| **Agent session** | The AI CLI's conversation id, chosen by the app for a new run (`--session-id`) and resumed by follow-ups | `Task.agentSessionId`, `AgentSession` |
 | **Tool** | An MCP function exposed to agents (read or write) | `tools::*` |
 | **Agent instructions** | Provider-agnostic markdown guidance composed into the agent's system prompt | `agent-instructions/` |
 | **Frame graph** | Everything visible in a sequence at one instant: layers bottom first, transforms resolved, sizes in sequence pixels; the pure output of `evaluate` | `FrameGraph` |
