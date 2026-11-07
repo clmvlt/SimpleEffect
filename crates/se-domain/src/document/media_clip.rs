@@ -1,4 +1,4 @@
-//! [`MediaClip`]: an item playing part of an asset, and its [`Reframe`] mode.
+//! [`MediaClip`]: an item playing part of an asset, and its [`Reframe`] mode (ADR-0026).
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -6,6 +6,7 @@ use ts_rs::TS;
 use super::{Animatable, FadeShape, Transform2D};
 use crate::{
     ids::AssetId,
+    spatial::Vec2,
     time::{Flicks, TimeRange},
 };
 
@@ -79,17 +80,75 @@ impl MediaClip {
     }
 }
 
-/// How a clip's picture fits a sequence frame of another aspect ratio.
+/// How a clip's picture fits the sequence frame before its transform applies (ADR-0026).
 ///
-/// TODO(prompt-26): automatic reframing (subject tracking) adds a variant.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize, TS)]
+/// The fill modes crop the picture to the frame's aspect around a **focus**: a point of the
+/// upright picture, normalised in it (`(0, 0)` top-left, `(1, 1)` bottom-right), kept at the
+/// frame's centre as far as the picture allows (the crop never leaves the picture). The focus
+/// does not depend on the frame's aspect, so it survives format changes and versions in other
+/// formats; it is the animatable property [`crate::AnimatableProperty::ReframeFocus`].
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, TS)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Reframe {
-    /// The whole picture is visible; empty bands fill the rest (letterbox).
+    /// The whole picture is visible, as large as the frame allows; empty bands fill the rest
+    /// (letterbox).
     #[default]
     Fit,
-    /// The picture covers the frame; what overflows is cropped.
-    Fill,
+    /// The picture covers the frame and is cropped to it around `focus` (animatable: which part
+    /// of the picture to keep over time).
+    Fill {
+        /// The point of the picture kept at the frame's centre (centre when absent, as in
+        /// documents written before schema version 6).
+        #[serde(default = "Reframe::centred")]
+        focus: Animatable<Vec2>,
+    },
+    /// The picture at its natural size, one picture pixel per design pixel (ADR-0015), framed
+    /// freely by the transform; it does not adapt to the frame.
+    Custom,
+    /// Like [`Reframe::Fill`], with a focus that follows the subject (keyframes written by
+    /// automatic reframing).
+    ///
+    /// TODO(prompt-26): subject tracking writes these keyframes (and its settings).
+    Tracked {
+        /// The point of the picture kept at the frame's centre over time.
+        focus: Animatable<Vec2>,
+    },
+}
+
+impl Reframe {
+    /// The centre of the picture, the default focus.
+    pub const CENTRE: Vec2 = Vec2::new(0.5, 0.5);
+
+    /// Fill around the centre of the picture.
+    #[must_use]
+    pub const fn fill() -> Self {
+        Self::Fill {
+            focus: Self::centred(),
+        }
+    }
+
+    /// A static focus on the centre of the picture.
+    #[must_use]
+    pub const fn centred() -> Animatable<Vec2> {
+        Animatable::constant(Self::CENTRE)
+    }
+
+    /// The focus of the fill modes, `None` for [`Reframe::Fit`] and [`Reframe::Custom`].
+    #[must_use]
+    pub const fn focus(&self) -> Option<&Animatable<Vec2>> {
+        match self {
+            Self::Fill { focus } | Self::Tracked { focus } => Some(focus),
+            Self::Fit | Self::Custom => None,
+        }
+    }
+
+    /// Mutable access to the focus of the fill modes.
+    pub const fn focus_mut(&mut self) -> Option<&mut Animatable<Vec2>> {
+        match self {
+            Self::Fill { focus } | Self::Tracked { focus } => Some(focus),
+            Self::Fit | Self::Custom => None,
+        }
+    }
 }
 
 #[cfg(test)]

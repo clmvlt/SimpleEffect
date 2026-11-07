@@ -14,10 +14,10 @@ use crate::{
     DerivedMedia, DerivedStatus, DesignPixels, Easing, EasingPreset, FadeShape, Format,
     FormatPreset, FrameRate, ImageFit, ImageItem, Item, ItemId, ItemKind, Keyframe, LinkGroupId,
     Marker, MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin, Project,
-    ProjectId, ProjectSettings, SceneSummary, Sequence, SequenceId, ShapeGeometry, ShapeItem,
-    StreamDecodability, Stroke, TaskId, TemplateItem, TemplateParamValue, TextItem, TextStyle,
-    Track, TrackKind, Transform2D, Transition, TransitionAlignment, TransitionId, TransitionKind,
-    Vec2, VideoStreamInfo,
+    ProjectId, ProjectSettings, Reframe, SceneSummary, Sequence, SequenceId, ShapeGeometry,
+    ShapeItem, StreamDecodability, Stroke, TaskId, TemplateItem, TemplateParamValue, TextItem,
+    TextStyle, Track, TrackKind, Transform2D, Transition, TransitionAlignment, TransitionId,
+    TransitionKind, Vec2, VideoStreamInfo,
 };
 
 /// Ids of [`example_project`] that tests refer to: its three assets and its template.
@@ -38,7 +38,7 @@ pub mod example_ids {
 /// group, an AI-created item, a marker, a template and a brand kit.
 ///
 /// Sequence `Main edit`, 1080p at 29.97 fps. Tracks, bottom to top: V1 (two interview clips, the
-/// second at 2× speed), V2 (a keyframed text and the logo), V3 (a template, a shape and a
+/// second at 2× speed, filling the frame around a moving focus), V2 (a keyframed text and the logo), V3 (a template, a shape and a
 /// caption), A1 (the interview's sound, linked to the first clip), A2 (music with volume
 /// automation).
 ///
@@ -224,6 +224,24 @@ fn interview_clips() -> Vec<Item> {
     let mut fast = interview_clip();
     fast.source_start = millis(20_000);
     fast.speed = 2.0;
+    fast.reframe = Reframe::Fill {
+        focus: Animatable::Keyframed {
+            keyframes: vec![
+                Keyframe {
+                    time: millis(0),
+                    value: Vec2::new(0.3, 0.5),
+                    easing: Easing::Preset {
+                        name: EasingPreset::EaseInOut,
+                    },
+                },
+                Keyframe {
+                    time: millis(400),
+                    value: Vec2::new(0.7, 0.4),
+                    easing: Easing::Linear,
+                },
+            ],
+        },
+    };
     let mut second = item(2, range_ms(10_000, 4000), ItemKind::MediaClip(fast));
     second.origin = Origin::AiTask {
         task_id: TaskId::from_test_index(1),

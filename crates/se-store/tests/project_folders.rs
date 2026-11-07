@@ -167,10 +167,21 @@ async fn load_fixture(name: &str) -> se_domain::Project {
     store.load_snapshot().await.unwrap()
 }
 
+/// The example project as the version-5 fixture holds it: the fast interview clip fits the
+/// frame (version 5 had no focus to animate).
+fn example_project_v5() -> se_domain::Project {
+    let mut project = example_project();
+    let second_clip = &mut project.sequences[0].tracks[0].items[1].kind;
+    if let se_domain::ItemKind::MediaClip(clip) = second_clip {
+        clip.reframe = se_domain::Reframe::Fit;
+    }
+    project
+}
+
 /// The example project as the version-4 fixture holds it: a plain white Inter title (regular
 /// weight, no outline, no wrapping), an image fitted into the frame.
 fn example_project_v4() -> se_domain::Project {
-    let mut project = example_project();
+    let mut project = example_project_v5();
     for item in project
         .sequences
         .iter_mut()
@@ -259,8 +270,13 @@ async fn version_4_documents_load_through_the_migrations() {
 }
 
 #[tokio::test]
-async fn version_5_documents_load_as_they_are() {
-    assert_eq!(load_fixture("project-v5.json").await, example_project());
+async fn version_5_documents_load_through_the_migrations() {
+    assert_eq!(load_fixture("project-v5.json").await, example_project_v5());
+}
+
+#[tokio::test]
+async fn version_6_documents_load_as_they_are() {
+    assert_eq!(load_fixture("project-v6.json").await, example_project());
 }
 
 #[tokio::test]

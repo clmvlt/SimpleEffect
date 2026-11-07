@@ -69,6 +69,10 @@ pub enum DomainErrorCode {
     PresetPhaseNotSupported,
     /// The embedded animation preset library is broken (a bug).
     PresetLibraryUnavailable,
+    /// The frame rate of a sequence holding items cannot change.
+    FrameRateLocked,
+    /// The only sequence of a project cannot be removed.
+    LastSequence,
 }
 
 impl fmt::Display for DomainErrorCode {

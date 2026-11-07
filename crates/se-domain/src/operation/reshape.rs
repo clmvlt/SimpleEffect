@@ -2,8 +2,8 @@
 //! its keyframes, fades and media.
 
 use crate::{
-    Animatable, DomainError, Flicks, Item, ItemId, ItemKind, Keyframe, MediaClip, TimeRange,
-    Transform2D,
+    Animatable, AnimatableProperty, DomainError, Flicks, Item, ItemId, ItemKind, Keyframe,
+    MediaClip, PropertyMut, TimeRange,
 };
 
 /// The new extent of an item.
@@ -51,9 +51,7 @@ pub(crate) fn reshape(item: &Item, reshape: &Reshape) -> Result<Item, DomainErro
     let duration = reshape.content.duration();
     let timeline_range = TimeRange::new(reshape.start, duration).map_err(|_| out_of_range())?;
     let mut kind = item.kind.clone();
-    if let Some(transform) = kind.transform_mut() {
-        retime_transform(transform, offset, duration);
-    }
+    retime_properties(&mut kind, offset, duration);
     if let ItemKind::MediaClip(clip) = &mut kind {
         reshape_clip(clip, offset, duration, reshape, item.id)?;
     }
@@ -130,7 +128,6 @@ fn reshape_clip(
     reshape: &Reshape,
     item: ItemId,
 ) -> Result<(), DomainError> {
-    clip.volume_db = retime(&clip.volume_db, offset, duration);
     clip.source_start = offset
         .checked_mul_f64(clip.speed)
         .and_then(|source_offset| clip.source_start.checked_add(source_offset))
@@ -150,12 +147,18 @@ fn reshape_clip(
     Ok(())
 }
 
-fn retime_transform(transform: &mut Transform2D, offset: Flicks, duration: Flicks) {
-    transform.position = retime(&transform.position, offset, duration);
-    transform.scale = retime(&transform.scale, offset, duration);
-    transform.rotation = retime(&transform.rotation, offset, duration);
-    transform.anchor = retime(&transform.anchor, offset, duration);
-    transform.opacity = retime(&transform.opacity, offset, duration);
+/// Every animatable property of `kind` retimed (see [`retime`]): transforms, volume, text
+/// styles, outlines, the reframe focus…
+fn retime_properties(kind: &mut ItemKind, offset: Flicks, duration: Flicks) {
+    for property in AnimatableProperty::ALL {
+        match kind.property_mut(property) {
+            Some(PropertyMut::Number(value)) => *value = retime(value, offset, duration),
+            Some(PropertyMut::Pixels(value)) => *value = retime(value, offset, duration),
+            Some(PropertyMut::Point(value)) => *value = retime(value, offset, duration),
+            Some(PropertyMut::Color(value)) => *value = retime(value, offset, duration),
+            None => {}
+        }
+    }
 }
 
 /// The keyframes of `property` seen from a content starting `offset` after the item's start and
@@ -232,6 +235,58 @@ mod tests {
         assert_eq!(
             retime(&property, Flicks::ZERO, millis(500)),
             Animatable::constant(1.0)
+        );
+    }
+
+    #[test]
+    fn every_animatable_property_follows_a_trim() {
+        let size = |points: &[(i64, f64)]| -> Animatable<crate::DesignPixels> {
+            match keyframed(points) {
+                Animatable::Keyframed { keyframes } => Animatable::Keyframed {
+                    keyframes: keyframes
+                        .into_iter()
+                        .map(|keyframe| Keyframe {
+                            value: crate::DesignPixels(keyframe.value),
+                            time: keyframe.time,
+                            easing: keyframe.easing,
+                        })
+                        .collect(),
+                },
+                Animatable::Static { value } => Animatable::constant(crate::DesignPixels(value)),
+            }
+        };
+        let mut text = crate::TextItem::new("Titre");
+        text.style.font_size = size(&[(0, 40.0), (3000, 80.0)]);
+        text.transform.blur = size(&[(0, 8.0), (3000, 0.0)]);
+        let item = crate::test_support::item(1, range_ms(0, 4000), ItemKind::Text(text));
+        let trimmed = reshape(&item, &Reshape::trim(range_ms(1000, 3000))).unwrap();
+        let ItemKind::Text(text) = trimmed.kind else {
+            unreachable!()
+        };
+        assert_eq!(text.style.font_size, size(&[(2000, 80.0)]));
+        assert_eq!(text.transform.blur, size(&[(2000, 0.0)]));
+
+        let mut clip = MediaClip::new(crate::AssetId::from_test_index(1));
+        let focus = |x: f64, at: i64| Keyframe {
+            time: millis(at),
+            value: crate::Vec2::new(x, 0.5),
+            easing: crate::Easing::Linear,
+        };
+        clip.reframe = crate::Reframe::Fill {
+            focus: Animatable::Keyframed {
+                keyframes: vec![focus(0.2, 0), focus(0.8, 3000)],
+            },
+        };
+        let item = crate::test_support::item(2, range_ms(0, 4000), ItemKind::MediaClip(clip));
+        let trimmed = reshape(&item, &Reshape::trim(range_ms(1000, 3000))).unwrap();
+        let ItemKind::MediaClip(clip) = trimmed.kind else {
+            unreachable!()
+        };
+        assert_eq!(
+            clip.reframe.focus(),
+            Some(&Animatable::Keyframed {
+                keyframes: vec![focus(0.8, 2000)]
+            })
         );
     }
 

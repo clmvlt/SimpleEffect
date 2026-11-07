@@ -32,6 +32,9 @@ pub enum AnimatableProperty {
     Blur,
     /// `volumeDb` of media clips.
     VolumeDb,
+    /// `reframe.focus` of media clips that fill the frame (a point of the picture, normalised in
+    /// it; ADR-0026).
+    ReframeFocus,
     /// `style.fontSize` of texts (design pixels).
     FontSize,
     /// `style.color` of texts, `fill` of shapes.
@@ -56,7 +59,7 @@ pub enum AnimatableProperty {
 
 impl AnimatableProperty {
     /// Every property, in inspector order.
-    pub const ALL: [Self; 17] = [
+    pub const ALL: [Self; 18] = [
         Self::Position,
         Self::Scale,
         Self::Rotation,
@@ -64,6 +67,7 @@ impl AnimatableProperty {
         Self::Opacity,
         Self::Blur,
         Self::VolumeDb,
+        Self::ReframeFocus,
         Self::FontSize,
         Self::FillColor,
         Self::LetterSpacing,
@@ -87,6 +91,7 @@ impl AnimatableProperty {
             Self::Opacity => "opacity",
             Self::Blur => "blur",
             Self::VolumeDb => "volumeDb",
+            Self::ReframeFocus => "reframeFocus",
             Self::FontSize => "fontSize",
             Self::FillColor => "fillColor",
             Self::LetterSpacing => "letterSpacing",
@@ -100,14 +105,18 @@ impl AnimatableProperty {
         }
     }
 
-    /// Values a numeric property accepts (NaN never does), and how to say so; `None` for
-    /// properties without limits (positions, scales, rotations, colours…).
+    /// Values a numeric property accepts (each component of a pair; NaN never does), and how to
+    /// say so; `None` for properties without limits (positions, scales, rotations, colours…).
     #[must_use]
     pub fn allowed_range(self) -> Option<(RangeInclusive<f64>, &'static str)> {
         const NON_NEGATIVE: RangeInclusive<f64> = 0.0..=f64::MAX;
         match self {
             Self::Opacity => Some((0.0..=1.0, "between 0 (invisible) and 1 (opaque)")),
             Self::Reveal => Some((0.0..=1.0, "between 0 (nothing shown) and 1 (all shown)")),
+            Self::ReframeFocus => Some((
+                0.0..=1.0,
+                "between 0 and 1 on each axis (a point of the picture)",
+            )),
             Self::VolumeDb => Some((
                 MediaClip::MIN_VOLUME_DB..=MediaClip::MAX_VOLUME_DB,
                 "between -96 dB and 24 dB",
@@ -143,7 +152,7 @@ pub enum PropertyRef<'a> {
     Number(&'a Animatable<f64>),
     /// A length in design pixels.
     Pixels(&'a Animatable<DesignPixels>),
-    /// A pair of numbers (position, scale, anchor, shadow offset).
+    /// A pair of numbers (position, scale, anchor, shadow offset, reframe focus).
     Point(&'a Animatable<Vec2>),
     /// A colour.
     Color(&'a Animatable<Color>),
@@ -173,17 +182,6 @@ impl PropertyRef<'_> {
             Self::Color(property) => property.is_keyframed(),
         }
     }
-
-    /// The numbers a numeric property holds (static value or keyframe values); empty for points
-    /// and colours.
-    #[must_use]
-    pub fn numbers(&self) -> Vec<f64> {
-        match self {
-            Self::Number(property) => property.values().into_iter().copied().collect(),
-            Self::Pixels(property) => property.values().into_iter().map(|size| size.0).collect(),
-            Self::Point(_) | Self::Color(_) => Vec::new(),
-        }
-    }
 }
 
 impl ItemKind {
@@ -205,6 +203,9 @@ impl ItemKind {
         }
         match (self, property) {
             (Self::MediaClip(clip), P::VolumeDb) => Some(PropertyRef::Number(&clip.volume_db)),
+            (Self::MediaClip(clip), P::ReframeFocus) => {
+                clip.reframe.focus().map(PropertyRef::Point)
+            }
             (Self::Text(text), _) => {
                 let style = &text.style;
                 Some(match property {
@@ -248,6 +249,9 @@ impl ItemKind {
         }
         match (self, property) {
             (Self::MediaClip(clip), P::VolumeDb) => Some(PropertyMut::Number(&mut clip.volume_db)),
+            (Self::MediaClip(clip), P::ReframeFocus) => {
+                clip.reframe.focus_mut().map(PropertyMut::Point)
+            }
             (Self::Text(text), _) => text_property_mut(text, property),
             (Self::Shape(shape), P::FillColor) => Some(PropertyMut::Color(&mut shape.fill)),
             (Self::Shape(shape), P::StrokeColor) => {
@@ -285,7 +289,7 @@ fn text_property_mut(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ShapeItem, ShapeKind, TextItem};
+    use crate::{AssetId, Reframe, ShapeItem, ShapeKind, TextItem};
 
     #[test]
     fn reads_and_writes_reach_the_same_property() {
@@ -294,7 +298,11 @@ mod tests {
             let read = text.property(property).is_some();
             let write = text.property_mut(property).is_some();
             assert_eq!(read, write, "{property}");
-            assert_eq!(read, property != AnimatableProperty::VolumeDb, "{property}");
+            let clip_only = matches!(
+                property,
+                AnimatableProperty::VolumeDb | AnimatableProperty::ReframeFocus
+            );
+            assert_eq!(read, !clip_only, "{property}");
         }
         let shape = ItemKind::Shape(ShapeItem::new(ShapeKind::Ellipse));
         let shape_properties: Vec<_> = AnimatableProperty::ALL
@@ -303,6 +311,28 @@ mod tests {
             .collect();
         assert_eq!(shape_properties.len(), 9);
         assert!(shape.property(AnimatableProperty::FontSize).is_none());
+    }
+
+    #[test]
+    fn only_clips_that_fill_the_frame_have_a_focus() {
+        let mut clip = MediaClip::new(AssetId::from_test_index(1));
+        let focus = AnimatableProperty::ReframeFocus;
+        for (reframe, has_focus) in [
+            (Reframe::Fit, false),
+            (Reframe::Custom, false),
+            (Reframe::fill(), true),
+            (
+                Reframe::Tracked {
+                    focus: Reframe::centred(),
+                },
+                true,
+            ),
+        ] {
+            clip.reframe = reframe;
+            let mut kind = ItemKind::MediaClip(clip.clone());
+            assert_eq!(kind.property(focus).is_some(), has_focus);
+            assert_eq!(kind.property_mut(focus).is_some(), has_focus);
+        }
     }
 
     #[test]

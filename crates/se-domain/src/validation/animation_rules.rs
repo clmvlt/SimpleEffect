@@ -45,6 +45,7 @@ fn property_path(kind: &ItemKind, property: AnimatableProperty, kind_path: &Path
         P::Opacity => &["transform", "opacity"],
         P::Blur => &["transform", "blur"],
         P::VolumeDb => &["volumeDb"],
+        P::ReframeFocus => &["reframe", "focus"],
         P::Reveal => &["reveal"],
         P::FontSize => &["style", "fontSize"],
         P::LetterSpacing => &["style", "letterSpacing"],
@@ -64,21 +65,42 @@ fn property_path(kind: &ItemKind, property: AnimatableProperty, kind_path: &Path
         .fold(kind_path.clone(), |path, field| path.field(field))
 }
 
-/// The numbers of a numeric property with the path of each (`value`, or `keyframes[i].value`).
+/// The numbers of a numeric property or of a pair's components, with the path of each
+/// (`value`, `keyframes[i].value`, `value.x`…); none for colours.
 fn value_paths(slot: PropertyRef<'_>, path: &Path) -> Vec<(Path, f64)> {
-    let numbers = slot.numbers();
-    if slot.is_keyframed() {
-        numbers
-            .into_iter()
-            .enumerate()
-            .map(|(index, value)| (path.field("keyframes").key(index).field("value"), value))
-            .collect()
-    } else {
-        numbers
-            .into_iter()
-            .map(|value| (path.field("value"), value))
-            .collect()
+    let values: Vec<Vec<(Option<&str>, f64)>> = match slot {
+        PropertyRef::Number(property) => property
+            .values()
+            .iter()
+            .map(|v| vec![(None, **v)])
+            .collect(),
+        PropertyRef::Pixels(property) => property
+            .values()
+            .iter()
+            .map(|v| vec![(None, v.0)])
+            .collect(),
+        PropertyRef::Point(property) => property
+            .values()
+            .iter()
+            .map(|v| vec![(Some("x"), v.x), (Some("y"), v.y)])
+            .collect(),
+        PropertyRef::Color(_) => Vec::new(),
+    };
+    let keyframed = slot.is_keyframed();
+    let mut paths = Vec::new();
+    for (index, components) in values.into_iter().enumerate() {
+        let value_path = if keyframed {
+            path.field("keyframes").key(index).field("value")
+        } else {
+            path.field("value")
+        };
+        for (component, value) in components {
+            let component_path =
+                component.map_or_else(|| value_path.clone(), |name| value_path.field(name));
+            paths.push((component_path, value));
+        }
     }
+    paths
 }
 
 /// Keyframes exist, have strictly increasing times within `[0, duration]` and valid easings.
@@ -281,6 +303,29 @@ mod tests {
         let violations = validate_project(&project);
         assert_eq!(codes(&project), [ViolationCode::EmptyKeyframes]);
         assert!(violations[0].path.ends_with("kind.fill.keyframes"));
+    }
+
+    #[test]
+    fn reports_reframe_focus_components_outside_the_picture() {
+        let mut project = example_project();
+        let ItemKind::MediaClip(clip) = &mut project.sequences[0].tracks[0].items[1].kind else {
+            unreachable!("the example's second V1 item is a clip")
+        };
+        let Some(Animatable::Keyframed { keyframes }) = clip.reframe.focus_mut() else {
+            unreachable!("the example's fast clip has a keyframed focus")
+        };
+        keyframes[1].value.y = 1.25;
+        let violations = validate_project(&project);
+        assert_eq!(codes(&project), [ViolationCode::ValueOutOfRange]);
+        assert!(
+            violations[0]
+                .path
+                .ends_with("kind.reframe.focus.keyframes[1].value.y")
+        );
+        assert_eq!(
+            violations[0].message,
+            "reframeFocus must be between 0 and 1 on each axis (a point of the picture), got 1.25"
+        );
     }
 
     #[test]

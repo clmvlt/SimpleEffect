@@ -12,13 +12,13 @@ use se_domain::{
     DerivedFile, DerivedStatus, Easing, FadeShape, Flicks, Format, FormatPreset, FrameRate,
     InsertGap, Item, ItemEdge, ItemId, ItemKind, ItemPatch, Keyframe, LinkGroupId, LinkItems,
     Marker, MarkerColor, MarkerId, MarkerPatch, MediaClipPatch, MoveItem, Operation, Project,
-    PropertyAnimation, RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack,
+    PropertyAnimation, Reframe, RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack,
     RemoveTransition, RenameProject, ReorderTracks, RippleDeleteRange, SceneSummary, Sequence,
     SequenceId, SequencePatch, SetKeyframes, ShapePatch, SplitItem, StreamDecodability,
     TemplateParamValue, TemplatePatch, TextPatch, TimeRange, TrackId, TrackKind, TrackPatch,
     Transition, TransitionAlignment, TransitionId, TransitionKind, TransitionPatch, TrimItem,
     UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack,
-    UpdateTransition,
+    UpdateTransition, Vec2,
     test_support::{millis, track},
 };
 
@@ -447,6 +447,7 @@ fn update(item: &Item, seed: Seed) -> Operation {
                 .choice
                 .is_multiple_of(3)
                 .then_some(FadeShape::Logarithmic),
+            reframe: seed.choice.is_multiple_of(2).then(|| reframe(seed)),
             ..MediaClipPatch::default()
         }),
         ItemKind::Shape(_) | ItemKind::Image(_) | ItemKind::MotionTemplate(_)
@@ -517,16 +518,50 @@ fn preset(project: &Project, seed: Seed) -> Option<Operation> {
     )
 }
 
+/// A reframe mode; now and then a focus outside the picture (refused by validation).
+fn reframe(seed: Seed) -> Reframe {
+    let x = f64::from(seed.choice % 11) / 10.0;
+    let focus = Animatable::constant(Vec2::new(x, 0.5));
+    match seed.choice % 5 {
+        0 => Reframe::Fit,
+        1 => Reframe::Custom,
+        2 => Reframe::Tracked { focus },
+        3 if seed.choice.is_multiple_of(7) => Reframe::Fill {
+            focus: Animatable::constant(Vec2::new(x + 1.5, 0.5)),
+        },
+        _ => Reframe::Fill { focus },
+    }
+}
+
 fn keyframes(item: &Item, seed: Seed) -> Operation {
     let duration = item.timeline_range.duration().get();
     let count = i64::from(seed.choice % 4);
-    let keyframes = (0..=count)
+    let keyframes: Vec<Keyframe<f64>> = (0..=count)
         .map(|index| Keyframe {
             time: Flicks::new(duration / (count + 1) * index).unwrap_or(Flicks::ZERO),
             value: f64::from(u8::try_from(index).unwrap_or(0)) / 4.0,
             easing: Easing::Linear,
         })
         .collect();
+    if seed.choice.is_multiple_of(5) {
+        // Refused unless the item is a clip filling the frame.
+        let focus = keyframes
+            .iter()
+            .map(|keyframe| Keyframe {
+                time: keyframe.time,
+                value: Vec2::new(keyframe.value, 1.0 - keyframe.value),
+                easing: keyframe.easing,
+            })
+            .collect();
+        return SetKeyframes {
+            item: item.id,
+            animation: PropertyAnimation::ReframeFocus {
+                value: Animatable::Keyframed { keyframes: focus },
+            },
+            expected_revision: None,
+        }
+        .into();
+    }
     let value = Animatable::Keyframed { keyframes };
     let animation = if seed.choice.is_multiple_of(7) {
         PropertyAnimation::VolumeDb { value }

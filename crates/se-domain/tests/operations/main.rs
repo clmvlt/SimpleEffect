@@ -7,6 +7,7 @@
 
 mod generators;
 mod picking;
+mod reformat;
 
 use generators::{Generator, KINDS, Seed, seed};
 use proptest::prelude::*;
@@ -15,7 +16,7 @@ use se_domain::{
     apply, commit, plan_revert, test_support::example_project, validate_project,
 };
 
-const CASES: u32 = 1000;
+pub(crate) const CASES: u32 = 1000;
 
 /// `project` with every revision set to zero, to compare contents only.
 fn without_revisions(mut project: Project) -> Project {
