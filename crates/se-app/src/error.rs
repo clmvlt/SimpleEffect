@@ -2,10 +2,10 @@
 
 use std::path::PathBuf;
 
-use se_domain::{DomainError, DomainErrorCode, ProjectId};
+use se_domain::{AssetId, AssetKind, DomainError, DomainErrorCode, JobId, ProjectId};
 use se_protocol::{ErrorCode, ProtocolError};
 
-use crate::ports::StorageError;
+use crate::ports::{MediaError, StorageError};
 
 /// A failed use case. Messages are actionable: they reach users and AI agents unchanged.
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
@@ -79,6 +79,36 @@ pub enum AppError {
         /// The project.
         project_id: ProjectId,
     },
+    /// A media port failed (file missing, unreadable, ffmpeg absent…).
+    #[error(transparent)]
+    Media(#[from] MediaError),
+    /// The open project has no such asset.
+    #[error("project {project_id} has no asset {asset_id}: refresh the media bin")]
+    AssetNotFound {
+        /// The project.
+        project_id: ProjectId,
+        /// The asset.
+        asset_id: AssetId,
+    },
+    /// A replacement file holds another kind of media than the asset it should replace.
+    #[error(
+        "{} is {found:?} media but the asset is {expected:?} media: pick a file of the same kind",
+        path.display()
+    )]
+    MediaKindMismatch {
+        /// The replacement file.
+        path: PathBuf,
+        /// Kind of the asset.
+        expected: AssetKind,
+        /// Kind of the file.
+        found: AssetKind,
+    },
+    /// No active job has this id.
+    #[error("no queued or running job {job_id}: it may have finished already")]
+    JobNotFound {
+        /// The job.
+        job_id: JobId,
+    },
     /// A bug: an invariant of the application itself was broken.
     #[error("internal error: {0}; please report it")]
     Internal(String),
@@ -101,8 +131,24 @@ impl AppError {
                 DomainErrorCode::NothingToRedo => ErrorCode::NothingToRedo,
                 _ => ErrorCode::EditRejected,
             },
+            Self::Media(error) => media_code(error),
+            Self::AssetNotFound { .. } => ErrorCode::AssetNotFound,
+            Self::MediaKindMismatch { .. } => ErrorCode::MediaKindMismatch,
+            Self::JobNotFound { .. } => ErrorCode::JobNotFound,
             Self::Internal(_) => ErrorCode::Internal,
         }
+    }
+}
+
+/// The protocol code of a media port failure (also used per file in import reports).
+#[must_use]
+pub(crate) fn media_code(error: &MediaError) -> ErrorCode {
+    match error {
+        MediaError::NotFound { .. } => ErrorCode::MediaNotFound,
+        MediaError::Unsupported { .. } => ErrorCode::MediaUnsupported,
+        MediaError::ToolsMissing { .. } => ErrorCode::MediaToolsMissing,
+        MediaError::Io { .. } => ErrorCode::StorageFailed,
+        MediaError::Failed(_) => ErrorCode::Internal,
     }
 }
 

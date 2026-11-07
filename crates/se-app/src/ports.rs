@@ -3,11 +3,15 @@
 //! [`crate::test_support`] (feature `test-support`).
 
 mod app_library;
+mod media;
 mod project_repository;
 mod runtime;
 mod storage_error;
 
 pub use app_library::{AppLibraryRepository, RecentProjectRecord};
+pub use media::{
+    MediaError, MediaFiles, MediaJobRunner, MediaJobSpec, MediaProber, ProbedMedia, ProgressSink,
+};
 pub use project_repository::{JournalEntry, ProjectRepository, ProjectStore};
 pub use runtime::{Clock, EventSink, IdGenerator};
 pub use storage_error::StorageError;
