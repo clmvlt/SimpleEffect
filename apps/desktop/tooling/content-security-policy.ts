@@ -28,8 +28,9 @@ export function buildContentSecurityPolicy({ devServer }: ContentSecurityPolicyO
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': ["'self'", 'data:', 'blob:', CORE_HTTP],
     'media-src': ["'self'", 'blob:', CORE_HTTP],
-    // The font catalogue's faces are served by the core (`/media/fonts/{id}`, ADR-0025).
-    'font-src': ["'self'", CORE_HTTP],
+    // The font catalogue's faces are served by the core (`/media/fonts/{id}`, ADR-0025); Vite
+    // inlines the smallest subsets of the UI fonts as `data:` URLs in the bundle's CSS.
+    'font-src': ["'self'", 'data:', CORE_HTTP],
     'connect-src': devServer
       ? ["'self'", CORE_WEBSOCKET, CORE_HTTP, 'ws://localhost:*']
       : [CORE_WEBSOCKET, CORE_HTTP],

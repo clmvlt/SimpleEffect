@@ -30,7 +30,7 @@ describe('buildContentSecurityPolicy', () => {
 
   it('loads fonts from the bundle and the font catalogue of the core only', () => {
     const policy = buildContentSecurityPolicy({ devServer: false });
-    expect(directive(policy, 'font-src')).toBe("'self' http://127.0.0.1:*");
+    expect(directive(policy, 'font-src')).toBe("'self' data: http://127.0.0.1:*");
   });
 
   it('relaxes only what Vite Fast Refresh needs in development', () => {
