@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-07 — Prompt 12: Moteur A : évaluation, décodage, compositing, viewer — Done
 
-**Branch**: `feature/12-moteur-rendu`, merged into `dev` at `<merge>`
+**Branch**: `feature/12-moteur-rendu`, merged into `dev` at `164e60e`
 
 **Done**
 - `@se/engine` (ADR-0022): root entry pure (`animation/`, `evaluate/`); subpaths `composite`, `decode`, `preview` load PixiJS 8.22 / Mediabunny 1.65 (`dependencies` of the engine).
