@@ -13,6 +13,7 @@ mod lifecycle;
 mod loading;
 mod markers;
 mod observer;
+mod placed_media;
 mod tracks;
 mod trims;
 
