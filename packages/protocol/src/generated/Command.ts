@@ -11,20 +11,25 @@ import type { ImportMediaRequest } from "./ImportMediaRequest";
 import type { ItemId } from "./ItemId";
 import type { ItemPlacement } from "./ItemPlacement";
 import type { ItemTrim } from "./ItemTrim";
+import type { ItemUpdate } from "./ItemUpdate";
 import type { JobId } from "./JobId";
 import type { MarkerColor } from "./MarkerColor";
 import type { MarkerId } from "./MarkerId";
 import type { MarkerPatch } from "./MarkerPatch";
 import type { MediaSettings } from "./MediaSettings";
+import type { NewTransition } from "./NewTransition";
 import type { PastedItem } from "./PastedItem";
 import type { PlaceMediaRequest } from "./PlaceMediaRequest";
 import type { PlacementMode } from "./PlacementMode";
 import type { ProjectId } from "./ProjectId";
+import type { PropertyAnimation } from "./PropertyAnimation";
 import type { RelinkAssetRequest } from "./RelinkAssetRequest";
 import type { SequenceId } from "./SequenceId";
 import type { TrackId } from "./TrackId";
 import type { TrackKind } from "./TrackKind";
 import type { TrackPatch } from "./TrackPatch";
+import type { TransitionId } from "./TransitionId";
+import type { TransitionPatch } from "./TransitionPatch";
 
 /**
  * A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -284,7 +289,55 @@ end: Flicks,
 /**
  * Its new length (0 closes it).
  */
-duration: Flicks, } | { "kind": "importMedia" } & ImportMediaRequest | { "kind": "relinkAsset" } & RelinkAssetRequest | { "kind": "removeAsset", 
+duration: Flicks, } | { "kind": "updateItems", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * One typed patch per item (its kind must match the item's), each item once.
+ */
+updates: Array<ItemUpdate>, } | { "kind": "setItemAnimation", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The item animated.
+ */
+itemId: ItemId, 
+/**
+ * The property and its new keyframes or value.
+ */
+animation: PropertyAnimation, } | { "kind": "addTransitions", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The cuts and the wanted transitions (kind from the track).
+ */
+transitions: Array<NewTransition>, } | { "kind": "updateTransition", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The transition changed.
+ */
+transitionId: TransitionId, 
+/**
+ * What changes.
+ */
+patch: TransitionPatch, } | { "kind": "removeTransitions", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The transitions removed, each once.
+ */
+transitionIds: Array<TransitionId>, } | { "kind": "importMedia" } & ImportMediaRequest | { "kind": "relinkAsset" } & RelinkAssetRequest | { "kind": "removeAsset", 
 /**
  * The open project.
  */

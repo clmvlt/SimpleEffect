@@ -85,6 +85,18 @@ impl TransitionSnapshot {
         )
     }
 
+    /// How many transitions were recorded.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    /// Whether no transition was recorded.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     /// The transitions recorded here, gone from `project`, whose items are adjacent again on
     /// their track: each as an [`AddTransition`] at (at most) its old position, shortened to
     /// what the cut allows. `renamed` maps a cut item to the new item holding its end (the right

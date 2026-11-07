@@ -15,6 +15,10 @@
 //! - `ripple`: the tracks a ripple edit shifts, opening and removing time, ripple deletes.
 //! - `new_items`: items of dropped media and copies of items.
 //!
+//! Item edits drop the transitions they break (a domain rule); [`EditPlan::finish`] puts back
+//! those whose two items touch again once the whole gesture is planned (both items of a
+//! transition moved together, a ripple trim at its cut), shortened to fit.
+//!
 //! [`PlacementMode`]: se_protocol::PlacementMode
 
 mod lookup;
@@ -30,7 +34,7 @@ pub(crate) use ripple::{concerned_tracks, open_time, remove_time, ripple_delete}
 
 pub use new_items::DEFAULT_IMAGE_DURATION;
 
-use se_domain::{Operation, Project};
+use se_domain::{ItemId, Operation, Project, TransitionSnapshot};
 
 use crate::{AppError, new_ids::NewIds};
 
@@ -47,6 +51,8 @@ pub(crate) struct EditPlan<'a> {
     /// How many of `ops` the draft already reflects.
     applied: usize,
     ids: NewIds<'a>,
+    /// The transitions before the gesture, to put back those it removed and that fit again.
+    transitions: TransitionSnapshot,
 }
 
 impl<'a> EditPlan<'a> {
@@ -57,6 +63,7 @@ impl<'a> EditPlan<'a> {
             ops: Vec::new(),
             applied: 0,
             ids,
+            transitions: TransitionSnapshot::of(project),
         }
     }
 
@@ -83,9 +90,37 @@ impl<'a> EditPlan<'a> {
         self.ops.push(operation.into());
     }
 
-    /// The planned operations, in order.
-    pub(crate) fn into_ops(self) -> Vec<Operation> {
-        self.ops
+    /// The planned operations, in order, followed by the restoration of the transitions the
+    /// gesture removed and whose items touch again (one at a time: each may change the room left
+    /// for the next).
+    ///
+    /// # Errors
+    /// The domain refuses a queued operation.
+    pub(crate) fn finish(mut self) -> Result<Vec<Operation>, AppError> {
+        let renamed = self.cut_parts();
+        let before = std::mem::take(&mut self.transitions);
+        for _ in 0..before.len() {
+            let draft = self.project()?;
+            let Some(addition) = before.restorations(draft, &renamed).into_iter().next() else {
+                break;
+            };
+            self.push(addition);
+        }
+        Ok(self.ops)
+    }
+
+    /// Each item cut by a planned operation, with the new item holding its end.
+    fn cut_parts(&self) -> Vec<(ItemId, ItemId)> {
+        let mut parts = Vec::new();
+        for operation in &self.ops {
+            match operation {
+                Operation::SplitItem(split) => parts.push((split.item, split.new_item_id)),
+                Operation::RippleDeleteRange(ripple) => parts.extend(ripple.split_ids.clone()),
+                Operation::InsertGap(gap) => parts.extend(gap.split_ids.clone()),
+                _ => {}
+            }
+        }
+        parts
     }
 }
 

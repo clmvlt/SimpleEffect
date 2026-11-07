@@ -414,7 +414,14 @@
       "rippleTrim": "Rognage ripple",
       "splitItems": "Coupe",
       "closeGap": "Fermeture d’un blanc",
-      "resizeGap": "Ajustement d’un blanc"
+      "resizeGap": "Ajustement d’un blanc",
+      "changeFades": "Fondus",
+      "editItems": "Modification d’éléments",
+      "changeVolume": "Volume",
+      "changeKeyframes": "Images clés",
+      "addTransitions": "Ajout de transitions",
+      "changeTransition": "Réglage d’une transition",
+      "removeTransitions": "Suppression de transitions"
     }
   },
   "statusBar": {
@@ -523,6 +530,7 @@
     "MEDIA_TIME_OUT_OF_RANGE": "Cet instant est en dehors du média.",
     "unknown": "Une erreur inattendue est survenue. Réessayez.",
     "RIPPLE_BLOCKED": "Ce ripple couperait le contenu d’une piste qui doit suivre (éléments liés) : déplacez ou rognez ce contenu, ou verrouillez cette piste pour l’exclure.",
+    "TRANSITION_NO_ROOM": "Pas de média à fondre à cette coupe : les deux clips doivent avoir du média au-delà de leurs bords (rognez-les pour en libérer) et la coupe ne doit pas déjà avoir de transition.",
     "edit": {
       "OVERLAPPING_ITEMS": "Les éléments se chevaucheraient : déplacez ou rognez l’un d’eux, ou utilisez une autre piste.",
       "TRACK_LOCKED": "Cette piste est verrouillée : déverrouillez-la pour la modifier.",

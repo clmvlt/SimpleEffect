@@ -2,15 +2,15 @@
 
 use se_domain::{
     AssetId, Flicks, Format, ItemId, JobId, MarkerColor, MarkerId, MarkerPatch, ProjectId,
-    SequenceId, TrackId, TrackKind, TrackPatch,
+    PropertyAnimation, SequenceId, TrackId, TrackKind, TrackPatch, TransitionId, TransitionPatch,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
     CreateProjectRequest, DecodabilityReport, DecoderCapabilities, GenerateDerivedRequest,
-    ImportMediaRequest, ItemPlacement, ItemTrim, MediaSettings, PastedItem, PlaceMediaRequest,
-    PlacementMode, RelinkAssetRequest,
+    ImportMediaRequest, ItemPlacement, ItemTrim, ItemUpdate, MediaSettings, NewTransition,
+    PastedItem, PlaceMediaRequest, PlacementMode, RelinkAssetRequest,
 };
 
 /// A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -267,6 +267,52 @@ pub enum Command {
         end: Flicks,
         /// Its new length (0 closes it).
         duration: Flicks,
+    },
+    /// Changes the content of items (one undo step): fades and their shapes, speed, reframing…
+    /// Answered by [`crate::CommandResult::UpdateItems`].
+    UpdateItems {
+        /// The open project.
+        project_id: ProjectId,
+        /// One typed patch per item (its kind must match the item's), each item once.
+        updates: Vec<ItemUpdate>,
+    },
+    /// Sets the keyframes (or the static value) of one animatable property of an item, e.g. a
+    /// clip's volume curve (one undo step). Answered by
+    /// [`crate::CommandResult::SetItemAnimation`].
+    SetItemAnimation {
+        /// The open project.
+        project_id: ProjectId,
+        /// The item animated.
+        item_id: ItemId,
+        /// The property and its new keyframes or value.
+        animation: PropertyAnimation,
+    },
+    /// Adds cross-fades on cuts (one undo step). Each is shortened to what its cut allows; cuts
+    /// without room are skipped, and the command fails with `TRANSITION_NO_ROOM` when none has
+    /// room. Answered by [`crate::CommandResult::AddTransitions`].
+    AddTransitions {
+        /// The open project.
+        project_id: ProjectId,
+        /// The cuts and the wanted transitions (kind from the track).
+        transitions: Vec<NewTransition>,
+    },
+    /// Resizes or realigns a transition (one undo step); the duration is shortened to what its
+    /// cut allows. Answered by [`crate::CommandResult::UpdateTransition`].
+    UpdateTransition {
+        /// The open project.
+        project_id: ProjectId,
+        /// The transition changed.
+        transition_id: TransitionId,
+        /// What changes.
+        patch: TransitionPatch,
+    },
+    /// Removes transitions (one undo step). Answered by
+    /// [`crate::CommandResult::RemoveTransitions`].
+    RemoveTransitions {
+        /// The open project.
+        project_id: ProjectId,
+        /// The transitions removed, each once.
+        transition_ids: Vec<TransitionId>,
     },
     /// Imports media files into an open project (one undoable transaction), skipping content it
     /// already has, then queues their thumbnails and waveform peaks. Answered by

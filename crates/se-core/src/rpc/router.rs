@@ -6,7 +6,9 @@ use se_protocol::{
 
 use super::{
     encode::encode,
-    handlers::{HandlerContext, editing, items, media, media_settings, projects, system, timeline},
+    handlers::{
+        HandlerContext, editing, items, media, media_settings, projects, sound, system, timeline,
+    },
     request::{Rejection, parse_request},
 };
 
@@ -173,6 +175,28 @@ impl RpcRouter {
             } => {
                 items::resize_gap(context, *project_id, *track_id, (*start, *end), *duration).await
             }
+            Command::UpdateItems {
+                project_id,
+                updates,
+            } => sound::update_items(context, *project_id, updates).await,
+            Command::SetItemAnimation {
+                project_id,
+                item_id,
+                animation,
+            } => sound::set_item_animation(context, *project_id, *item_id, animation).await,
+            Command::AddTransitions {
+                project_id,
+                transitions,
+            } => sound::add_transitions(context, *project_id, transitions).await,
+            Command::UpdateTransition {
+                project_id,
+                transition_id,
+                patch,
+            } => sound::update_transition(context, *project_id, *transition_id, patch).await,
+            Command::RemoveTransitions {
+                project_id,
+                transition_ids,
+            } => sound::remove_transitions(context, *project_id, transition_ids).await,
             Command::ImportMedia(request) => media::import_media(context, request).await,
             Command::RelinkAsset(request) => media::relink_asset(context, request).await,
             Command::RemoveAsset {
@@ -331,6 +355,38 @@ mod tests {
         )
         .await;
         assert_eq!(capabilities["result"]["kind"], "reportDecoderCapabilities");
+    }
+
+    #[tokio::test]
+    async fn sound_and_transition_commands_reach_the_project_service() {
+        let project = "00000000-0001-7000-8000-000000000000";
+        let item = "00000000-0002-7000-8000-000000000000";
+        for command in [
+            format!(
+                r#"{{"kind":"updateItems","projectId":"{project}","updates":[{{"itemId":"{item}","patch":{{"kind":"mediaClip","fadeIn":0}}}}]}}"#
+            ),
+            format!(
+                r#"{{"kind":"setItemAnimation","projectId":"{project}","itemId":"{item}","animation":{{"property":"volumeDb","value":{{"kind":"static","value":-6.0}}}}}}"#
+            ),
+            format!(
+                r#"{{"kind":"addTransitions","projectId":"{project}","transitions":[{{"trackId":"{item}","leftItemId":"{item}","rightItemId":"{item}","duration":1,"alignment":"center"}}]}}"#
+            ),
+            format!(
+                r#"{{"kind":"updateTransition","projectId":"{project}","transitionId":"{item}","patch":{{"alignment":"end"}}}}"#
+            ),
+            format!(
+                r#"{{"kind":"removeTransitions","projectId":"{project}","transitionIds":["{item}"]}}"#
+            ),
+        ] {
+            let answer = reply(&format!(
+                r#"{{"type":"request","id":1,"command":{command}}}"#
+            ))
+            .await;
+            assert_eq!(
+                answer["error"]["code"], "PROJECT_NOT_OPEN",
+                "{command}: {answer}"
+            );
+        }
     }
 
     #[tokio::test]

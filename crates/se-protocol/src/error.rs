@@ -111,6 +111,9 @@ pub enum ErrorCode {
     /// A ripple edit would cut content of a track it must shift (to keep linked items in sync):
     /// lock that track to leave it out, or move that content first.
     RippleBlocked,
+    /// A cut has no media to cross-fade (no handle on either side, or the items are too short or
+    /// already joined by a transition there).
+    TransitionNoRoom,
 }
 
 #[cfg(test)]

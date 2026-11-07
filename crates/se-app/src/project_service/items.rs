@@ -45,6 +45,14 @@ pub mod labels {
     pub const CLOSE_GAP: &str = "Close gap";
     /// A gap was lengthened or shortened.
     pub const RESIZE_GAP: &str = "Resize gap";
+    /// Fades or their shapes changed.
+    pub const CHANGE_FADES: &str = "Change fades";
+    /// Other content of items changed (speed, reframing, text…).
+    pub const EDIT_ITEMS: &str = "Edit items";
+    /// A clip's volume (static or keyframed) changed.
+    pub const CHANGE_VOLUME: &str = "Change volume";
+    /// The keyframes of another animatable property changed.
+    pub const CHANGE_KEYFRAMES: &str = "Change keyframes";
 }
 
 impl ProjectService {

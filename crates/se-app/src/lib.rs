@@ -49,5 +49,5 @@ pub use media_service::{AssetFiles, MediaService, MediaServiceDeps};
 pub use project_actor::{ActorDeps, DEFAULT_SAVE_DELAY, ProjectActorHandle, ProjectView};
 pub use project_service::{
     ProjectObserver, ProjectService, ProjectServiceConfig, ProjectServiceDeps, item_labels,
-    marker_labels, track_labels,
+    marker_labels, track_labels, transition_labels,
 };

@@ -10,6 +10,7 @@ pub mod items;
 pub mod media;
 pub mod media_settings;
 pub mod projects;
+pub mod sound;
 pub mod system;
 pub mod timeline;
 

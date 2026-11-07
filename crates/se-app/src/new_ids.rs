@@ -2,6 +2,7 @@
 
 use se_domain::{
     AssetId, ItemId, JobId, LinkGroupId, MarkerId, ProjectId, SequenceId, TrackId, TransactionId,
+    TransitionId,
 };
 
 use crate::{AppError, ports::IdGenerator};
@@ -47,4 +48,6 @@ id_methods! {
     item -> ItemId;
     /// A new link group id.
     link_group -> LinkGroupId;
+    /// A new transition id.
+    transition -> TransitionId;
 }
