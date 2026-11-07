@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-07 — Prompt 15: Textes, graphiques et keyframes — Done
 
-**Branch**: `feature/15-textes-keyframes`, merged into `dev` at `<merge>`
+**Branch**: `feature/15-textes-keyframes`, merged into `dev` at `62780fc`
 
 **Done**
 - se-domain (ADR-0025): full `TextStyle` (weight, italic, animatable size and colour, `Stroke`, `TextShadow`, `TextBackground`, letter spacing, line height, alignment, wrapping width, case) and `TextItem.reveal`; shapes `Line`, outline, `cover_frame`; images `ImageFit` (fit, fill, natural); `Transform2D.blur`. `AnimatableProperty` (17 properties) with typed slots `ItemKind::property`/`property_mut`, shared by `SetKeyframes`, presets and validation (`allowed_range`, `graphic_rules.rs` for static styles); `PropertyAnimation` generated per property. **Presets as data** (`assets/animation-presets.json`: fade, 4 slides, pop, blur → sharp, typewriter, bounce, shake, pulse) expanded by `expand_preset` / `ApplyAnimationPreset { item, preset, phase, duration, start }` (span placement and clamping, base read as a hold, keyframes inside the span replaced, exits mirrored); `preset_samples`; errors `UNKNOWN_ANIMATION_PRESET`, `PRESET_PHASE_NOT_SUPPORTED`; `Animatable` reads bare values (old journals). Schema version 5 + migration + fixture; property tests generate presets; insta snapshot of every expansion.
