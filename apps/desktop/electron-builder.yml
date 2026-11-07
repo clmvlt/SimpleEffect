@@ -14,11 +14,16 @@ publish: null
 extraMetadata:
   name: simpleeffect
 
+# se-core and the sidecars (ffmpeg, ffprobe from `pnpm fetch-binaries`) share `resources/bin/`,
+# where se-core looks for them first (crates/se-media/src/tools.rs).
 win:
   target: nsis
   extraResources:
     - from: ../../target/release/se-core.exe
       to: bin/se-core.exe
+    - from: ../../resources/bin/win32-x64
+      to: bin
+      filter: [ffmpeg.exe, ffprobe.exe]
 nsis:
   artifactName: ${productName}-Setup-${version}.${ext}
 
@@ -28,6 +33,9 @@ mac:
   extraResources:
     - from: ../../target/release/se-core
       to: bin/se-core
+    - from: ../../resources/bin/darwin-${arch}
+      to: bin
+      filter: [ffmpeg, ffprobe]
 dmg:
   artifactName: ${productName}-${version}-${arch}.${ext}
 
@@ -40,6 +48,9 @@ linux:
   extraResources:
     - from: ../../target/release/se-core
       to: bin/se-core
+    - from: ../../resources/bin/linux-x64
+      to: bin
+      filter: [ffmpeg, ffprobe]
 appImage:
   artifactName: ${productName}-${version}-${arch}.${ext}
 deb:
