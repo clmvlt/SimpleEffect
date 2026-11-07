@@ -5,7 +5,7 @@ import type { Flicks } from "./Flicks";
 import type { VideoStreamInfo } from "./VideoStreamInfo";
 
 /**
- * Facts about a media file, filled from `ffprobe` (prompt 08).
+ * Facts about a media file, filled from `ffprobe` by se-media.
  */
 export type MediaInfo = { 
 /**

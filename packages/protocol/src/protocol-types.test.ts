@@ -1,6 +1,6 @@
 import { describe, expectTypeOf, it } from 'vitest';
 
-import type { CoreInfo, ProjectPatch, ProjectSession } from './generated';
+import type { CoreInfo, JobSnapshot, ProjectPatch, ProjectSession } from './generated';
 import type {
   CommandKind,
   CommandsWithoutResult,
@@ -29,6 +29,12 @@ describe('derived protocol types', () => {
       | 'createSequence'
       | 'undo'
       | 'redo'
+      | 'importMedia'
+      | 'relinkAsset'
+      | 'removeAsset'
+      | 'listJobs'
+      | 'cancelJob'
+      | 'reportDecodability'
     >();
   });
 
@@ -36,6 +42,9 @@ describe('derived protocol types', () => {
     expectTypeOf<ResultFor<'ping'>>().toEqualTypeOf<{ kind: 'ping' }>();
     expectTypeOf<ResultFor<'getCoreInfo'>>().toExtend<CoreInfo>();
     expectTypeOf<ResultFor<'openProject'>>().toExtend<ProjectSession>();
+    expectTypeOf<ResultFor<'relinkAsset'>['outcome']>().toEqualTypeOf<
+      'relinked' | 'contentDiffers'
+    >();
   });
 
   it('derives the event type from the event kind', () => {
@@ -47,7 +56,13 @@ describe('derived protocol types', () => {
       | 'projectPatched'
       | 'projectClosed'
       | 'historyChanged'
+      | 'jobQueued'
+      | 'jobProgress'
+      | 'jobCompleted'
+      | 'jobFailed'
+      | 'jobCancelled'
     >();
+    expectTypeOf<CoreEventOf<'jobCompleted'>['job']>().toEqualTypeOf<JobSnapshot>();
     expectTypeOf<CoreEventOf<'projectPatched'>>().toExtend<ProjectPatch>();
     expectTypeOf<CoreEventOf<'resyncRequired'>['missedEvents']>().toEqualTypeOf<number>();
   });

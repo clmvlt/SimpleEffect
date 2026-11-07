@@ -1,10 +1,10 @@
 //! Commands a client asks `se-core` to execute.
 
-use se_domain::{Format, ProjectId};
+use se_domain::{AssetId, Format, JobId, ProjectId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::CreateProjectRequest;
+use crate::{CreateProjectRequest, DecodabilityReport, ImportMediaRequest, RelinkAssetRequest};
 
 /// A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
 ///
@@ -94,6 +94,36 @@ pub enum Command {
         /// The open project.
         project_id: ProjectId,
     },
+    /// Imports media files into an open project (one undoable transaction), skipping content it
+    /// already has, then queues their thumbnails and waveform peaks. Answered by
+    /// [`crate::CommandResult::ImportMedia`].
+    ImportMedia(ImportMediaRequest),
+    /// Points an asset at another file (a moved or renamed original). Answered by
+    /// [`crate::CommandResult::RelinkAsset`].
+    RelinkAsset(RelinkAssetRequest),
+    /// Removes an asset no item uses (undoable). Answered by
+    /// [`crate::CommandResult::RemoveAsset`].
+    RemoveAsset {
+        /// The open project.
+        project_id: ProjectId,
+        /// The asset.
+        asset_id: AssetId,
+    },
+    /// The background jobs of an open project (queued, running and finished in this session).
+    /// Answered by [`crate::CommandResult::ListJobs`].
+    ListJobs {
+        /// The open project.
+        project_id: ProjectId,
+    },
+    /// Cancels a queued or running job. Answered by [`crate::CommandResult::CancelJob`].
+    CancelJob {
+        /// The job.
+        job_id: JobId,
+    },
+    /// Records whether this machine's WebCodecs decoders accept an asset's streams (sent by the
+    /// renderer after `isConfigSupported`). Answered by
+    /// [`crate::CommandResult::ReportDecodability`].
+    ReportDecodability(DecodabilityReport),
 }
 
 #[cfg(test)]

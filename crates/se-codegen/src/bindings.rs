@@ -7,7 +7,7 @@ use std::{
 };
 
 use se_domain::{FormatPreset, Project, Violation};
-use se_protocol::{ClientMessage, CoreHandshake, ServerMessage};
+use se_protocol::{ClientMessage, CoreHandshake, ServerMessage, ThumbnailSheet};
 use ts_rs::{Config, TS};
 
 /// First lines of every generated file, replacing the ts-rs note.
@@ -71,14 +71,15 @@ pub fn generate(output_dir: &Path) -> Result<Vec<String>, CodegenError> {
 /// Commands, results, events and errors are reachable from the message envelopes, so adding one
 /// needs no change here. Add a root only for a type no envelope references: the document model
 /// (`Project` and everything inside it), validation violations and format presets are roots until
-/// protocol commands carry them.
+/// protocol commands carry them; `ThumbnailSheet` is served as JSON by a `/media` route.
 fn export_roots(config: &Config) -> Result<(), CodegenError> {
     export_all::<ClientMessage>(config)?;
     export_all::<ServerMessage>(config)?;
     export_all::<CoreHandshake>(config)?;
     export_all::<Project>(config)?;
     export_all::<Violation>(config)?;
-    export_all::<FormatPreset>(config)
+    export_all::<FormatPreset>(config)?;
+    export_all::<ThumbnailSheet>(config)
 }
 
 fn export_all<T: TS + 'static>(config: &Config) -> Result<(), CodegenError> {

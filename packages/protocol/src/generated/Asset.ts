@@ -2,6 +2,7 @@
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { AssetId } from "./AssetId";
 import type { AssetKind } from "./AssetKind";
+import type { ContentFingerprint } from "./ContentFingerprint";
 import type { Decodability } from "./Decodability";
 import type { DerivedMedia } from "./DerivedMedia";
 import type { MediaInfo } from "./MediaInfo";
@@ -28,15 +29,20 @@ relativeHint: string | null,
  */
 kind: AssetKind, 
 /**
- * Probed facts (duration, streams); `None` until the probe ran (prompt 08).
+ * Probed facts (duration, streams); `None` until the probe ran.
  */
 mediaInfo: MediaInfo | null, 
+/**
+ * Identity of the file's content when it was imported or relinked (deduplication, relinking,
+ * cache key of thumbnails and peaks); `None` only for documents older than schema version 2.
+ */
+fingerprint: ContentFingerprint | null, 
 /**
  * Mezzanine and proxy copies generated for this asset.
  */
 derived: DerivedMedia, 
 /**
- * Whether the renderer can decode the original with WebCodecs.
+ * Whether the renderer can decode each stream of the original with WebCodecs.
  */
 decodability: Decodability, 
 /**

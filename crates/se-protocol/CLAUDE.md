@@ -8,12 +8,14 @@ Data transfer objects exchanged between `se-core` and its clients: the startup h
 |---|---|
 | `handshake.rs` | `CoreHandshake { port, token, version }`: the single stdout line of `se-core`. `Debug` redacts the token |
 | `envelope.rs` | `ClientMessage::Request(RequestEnvelope { id, command })`; `ServerMessage::Response(ResponseEnvelope { id, outcome })` / `ServerMessage::Event(EventEnvelope { event })`; `ResponseOutcome` (`result` \| `error`); `RequestId` (`u64`, exported as `number`) |
-| `command.rs` | `Command`: `ping`, `getCoreInfo`, project commands (`getNewProjectDefaults`, `createProject(CreateProjectRequest)`, `openProject`, `closeProject`, `listRecentProjects`, `renameProject`, `duplicateProject`, `trashProject`, `getProjectSnapshot`, `createSequence`, `undo`, `redo`) |
+| `command.rs` | `Command`: `ping`, `getCoreInfo`, project commands (`getNewProjectDefaults`, `createProject(CreateProjectRequest)`, `openProject`, `closeProject`, `listRecentProjects`, `renameProject`, `duplicateProject`, `trashProject`, `getProjectSnapshot`, `createSequence`, `undo`, `redo`), media commands (`importMedia(ImportMediaRequest)`, `relinkAsset(RelinkAssetRequest)`, `removeAsset`, `listJobs`, `cancelJob`, `reportDecodability(DecodabilityReport)`) |
 | `command_result.rs` | `CommandResult` (same kinds; sessions, recent projects, defaults…), `CoreInfo { version, os, arch, appDataDir, logsDir }` |
-| `event.rs` | `CoreEvent`: `coreReady { version }`, `coreShuttingDown`, `resyncRequired { missedEvents }`, `projectOpened(ProjectSession)`, `projectPatched(ProjectPatch)`, `projectClosed { projectId }`, `historyChanged(ProjectHistory)` |
+| `event.rs` | `CoreEvent`: `coreReady { version }`, `coreShuttingDown`, `resyncRequired { missedEvents }`, `projectOpened(ProjectSession)`, `projectPatched(ProjectPatch)`, `projectClosed { projectId }`, `historyChanged(ProjectHistory)`, `jobQueued { job }`, `jobProgress(JobProgress)`, `jobCompleted { job }`, `jobFailed { job }`, `jobCancelled { job }` |
+| `media.rs` | `ImportMediaRequest`, `ImportReport { imported, duplicates: [DuplicateMedia], failures: [ImportFailure { path, code, message }] }`, `RelinkAssetRequest`, `RelinkOutcome` (`relinked` \| `contentDiffers`), `DecodabilityReport`, `ThumbnailSheet` (JSON of `/media/assets/{id}/thumbnails`, a codegen root) |
+| `jobs.rs` | `JobKind` (`thumbnails`, `waveformPeaks`), `JobState` (`queued`, `running { progress }`, `completed`, `failed { message }`, `cancelled`), `JobSnapshot`, `JobProgress` |
 | `project_entities.rs` | `ProjectSnapshot { revision, project: ProjectHeader, sequences, tracks, items, markers, assets }`, `SequenceEntity`, `TrackEntity`, `ItemEntity` / `MarkerEntity` (domain type `#[serde(flatten)]` + parent id), `ProjectPatch { projectId, revision, upserts: EntityUpserts, deletes: EntityDeletes }` |
 | `project_session.rs` | `ProjectSession { path, snapshot, history }`, `HistoryState`, `ProjectHistory`, `RecentProject`, `NewProjectDefaults`, `FormatPresetDimensions`, `CreateProjectRequest` |
-| `error.rs` | `ProtocolError { code, message, details? }` (+ `with_detail(key, value)`), `ErrorCode` (incl. project codes `PROJECT_NOT_FOUND`, `PROJECT_LOCKED`, `SCHEMA_TOO_NEW`, `PROJECT_CORRUPTED`, `PROJECT_ALREADY_EXISTS`, `PROJECT_NOT_OPEN`, `STORAGE_FAILED`, `EDIT_REJECTED`, `NOTHING_TO_UNDO`, `NOTHING_TO_REDO`) |
+| `error.rs` | `ProtocolError { code, message, details? }` (+ `with_detail(key, value)`), `ErrorCode` (incl. project codes `PROJECT_NOT_FOUND`, `PROJECT_LOCKED`, `SCHEMA_TOO_NEW`, `PROJECT_CORRUPTED`, `PROJECT_ALREADY_EXISTS`, `PROJECT_NOT_OPEN`, `STORAGE_FAILED`, `EDIT_REJECTED`, `NOTHING_TO_UNDO`, `NOTHING_TO_REDO`) and media codes (`ASSET_NOT_FOUND`, `MEDIA_NOT_FOUND`, `MEDIA_UNSUPPORTED`, `MEDIA_KIND_MISMATCH`, `MEDIA_TOOLS_MISSING`, `JOB_NOT_FOUND`) |
 
 Wire format (`docs/architecture.md` §6):
 ```json
@@ -25,6 +27,7 @@ Wire format (`docs/architecture.md` §6):
 
 ## Rules and invariants
 - Enums are internally tagged: `type` for messages, `kind` (camelCase) for commands, results and events. Struct-variant fields are camelCase (`rename_all_fields`).
+- A newtype variant flattens its payload next to `kind`: a payload with its own `kind` field (`JobSnapshot`) must be wrapped in a struct variant (`JobCompleted { job }`), or its field silently overwrites the tag (a test in `event.rs` guards the job events).
 - **Every `Command` variant has a `CommandResult` variant with the same name** (same wire `kind`): the TypeScript client derives result types from it. Put a non-trivial payload in its own struct (`GetCoreInfo(CoreInfo)`).
 - Error codes are stable (`SCREAMING_SNAKE_CASE`): never rename or reuse one. Messages are actionable (read by users and AI agents). `TIMEOUT`, `CONNECTION_LOST`, `CLIENT_CLOSED` are raised by clients, never sent by `se-core`.
 - Integers that can exceed 2^53 must not appear in DTOs: `u64`/`i64` are exported as `number` (revisions, millisecond dates).
