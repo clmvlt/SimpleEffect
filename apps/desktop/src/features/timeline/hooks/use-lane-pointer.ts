@@ -25,6 +25,7 @@ import type { GestureContext, LaneGesture, LanePoint } from './gestures/gesture-
 import { startGapGesture } from './gestures/gap-gesture';
 import { startMoveGesture } from './gestures/move-gesture';
 import { startTrimGesture } from './gestures/trim-gesture';
+import { soundPress } from './sound-press';
 
 /** Pixels the pointer must travel before a press becomes a drag. */
 const DRAG_THRESHOLD = 3;
@@ -40,7 +41,12 @@ type Press =
       readonly alone: boolean;
       readonly start: () => LaneGesture | null;
     }
-  | { readonly kind: 'gesture'; readonly start: () => LaneGesture | null };
+  | {
+      readonly kind: 'gesture';
+      readonly start: () => LaneGesture | null;
+      /** What a click without drag does (select a transition, add a keyframe…). */
+      readonly click?: () => void;
+    };
 
 interface PointerState {
   readonly origin: LanePoint;
@@ -71,8 +77,9 @@ function pressTarget(event: PointerEvent<HTMLElement>) {
 
 /**
  * Everything the pointer does in the lanes: selecting items (Maj adds, Ctrl/⌘ toggles, Alt
- * ignores links) and gaps, the selection rectangle, and the drags (move, Alt copy, edge trims,
- * gap handle), each sent as one command on release. Escape cancels a drag.
+ * ignores links), gaps and transitions, the selection rectangle, and the drags (move, Alt copy,
+ * edge trims, gap handle, fades, volume curves, transitions — see `sound-press.ts`), each sent as
+ * one command on release. Escape cancels a drag.
  */
 export function useLanePointer(context: () => GestureContext) {
   const { platform } = useShortcutRegistry();
@@ -115,8 +122,11 @@ export function useLanePointer(context: () => GestureContext) {
     const { itemId, edge, gapHandle } = pressTarget(event);
     const item = itemId === null ? undefined : context().model.itemsById[itemId];
     const gap = selectionStore.getState().gap;
+    const sound = soundPress(context, event, item, origin, modifiers(event).insert);
     let press: Press;
-    if (gapHandle && gap !== null) {
+    if (sound !== null) {
+      press = { kind: 'gesture', start: sound.start, click: sound.click };
+    } else if (gapHandle && gap !== null) {
       press = { kind: 'gesture', start: () => startGapGesture(context, gap, origin) };
     } else if (item !== undefined) {
       press = itemPress(item, edge, event);
@@ -154,12 +164,14 @@ export function useLanePointer(context: () => GestureContext) {
   };
 
   const click = (press: Press, point: LanePoint) => {
-    if (press.kind === 'item') {
+    if (press.kind === 'gesture') {
+      press.click?.();
+    } else if (press.kind === 'item') {
       const { model } = context();
       const ids = model.items.map((candidate) => candidate.id);
       const clicked = linkedItems(press.item, model.itemsById, ids, press.alone);
       selectItems(nextSelection(press.before, clicked, press.mode));
-    } else if (press.kind === 'marquee' && press.mode === 'replace') {
+    } else if (press.mode === 'replace') {
       const { model, layout, viewport } = context();
       const row = rowAt(layout, point.y);
       const items = row === undefined ? [] : (model.itemsByTrack.get(row.track.id) ?? []);

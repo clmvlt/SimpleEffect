@@ -6,12 +6,32 @@ import { gapAt } from '../services/gaps';
 import { linkedItems } from '../services/selection';
 import { rowAt } from '../services/track-layout';
 import { xToTime } from '../services/viewport';
-import { selectGap, selectionStore, selectItems, setActiveTrack } from '../store/selection-store';
+import {
+  selectGap,
+  selectionStore,
+  selectItems,
+  selectTransition,
+  setActiveTrack,
+} from '../store/selection-store';
 import type { GestureContext } from './gestures/gesture-context';
 
+/** The transition under a right click, with its track and alignment. */
+function transitionUnder(event: MouseEvent<HTMLDivElement>, model: GestureContext['model']) {
+  const element =
+    event.target instanceof Element
+      ? event.target.closest<HTMLElement>('[data-transition-id]')
+      : null;
+  const track = model.tracks.find((candidate) => candidate.id === element?.dataset['trackId']);
+  const transition = track?.transitions.find(
+    (candidate) => candidate.id === element?.dataset['transitionId'],
+  );
+  if (track === undefined || transition === undefined) return null;
+  return { transitionId: transition.id, trackId: track.id, alignment: transition.alignment };
+}
+
 /**
- * The target of the lanes' context menu, found on right click: an item (selected with its
- * linked partners unless it already is), a gap (selected), or empty space.
+ * The target of the lanes' context menu, found on right click: a transition (selected), an item
+ * (selected with its linked partners unless it already is), a gap (selected), or empty space.
  */
 export function useLaneMenu(context: () => GestureContext) {
   const [target, setTarget] = useState<LaneMenuTarget>({ kind: 'empty' });
@@ -21,6 +41,12 @@ export function useLaneMenu(context: () => GestureContext) {
     const bounds = event.currentTarget.getBoundingClientRect();
     const [x, y] = [event.clientX - bounds.left, event.clientY - bounds.top];
     const time = snapToFrame(xToTime(x, viewport), model.sequence.format.frameRate, 'nearest');
+    const transitionTarget = transitionUnder(event, model);
+    if (transitionTarget !== null) {
+      selectTransition(transitionTarget.transitionId, transitionTarget.trackId);
+      setTarget({ kind: 'transition', ...transitionTarget });
+      return;
+    }
     const element = event.target instanceof Element ? event.target.closest('[data-item-id]') : null;
     const itemId = element instanceof HTMLElement ? element.dataset['itemId'] : undefined;
     const item = itemId === undefined ? undefined : model.itemsById[itemId];

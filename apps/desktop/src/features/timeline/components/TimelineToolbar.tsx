@@ -24,6 +24,7 @@ import { TRACK_HEIGHT_PRESETS, type TrackHeightPreset } from '../services/track-
 import { sliderToZoom, ZOOM_SLIDER_MAX, zoomToSlider } from '../services/viewport';
 import { usePlayheadTime } from '../store/playhead-store';
 import { setSnapping, timelineViewStore } from '../store/timeline-view-store';
+import { TimelineSoundTools } from './TimelineSoundTools';
 
 /** Props of {@link TimelineToolbar}. */
 export interface TimelineToolbarProps {
@@ -41,7 +42,8 @@ function useActionTooltip(label: string, action: ShortcutActionId) {
 }
 
 /**
- * The timeline tools: add a track, zoom (buttons, slider, fit), track heights, snapping, and the
+ * The timeline tools: add a track, zoom (buttons, slider, fit), track heights, snapping, the
+ * default transition length and the silences toggle, and the
  * playhead timecode, which accepts a typed time (« 51s », « 1:02.5 », « 00:00:51:12 »).
  */
 export function TimelineToolbar({
@@ -114,6 +116,10 @@ export function TimelineToolbar({
               }}
             />
           </Tooltip>
+        </ToolbarGroup>
+        <ToolbarSeparator />
+        <ToolbarGroup label={t('editor.timeline.toolbar.sound')}>
+          <TimelineSoundTools />
         </ToolbarGroup>
         <ToolbarSeparator />
         <ToolbarGroup label={t('editor.timeline.toolbar.zoom')}>

@@ -13,6 +13,7 @@ import { useState, type HTMLAttributes } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { TrackPlacement, TrackRow } from '../services/track-layout';
+import { TrackAudioControls } from './TrackAudioControls';
 import { TrackHeaderButtons } from './TrackHeaderButtons';
 import { TrackName } from './TrackName';
 
@@ -28,9 +29,13 @@ export interface TrackHeaderProps {
   readonly onRemove: () => void;
 }
 
+/** Audio tracks at least this high show their volume and balance fields. */
+const AUDIO_CONTROLS_MIN_HEIGHT = 56;
+
 /**
  * The header of a track: grip (drag to reorder), kind icon, name (double-click to rename),
- * toggles, a bottom edge to resize, and a context menu (add above/below, rename, delete).
+ * toggles, volume and balance on tall enough audio tracks, a bottom edge to resize, and a context
+ * menu (add above/below, rename, delete).
  */
 export function TrackHeader({
   row,
@@ -77,6 +82,9 @@ export function TrackHeader({
             />
           </div>
           <TrackHeaderButtons track={track} onChange={onChange} />
+          {track.kind === 'audio' && row.height >= AUDIO_CONTROLS_MIN_HEIGHT && (
+            <TrackAudioControls track={track} onChange={onChange} />
+          )}
           <div
             aria-hidden
             className="absolute inset-x-0 -bottom-0.5 h-1.5 cursor-row-resize"

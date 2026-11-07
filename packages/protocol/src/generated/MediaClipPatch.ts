@@ -6,38 +6,38 @@ import type { Flicks } from "./Flicks";
 import type { Reframe } from "./Reframe";
 
 /**
- * Changes of a [`crate::MediaClip`].
+ * Changes of a [`crate::MediaClip`] (clients may omit unchanged fields).
  */
 export type MediaClipPatch = { 
 /**
  * Another video or audio asset.
  */
-assetId: AssetId | null, 
+assetId?: AssetId, 
 /**
  * Another source start (a slip edit: the item stays, the media slides under it).
  */
-sourceStart: Flicks | null, 
+sourceStart?: Flicks, 
 /**
  * Another playback speed (> 0); the item keeps its duration and uses more or less media.
  */
-speed: number | null, 
+speed?: number, 
 /**
  * Another fade-in length.
  */
-fadeIn: Flicks | null, 
+fadeIn?: Flicks, 
 /**
  * Another fade-out length.
  */
-fadeOut: Flicks | null, 
+fadeOut?: Flicks, 
 /**
  * Another fade-in curve.
  */
-fadeInShape: FadeShape | null, 
+fadeInShape?: FadeShape, 
 /**
  * Another fade-out curve.
  */
-fadeOutShape: FadeShape | null, 
+fadeOutShape?: FadeShape, 
 /**
  * Another way to fit the frame.
  */
-reframe: Reframe | null, };
+reframe?: Reframe, };

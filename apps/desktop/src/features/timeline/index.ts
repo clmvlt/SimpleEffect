@@ -19,3 +19,4 @@ export {
   selectItems,
   useSelectedItemIds,
 } from './store/selection-store';
+export { formatVolume, shiftVolume } from './services/volume-line';

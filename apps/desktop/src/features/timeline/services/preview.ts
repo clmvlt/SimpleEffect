@@ -1,4 +1,4 @@
-import type { Flicks, ItemEntity, ItemId, TrackId } from '@se/protocol';
+import type { Animatable, Flicks, ItemEntity, ItemId, TrackId, TransitionId } from '@se/protocol';
 
 import type { Gap } from './gaps';
 import type { ItemTone } from './item-display';
@@ -28,9 +28,26 @@ export interface PreviewGhost {
   readonly source: GhostSource;
 }
 
+/** A clip's fades or volume curve as a gesture leaves them (unset parts are unchanged). */
+export interface ClipEdit {
+  readonly fadeIn?: Flicks;
+  readonly fadeOut?: Flicks;
+  readonly volumeDb?: Animatable<number>;
+}
+
+/** A transition as a gesture draws it: a new one dragged from a cut, or one being resized. */
+export interface TransitionDraft {
+  readonly trackId: TrackId;
+  readonly start: Flicks;
+  readonly end: Flicks;
+  /** The transition resized; `null` for a new one. */
+  readonly transitionId: TransitionId | null;
+}
+
 /**
  * What a gesture shows before its command is sent (ephemeral state of the timeline, never sent
- * to the core): items drawn elsewhere, new items, and the point an edge snapped to.
+ * to the core): items drawn elsewhere, new items, the point an edge snapped to, and the levels or
+ * transition a sound gesture is changing.
  */
 export interface GesturePreview {
   readonly placements: ReadonlyMap<ItemId, PreviewPlacement>;
@@ -38,6 +55,25 @@ export interface GesturePreview {
   readonly snapTime: Flicks | null;
   /** The selected gap as a gap resize would leave it. */
   readonly gap?: Gap;
+  /** Fades and volume curves being dragged. */
+  readonly clipEdits?: ReadonlyMap<ItemId, ClipEdit>;
+  /** The transition being dragged. */
+  readonly transition?: TransitionDraft;
+}
+
+/** A preview showing only a clip edit. */
+export function clipEditPreview(itemId: ItemId, edit: ClipEdit): GesturePreview {
+  return {
+    placements: new Map(),
+    ghosts: [],
+    snapTime: null,
+    clipEdits: new Map([[itemId, edit]]),
+  };
+}
+
+/** A preview showing only a transition draft. */
+export function transitionPreview(transition: TransitionDraft): GesturePreview {
+  return { placements: new Map(), ghosts: [], snapTime: null, transition };
 }
 
 /** A preview showing only `placements`. */

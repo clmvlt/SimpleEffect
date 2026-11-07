@@ -33,9 +33,10 @@ pub enum ItemPatch {
     Caption(CaptionPatch),
 }
 
-/// Changes of a [`crate::MediaClip`].
+/// Changes of a [`crate::MediaClip`] (clients may omit unchanged fields).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[serde(default, rename_all = "camelCase")]
+#[ts(optional_fields)]
 pub struct MediaClipPatch {
     /// Another video or audio asset.
     pub asset_id: Option<AssetId>,

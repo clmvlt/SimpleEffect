@@ -257,6 +257,19 @@
       "empty": {
         "title": "Aucune sélection",
         "description": "Sélectionnez un élément de la timeline pour modifier ses propriétés."
+      },
+      "audio": {
+        "title": "Audio",
+        "gain": "Gain",
+        "fadeIn": "Fondu d’entrée",
+        "fadeInShape": "Forme du fondu d’entrée",
+        "fadeOut": "Fondu de sortie",
+        "fadeOutShape": "Forme du fondu de sortie",
+        "shapes": {
+          "linear": "Linéaire",
+          "constantPower": "Puissance constante",
+          "logarithmic": "Logarithmique"
+        }
       }
     },
     "ai": {
@@ -299,7 +312,12 @@
         "addAbove": "Ajouter une piste au-dessus",
         "addBelow": "Ajouter une piste en dessous",
         "rename": "Renommer",
-        "remove": "Supprimer la piste"
+        "remove": "Supprimer la piste",
+        "volume": "Volume de la piste",
+        "pan": "Panoramique de la piste",
+        "panLeft": "G",
+        "panRight": "D",
+        "panCentre": "C"
       },
       "marker": {
         "label": "Marqueur {{name}}",
@@ -339,7 +357,11 @@
         "zoomIn": "Zoom avant",
         "zoomOut": "Zoom arrière",
         "zoomLevel": "Niveau de zoom",
-        "fit": "Ajuster à la fenêtre"
+        "fit": "Ajuster à la fenêtre",
+        "sound": "Son et transitions",
+        "transitionDuration": "Durée des nouvelles transitions",
+        "transitionDurationHint": "Durée des transitions ajoutées avec Ctrl/⌘+T ou d’un clic sur une coupe",
+        "silences": "Afficher les silences"
       },
       "menu": {
         "splitHere": "Couper ici",
@@ -355,7 +377,26 @@
       },
       "gap": {
         "label": "Blanc de {{duration}}",
-        "handle": "Glisser pour allonger ou raccourcir le blanc"
+        "handle": "Glisser pour allonger ou raccourcir le blanc",
+        "hover": "Blanc de {{duration}}"
+      },
+      "volume": {
+        "static": "Volume {{volume}} : glissez pour l’ajuster, Ctrl/⌘+clic pour ajouter une image clé",
+        "keyframed": "Courbe de volume : glissez pour tout décaler, Ctrl/⌘+clic pour ajouter une image clé, Alt+clic sur une image clé pour la supprimer"
+      },
+      "transition": {
+        "label": "{{name}} ({{duration}})",
+        "kinds": {
+          "crossDissolve": "Fondu enchaîné",
+          "audioCrossfade": "Fondu enchaîné audio"
+        },
+        "cutHandle": "Coupe : glissez pour créer une transition, cliquez pour la durée par défaut",
+        "alignments": {
+          "center": "Centrée sur la coupe",
+          "start": "Commence à la coupe",
+          "end": "Finit à la coupe"
+        },
+        "remove": "Supprimer la transition"
       }
     },
     "loading": "Ouverture du projet…",
@@ -637,6 +678,7 @@
       "selectAll": "Tout sélectionner",
       "deselectAll": "Tout désélectionner",
       "splitAtPlayhead": "Couper à la tête de lecture",
+      "addTransition": "Ajouter une transition à la coupe sous la tête de lecture",
       "deleteSelection": "Supprimer la sélection (en laissant un blanc) ou fermer le blanc sélectionné",
       "rippleDelete": "Supprimer la sélection en refermant le temps (ripple)",
       "copy": "Copier la sélection",

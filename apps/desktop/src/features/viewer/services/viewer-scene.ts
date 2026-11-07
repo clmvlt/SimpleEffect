@@ -33,8 +33,8 @@ export interface SceneSource {
 
 /**
  * The scene the engines play for a sequence of the mirror: its tracks in stacking order with
- * their mixing state and items (entities are kept as they are: they already have the fields
- * `evaluate` and the audio engine read).
+ * their mixing state, items and transitions (entities are kept as they are: they already have
+ * the fields `evaluate` and the audio engine read).
  */
 export function sceneOf({ sequence, tracks, items, assets }: SceneSource): PlaybackScene {
   const sequenceTracks: PlayableTrack[] = [];
@@ -46,8 +46,18 @@ export function sceneOf({ sequence, tracks, items, assets }: SceneSource): Playb
       const item = items[itemId];
       if (item !== undefined) trackItems.push(item);
     }
-    const { id, kind, hidden, muted, solo, volumeDb, pan } = track;
-    sequenceTracks.push({ id, kind, hidden, muted, solo, volumeDb, pan, items: trackItems });
+    const { id, kind, hidden, muted, solo, volumeDb, pan, transitions } = track;
+    sequenceTracks.push({
+      id,
+      kind,
+      hidden,
+      muted,
+      solo,
+      volumeDb,
+      pan,
+      items: trackItems,
+      transitions,
+    });
   }
   return { sequence: { format: sequence.format, tracks: sequenceTracks }, assets };
 }
