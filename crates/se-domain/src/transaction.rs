@@ -6,8 +6,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    DomainError, ItemId, Operation, Project, TaskId, TouchedEntities, TransactionId,
-    operation::apply_in_place,
+    DomainError, ItemId, Operation, Project, TaskId, TouchedEntities, TransactionId, apply_all,
 };
 
 /// Operations applied together, all or none, by one actor. The unit of undo, of changesets and
@@ -57,10 +56,10 @@ pub struct Committed {
     pub touched: TouchedEntities,
 }
 
-/// Applies every operation of `transaction` in order, or none.
-///
-/// Each operation must leave the project valid. On success the project revision grows by one and
-/// every touched item that still exists gets its revision bumped by one.
+/// Applies every operation of `transaction` in order, or none ([`apply_all`]: each operation
+/// checks its preconditions, the document is validated once after the last one). On success the
+/// project revision grows by one and every touched item that still exists gets its revision
+/// bumped by one.
 ///
 /// # Errors
 /// [`DomainError::EmptyTransaction`] without operations; otherwise the error of the first
@@ -69,17 +68,11 @@ pub fn commit(project: &Project, transaction: &Transaction) -> Result<Committed,
     if transaction.ops.is_empty() {
         return Err(DomainError::EmptyTransaction);
     }
-    let mut draft = project.clone();
-    let mut inverses = Vec::with_capacity(transaction.ops.len());
-    let mut touched = TouchedEntities::default();
-    for operation in &transaction.ops {
-        let effect = apply_in_place(&mut draft, operation)?;
-        touched.merge(effect.touched);
-        inverses.push(effect.inverse);
-    }
+    let applied = apply_all(project, &transaction.ops)?;
+    let (mut draft, touched) = (applied.project, applied.touched);
     bump_revisions(&mut draft, &touched.items);
     let inverse = Transaction {
-        ops: inverses.into_iter().rev().flatten().collect(),
+        ops: applied.inverse,
         ..transaction.clone()
     };
     Ok(Committed {
@@ -165,6 +158,22 @@ mod tests {
             commit(&project, &transaction(Actor::User, Vec::new())),
             Err(DomainError::EmptyTransaction)
         );
+    }
+
+    #[test]
+    fn validates_the_document_once_after_the_last_operation() {
+        let project = example_project();
+        let through_invalid = vec![move_text(-1000), move_text(8000)];
+        let committed = commit(&project, &transaction(Actor::User, through_invalid)).unwrap();
+        assert_eq!(
+            find(&committed.project, 3).timeline_range,
+            range_ms(8000, 3000)
+        );
+        let left_invalid = commit(&project, &transaction(Actor::User, vec![move_text(-1000)]));
+        let Err(DomainError::InvalidDocument { violations }) = left_invalid else {
+            panic!("a negative start must be refused, got {left_invalid:?}");
+        };
+        assert_eq!(violations[0].code, crate::ViolationCode::NegativeTime);
     }
 
     #[test]
