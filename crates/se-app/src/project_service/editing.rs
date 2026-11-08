@@ -43,6 +43,26 @@ impl ProjectService {
         self.commit_user_edit(handle, label, ops).await
     }
 
+    /// Plans one user edit with `plan_edit` on the current document and commits it as one
+    /// transaction labelled `label` (nothing when the plan is empty); returns what the planner
+    /// returned. For use cases living outside this service (captions).
+    ///
+    /// # Errors
+    /// Not open, the planner's error, the document refuses the operations, storage errors.
+    pub(crate) async fn plan_user_edit<T>(
+        &self,
+        project_id: ProjectId,
+        label: &str,
+        plan_edit: impl FnOnce(&mut EditPlan<'_>) -> Result<T, AppError>,
+    ) -> Result<T, AppError> {
+        let handle = self.handle(project_id).await?;
+        let view = handle.view().await?;
+        let mut plan = EditPlan::new(&view.project, self.new_ids());
+        let result = plan_edit(&mut plan)?;
+        self.commit_plan(&handle, label, plan).await?;
+        Ok(result)
+    }
+
     /// Undoes the latest user transaction of an open project.
     ///
     /// # Errors

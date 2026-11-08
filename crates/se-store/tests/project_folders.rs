@@ -178,10 +178,36 @@ fn example_project_v5() -> se_domain::Project {
     project
 }
 
+/// The example project as the version-7 fixture holds it, once migrated: its caption « Merci
+/// d'être là » spread equally over its two seconds, drawn with the migrated `minimal` style.
+fn example_project_v7() -> se_domain::Project {
+    let mut project = example_project();
+    let style = se_domain::CaptionStyleId::parse(se_store::MIGRATED_CAPTION_STYLE_ID).unwrap();
+    project.caption_styles[0].id = style;
+    for item in project
+        .sequences
+        .iter_mut()
+        .flat_map(|sequence| &mut sequence.tracks)
+        .flat_map(|track| &mut track.items)
+    {
+        let duration = item.timeline_range.duration();
+        if let se_domain::ItemKind::Caption(caption) = &mut item.kind {
+            caption.style_id = style;
+            caption.words = se_domain::captions::distribute_words(
+                &["Merci", "d'être", "là"],
+                se_domain::Flicks::ZERO,
+                duration,
+                se_domain::captions::Spread::Equal,
+            );
+        }
+    }
+    project
+}
+
 /// The example project as the version-6 fixture holds it: no transcript summary (its
 /// transcription settings are the defaults the migration gives).
 fn example_project_v6() -> se_domain::Project {
-    let mut project = example_project();
+    let mut project = example_project_v7();
     for asset in &mut project.assets {
         asset.analysis.transcript = None;
     }
@@ -290,8 +316,13 @@ async fn version_6_documents_load_through_the_migrations() {
 }
 
 #[tokio::test]
-async fn version_7_documents_load_as_they_are() {
-    assert_eq!(load_fixture("project-v7.json").await, example_project());
+async fn version_7_captions_become_equal_words_with_a_minimal_style() {
+    assert_eq!(load_fixture("project-v7.json").await, example_project_v7());
+}
+
+#[tokio::test]
+async fn version_8_documents_load_as_they_are() {
+    assert_eq!(load_fixture("project-v8.json").await, example_project());
 }
 
 #[tokio::test]

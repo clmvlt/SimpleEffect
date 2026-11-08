@@ -4,6 +4,9 @@ import type { AddGraphicRequest } from "./AddGraphicRequest";
 import type { AiSettings } from "./AiSettings";
 import type { AnimationPhase } from "./AnimationPhase";
 import type { AssetId } from "./AssetId";
+import type { CaptionEmphasisEdit } from "./CaptionEmphasisEdit";
+import type { CaptionStyleEdit } from "./CaptionStyleEdit";
+import type { CaptionTextEdit } from "./CaptionTextEdit";
 import type { CreateProjectRequest } from "./CreateProjectRequest";
 import type { DecodabilityReport } from "./DecodabilityReport";
 import type { DecoderCapabilities } from "./DecoderCapabilities";
@@ -11,8 +14,10 @@ import type { DownloadTarget } from "./DownloadTarget";
 import type { Flicks } from "./Flicks";
 import type { Format } from "./Format";
 import type { FormatAdaptation } from "./FormatAdaptation";
+import type { GenerateCaptionsRequest } from "./GenerateCaptionsRequest";
 import type { GenerateDerivedRequest } from "./GenerateDerivedRequest";
 import type { ImportMediaRequest } from "./ImportMediaRequest";
+import type { ImportSubtitlesRequest } from "./ImportSubtitlesRequest";
 import type { ItemAnimation } from "./ItemAnimation";
 import type { ItemId } from "./ItemId";
 import type { ItemPlacement } from "./ItemPlacement";
@@ -685,4 +690,60 @@ trackIds: Array<TrackId> | null,
 /**
  * Cut every unlocked track.
  */
-allTracks: boolean, };
+allTracks: boolean, } | { "kind": "generateCaptions" } & GenerateCaptionsRequest | { "kind": "importSubtitles" } & ImportSubtitlesRequest | { "kind": "exportSubtitles", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The sequence read.
+ */
+sequenceId: SequenceId, 
+/**
+ * Absolute path of the `.srt` file (replaced when it exists).
+ */
+path: string, } | { "kind": "editCaptionText" } & CaptionTextEdit | { "kind": "mergeCaptions", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * Two or more captions following each other on one track.
+ */
+itemIds: Array<ItemId>, } | { "kind": "splitCaption", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The caption.
+ */
+itemId: ItemId, 
+/**
+ * The first word of the right part (1 to the number of words − 1).
+ */
+wordIndex: number, } | { "kind": "shiftCaptions", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The captions (every caption of a track for a global shift).
+ */
+itemIds: Array<ItemId>, 
+/**
+ * How far (negative: earlier).
+ */
+delta: Flicks, } | { "kind": "setCaptionEmphasis" } & CaptionEmphasisEdit | { "kind": "updateCaptionStyle" } & CaptionStyleEdit | { "kind": "applyCaptionPreset", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The captions.
+ */
+itemIds: Array<ItemId>, 
+/**
+ * The preset's id (`tiktokBold`, `minimal`, `karaoke`, `box`).
+ */
+preset: string, };

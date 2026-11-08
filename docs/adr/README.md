@@ -37,6 +37,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0030](0030-ai-task-ux.md) | AI task UX: composer scopes, a renderer task mirror, patch actors and revert previews | Accepted |
 | [0031](0031-local-transcription-whisper.md) | Local transcription with whisper.cpp: builds, consented downloads, word timings, storage | Accepted |
 | [0032](0032-smart-cuts.md) | Smart cuts: one planning for text-based editing, fillers and silences, users and agents | Accepted |
+| [0033](0033-captions.md) | Captions: timed words, shared styles with copy on write, rendered by the engine | Accepted |
 
 ## Template
 

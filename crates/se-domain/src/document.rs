@@ -13,6 +13,7 @@ mod animatable_property;
 mod asset;
 mod brand_kit;
 mod caption;
+mod caption_style;
 mod content_fingerprint;
 mod derived_media;
 mod easing;
@@ -40,7 +41,11 @@ pub use animatable::{Animatable, Keyframe};
 pub use animatable_property::{AnimatableProperty, PropertyMut, PropertyRef};
 pub use asset::{Asset, AssetKind, Decodability, StreamDecodability};
 pub use brand_kit::BrandKit;
-pub use caption::CaptionItem;
+pub use caption::{CaptionItem, CaptionWord};
+pub use caption_style::{
+    CAPTION_LINE_CHARS, CAPTION_LINES, CaptionAnimation, CaptionBox, CaptionOutline, CaptionShadow,
+    CaptionStyle,
+};
 pub use content_fingerprint::{ContentFingerprint, FingerprintError};
 pub use derived_media::{DerivedFile, DerivedMedia, DerivedStatus};
 pub use easing::{Easing, EasingPreset};

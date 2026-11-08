@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc cb1f98f5adeb00d07f5454643aa699ad728a4096baa73cb7ed32e8a118519198 # shrinks to words = [TimedWord { text: "Bonjour", start: Flicks(1006891200), end: Flicks(1438012800) }, TimedWord { text: "oui", start: Flicks(2432203200), end: Flicks(2516875200) }, TimedWord { text: "oui", start: Flicks(2516875200), end: Flicks(2516875200) }, TimedWord { text: "?", start: Flicks(2516875200), end: Flicks(2516875200) }], max_chars = 8, max_lines = 1, bounds_start = 0, bounds_length = 3568, snap = false

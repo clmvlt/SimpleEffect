@@ -17,6 +17,7 @@ mod add_remove_item;
 mod animation;
 mod apply_animation_preset;
 mod asset_ops;
+mod caption_style_ops;
 mod checks;
 mod effect;
 mod insert_gap;
@@ -45,6 +46,9 @@ pub use add_remove_item::{AddItem, RemoveItem, RestoreItem};
 pub use animation::{PropertyAnimation, SetKeyframes};
 pub use apply_animation_preset::ApplyAnimationPreset;
 pub use asset_ops::{AddAsset, AssetPatch, Assign, RemoveAsset, UpdateAsset};
+pub use caption_style_ops::{
+    AddCaptionStyle, CaptionStylePatch, RemoveCaptionStyle, UpdateCaptionStyle,
+};
 pub use insert_gap::InsertGap;
 pub use item_patch::{
     CaptionPatch, ImagePatch, ItemPatch, MediaClipPatch, ShapePatch, TemplatePatch, TextPatch,
@@ -146,6 +150,12 @@ pub enum Operation {
     UpdateTransition(UpdateTransition),
     /// Removes a transition.
     RemoveTransition(RemoveTransition),
+    /// Adds a caption style to the project.
+    AddCaptionStyle(AddCaptionStyle),
+    /// Changes a caption style (every caption using it).
+    UpdateCaptionStyle(UpdateCaptionStyle),
+    /// Removes a caption style no caption uses.
+    RemoveCaptionStyle(RemoveCaptionStyle),
 }
 
 /// Declares `From<Payload> for Operation` and the dispatch to each payload's [`Edit`] impl.
@@ -203,6 +213,9 @@ operation_payloads!(
     AddTransition,
     UpdateTransition,
     RemoveTransition,
+    AddCaptionStyle,
+    UpdateCaptionStyle,
+    RemoveCaptionStyle,
 );
 
 /// The outcome of [`apply`].

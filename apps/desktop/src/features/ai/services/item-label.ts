@@ -1,3 +1,4 @@
+import { captionText } from '@se/engine';
 import type { Asset, ItemEntity } from '@se/protocol';
 
 /** How a prompt names an item: its own words, else a generic name to translate. */
@@ -35,7 +36,7 @@ export function itemLabel(item: ItemEntity, assets: Readonly<Record<string, Asse
     case 'text':
       return { label: short(kind.content), fallback: 'text' };
     case 'caption':
-      return { label: short(kind.text), fallback: 'text' };
+      return { label: short(captionText(kind)), fallback: 'text' };
     case 'shape':
       return { label: null, fallback: 'shape' };
     case 'motionTemplate':

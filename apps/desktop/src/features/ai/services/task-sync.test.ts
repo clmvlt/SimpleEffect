@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { aiTasksStore, resetAiTasks } from '../../../shared/ai-tasks';
 import { task } from '../../../shared/ai-tasks/testing/task-fixture';
 import { connectTaskSync, tasksEditedByUser, type TaskSyncSource } from './task-sync';
+import { captionKind } from '../../../shared/project-store/testing/session-fixture';
 
 const SECOND = 705_600_000;
 
@@ -72,7 +73,7 @@ function patch(actor: ProjectPatch['actor'], start: number): ProjectPatch {
           origin: { kind: 'user' },
           timelineRange: { start: (start * SECOND) as Flicks, duration: SECOND as Flicks },
           linkGroup: null,
-          kind: { kind: 'caption', text: 'Abonne-toi' },
+          kind: captionKind('Abonne-toi'),
         },
       ],
       markers: [],

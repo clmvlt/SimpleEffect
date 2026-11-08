@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseChooseFileOptions,
   parseChooseFilesOptions,
+  parseChooseSaveFileOptions,
   parseChooseFolderOptions,
   parseExternalUrl,
   parseNotification,
@@ -98,5 +99,28 @@ describe('parseNotification', () => {
     ]) {
       expect(() => parseNotification(value)).toThrow(TypeError);
     }
+  });
+});
+
+describe('parseChooseSaveFileOptions', () => {
+  const valid = {
+    title: 'Exporter les sous-titres',
+    buttonLabel: 'Exporter',
+    defaultName: 'Interview.srt',
+    filterName: 'Sous-titres SRT',
+    extensions: ['srt'],
+  };
+
+  it('accepts a file name and extensions', () => {
+    expect(parseChooseSaveFileOptions(valid)).toEqual(valid);
+  });
+
+  it('refuses paths as names, bad extensions and missing strings', () => {
+    expect(() => parseChooseSaveFileOptions({ ...valid, defaultName: '../x.srt' })).toThrow(
+      TypeError,
+    );
+    expect(() => parseChooseSaveFileOptions({ ...valid, extensions: ['.srt'] })).toThrow(TypeError);
+    expect(() => parseChooseSaveFileOptions({ ...valid, title: 3 })).toThrow(TypeError);
+    expect(() => parseChooseSaveFileOptions(null)).toThrow(TypeError);
   });
 });

@@ -46,6 +46,7 @@ const idleBridge: SimpleEffectBridge = {
   showNotification: () => Promise.resolve(),
   onNotificationClick: () => () => undefined,
   chooseFile: () => Promise.resolve(null),
+  chooseSaveFile: () => Promise.resolve(null),
   openExternal: () => Promise.resolve(),
 };
 

@@ -1,6 +1,7 @@
 import type {
   Asset,
   AssetId,
+  CaptionStyle,
   Flicks,
   ItemEntity,
   ItemId,
@@ -29,6 +30,8 @@ export interface SceneSource {
   readonly tracks: Readonly<Record<TrackId, TrackEntity>>;
   readonly items: Readonly<Record<ItemId, ItemEntity>>;
   readonly assets: Readonly<Record<AssetId, Asset>>;
+  /** The project's caption styles (prompt 23). */
+  readonly captionStyles?: readonly CaptionStyle[] | undefined;
 }
 
 /**
@@ -36,7 +39,13 @@ export interface SceneSource {
  * their mixing state, items and transitions (entities are kept as they are: they already have
  * the fields `evaluate` and the audio engine read).
  */
-export function sceneOf({ sequence, tracks, items, assets }: SceneSource): PlaybackScene {
+export function sceneOf({
+  sequence,
+  tracks,
+  items,
+  assets,
+  captionStyles,
+}: SceneSource): PlaybackScene {
   const sequenceTracks: PlayableTrack[] = [];
   for (const trackId of sequence.trackIds) {
     const track = tracks[trackId];
@@ -59,7 +68,10 @@ export function sceneOf({ sequence, tracks, items, assets }: SceneSource): Playb
       transitions,
     });
   }
-  return { sequence: { format: sequence.format, tracks: sequenceTracks }, assets };
+  return {
+    sequence: { format: sequence.format, tracks: sequenceTracks, captionStyles },
+    assets,
+  };
 }
 
 /** End of the last item of `scene` (where playback stops), zero when empty. */

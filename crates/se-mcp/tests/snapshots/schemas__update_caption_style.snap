@@ -1,0 +1,295 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Changes how captions look and animate: a predefined style (`preset`) and/or single fields (font, size, colours of the text, the spoken word and emphasised words, outline, shadow, box, position, animation, line limits). Give `style_id` to change a whole style (every caption using it must be in your scope) or `item_ids` for some captions (a shared style is copied for them). One undoable transaction; returns the captions changed.",
+  "inputSchema": {
+    "$defs": {
+      "AnimationInput": {
+        "description": "How words animate while spoken.",
+        "oneOf": [
+          {
+            "const": "none",
+            "description": "Every word in the text colour.",
+            "type": "string"
+          },
+          {
+            "const": "word_highlight",
+            "description": "The word being spoken in the active colour.",
+            "type": "string"
+          },
+          {
+            "const": "pop_per_word",
+            "description": "The active word coloured and each word popping as it starts.",
+            "type": "string"
+          },
+          {
+            "const": "box_per_line",
+            "description": "Each line on its own box, the active word coloured.",
+            "type": "string"
+          },
+          {
+            "const": "reveal_per_word",
+            "description": "Words appear as they are spoken.",
+            "type": "string"
+          }
+        ]
+      },
+      "NamedPosition": {
+        "description": "A named place of the frame (inside the usual safe areas of vertical and horizontal videos).",
+        "oneOf": [
+          {
+            "const": "center",
+            "description": "The centre (0.5, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "top",
+            "description": "Upper part, centred (0.5, 0.15).",
+            "type": "string"
+          },
+          {
+            "const": "bottom",
+            "description": "Lower part, centred (0.5, 0.8).",
+            "type": "string"
+          },
+          {
+            "const": "left",
+            "description": "Left part, centred vertically (0.2, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "right",
+            "description": "Right part, centred vertically (0.8, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "lower_third",
+            "description": "Lower third, left (0.3, 0.75): names and titles.",
+            "type": "string"
+          }
+        ]
+      },
+      "PointInput": {
+        "additionalProperties": false,
+        "description": "A point of the frame, normalised: `x` from 0 (left) to 1 (right), `y` from 0 (top) to 1\n(bottom).",
+        "properties": {
+          "x": {
+            "description": "From 0 (left edge) to 1 (right edge).",
+            "format": "double",
+            "type": "number"
+          },
+          "y": {
+            "description": "From 0 (top edge) to 1 (bottom edge).",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "type": "object"
+      },
+      "PositionInput": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/NamedPosition",
+            "description": "A named place."
+          },
+          {
+            "$ref": "#/$defs/PointInput",
+            "description": "A normalised point."
+          }
+        ],
+        "description": "Where an item's centre (its anchor) sits."
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "active_color": {
+        "description": "Colour of the word being spoken.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "animation": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/AnimationInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "How words animate."
+      },
+      "background": {
+        "description": "Box behind the text on or off (behind each line with `box_per_line`).",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "background_color": {
+        "description": "Box colour.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "emphasis_color": {
+        "description": "Colour of emphasised words.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "font_family": {
+        "description": "Font family of the catalogue (e.g. `Montserrat`, `Inter`, `Bebas Neue`).",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "font_size": {
+        "description": "Font size in design pixels (frame's shorter side = 1080).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "font_weight": {
+        "description": "Font weight 1–1000.",
+        "format": "uint16",
+        "maximum": 65535,
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "highlight_spoken": {
+        "description": "Spoken words keep the active colour (karaoke fill).",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "italic": {
+        "description": "Italic.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "item_ids": {
+        "description": "Or change these captions only: a style they share with other captions is copied for them.",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "max_chars_per_line": {
+        "description": "Longest line in characters (4–80).",
+        "format": "uint32",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "max_lines": {
+        "description": "Lines shown at once (1–4).",
+        "format": "uint32",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "outline": {
+        "description": "Outline on or off.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "outline_color": {
+        "description": "Outline colour.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "outline_width": {
+        "description": "Outline width in design pixels.",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "position": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/PositionInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Where the bottom centre of the captions sits (keep it out of platform interfaces: bottom\naround 0.85 for 16:9, around 0.7 for 9:16)."
+      },
+      "preset": {
+        "description": "First apply a predefined style: `tiktokBold`, `minimal`, `karaoke`, `box`.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "shadow": {
+        "description": "Drop shadow on or off.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "style_id": {
+        "description": "Change this caption style (every caption using it must lie in your scope).",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "text_color": {
+        "description": "Colour of words not spoken yet (`#rrggbb[aa]`).",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "uppercase": {
+        "description": "Show in capitals.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "name": "update_caption_style"
+}

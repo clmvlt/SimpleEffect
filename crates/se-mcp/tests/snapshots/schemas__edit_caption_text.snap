@@ -1,0 +1,32 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Changes the text of one caption (fix a misheard word, punctuation, a name). Words left unchanged keep their timing; a corrected word keeps the timing of the word it replaces; added or removed words share the time of the words they replace in proportion to their length. Returns the caption as it is now.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "item_id": {
+        "description": "The caption (an `item_id`, or `$name` in `apply_batch`).",
+        "type": "string"
+      },
+      "text": {
+        "description": "Its new text (words separated by spaces, punctuation attached). Not empty: delete the\ncaption with `delete_items` instead.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "item_id",
+      "text"
+    ],
+    "type": "object"
+  },
+  "name": "edit_caption_text"
+}

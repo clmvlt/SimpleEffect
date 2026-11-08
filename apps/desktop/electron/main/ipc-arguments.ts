@@ -3,6 +3,7 @@ import { isAbsolute } from 'node:path';
 import type {
   ChooseFileOptions,
   ChooseFilesOptions,
+  ChooseSaveFileOptions,
   ChooseFolderOptions,
   SystemNotification,
 } from '../shared/bridge-api';
@@ -61,6 +62,40 @@ export function parseChooseFilesOptions(value: unknown): ChooseFilesOptions {
     buttonLabel: buttonLabel as string,
     filterName: filterName as string,
     allFilesName: allFilesName as string,
+    extensions: extensions as string[],
+  };
+}
+
+/** Options of the save dialog, checked. */
+export function parseChooseSaveFileOptions(value: unknown): ChooseSaveFileOptions {
+  if (typeof value !== 'object' || value === null) {
+    throw new TypeError('chooseSaveFile expects an options object');
+  }
+  const { title, buttonLabel, defaultName, filterName, extensions } = value as Record<
+    string,
+    unknown
+  >;
+  if (![title, buttonLabel, defaultName, filterName].every((text) => typeof text === 'string')) {
+    throw new TypeError(
+      'chooseSaveFile expects string `title`, `buttonLabel`, `defaultName` and `filterName`',
+    );
+  }
+  if (/[\\/]/.test(defaultName as string)) {
+    throw new TypeError('chooseSaveFile expects `defaultName` to be a file name, not a path');
+  }
+  const validExtensions =
+    Array.isArray(extensions) &&
+    extensions.every(
+      (extension) => typeof extension === 'string' && /^[a-z0-9]+$/i.test(extension),
+    );
+  if (!validExtensions) {
+    throw new TypeError('chooseSaveFile expects `extensions` to be a list of letters and digits');
+  }
+  return {
+    title: title as string,
+    buttonLabel: buttonLabel as string,
+    defaultName: defaultName as string,
+    filterName: filterName as string,
     extensions: extensions as string[],
   };
 }

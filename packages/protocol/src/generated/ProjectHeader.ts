@@ -1,6 +1,7 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { BrandKit } from "./BrandKit";
+import type { CaptionStyle } from "./CaptionStyle";
 import type { MotionTemplate } from "./MotionTemplate";
 import type { ProjectId } from "./ProjectId";
 import type { ProjectSettings } from "./ProjectSettings";
@@ -28,4 +29,8 @@ templates: Array<MotionTemplate>,
 /**
  * The brand identity of the project, if one was set.
  */
-brandKit: BrandKit | null, };
+brandKit: BrandKit | null, 
+/**
+ * Looks shared by its captions (prompt 23).
+ */
+captionStyles: Array<CaptionStyle>, };

@@ -1,0 +1,44 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Puts words of a caption forward — drawn in the style's emphasis colour, like keywords of social videos — or back to normal. Use it sparingly: one or two key words per caption at most. Returns the caption as it is now.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "emphasis": {
+        "description": "`true` (default) puts them forward, `false` back to normal.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "item_id": {
+        "description": "The caption (an `item_id`, or `$name` in `apply_batch`).",
+        "type": "string"
+      },
+      "words": {
+        "description": "Indices of its words, from 0 (`get_item` lists them in `properties.words`).",
+        "items": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "item_id",
+      "words"
+    ],
+    "type": "object"
+  },
+  "name": "emphasize_caption_words"
+}

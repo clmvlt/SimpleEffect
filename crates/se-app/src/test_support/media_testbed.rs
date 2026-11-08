@@ -13,15 +13,15 @@ use se_domain::{Asset, Format, FormatPreset, FrameRate, ProjectId};
 
 use super::{
     FakeAgentWorkspaces, FakeDownloader, FakeFrameExtractor, FakeJobRunner, FakeMedia,
-    FakeMediaTools, FakeModelFiles, FakeRendererLink, FakeSpeechExtractor, FakeTranscriber,
-    FixedClock, InMemoryAppLibrary, InMemoryProjectRepository, RecordingEventSink, ReplayProvider,
-    SequentialIds, SequentialTokens,
+    FakeMediaTools, FakeModelFiles, FakeRendererLink, FakeSpeechExtractor, FakeSubtitleFiles,
+    FakeTranscriber, FixedClock, InMemoryAppLibrary, InMemoryProjectRepository, RecordingEventSink,
+    ReplayProvider, SequentialIds, SequentialTokens,
 };
 use crate::{
-    AgentEditService, AppError, FrameRenderService, JobQueue, JobQueueConfig, McpAccess,
-    MediaService, MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps,
-    SmartCutService, SmartCutServiceDeps, TaskService, TaskServiceDeps, TaskTokenRegistry,
-    TranscriptionService, TranscriptionServiceDeps,
+    AgentEditService, AppError, CaptionService, CaptionServiceDeps, FrameRenderService, JobQueue,
+    JobQueueConfig, McpAccess, MediaService, MediaServiceDeps, ProjectService,
+    ProjectServiceConfig, ProjectServiceDeps, SmartCutService, SmartCutServiceDeps, TaskService,
+    TaskServiceDeps, TaskTokenRegistry, TranscriptionService, TranscriptionServiceDeps,
 };
 
 /// The MCP URL runs of the testbed's task service are given.
@@ -70,6 +70,10 @@ pub struct MediaTestbed {
     pub transcription: TranscriptionService,
     /// Smart cuts over `projects`, `media` and `transcription` (prompt 22).
     pub smart_cuts: SmartCutService,
+    /// Captions over `projects`, `transcription` and `subtitles` (prompt 23).
+    pub captions: CaptionService,
+    /// SRT files of `captions`.
+    pub subtitles: FakeSubtitleFiles,
     /// whisper.cpp of `transcription`.
     pub transcriber: FakeTranscriber,
     /// Speech audio extractions.
@@ -153,13 +157,11 @@ impl MediaTestbed {
                 .with_observer(Arc::new(transcription.clone())),
         );
         let edits = Arc::new(AgentEditService::new(projects.clone(), tasks.clone(), ids));
-        let smart_cuts = SmartCutService::new(SmartCutServiceDeps {
-            projects: projects.clone(),
-            media: media.clone(),
-            transcription: transcription.clone(),
-            library: library.clone(),
-        });
+        let (smart_cuts, captions, subtitles) =
+            speech_services(&projects, &media, &transcription, &library);
         Self {
+            captions,
+            subtitles,
             smart_cuts,
             projects,
             media,
@@ -265,4 +267,26 @@ pub async fn settle() {
     for _ in 0..100 {
         tokio::task::yield_now().await;
     }
+}
+
+/// Smart cuts and captions (over in-memory SRT files).
+fn speech_services(
+    projects: &Arc<ProjectService>,
+    media: &Arc<MediaService>,
+    transcription: &TranscriptionService,
+    library: &Arc<InMemoryAppLibrary>,
+) -> (SmartCutService, CaptionService, FakeSubtitleFiles) {
+    let smart_cuts = SmartCutService::new(SmartCutServiceDeps {
+        projects: projects.clone(),
+        media: media.clone(),
+        transcription: transcription.clone(),
+        library: library.clone(),
+    });
+    let subtitles = FakeSubtitleFiles::default();
+    let captions = CaptionService::new(CaptionServiceDeps {
+        projects: projects.clone(),
+        transcription: transcription.clone(),
+        subtitles: Arc::new(subtitles.clone()),
+    });
+    (smart_cuts, captions, subtitles)
 }

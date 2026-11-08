@@ -14,6 +14,7 @@
 
 mod ai;
 mod audio_editing;
+mod captions;
 mod command;
 mod command_result;
 mod editing;
@@ -38,6 +39,10 @@ pub use ai::{
     InstallationStatus, ModelOption, ProviderCapabilities, ProviderId, ProviderInfo,
 };
 pub use audio_editing::{ItemUpdate, NewTransition};
+pub use captions::{
+    CaptionEmphasisEdit, CaptionSegmentation, CaptionStyleChoice, CaptionStyleEdit,
+    CaptionTextEdit, CaptionsReport, GenerateCaptionsRequest, ImportSubtitlesRequest,
+};
 pub use command::Command;
 pub use command_result::{CommandResult, CoreInfo};
 pub use editing::{

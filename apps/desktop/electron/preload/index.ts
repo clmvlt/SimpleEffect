@@ -8,6 +8,7 @@ import {
   IPC_CHANNELS,
   type ChooseFileOptions,
   type ChooseFilesOptions,
+  type ChooseSaveFileOptions,
   type ChooseFolderOptions,
   type CoreConnection,
   type SimpleEffectBridge,
@@ -23,6 +24,8 @@ const bridge: SimpleEffectBridge = {
     ipcRenderer.invoke(IPC_CHANNELS.chooseFiles, options) as Promise<string[]>,
   chooseFile: (options: ChooseFileOptions) =>
     ipcRenderer.invoke(IPC_CHANNELS.chooseFile, options) as Promise<string | null>,
+  chooseSaveFile: (options: ChooseSaveFileOptions) =>
+    ipcRenderer.invoke(IPC_CHANNELS.chooseSaveFile, options) as Promise<string | null>,
   openExternal: (url: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.openExternal, url) as Promise<void>,
   showInFolder: (path: string) =>

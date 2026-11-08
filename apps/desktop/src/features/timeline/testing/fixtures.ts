@@ -7,6 +7,7 @@ import type {
   TrackEntity,
   TrackKind,
 } from '@se/protocol';
+import { captionKind } from '../../../shared/project-store/testing/session-fixture';
 
 /** `value` seconds as flicks (test values: exact multiples). */
 export function seconds(value: number): Flicks {
@@ -14,7 +15,7 @@ export function seconds(value: number): Flicks {
 }
 
 /** A caption (the simplest item kind). */
-export const CAPTION: ItemKind = { kind: 'caption', text: 'Bonjour' };
+export const CAPTION: ItemKind = captionKind('Bonjour');
 
 /** An item on `trackId` from `start` lasting `duration` seconds. */
 export function testItem(

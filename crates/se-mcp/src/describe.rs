@@ -296,7 +296,7 @@ fn item_label(project: &Project, kind: &ItemKind) -> Option<String> {
         ItemKind::MediaClip(clip) => asset_label(clip.asset_id),
         ItemKind::Image(image) => asset_label(image.asset_id),
         ItemKind::Text(text) => Some(excerpt(&text.content)),
-        ItemKind::Caption(caption) => Some(excerpt(&caption.text)),
+        ItemKind::Caption(caption) => Some(excerpt(&caption.text())),
         ItemKind::Shape(shape) => Some(
             match shape.geometry {
                 ShapeGeometry::Rectangle { .. } => "rectangle",

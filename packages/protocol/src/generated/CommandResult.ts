@@ -4,6 +4,8 @@ import type { AiSettings } from "./AiSettings";
 import type { AiStatus } from "./AiStatus";
 import type { AnimationPresetInfo } from "./AnimationPresetInfo";
 import type { AssetId } from "./AssetId";
+import type { CaptionStyleId } from "./CaptionStyleId";
+import type { CaptionsReport } from "./CaptionsReport";
 import type { ChangesetId } from "./ChangesetId";
 import type { CoreInfo } from "./CoreInfo";
 import type { CutSummary } from "./CutSummary";
@@ -215,4 +217,24 @@ occurrences: Array<FillerOccurrence>,
 /**
  * Media of the range not transcribed yet.
  */
-untranscribedAssets: Array<AssetId>, } | { "kind": "previewSilenceCuts" } & CutSummary | { "kind": "removeSilences" } & CutSummary;
+untranscribedAssets: Array<AssetId>, } | { "kind": "previewSilenceCuts" } & CutSummary | { "kind": "removeSilences" } & CutSummary | { "kind": "generateCaptions" } & CaptionsReport | { "kind": "importSubtitles" } & CaptionsReport | { "kind": "exportSubtitles", 
+/**
+ * Subtitles written.
+ */
+cueCount: number, } | { "kind": "editCaptionText" } | { "kind": "mergeCaptions", 
+/**
+ * The first caption, now spanning the others.
+ */
+itemId: ItemId, } | { "kind": "splitCaption", 
+/**
+ * The new caption.
+ */
+itemId: ItemId, } | { "kind": "shiftCaptions" } | { "kind": "setCaptionEmphasis" } | { "kind": "updateCaptionStyle", 
+/**
+ * Styles changed in place or created for the captions.
+ */
+styleIds: Array<CaptionStyleId>, } | { "kind": "applyCaptionPreset", 
+/**
+ * The style made from the preset.
+ */
+styleId: CaptionStyleId, };

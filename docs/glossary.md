@@ -273,3 +273,14 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Cut preview** | Cuts a silence removal would make, drawn as temporary bands on the timeline before anything changes | `showCutPreview`, `previewSilenceCuts` |
 | **Cut scope rule** | The scope check of agents' smart cuts: the removed time lies in the task's range and the edited tracks are its tracks; what follows may move | `check_cut_scope` |
 | **Multi-range ripple delete** | One operation removing several sorted ranges, each item reshaped once | `RippleDeleteRanges`, `remaining_parts` |
+| **Caption** | A subtitle item made of timed words (item-relative) and a caption style reference; words follow trims, splits and cuts by their middle (prompt 23) | `CaptionItem`, `CaptionWord` |
+| **Caption style** | A look shared by captions of a project: font, size, case, colours of the text, the active word and emphasised words, outline, shadow, plate, position (bottom centre), animation, line limits | `CaptionStyle`, `captionStyles` |
+| **Caption style preset** | A predefined caption style (« TikTok gras », « Minimal », « Karaoké », « Boîte »), data shared by the engine and the core | `caption-styles/*.json`, `caption_style_presets` |
+| **Caption track** | Where generated and imported captions go: the highest unlocked video track holding captions only (« Sous-titres », created on top when missing) | `caption_track`, `is_caption_track` |
+| **Active word** | The caption word being spoken: the last one whose start has passed, active until the next starts | `activeWordIndex` |
+| **Caption page** | The lines of a caption shown at once (at most the style's lines): the page holding the active word | `captionPage` |
+| **Emphasis (caption word)** | A word put forward, drawn in the style's emphasis colour | `CaptionWord.emphasis`, `emphasize_caption_words` |
+| **Timing redistribution** | What a text edit does to word times: unchanged words keep theirs, a changed run with as many words keeps them one for one, other runs share their time by length | `retimed_words` |
+| **Copy on write (caption styles)** | Restyling some captions of a shared style copies it for them; a style all of whose users are targeted changes in place | `patch_styles` |
+| **SRT** | The SubRip subtitle file format (numbered cues, `HH:MM:SS,mmm` timings), exported and imported as captions | `write_srt`, `parse_srt`, `SubtitleFiles` |
+

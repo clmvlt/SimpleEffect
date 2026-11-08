@@ -8,7 +8,10 @@ pub mod add_text;
 pub mod add_transition;
 pub mod apply_animation_preset;
 pub mod apply_batch;
+pub mod create_captions;
 pub mod delete_items;
+pub mod edit_caption_text;
+pub mod emphasize_caption_words;
 pub mod get_audio_analysis;
 pub mod get_brand_kit;
 pub mod get_frames;
@@ -33,6 +36,7 @@ pub mod set_keyframes;
 pub mod set_volume;
 pub mod split_at;
 pub mod trim_item;
+pub mod update_caption_style;
 pub mod update_item;
 
 use crate::registry::ToolEntry;
@@ -74,6 +78,10 @@ pub fn catalogue() -> Vec<ToolEntry> {
         ToolEntry::of::<remove_words::RemoveWords>(),
         ToolEntry::of::<remove_fillers::RemoveFillers>(),
         ToolEntry::of::<remove_silences::RemoveSilences>(),
+        ToolEntry::of::<create_captions::CreateCaptions>(),
+        ToolEntry::of::<update_caption_style::UpdateCaptionStyle>(),
+        ToolEntry::of::<edit_caption_text::EditCaptionText>(),
+        ToolEntry::of::<emphasize_caption_words::EmphasizeCaptionWords>(),
     ];
     entries
         .into_iter()
@@ -92,12 +100,17 @@ pub fn catalogue() -> Vec<ToolEntry> {
 mod tests {
     use super::*;
 
-    /// Smart cuts (prompt 22): writes resolved on the current document, one transaction each,
-    /// not batchable.
-    const CUT_TOOLS: [&str; 3] = ["remove_words", "remove_fillers", "remove_silences"];
+    /// Smart cuts (prompt 22) and caption creation (prompt 23): writes resolved on the current
+    /// document (transcripts read first), one transaction each, not batchable.
+    const CUT_TOOLS: [&str; 4] = [
+        "remove_words",
+        "remove_fillers",
+        "remove_silences",
+        "create_captions",
+    ];
 
     /// Tools that change the project.
-    const WRITE_TOOLS: [&str; 19] = [
+    const WRITE_TOOLS: [&str; 23] = [
         "add_text",
         "add_shape",
         "add_image",
@@ -117,16 +130,20 @@ mod tests {
         "remove_words",
         "remove_fillers",
         "remove_silences",
+        "create_captions",
+        "update_caption_style",
+        "edit_caption_text",
+        "emphasize_caption_words",
     ];
 
     #[test]
     fn every_tool_has_an_object_schema_and_a_unique_name() {
         let tools = catalogue();
-        assert_eq!(tools.len(), 33);
+        assert_eq!(tools.len(), 37);
         let mut names: Vec<&str> = tools.iter().map(ToolEntry::name).collect();
         names.sort_unstable();
         names.dedup();
-        assert_eq!(names.len(), 33);
+        assert_eq!(names.len(), 37);
         for tool in &tools {
             assert_eq!(
                 tool.definition.input_schema["type"],

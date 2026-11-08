@@ -6,8 +6,8 @@
 //! re-implements an operation. se-app builds these DTOs from the document.
 
 use se_domain::{
-    Actor, Asset, BrandKit, Format, Item, ItemId, Marker, MarkerId, MotionTemplate, ProjectId,
-    ProjectSettings, SequenceId, TrackId, TrackKind, Transition,
+    Actor, Asset, BrandKit, CaptionStyle, Format, Item, ItemId, Marker, MarkerId, MotionTemplate,
+    ProjectId, ProjectSettings, SequenceId, TrackId, TrackKind, Transition,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -46,6 +46,8 @@ pub struct ProjectHeader {
     pub templates: Vec<MotionTemplate>,
     /// The brand identity of the project, if one was set.
     pub brand_kit: Option<BrandKit>,
+    /// Looks shared by its captions (prompt 23).
+    pub caption_styles: Vec<CaptionStyle>,
 }
 
 /// A sequence without its tracks and markers, which are entities of their own.

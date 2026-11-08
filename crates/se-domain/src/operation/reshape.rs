@@ -2,8 +2,8 @@
 //! its keyframes, fades and media.
 
 use crate::{
-    Animatable, AnimatableProperty, DomainError, Flicks, Item, ItemId, ItemKind, Keyframe,
-    MediaClip, PropertyMut, TimeRange,
+    Animatable, AnimatableProperty, CaptionWord, DomainError, Flicks, Item, ItemId, ItemKind,
+    Keyframe, MediaClip, PropertyMut, TimeRange,
 };
 
 /// The new extent of an item.
@@ -38,6 +38,8 @@ impl Reshape {
 ///
 /// When every keyframe of a property falls outside, the property becomes static with the value
 /// it held over the content: the last keyframe before it, or else the first one after it.
+/// Caption words stay at their instants too: a word belongs to the content holding its middle
+/// (see [`retime_words`]).
 ///
 /// # Errors
 /// [`DomainError::TimeOutOfRange`] if a time leaves the supported range.
@@ -52,8 +54,13 @@ pub(crate) fn reshape(item: &Item, reshape: &Reshape) -> Result<Item, DomainErro
     let timeline_range = TimeRange::new(reshape.start, duration).map_err(|_| out_of_range())?;
     let mut kind = item.kind.clone();
     retime_properties(&mut kind, offset, duration);
-    if let ItemKind::MediaClip(clip) = &mut kind {
-        reshape_clip(clip, offset, duration, reshape, item.id)?;
+    match &mut kind {
+        ItemKind::MediaClip(clip) => reshape_clip(clip, offset, duration, reshape, item.id)?,
+        ItemKind::Caption(caption) => {
+            let ends_with_item = reshape.content.end() == item.timeline_range.end();
+            caption.words = retime_words(&caption.words, offset, duration, ends_with_item);
+        }
+        _ => {}
     }
     Ok(Item {
         timeline_range,
@@ -191,6 +198,36 @@ fn retime<T: Clone>(property: &Animatable<T>, offset: Flicks, duration: Flicks) 
     )
 }
 
+/// The words of a caption seen from a content starting `offset` after the item's start and
+/// lasting `duration`: a word belongs to the content holding its middle (half-open, except that a
+/// content ending with the item also keeps a word whose middle is the item's end), and its times
+/// are clamped inside the content. Clamping keeps words sorted and apart.
+fn retime_words(
+    words: &[CaptionWord],
+    offset: Flicks,
+    duration: Flicks,
+    ends_with_item: bool,
+) -> Vec<CaptionWord> {
+    let clamp = |time: Flicks| {
+        time.checked_sub(offset)
+            .map_or(Flicks::ZERO, |local| local.clamp(Flicks::ZERO, duration))
+    };
+    words
+        .iter()
+        .filter(|word| {
+            let Some(middle) = word.middle().checked_sub(offset) else {
+                return false;
+            };
+            Flicks::ZERO <= middle && (middle < duration || (ends_with_item && middle == duration))
+        })
+        .map(|word| CaptionWord {
+            start: clamp(word.start),
+            end: clamp(word.end),
+            ..word.clone()
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -288,6 +325,38 @@ mod tests {
                 keyframes: vec![focus(0.8, 2000)]
             })
         );
+    }
+
+    #[test]
+    fn caption_words_go_to_the_part_holding_their_middle() {
+        let word =
+            |text: &str, start: i64, end: i64| CaptionWord::new(text, millis(start), millis(end));
+        let caption = crate::CaptionItem {
+            words: vec![
+                word("un", 0, 400),
+                word("deux", 500, 1100),
+                word("trois", 1200, 2000),
+            ],
+            style_id: crate::CaptionStyleId::from_test_index(1),
+        };
+        let item = crate::test_support::item(1, range_ms(0, 2000), ItemKind::Caption(caption));
+        let (left, right) = cut_pieces(
+            &item,
+            millis(900),
+            millis(900),
+            millis(900),
+            ItemId::from_test_index(2),
+        )
+        .unwrap();
+        let words = |item: Item| match item.kind {
+            ItemKind::Caption(caption) => caption.words,
+            _ => unreachable!(),
+        };
+        // « deux » has its middle at 800 ms: it stays on the left, clamped at the cut.
+        assert_eq!(words(left), [word("un", 0, 400), word("deux", 500, 900)]);
+        assert_eq!(words(right), [word("trois", 300, 1100)]);
+        let extended = reshape(&item, &Reshape::trim(range_ms(-1000, 3000))).unwrap();
+        assert_eq!(words(extended)[0], word("un", 1000, 1400));
     }
 
     #[test]

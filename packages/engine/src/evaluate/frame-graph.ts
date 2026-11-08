@@ -145,8 +145,39 @@ export interface TextLayer extends LayerBase {
   readonly reveal: number;
 }
 
+/** One word of a caption layer, as drawn at the evaluated time. */
+export interface CaptionWordLayer {
+  /** The word, letter case applied. */
+  readonly text: string;
+  readonly color: Rgba;
+  /** Scale around the word's centre (1, more while it pops). */
+  readonly scale: number;
+  /** 0 (not shown yet) to 1. Hidden words keep their place: the layout never moves. */
+  readonly opacity: number;
+}
+
+/**
+ * A caption (prompt 23): the lines shown at the evaluated time — the page of lines holding the
+ * word being spoken — laid out word by word by the compositor, centred, each line under the
+ * previous one. Sizes are in sequence pixels. The box's anchor is its bottom centre.
+ */
+export interface CaptionLayer extends LayerBase {
+  readonly kind: 'caption';
+  /** The lines shown, top first, each a list of words. */
+  readonly lines: readonly (readonly CaptionWordLayer[])[];
+  readonly font: FontRequest;
+  readonly fontSize: number;
+  /** Distance between baselines as a multiple of `fontSize`. */
+  readonly lineHeight: number;
+  readonly stroke: ResolvedStroke | null;
+  readonly shadow: ResolvedShadow | null;
+  /** A plate behind the block, or behind each line with `boxPerLine`. */
+  readonly background: ResolvedBackground | null;
+  readonly boxPerLine: boolean;
+}
+
 /** Something to draw, in stacking order within {@link FrameGraph.layers}. */
-export type Layer = VideoLayer | ImageLayer | ShapeLayer | TextLayer;
+export type Layer = VideoLayer | ImageLayer | ShapeLayer | TextLayer | CaptionLayer;
 
 /** A layer that needs decoded pixels (a video frame or an image). */
 export type PictureLayer = VideoLayer | ImageLayer;

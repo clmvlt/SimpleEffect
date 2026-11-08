@@ -116,6 +116,7 @@ function renderButton(projectId: string | null, bridge: Partial<SimpleEffectBrid
     showNotification: () => Promise.resolve(),
     onNotificationClick: () => () => undefined,
     chooseFile: () => Promise.resolve(null),
+    chooseSaveFile: () => Promise.resolve(null),
     openExternal: () => Promise.resolve(),
     ...bridge,
   };

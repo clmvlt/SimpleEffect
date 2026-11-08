@@ -28,7 +28,7 @@ import {
   createProjectStore,
   ProjectStoreProvider,
 } from '../../../shared/project-store';
-import { IDS, session } from '../../../shared/project-store/testing/session-fixture';
+import { IDS, captionKind, session } from '../../../shared/project-store/testing/session-fixture';
 import { ShortcutProvider, ShortcutRegistry } from '../../../shared/shortcuts';
 import { useAiTaskSync } from '../hooks/use-ai-task-sync';
 import { task as taskOf } from '../../../shared/ai-tasks/testing/task-fixture';
@@ -60,10 +60,7 @@ const AI_TEXT: ItemEntity = {
   origin: { kind: 'aiTask', taskId: 'task-1' },
   timelineRange: { start: (51 * SECOND) as Flicks, duration: (3 * SECOND) as Flicks },
   linkGroup: null,
-  kind: {
-    kind: 'caption',
-    text: 'Abonne-toi',
-  },
+  kind: captionKind('Abonne-toi'),
 };
 
 function aiSession(): ProjectSession {
@@ -85,6 +82,7 @@ const idleBridge: SimpleEffectBridge = {
   chooseFolder: () => Promise.resolve(null),
   chooseFiles: () => Promise.resolve([]),
   chooseFile: () => Promise.resolve(null),
+  chooseSaveFile: () => Promise.resolve(null),
   openExternal: () => Promise.resolve(),
   showInFolder: () => Promise.resolve(),
   getPathForFile: () => '',

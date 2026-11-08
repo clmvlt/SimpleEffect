@@ -15,9 +15,11 @@
 //! style and `reveal`, shapes an outline, images a fit and transforms a blur, and made font
 //! sizes, text colours and shape fills animatable; version 6 (prompt 16) gave media clips that
 //! fill the frame a `focus`; version 7 (prompt 21) gave projects their transcription settings and
-//! assets a `transcript` summary. Journals need no migration: no transaction touched assets before
-//! version 2, every field added since has a serde default (empty, linear, off, centred), and
-//! `Animatable` reads the bare values of properties that became animatable.
+//! assets a `transcript` summary; version 8 (prompt 23) made captions timed words with a project
+//! caption style. Journals need no migration: no transaction touched assets before version 2,
+//! every field added since has a serde default (empty, linear, off, centred), `Animatable` reads
+//! the bare values of properties that became animatable, and no command created or edited
+//! captions before version 8.
 
 use serde_json::{Map, Value, json};
 
@@ -33,7 +35,12 @@ pub const MIGRATIONS: &[DocumentMigration] = &[
     migrate_v4_to_v5,
     migrate_v5_to_v6,
     migrate_v6_to_v7,
+    migrate_v7_to_v8,
 ];
+
+/// Id of the caption style given to the captions of a version-7 document. Ids only need to be
+/// unique within a project, and the migrated document holds no other caption style.
+pub const MIGRATED_CAPTION_STYLE_ID: &str = "00000000-0000-7000-8000-00000000c8c8";
 
 /// Version 1 → 2: every asset gets `fingerprint: null` and its single decodability becomes one
 /// state per stream (`noStream` for the streams its media info lacks).
@@ -175,6 +182,83 @@ fn migrate_v6_to_v7(mut document: Value) -> Result<Value, String> {
         analysis.entry("transcript").or_insert(Value::Null);
     }
     Ok(document)
+}
+
+/// Version 7 → 8: the project gets `captionStyles`; each caption's `text` becomes words spread
+/// equally over the item (one per whitespace-separated word) drawn with a `minimal` style (what
+/// version 7 showed, near enough), added only when the document holds captions.
+fn migrate_v7_to_v8(mut document: Value) -> Result<Value, String> {
+    let Some(sequences) = document.get_mut("sequences").and_then(Value::as_array_mut) else {
+        return Err("`sequences` is missing or not a list".to_owned());
+    };
+    let mut captions = 0_usize;
+    let items = sequences
+        .iter_mut()
+        .filter_map(|sequence| sequence.get_mut("tracks").and_then(Value::as_array_mut))
+        .flatten()
+        .filter_map(|track| track.get_mut("items").and_then(Value::as_array_mut))
+        .flatten();
+    for item in items {
+        let duration = item
+            .pointer("/timelineRange/duration")
+            .and_then(Value::as_i64)
+            .unwrap_or(0);
+        let Some(kind) = item.get_mut("kind").and_then(Value::as_object_mut) else {
+            continue;
+        };
+        if kind.get("kind").and_then(Value::as_str) != Some("caption") {
+            continue;
+        }
+        let text = kind
+            .remove("text")
+            .and_then(|text| text.as_str().map(str::to_owned))
+            .unwrap_or_default();
+        kind.insert("words".to_owned(), equal_words(&text, duration));
+        kind.insert("styleId".to_owned(), json!(MIGRATED_CAPTION_STYLE_ID));
+        captions += 1;
+    }
+    let styles = if captions == 0 {
+        Vec::new()
+    } else {
+        vec![migrated_caption_style()?]
+    };
+    let Some(project) = document.as_object_mut() else {
+        return Err("the document is not an object".to_owned());
+    };
+    project
+        .entry("captionStyles")
+        .or_insert_with(|| Value::Array(styles));
+    Ok(document)
+}
+
+/// Words of `text` spread equally over `[0, duration)` flicks.
+fn equal_words(text: &str, duration: i64) -> Value {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    let count = i64::try_from(words.len()).unwrap_or(1).max(1);
+    let duration = duration.max(0);
+    Value::Array(
+        words
+            .iter()
+            .zip(0_i64..)
+            .map(|(word, index)| {
+                json!({
+                    "text": word,
+                    "start": duration * index / count,
+                    "end": duration * (index + 1) / count,
+                    "emphasis": false,
+                })
+            })
+            .collect(),
+    )
+}
+
+/// The `minimal` caption style with [`MIGRATED_CAPTION_STYLE_ID`], as JSON.
+fn migrated_caption_style() -> Result<Value, String> {
+    let id = se_domain::CaptionStyleId::parse(MIGRATED_CAPTION_STYLE_ID)
+        .map_err(|error| error.to_string())?;
+    let style = se_domain::caption_style_from_preset(se_domain::DEFAULT_CAPTION_PRESET, id)
+        .map_err(|error| error.to_string())?;
+    serde_json::to_value(style).map_err(|error| error.to_string())
 }
 
 /// Wraps the bare value of `field` in a static animatable value.
@@ -436,6 +520,41 @@ mod tests {
         assert_eq!(migrated["assets"][0]["analysis"]["transcript"], Value::Null);
         assert_eq!(migrated["schemaVersion"], json!(7));
         assert!(migrate_document(json!({ "schemaVersion": 6 }), MIGRATIONS, 7).is_err());
+    }
+
+    #[test]
+    fn version_8_turns_caption_texts_into_equal_words_with_a_style() {
+        let document = json!({
+            "schemaVersion": 7,
+            "sequences": [{ "tracks": [{ "items": [
+                { "timelineRange": { "start": 0, "duration": 900 },
+                  "kind": { "kind": "caption", "text": "Merci  d'être là" } },
+                { "timelineRange": { "start": 900, "duration": 100 },
+                  "kind": { "kind": "text" } }
+            ] }] }]
+        });
+        let migrated = migrate_document(document, MIGRATIONS, 8).unwrap();
+        let caption = &migrated["sequences"][0]["tracks"][0]["items"][0]["kind"];
+        assert_eq!(
+            caption["words"],
+            json!([
+                { "text": "Merci", "start": 0, "end": 300, "emphasis": false },
+                { "text": "d'être", "start": 300, "end": 600, "emphasis": false },
+                { "text": "là", "start": 600, "end": 900, "emphasis": false }
+            ])
+        );
+        assert_eq!(caption["styleId"], json!(MIGRATED_CAPTION_STYLE_ID));
+        assert_eq!(
+            migrated["captionStyles"][0]["id"],
+            json!(MIGRATED_CAPTION_STYLE_ID)
+        );
+        assert_eq!(migrated["captionStyles"][0]["preset"], json!("minimal"));
+        let without = migrate_document(
+            json!({ "schemaVersion": 7, "sequences": [] }),
+            MIGRATIONS,
+            8,
+        );
+        assert_eq!(without.unwrap()["captionStyles"], json!([]));
     }
 
     #[test]

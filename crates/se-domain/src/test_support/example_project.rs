@@ -10,19 +10,19 @@ use std::collections::BTreeMap;
 use super::{item, millis, range_ms, track};
 use crate::{
     Animatable, Asset, AssetAnalysis, AssetKind, AudioStreamInfo, AudioSummary, BrandKit,
-    CURRENT_SCHEMA_VERSION, CaptionItem, Color, ContentFingerprint, Decodability, DerivedFile,
-    DerivedMedia, DerivedStatus, DesignPixels, Easing, EasingPreset, FadeShape, Format,
-    FormatPreset, FrameRate, ImageFit, ImageItem, Item, ItemId, ItemKind, Keyframe, LinkGroupId,
-    Marker, MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin, Project,
-    ProjectId, ProjectSettings, Reframe, SceneSummary, Sequence, SequenceId, ShapeGeometry,
-    ShapeItem, StreamDecodability, Stroke, TaskId, TemplateItem, TemplateParamValue, TextItem,
-    TextStyle, Track, TrackKind, TranscriptSummary, TranscriptionSettings, Transform2D, Transition,
-    TransitionAlignment, TransitionId, TransitionKind, Vec2, VideoStreamInfo,
+    CURRENT_SCHEMA_VERSION, CaptionItem, CaptionWord, Color, ContentFingerprint, Decodability,
+    DerivedFile, DerivedMedia, DerivedStatus, DesignPixels, Easing, EasingPreset, FadeShape,
+    Format, FormatPreset, FrameRate, ImageFit, ImageItem, Item, ItemId, ItemKind, Keyframe,
+    LinkGroupId, Marker, MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin,
+    Project, ProjectId, ProjectSettings, Reframe, SceneSummary, Sequence, SequenceId,
+    ShapeGeometry, ShapeItem, StreamDecodability, Stroke, TaskId, TemplateItem, TemplateParamValue,
+    TextItem, TextStyle, Track, TrackKind, TranscriptSummary, TranscriptionSettings, Transform2D,
+    Transition, TransitionAlignment, TransitionId, TransitionKind, Vec2, VideoStreamInfo,
 };
 
 /// Ids of [`example_project`] that tests refer to: its three assets and its template.
 pub mod example_ids {
-    use crate::{AssetId, TemplateId};
+    use crate::{AssetId, CaptionStyleId, TemplateId};
 
     /// `interview.mp4`, 60 s, 1080p 29.97 with stereo sound.
     pub const VIDEO_ASSET: AssetId = AssetId::from_test_index(1);
@@ -32,10 +32,12 @@ pub mod example_ids {
     pub const IMAGE_ASSET: AssetId = AssetId::from_test_index(3);
     /// The project's only motion template.
     pub const TEMPLATE: TemplateId = TemplateId::from_test_index(1);
+    /// The project's only caption style (the `minimal` preset), used by its caption.
+    pub const CAPTION_STYLE: CaptionStyleId = CaptionStyleId::from_test_index(1);
 }
 
 /// A valid project (`validate_project` finds nothing) with every item kind, keyframes, a link
-/// group, an AI-created item, a marker, a template and a brand kit.
+/// group, an AI-created item, a marker, a template, a caption style and a brand kit.
 ///
 /// Sequence `Main edit`, 1080p at 29.97 fps. Tracks, bottom to top: V1 (two interview clips, the
 /// second at 2× speed, filling the frame around a moving focus), V2 (a keyframed text and the logo), V3 (a template, a shape and a
@@ -81,6 +83,10 @@ pub fn example_project() -> Project {
             ],
             fonts: vec!["Inter".to_owned()],
         }),
+        caption_styles: vec![
+            crate::caption_style_from_preset("minimal", example_ids::CAPTION_STYLE)
+                .expect("the minimal preset exists"),
+        ],
     }
 }
 
@@ -377,7 +383,12 @@ fn backdrop_shape() -> Item {
 
 fn caption() -> Item {
     let caption = CaptionItem {
-        text: "Merci d'être là".to_owned(),
+        words: vec![
+            CaptionWord::new("Merci", millis(0), millis(400)),
+            CaptionWord::new("d'être", millis(450), millis(900)),
+            CaptionWord::new("là", millis(950), millis(1500)),
+        ],
+        style_id: example_ids::CAPTION_STYLE,
     };
     item(7, range_ms(8000, 2000), ItemKind::Caption(caption))
 }

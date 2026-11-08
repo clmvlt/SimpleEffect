@@ -7,7 +7,7 @@ use std::{
 };
 
 use super::{Violation, ViolationCode};
-use crate::{Asset, AssetId, Flicks, Project, TemplateId};
+use crate::{Asset, AssetId, CaptionStyleId, Flicks, Project, TemplateId};
 
 /// A location in the document, written like JS property access with element ids in brackets.
 #[derive(Debug, Clone, Default)]
@@ -53,6 +53,7 @@ impl Report {
 pub(super) struct ProjectIndex<'a> {
     assets: HashMap<AssetId, &'a Asset>,
     templates: HashSet<TemplateId>,
+    caption_styles: HashSet<CaptionStyleId>,
 }
 
 impl<'a> ProjectIndex<'a> {
@@ -69,6 +70,11 @@ impl<'a> ProjectIndex<'a> {
                 .iter()
                 .map(|template| template.id)
                 .collect(),
+            caption_styles: project
+                .caption_styles
+                .iter()
+                .map(|style| style.id)
+                .collect(),
         }
     }
 
@@ -82,6 +88,11 @@ impl<'a> ProjectIndex<'a> {
         self.asset(id)
             .and_then(|asset| asset.media_info.as_ref())
             .and_then(|info| info.duration)
+    }
+
+    /// Whether the project has a caption style with this id.
+    pub(super) fn has_caption_style(&self, id: CaptionStyleId) -> bool {
+        self.caption_styles.contains(&id)
     }
 
     /// Whether the project has a template with this id.

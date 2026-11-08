@@ -7,7 +7,7 @@ use std::sync::Arc;
 use se_domain::{Project, TrackKind};
 use se_protocol::CutSummary;
 
-use super::{AgentEditService, MAX_ATTEMPTS, cut_scope::check_cut_scope};
+use super::{AgentEditService, MAX_ATTEMPTS, cut_scope::check_cut_scope, scope::track_allowed};
 use crate::{
     AppError,
     agent_access::AgentContext,
@@ -47,7 +47,11 @@ impl AgentEditService {
             let view = handle.view().await?;
             let base = &view.project;
             let request = scoped(agent, base, request)?;
-            let (resolved, tracks) = resolve_with_tracks(base, &request, media)?;
+            let (resolved, mut tracks) = resolve_with_tracks(base, &request, media)?;
+            // Caption tracks follow the cut only when the task may edit them.
+            tracks.retain(|&track| {
+                track_allowed(&agent.scope, track) || !is_caption_track_of(base, track)
+            });
             let summary = resolved.summary(&tracks);
             if resolved.cuts.is_empty() {
                 return Ok(CutOutcome {
@@ -120,4 +124,15 @@ fn scoped(
         *tracks = Some(sound);
     }
     Ok(scoped)
+}
+
+/// Whether `track` of `project` is a caption track.
+fn is_caption_track_of(project: &Project, track: se_domain::TrackId) -> bool {
+    project
+        .sequences
+        .iter()
+        .flat_map(|sequence| &sequence.tracks)
+        .any(|candidate| {
+            candidate.id == track && crate::captions::track::is_caption_track(candidate)
+        })
 }

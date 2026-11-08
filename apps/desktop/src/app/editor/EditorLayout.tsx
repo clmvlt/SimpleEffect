@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { AiView, useAiTaskSync } from '../../features/ai';
+import { CaptionsView } from '../../features/captions';
 import { AnimationsPanel, useCreateGraphic } from '../../features/graphics';
 import { InspectorView } from '../../features/inspector';
 import { MediaBinPanel } from '../../features/media-bin';
@@ -73,8 +74,8 @@ export function EditorLayout({ layoutStorage }: EditorLayoutProps) {
 }
 
 /**
- * The right column: « Inspecteur », « Animations », « IA » and « Transcription » share one panel as tabs (features
- * may switch it, e.g. the timeline's « Propriétés »).
+ * The right column: « Inspecteur », « Animations », « IA », « Transcription » and « Sous-titres »
+ * share one panel as tabs (features may switch it, e.g. the timeline's « Propriétés »).
  */
 function SidePanel() {
   const { t } = useTranslation();
@@ -94,6 +95,7 @@ function SidePanel() {
             <TabsTrigger value="animations">{t('editor.animations.title')}</TabsTrigger>
             <TabsTrigger value="ai">{t('editor.ai.title')}</TabsTrigger>
             <TabsTrigger value="transcript">{t('editor.transcript.title')}</TabsTrigger>
+            <TabsTrigger value="captions">{t('editor.captions.title')}</TabsTrigger>
           </TabsList>
         </PanelHeader>
         <PanelBody scrollable={false}>
@@ -108,6 +110,9 @@ function SidePanel() {
           </TabsContent>
           <TabsContent value="transcript" className="size-full">
             <TranscriptView />
+          </TabsContent>
+          <TabsContent value="captions" className="size-full">
+            <CaptionsView />
           </TabsContent>
         </PanelBody>
       </Tabs>

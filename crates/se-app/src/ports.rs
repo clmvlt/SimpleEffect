@@ -11,6 +11,7 @@ mod project_repository;
 mod renderer;
 mod runtime;
 mod storage_error;
+mod subtitles;
 mod task_store;
 mod transcode;
 mod transcript_store;
@@ -31,6 +32,7 @@ pub use project_repository::{ChangesetWrite, JournalEntry, ProjectRepository, Pr
 pub use renderer::RendererLink;
 pub use runtime::{Clock, EventSink, IdGenerator, TokenSource};
 pub use storage_error::StorageError;
+pub use subtitles::{SubtitleCue, SubtitleError, SubtitleFiles};
 pub use task_store::TaskStore;
 pub use transcode::{
     AudioEncoding, AudioPlan, Container, TranscodePlan, TranscodeRecipe, VideoCodecTarget,

@@ -3,7 +3,9 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::{Asset, BrandKit, Format, Item, MotionTemplate, Sequence, TranscriptionSettings};
+use super::{
+    Asset, BrandKit, CaptionStyle, Format, Item, MotionTemplate, Sequence, TranscriptionSettings,
+};
 use crate::ids::ProjectId;
 
 /// Version of the document format written by this build. Persistence (prompt 07) migrates older
@@ -14,7 +16,9 @@ use crate::ids::ProjectId;
 /// Version 4 (prompt 14): tracks carry transitions, media clips fade shapes.
 /// Version 5 (prompt 15): full text styles, outlines, image fits, blur, animatable colours.
 /// Version 6 (prompt 16): media clips that fill the frame carry a focus (`reframe.focus`).
-pub const CURRENT_SCHEMA_VERSION: u32 = 7;
+/// Version 7 (prompt 21): transcription settings and transcript summaries.
+/// Version 8 (prompt 23): caption styles, captions made of timed words.
+pub const CURRENT_SCHEMA_VERSION: u32 = 8;
 
 /// The whole editable state of a project, serialized as `project.json` (ADR-0006).
 ///
@@ -40,6 +44,9 @@ pub struct Project {
     pub templates: Vec<MotionTemplate>,
     /// The brand identity used by this project, if one was set.
     pub brand_kit: Option<BrandKit>,
+    /// Looks shared by its captions (schema version 8).
+    #[serde(default)]
+    pub caption_styles: Vec<CaptionStyle>,
 }
 
 impl Project {

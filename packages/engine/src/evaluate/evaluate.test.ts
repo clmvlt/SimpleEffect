@@ -254,13 +254,17 @@ describe('evaluate: properties and boxes', () => {
     });
   });
 
-  it('turns texts and captions into text layers in sequence pixels', () => {
+  it('turns texts into text layers and captions into caption layers in sequence pixels', () => {
     const title = item(
       0 as Flicks,
       seconds(1),
       text('Bonjour', { style: { fontSize: still(72), color: still('#ffcc00') } }),
     );
-    const caption = item(0 as Flicks, seconds(1), { kind: 'caption', text: 'Sous-titre' });
+    const caption = item(0 as Flicks, seconds(1), {
+      kind: 'caption',
+      words: [{ text: 'Sous-titre', start: 0 as Flicks, end: seconds(1), emphasis: false }],
+      styleId: 'style-1',
+    });
     const graph = evaluate(
       sequence(1280, 720, [videoTrack([title]), videoTrack([caption])]),
       assets,
@@ -273,6 +277,12 @@ describe('evaluate: properties and boxes', () => {
       font: { family: 'Inter', weight: 600, italic: false },
       color: { r: 1, g: 0.8, b: 0, a: 1 },
     });
-    expect(graph.layers[1]).toMatchObject({ kind: 'text', content: 'Sous-titre' });
+    // No caption styles in the scene: the default preset (minimal, 52 px) draws it.
+    expect(graph.layers[1]).toMatchObject({
+      kind: 'caption',
+      lines: [[{ text: 'Sous-titre' }]],
+      fontSize: (52 * 720) / 1080,
+      transform: { position: { x: 0.5, y: 0.9 }, anchor: { x: 0.5, y: 1 } },
+    });
   });
 });

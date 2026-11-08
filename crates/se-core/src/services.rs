@@ -7,10 +7,10 @@ use std::{path::PathBuf, sync::Arc};
 
 use se_agents::{FsAgentWorkspaces, providers::claude_code::ClaudeCodeProvider};
 use se_app::{
-    AgentEditService, DEFAULT_SAVE_DELAY, FrameRenderService, JobQueue, JobQueueConfig, McpAccess,
-    MediaService, MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps,
-    SmartCutService, SmartCutServiceDeps, TaskService, TaskServiceDeps, TaskTokenRegistry,
-    TranscriptionService, TranscriptionServiceDeps,
+    AgentEditService, CaptionService, CaptionServiceDeps, DEFAULT_SAVE_DELAY, FrameRenderService,
+    JobQueue, JobQueueConfig, McpAccess, MediaService, MediaServiceDeps, ProjectService,
+    ProjectServiceConfig, ProjectServiceDeps, SmartCutService, SmartCutServiceDeps, TaskService,
+    TaskServiceDeps, TaskTokenRegistry, TranscriptionService, TranscriptionServiceDeps,
     media_service::settings::keys::TOOLS_DIR,
     ports::{AppLibraryRepository, FontCatalog, IdGenerator},
 };
@@ -46,6 +46,8 @@ pub struct Services {
     pub transcription: TranscriptionService,
     /// Smart cuts: text-based editing, filler words, silences (prompt 22).
     pub smart_cuts: SmartCutService,
+    /// Captions over SRT files on disk (prompt 23).
+    pub captions: CaptionService,
 }
 
 /// Builds the services over the real adapters, for a core listening on `port`.
@@ -112,7 +114,13 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         transcription: transcription.clone(),
         library,
     });
+    let captions = CaptionService::new(CaptionServiceDeps {
+        projects: Arc::clone(&projects),
+        transcription: transcription.clone(),
+        subtitles: Arc::new(se_export::FsSubtitleFiles),
+    });
     Ok(Services {
+        captions,
         smart_cuts,
         projects,
         media,

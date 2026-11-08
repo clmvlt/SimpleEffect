@@ -6,6 +6,7 @@ import type {
   TrackEntity,
   TrackKind,
 } from '@se/protocol';
+import { captionKind } from '../../../shared/project-store/testing/session-fixture';
 
 /** Builders of the transcript panel's tests (a 25 fps sequence, tracks, items, assets). */
 
@@ -29,7 +30,7 @@ export function testItem(
     origin: { kind: 'user' },
     timelineRange: { start: seconds(start), duration: seconds(duration) },
     linkGroup: null,
-    kind: { kind: 'caption', text: 'Bonjour' },
+    kind: captionKind('Bonjour'),
     ...overrides,
   };
 }

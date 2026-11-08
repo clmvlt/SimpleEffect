@@ -12,6 +12,7 @@ mod memory_repository;
 mod memory_tasks;
 mod memory_transcripts;
 mod runtime_fakes;
+mod subtitle_fakes;
 mod transcription_fakes;
 
 pub use agent_fakes::{
@@ -32,6 +33,7 @@ pub use memory_repository::{InMemoryProjectRepository, StoredFolder};
 pub use runtime_fakes::{
     FakeRendererLink, FixedClock, RecordingEventSink, SequentialIds, SequentialTokens,
 };
+pub use subtitle_fakes::FakeSubtitleFiles;
 pub use transcription_fakes::{
     FAKE_WHISPER_PATH, FakeDownloader, FakeModelFile, FakeModelFiles, FakeSpeechExtractor,
     FakeTranscriber, fake_gpu_offer, fake_transcript,

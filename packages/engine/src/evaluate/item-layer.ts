@@ -1,7 +1,17 @@
-import type { Asset, AssetId, Flicks, Item, ItemKind, TextItem, Transform2D } from '@se/protocol';
+import type {
+  Asset,
+  AssetId,
+  CaptionStyle,
+  Flicks,
+  Item,
+  ItemKind,
+  Transform2D,
+} from '@se/protocol';
 
 import type { Layer, Size } from './frame-graph';
 import { interpolateVec2, valueAt } from '../animation/interpolate';
+import { DEFAULT_CAPTION_PRESET, presetStyle } from '../caption-styles';
+import { captionLayerStyle, captionTransform } from './caption-layer';
 import { assetDisplaySize, imageBox } from './geometry';
 import { shapeLayerStyle, textLayerStyle, type GraphicContext } from './graphic-layers';
 import { CENTRE_FOCUS, reframedPicture } from './reframe';
@@ -10,6 +20,12 @@ import { isInvisible, resolveTransform } from './transform';
 
 /** Assets of the project by id (the renderer mirror's shape). */
 export type AssetTable = Readonly<Record<AssetId, Asset>>;
+
+/** The project's caption styles (prompt 23). */
+export type CaptionStyleList = readonly CaptionStyle[];
+
+/** Draws captions whose style is missing (never in a valid project; old scenes). */
+const FALLBACK_CAPTION_STYLE = presetStyle(DEFAULT_CAPTION_PRESET, '');
 
 /**
  * What a layer is built from: the item, the evaluated time (outside the item's range when it plays
@@ -21,63 +37,10 @@ export interface LayerContext {
   readonly frame: Size;
   readonly designScale: number;
   readonly assets: AssetTable;
+  /** The project's caption styles (captions are drawn with the default preset without them). */
+  readonly captionStyles?: CaptionStyleList | undefined;
   /** Extra opacity factor (a dissolve's weight); 1 when absent. */
   readonly opacity?: number;
-}
-
-/** Widest caption block in design pixels (narrower frames get 90 % of their width). */
-const CAPTION_MAX_WIDTH = 1600;
-
-/**
- * Fixed look of captions until caption styles exist: white Inter 56 px, bottom centre.
- * TODO(prompt-23): caption styles (and word highlighting) replace this.
- */
-const CAPTION_LOOK: Omit<TextItem, 'content'> = {
-  style: {
-    fontFamily: 'Inter',
-    fontWeight: 600,
-    italic: false,
-    fontSize: { kind: 'static', value: 56 },
-    color: { kind: 'static', value: '#ffffff' },
-    stroke: {
-      enabled: false,
-      color: { kind: 'static', value: '#000000' },
-      width: { kind: 'static', value: 0 },
-    },
-    shadow: {
-      enabled: true,
-      color: { kind: 'static', value: '#000000b3' },
-      blur: { kind: 'static', value: 6 },
-      offset: { kind: 'static', value: { x: 0, y: 2 } },
-    },
-    background: {
-      enabled: false,
-      color: { kind: 'static', value: '#000000b3' },
-      padding: { x: 0, y: 0 },
-      cornerRadius: 0,
-    },
-    letterSpacing: { kind: 'static', value: 0 },
-    lineHeight: 1.2,
-    align: 'center',
-    maxWidth: CAPTION_MAX_WIDTH,
-    textCase: 'normal',
-  },
-  transform: {
-    position: { kind: 'static', value: { x: 0.5, y: 0.9 } },
-    scale: { kind: 'static', value: { x: 1, y: 1 } },
-    rotation: { kind: 'static', value: 0 },
-    anchor: { kind: 'static', value: { x: 0.5, y: 1 } },
-    opacity: { kind: 'static', value: 1 },
-    blur: { kind: 'static', value: 0 },
-  } satisfies Transform2D,
-  reveal: { kind: 'static', value: 1 },
-};
-
-/** The caption look for `content`, no wider than 90 % of the frame (portrait formats). */
-function captionLook(content: string, context: LayerContext): TextItem {
-  const frameWidth = context.frame.width / context.designScale;
-  const maxWidth = Math.min(CAPTION_MAX_WIDTH, Math.floor(frameWidth * 0.9));
-  return { ...CAPTION_LOOK, content, style: { ...CAPTION_LOOK.style, maxWidth } };
 }
 
 function mediaClipLayer(
@@ -142,12 +105,15 @@ function layerOfKind(kind: ItemKind, context: LayerContext, localTime: Flicks): 
       return { itemId, ...shapeLayerStyle(kind, graphic), transform: placed(kind.transform) };
     case 'text':
       return { itemId, ...textLayerStyle(kind, graphic), transform: placed(kind.transform) };
-    case 'caption':
-      return {
-        itemId,
-        ...textLayerStyle(captionLook(kind.text, context), graphic),
-        transform: placed(CAPTION_LOOK.transform),
-      };
+    case 'caption': {
+      const style =
+        context.captionStyles?.find((candidate) => candidate.id === kind.styleId) ??
+        FALLBACK_CAPTION_STYLE;
+      const caption = captionLayerStyle(kind, style, graphic);
+      return caption === null
+        ? null
+        : { itemId, ...caption, transform: captionTransform(style, weight) };
+    }
     case 'motionTemplate':
       // TODO(prompt-24): motion templates render through the template runtime.
       return null;

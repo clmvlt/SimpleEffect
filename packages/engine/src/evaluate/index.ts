@@ -6,8 +6,20 @@ export {
   type EvaluableTrack,
 } from './evaluate';
 export {
+  POP_AMOUNT,
+  POP_SECONDS,
+  REVEAL_SECONDS,
+  activeWordIndex,
+  captionLayerStyle,
+  captionPage,
+  captionText,
+  captionTransform,
+} from './caption-layer';
+export {
   DISSOLVE_COMPOSITING,
   isPictureLayer,
+  type CaptionLayer,
+  type CaptionWordLayer,
   type Crop,
   type DissolveRole,
   type FrameGraph,
@@ -27,7 +39,7 @@ export {
   reframedBox,
   shapeBox,
 } from './geometry';
-export type { AssetTable } from './item-layer';
+export type { AssetTable, CaptionStyleList } from './item-layer';
 export {
   CENTRE_FOCUS,
   fillCrop,

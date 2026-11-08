@@ -13,9 +13,11 @@ use serde::{Deserialize, Serialize};
 use super::{
     add_image::AddImage, add_marker::AddMarker, add_shape::AddShape, add_text::AddText,
     add_transition::AddTransition, apply_animation_preset::ApplyAnimationPreset,
-    delete_items::DeleteItems, insert_gap::InsertGap, move_item::MoveItem,
+    delete_items::DeleteItems, edit_caption_text::EditCaptionText,
+    emphasize_caption_words::EmphasizeCaptionWords, insert_gap::InsertGap, move_item::MoveItem,
     ripple_delete_range::RippleDeleteRange, set_keyframes::SetKeyframes, set_volume::SetVolume,
-    split_at::SplitAt, trim_item::TrimItem, update_item::UpdateItem,
+    split_at::SplitAt, trim_item::TrimItem, update_caption_style::UpdateCaptionStyle,
+    update_item::UpdateItem,
 };
 use crate::{
     context::{ToolContext, find_sequence},
@@ -29,7 +31,7 @@ use crate::{
 pub const MAX_ACTIONS: usize = 50;
 
 /// The tools a batch can run.
-const BATCHABLE: [&str; 15] = [
+const BATCHABLE: [&str; 18] = [
     "add_text",
     "add_shape",
     "add_image",
@@ -45,6 +47,9 @@ const BATCHABLE: [&str; 15] = [
     "set_volume",
     "add_transition",
     "add_marker",
+    "update_caption_style",
+    "edit_caption_text",
+    "emphasize_caption_words",
 ];
 
 /// The tool.
@@ -56,7 +61,8 @@ pub struct ApplyBatch;
 pub struct ActionInput {
     /// A write tool: `add_text`, `add_shape`, `add_image`, `update_item`, `delete_items`, `move_item`,
     /// `trim_item`, `split_at`, `ripple_delete_range`, `insert_gap`, `set_keyframes`,
-    /// `apply_animation_preset`, `set_volume`, `add_transition`, `add_marker`.
+    /// `apply_animation_preset`, `set_volume`, `add_transition`, `add_marker`,
+    /// `update_caption_style`, `edit_caption_text`, `emphasize_caption_words`.
     pub tool: String,
     /// Its arguments, exactly as for the tool itself.
     pub arguments: JsonObject,
@@ -215,6 +221,9 @@ fn plan_action(
         "set_volume" => plan_with::<SetVolume>(arguments, scene),
         "add_transition" => plan_with::<AddTransition>(arguments, scene),
         "add_marker" => plan_with::<AddMarker>(arguments, scene),
+        "update_caption_style" => plan_with::<UpdateCaptionStyle>(arguments, scene),
+        "edit_caption_text" => plan_with::<EditCaptionText>(arguments, scene),
+        "emphasize_caption_words" => plan_with::<EmphasizeCaptionWords>(arguments, scene),
         _ => Err(ToolError::invalid_arguments(format!(
             "{tool} cannot run in a batch; batchable tools are {}",
             BATCHABLE.join(", ")

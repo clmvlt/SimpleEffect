@@ -27,7 +27,7 @@ mod overwrite;
 mod placement;
 mod ripple;
 
-pub(crate) use lookup::{distinct, find_item, find_sequence, find_track, sequence_of};
+pub(crate) use lookup::{ItemPlace, distinct, find_item, find_sequence, find_track, sequence_of};
 pub(crate) use new_items::{copies_of, media_parts, starting_at};
 pub(crate) use placement::{lift, place};
 pub(crate) use ripple::{concerned_tracks, open_time, remove_time, ripple_delete};

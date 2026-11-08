@@ -53,6 +53,7 @@ function renderPanel(assets: Asset[], bridge: Partial<SimpleEffectBridge> = {}) 
     showNotification: () => Promise.resolve(),
     onNotificationClick: () => () => undefined,
     chooseFile: () => Promise.resolve(null),
+    chooseSaveFile: () => Promise.resolve(null),
     openExternal: () => Promise.resolve(),
     ...bridge,
   };

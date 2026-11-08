@@ -149,6 +149,10 @@ pub enum ErrorCode {
     DownloadFailed,
     /// The asset has no sound to transcribe.
     NoSpeechStream,
+    /// A subtitle file could not be read or written (the message names it and why).
+    SubtitleFileFailed,
+    /// A file is not SRT (`.srt`); the message gives the line of the problem.
+    InvalidSubtitleFile,
 }
 
 #[cfg(test)]

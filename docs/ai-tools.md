@@ -102,6 +102,10 @@
 | `remove_words` | Cuts transcript words (text-based editing), keeping natural pauses |
 | `remove_fillers` | Cuts filler words (« euh », « um »…) of a range |
 | `remove_silences` | Cuts the pauses of a range, from the sound's level |
+| `create_captions` | Captions from the transcript of a range, on the caption track |
+| `update_caption_style` | How captions look and animate (preset, fonts, colours, position…) |
+| `edit_caption_text` | Corrects a caption's text, keeping word timings |
+| `emphasize_caption_words` | Puts words of a caption forward (emphasis colour) |
 
 Ids below are shortened (`…0001…`); real ones are UUIDs.
 
@@ -173,8 +177,9 @@ Everything about one item.
 
 **Output**: `{sequence_id, track_name, item: <summary as in get_timeline>, properties}` where
 `properties` is the item's document form (camelCase fields) with times made readable: keyframe
-`time` (relative to the item's start, plus `sequence_time`), and a clip's `sourceStart`, `fadeIn`,
-`fadeOut`.
+`time` (relative to the item's start, plus `sequence_time`), a caption's word `start`/`end` (same
+form), and a clip's `sourceStart`, `fadeIn`, `fadeOut`. A caption also gets `caption_style`: its
+style as stored (font, colours, outline, shadow, background, position, animation, line limits).
 ```json
 {"sequence_id":"…","track_name":"V2",
  "item":{"item_id":"…0003…","kind":"text","label":"Bonjour","start":{"timecode":"00:00:01.000","seconds":1.0}, …},
@@ -702,6 +707,79 @@ found.
 unmuted, unlocked sound track holding media, or the task's sound tracks), `all_tracks`. Silences
 come from the assets' level envelopes (20 ms RMS, `get_audio_analysis`); time where no listened
 track has a clip is never cut. **Leave music tracks out**: music is never silent.
+
+## Captions (prompt 23)
+
+A caption is an item of kind `caption` holding **timed words** (`words: [{text, start, end,
+emphasis}]`, times relative to the item) and a `styleId`: a **caption style** of the project,
+shared by captions (`captionStyles`). Styles say how captions look (font, size, letter case, text
+colour, colour of the word being spoken, colour of emphasised words, outline, shadow, box, position
+of the block's bottom centre, line limits) and animate: `none`, `word_highlight` (the spoken word
+coloured; `highlight_spoken` keeps spoken words coloured, karaoke-like), `pop_per_word` (each word
+pops as it starts), `box_per_line` (each line on its own box), `reveal_per_word` (words appear as
+spoken). Predefined styles: `tiktokBold`, `minimal`, `karaoke`, `box`.
+
+Captions live on the **caption track**: the highest unlocked video track holding captions only (a
+video track « Sous-titres » is created on top when there is none — that needs a task over every
+track). They are ordinary items: `move_item`, `trim_item`, `split_at` and `delete_items` work on
+them (words follow: a word belongs to the part holding its middle), and smart cuts cut the caption
+track with the speech. A caption style may change only when every caption using it lies in the
+task's scope; `update_caption_style` with `item_ids` copies a shared style for the listed captions.
+Agent instructions: `07-captions.md` (readability, line length, safe areas).
+
+### `create_captions`
+
+| Argument | Type | Meaning |
+|---|---|---|
+| `range` | `{start, end}` | Where (default: the task's range, else the whole sequence); captions of the caption track crossing it are replaced |
+| `style` | string | A preset (`tiktokBold`, `minimal`, `karaoke`, `box`) or a `style_id` (default: the replaced captions' style, else `minimal`) |
+| `max_chars_per_line` | integer | 4–80 (default: the style's) |
+| `max_lines` | integer | 1–4 (default: the style's) |
+
+Words (from the transcript, as `get_transcript` gives them) whose middle lies in the range are
+grouped: a new caption after a 0.6 s pause, a sentence end, a clause end once half the room is used,
+or when the lines are full (cut after a comma when possible); captions last 0.7–6 s, short gaps are
+closed, edges are snapped to frames. Not batchable.
+
+**Output**:
+```json
+{"revision":57,"style_id":"…","track_id":"…",
+ "captions":[{"item_id":"…","start":{"timecode":"00:00:00.167","seconds":0.167},"end":{"timecode":"00:00:01.101","seconds":1.101},"text":"Bonjour à tous."}]}
+```
+Nothing spoken in the range: `captions` is empty, `revision` is `null` and `note` says why
+(`untranscribed`: media to transcribe first).
+
+**Errors**: `INVALID_ARGUMENTS` (unknown style), `VALIDATION_ERROR` (limits out of range),
+`OUT_OF_SCOPE` (a caption to replace straddles the scope, a new caption track without every track),
+`INVALID_TIME`.
+
+### `update_caption_style`
+
+`style_id` **or** `item_ids` (required, one of them), then any of: `preset` (applied first),
+`font_family`, `font_size` (design pixels), `font_weight`, `italic`, `uppercase`, `text_color`,
+`active_color`, `emphasis_color`, `outline`, `outline_color`, `outline_width`, `shadow`,
+`background`, `background_color`, `position` (`{x, y}` or a named place: the block's bottom
+centre), `animation` (`none`, `word_highlight`, `pop_per_word`, `box_per_line`,
+`reveal_per_word`), `highlight_spoken`, `max_chars_per_line`, `max_lines`. With `style_id` the
+style changes in place (every caption using it must be in the scope); with `item_ids` a style also
+used by other captions is copied for them. Batchable. **Output**: as other write tools (`revision`,
+`items`). **Errors**: `INVALID_ARGUMENTS` (neither or both targets, not a caption, unknown preset,
+bad colour, nothing to change), `VALIDATION_ERROR` (values out of range), `OUT_OF_SCOPE`.
+
+### `edit_caption_text`
+
+`item_id` (required; `$name` in a batch), `text` (required, not empty). Words left unchanged keep
+their timing; a run of changed words with as many new words keeps the old timings one for one (a
+typo fix); otherwise the new words share the replaced words' time (or the pause around an
+insertion) in proportion to their length. Batchable. **Errors**: `INVALID_ARGUMENTS` (empty text,
+not a caption), `ITEM_NOT_FOUND`, `OUT_OF_SCOPE`.
+
+### `emphasize_caption_words`
+
+`item_id` (required), `words` (required: indices from 0, as `get_item` lists them), `emphasis`
+(default true; false puts them back). Emphasised words are drawn in the style's emphasis colour
+(the active colour wins while spoken). Batchable. **Errors**: `INVALID_ARGUMENTS`,
+`VALIDATION_ERROR` (an index beyond the caption's words), `OUT_OF_SCOPE`.
 
 ## Changesets and reverts
 
