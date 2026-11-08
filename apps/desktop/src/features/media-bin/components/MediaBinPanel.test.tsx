@@ -135,6 +135,7 @@ describe('MediaBinPanel', () => {
           silenceCount: 2,
           silenceDuration: (2.25 * 705_600_000) as Flicks,
         },
+        transcript: null,
         scenes: { changeCount: 4 },
       },
     });

@@ -323,7 +323,7 @@ export function videoAsset(spec: VideoAssetSpec): Asset {
       mezzanine: spec.mezzanine === true ? ready('cache/mezzanine.mp4') : null,
       proxy: spec.proxy === true ? ready('cache/proxy-540.mp4') : null,
     },
-    analysis: { audio: null, scenes: null },
+    analysis: { audio: null, scenes: null, transcript: null },
     decodability: {
       video: spec.decodable === false ? 'undecodable' : 'decodable',
       audio: 'noStream',

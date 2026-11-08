@@ -88,6 +88,16 @@ describe('derived protocol types', () => {
       | 'getAiSettings'
       | 'updateAiSettings'
       | 'reportFrameRenderFailure'
+      | 'getTranscriptionStatus'
+      | 'updateTranscriptionPreferences'
+      | 'startTranscriptionDownload'
+      | 'cancelTranscriptionDownload'
+      | 'importTranscriptionModel'
+      | 'removeTranscriptionFile'
+      | 'transcribeAssets'
+      | 'getTranscript'
+      | 'searchTranscripts'
+      | 'setTranscriptionSettings'
     >();
   });
 
@@ -122,6 +132,7 @@ describe('derived protocol types', () => {
       | 'taskChangesetUpdated'
       | 'aiStatusChanged'
       | 'renderFramesRequested'
+      | 'transcriptionStatusChanged'
     >();
     expectTypeOf<CoreEventOf<'jobCompleted'>['job']>().toEqualTypeOf<JobSnapshot>();
     expectTypeOf<CoreEventOf<'projectPatched'>>().toExtend<ProjectPatch>();

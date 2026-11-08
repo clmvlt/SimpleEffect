@@ -76,7 +76,8 @@
         "relinked": "« {{name}} » est relié",
         "removed": "« {{name}} » a été retiré du projet",
         "proxyQueued": "Proxy de « {{name}} » en préparation",
-        "mezzanineQueued": "Mezzanine de « {{name}} » en préparation"
+        "mezzanineQueued": "Mezzanine de « {{name}} » en préparation",
+        "transcriptionQueued": "Transcription de « {{name}} » lancée"
       },
       "card": {
         "missing": "Manquant",
@@ -84,7 +85,10 @@
         "open": "Ouvrir les détails de {{name}}",
         "actions": "Actions pour {{name}}",
         "preparing": "En préparation",
-        "unplayable": "Illisible"
+        "unplayable": "Illisible",
+        "transcribed": "Transcrit",
+        "transcribedDetails_one": "Transcrit avec {{model}} : {{count}} mot",
+        "transcribedDetails_other": "Transcrit avec {{model}} : {{count}} mots"
       },
       "jobs": {
         "thumbnails": "Miniatures",
@@ -97,9 +101,12 @@
         "mezzanine": "Mezzanine",
         "proxy": "Proxy",
         "audioAnalysis": "Analyse du son",
-        "sceneDetection": "Changements de plan"
+        "sceneDetection": "Changements de plan",
+        "transcription": "Transcription"
       },
       "menu": {
+        "transcribe": "Transcrire",
+        "retranscribe": "Transcrire à nouveau",
         "relink": "Relier…",
         "reveal": "Afficher dans le dossier",
         "remove": "Retirer du projet",
@@ -651,7 +658,52 @@
       "addImage": "Ajouter une image",
       "applyAnimation": "Appliquer une animation",
       "reframeItems": "Recadrage",
-      "revertAiTask": "Annuler une tâche IA"
+      "revertAiTask": "Annuler une tâche IA",
+      "setTranscriptionSettings": "Réglages de transcription"
+    },
+    "transcript": {
+      "title": "Transcription",
+      "noProject": "Aucune séquence à transcrire",
+      "modeLabel": "Transcription affichée",
+      "modes": {
+        "sequence": "Séquence",
+        "media": "Média sélectionné"
+      },
+      "searchLabel": "Rechercher dans la transcription",
+      "searchPlaceholder": "Rechercher…",
+      "noMatch": "Aucun résultat",
+      "matchPosition": "{{position}}/{{count}}",
+      "previousMatch": "Résultat précédent",
+      "nextMatch": "Résultat suivant",
+      "textLabel": "Texte transcrit : cliquez un mot pour y placer la tête de lecture, glissez sur des mots pour marquer l’entrée et la sortie",
+      "unsureWord": "Mot peu sûr : la transcription peut se tromper ici",
+      "loading": "Chargement de la transcription…",
+      "emptySequence": "Rien de transcrit dans cette séquence",
+      "emptyMedia": "Ce média n’est pas transcrit",
+      "noSoundInSequence": "Placez des médias avec du son sur une piste audio.",
+      "selectMedia": "Sélectionnez un média avec du son dans le panneau Médias.",
+      "transcribeHint": "Lancez la transcription ci-dessus : les mots apparaîtront ici, synchronisés avec la lecture.",
+      "notInSequence": "Ce passage n’est pas utilisé dans la séquence",
+      "untranscribedLabel": "Médias sans transcription",
+      "untranscribed_one": "{{count}} média sans transcription",
+      "untranscribed_other": "{{count}} médias sans transcription",
+      "transcribe": "Transcrire",
+      "transcribeAll": "Tout transcrire",
+      "retry": "Réessayer",
+      "queued": "En attente",
+      "percent": "{{percent}} %",
+      "progressLabel": "Transcription de {{name}}",
+      "openSettings": "Réglages",
+      "settings": {
+        "open": "Langue et vocabulaire",
+        "language": "Langue parlée",
+        "detect": "Détection automatique",
+        "vocabulary": "Vocabulaire",
+        "vocabularyHint": "Noms propres et termes à écrire ainsi, séparés par des virgules.",
+        "vocabularyPlaceholder": "SimpleEffect, Dimzou, montage…",
+        "nextOnly": "S’applique aux prochaines transcriptions.",
+        "save": "Enregistrer"
+      }
     },
     "sequences": {
       "copyName": "{{name}} (copie)",
@@ -868,7 +920,8 @@
       "TRIM_BEYOND_SOURCE": "Le média ne va pas plus loin : impossible de rallonger davantage ce clip.",
       "INVALID_EDIT_POINT": "Ce point de montage est en dehors de l’élément.",
       "FRAME_RATE_LOCKED": "La séquence contient déjà des éléments : sa cadence ne peut plus changer.",
-      "LAST_SEQUENCE": "C’est la seule séquence du projet : créez-en une autre avant de la supprimer."
+      "LAST_SEQUENCE": "C’est la seule séquence du projet : créez-en une autre avant de la supprimer.",
+      "INVALID_TRANSCRIPTION_SETTINGS": "Réglages de transcription invalides : la langue doit être un code de deux ou trois lettres (fr, en…) et le vocabulaire une seule ligne de 600 caractères au plus."
     },
     "TASK_NOT_FOUND": "Cette tâche IA n’existe plus dans le projet : actualisez la liste des tâches.",
     "TASK_NOT_ACTIVE": "Cette tâche IA est déjà terminée : il n’y a plus rien à annuler.",
@@ -879,7 +932,13 @@
     "RENDER_FAILED": "L’éditeur n’a pas pu dessiner les images demandées.",
     "RENDER_REQUEST_NOT_FOUND": "Cette demande d’images n’attend plus de réponse (terminée ou expirée).",
     "OUT_OF_SCOPE": "Cette modification sort de la portée de la tâche IA (plage de temps, pistes ou séquence).",
-    "NOTHING_TO_REVERT": "Cette tâche IA n’a plus rien à annuler : elle n’a rien modifié, ou a déjà été annulée."
+    "NOTHING_TO_REVERT": "Cette tâche IA n’a plus rien à annuler : elle n’a rien modifié, ou a déjà été annulée.",
+    "TRANSCRIPTION_UNAVAILABLE": "La transcription est indisponible : whisper.cpp est introuvable ou ne démarre pas. Voyez Réglages → Transcription.",
+    "NO_TRANSCRIPTION_MODEL": "Aucun modèle de transcription installé : téléchargez-en un (ou importez-le) dans Réglages → Transcription.",
+    "TRANSCRIPTION_TARGET_NOT_FOUND": "Ce modèle, ce téléchargement ou ce pack GPU n’existe pas (ou plus) : voyez Réglages → Transcription.",
+    "INVALID_MODEL_FILE": "Ce fichier n’est pas un modèle whisper.cpp : choisissez un fichier ggml .bin (par exemple ggml-base.bin).",
+    "DOWNLOAD_FAILED": "Le téléchargement a échoué ou le fichier reçu ne correspond pas : vérifiez la connexion et réessayez.",
+    "NO_SPEECH_STREAM": "Ce média n’a pas de son à transcrire."
   },
   "format": {
     "ratio": "Format",
@@ -903,7 +962,8 @@
     "description": "Préférences de l’application, communes à tous les projets.",
     "sections": {
       "media": "Médias",
-      "ai": "IA"
+      "ai": "IA",
+      "transcription": "Transcription"
     },
     "media": {
       "derivedTitle": "Copies de travail",
@@ -982,6 +1042,88 @@
       "maxConcurrent": "Tâches simultanées",
       "maxConcurrentDescription": "Au-delà, les nouvelles tâches attendent leur tour.",
       "privacy": "SimpleEffect utilise l’assistant déjà connecté sur cet ordinateur : il ne lit, ne stocke et ne transmet jamais vos identifiants."
+    },
+    "transcription": {
+      "download": "Télécharger",
+      "cancel": "Annuler",
+      "remove": "Supprimer",
+      "retry": "Réessayer",
+      "cancelDownload": "Annuler",
+      "verifying": "Vérification…",
+      "downloadAmount": "{{received}} / {{total}}",
+      "downloadProgress": "Téléchargement de {{name}}",
+      "localOnly": "Rien n’est téléchargé sans votre accord, et le fichier reste sur cet ordinateur : la transcription se fait entièrement en local.",
+      "program": {
+        "title": "Programme",
+        "found": "whisper.cpp — {{path}}",
+        "missing": "whisper.cpp est introuvable."
+      },
+      "compute": {
+        "title": "Calcul",
+        "gpu": "GPU",
+        "noGpu": "Aucun GPU compatible détecté",
+        "nextRun": "Prochaine transcription",
+        "lastRun": "Dernière transcription",
+        "useGpu": "Utiliser le GPU",
+        "useGpuDescription": "Bien plus rapide. Désactivez-le si une transcription échoue sur le GPU."
+      },
+      "backends": {
+        "cuda": "GPU (CUDA)",
+        "metal": "GPU (Metal)",
+        "vulkan": "GPU (Vulkan)",
+        "cpu": "Processeur"
+      },
+      "gpuPack": {
+        "title": "Pack GPU",
+        "name": "pack GPU",
+        "description": "{{name}}, {{size}} à télécharger : transcrit plusieurs fois plus vite sur les cartes NVIDIA.",
+        "install": "Installer le pack GPU ({{size}})",
+        "installed": "Installé",
+        "confirmTitle": "Installer le pack GPU ?",
+        "confirmDescription": "Le pack GPU ({{name}}) est la version CUDA officielle de whisper.cpp. Il est téléchargé depuis GitHub ({{size}}), puis vérifié par SHA-256 avant d’être installé.",
+        "removeTitle": "Supprimer le pack GPU ?",
+        "removeDescription": "Les transcriptions se feront sur le processeur tant qu’il n’est pas réinstallé."
+      },
+      "models": {
+        "title": "Modèles",
+        "recommended": "Recommandé",
+        "importedTag": "Importé",
+        "confirmTitle": "Télécharger le modèle {{name}} ?",
+        "confirmDescription": "Le modèle {{name}} ({{size}}) est téléchargé depuis les modèles officiels de whisper.cpp sur Hugging Face, puis vérifié par SHA-256.",
+        "voiceModelToo": "Le petit modèle de détection de la voix ({{size}}) est téléchargé avec lui.",
+        "removeTitle": "Supprimer le modèle {{name}} ?",
+        "removeDescription": "Le fichier ({{size}}) est supprimé du dossier des modèles. Vous pourrez le télécharger à nouveau.",
+        "removeImportedDescription": "La copie du dossier des modèles est supprimée ; le fichier que vous aviez importé reste à sa place.",
+        "choice": "Modèle utilisé",
+        "automatic": "Automatique (recommandé)",
+        "none": "Aucun modèle installé : téléchargez-en un (ou importez-le) pour transcrire.",
+        "import": "Importer un modèle…",
+        "importTitle": "Modèle whisper.cpp (fichier ggml .bin)",
+        "importButton": "Importer ce modèle",
+        "importDone": "Modèle « {{name}} » importé"
+      },
+      "voiceModel": {
+        "name": "modèle de voix",
+        "missing": "Modèle de voix manquant : la détection de la voix est ignorée tant qu’il n’est pas installé.",
+        "download": "Télécharger ({{size}})",
+        "confirmTitle": "Télécharger le modèle de voix ?",
+        "confirmDescription": "Le modèle de détection de la voix (Silero pour whisper.cpp, {{size}}) est téléchargé depuis Hugging Face, puis vérifié par SHA-256."
+      },
+      "options": {
+        "title": "Options",
+        "voiceDetection": "Détecter la voix d’abord",
+        "voiceDetectionDescription": "Moins de mots inventés sur la musique et les silences, une transcription plus rapide et des mots mieux calés.",
+        "autoTranscribe": "Transcrire les médias à l’import",
+        "autoTranscribeDescription": "Les vidéos et les sons importés sont transcrits en arrière-plan.",
+        "whisperDir": "Dossier de whisper.cpp",
+        "whisperDirDefault": "Programme fourni avec l’application",
+        "chooseWhisperDir": "Choisir…",
+        "chooseWhisperDirTitle": "Dossier contenant whisper-cli",
+        "chooseWhisperDirButton": "Choisir ce dossier",
+        "resetWhisperDir": "Automatique",
+        "modelsDir": "Dossier des modèles",
+        "showModelsDir": "Afficher"
+      }
     }
   },
   "shortcuts": {

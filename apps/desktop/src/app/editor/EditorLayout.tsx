@@ -18,6 +18,7 @@ import { AnimationsPanel, useCreateGraphic } from '../../features/graphics';
 import { InspectorView } from '../../features/inspector';
 import { MediaBinPanel } from '../../features/media-bin';
 import { TimelinePanel } from '../../features/timeline';
+import { TranscriptView } from '../../features/transcript';
 import { ViewerPanel } from '../../features/viewer';
 import { isSidePanelTab, showSidePanelTab, useSidePanelTab } from '../../shared/side-panel';
 
@@ -72,7 +73,7 @@ export function EditorLayout({ layoutStorage }: EditorLayoutProps) {
 }
 
 /**
- * The right column: « Inspecteur », « Animations » and « IA » share one panel as tabs (features
+ * The right column: « Inspecteur », « Animations », « IA » and « Transcription » share one panel as tabs (features
  * may switch it, e.g. the timeline's « Propriétés »).
  */
 function SidePanel() {
@@ -92,6 +93,7 @@ function SidePanel() {
             <TabsTrigger value="inspector">{t('editor.inspector.title')}</TabsTrigger>
             <TabsTrigger value="animations">{t('editor.animations.title')}</TabsTrigger>
             <TabsTrigger value="ai">{t('editor.ai.title')}</TabsTrigger>
+            <TabsTrigger value="transcript">{t('editor.transcript.title')}</TabsTrigger>
           </TabsList>
         </PanelHeader>
         <PanelBody scrollable={false}>
@@ -103,6 +105,9 @@ function SidePanel() {
           </TabsContent>
           <TabsContent value="ai" className="size-full">
             <AiView />
+          </TabsContent>
+          <TabsContent value="transcript" className="size-full">
+            <TranscriptView />
           </TabsContent>
         </PanelBody>
       </Tabs>

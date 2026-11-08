@@ -63,6 +63,7 @@ export function MediaBinPanel({ onAddImage }: MediaBinPanelProps = {}) {
     onRelink: (asset) => void actions.relink(asset),
     onReveal: actions.reveal,
     onGenerateProxy: (asset) => void actions.generateDerived(asset, 'proxy'),
+    onTranscribe: (asset) => void actions.transcribe(asset),
     onRemove: (asset) => void actions.remove(asset),
     onAddImage,
   };

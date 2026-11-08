@@ -15,6 +15,8 @@ export interface AssetMenuHandlers {
   readonly onRelink: (asset: Asset) => void;
   readonly onReveal: (asset: Asset) => void;
   readonly onGenerateProxy: (asset: Asset) => void;
+  /** Queues its transcription (media with sound). */
+  readonly onTranscribe: (asset: Asset) => void;
   readonly onRemove: (asset: Asset) => void;
   /** Adds an image at the playhead (images only; hidden when absent). */
   readonly onAddImage?: ((asset: Asset) => void) | undefined;
@@ -79,6 +81,18 @@ export function AssetMenuItems({ asset, menu, ...handlers }: AssetMenuItemsProps
           {t('editor.media.menu.generateProxy')}
         </Item>
       )}
+      {hasSound(asset) && (
+        <Item
+          disabled={asset.missing}
+          onSelect={() => {
+            handlers.onTranscribe(asset);
+          }}
+        >
+          {asset.analysis.transcript === null
+            ? t('editor.media.menu.transcribe')
+            : t('editor.media.menu.retranscribe')}
+        </Item>
+      )}
       <Separator />
       <Item
         variant="danger"
@@ -90,4 +104,9 @@ export function AssetMenuItems({ asset, menu, ...handlers }: AssetMenuItemsProps
       </Item>
     </>
   );
+}
+
+/** Whether an asset has sound to transcribe. */
+function hasSound(asset: Asset): boolean {
+  return asset.kind !== 'image' && (asset.mediaInfo?.audioStreams.length ?? 0) > 0;
 }
