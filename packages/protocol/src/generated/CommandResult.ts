@@ -3,8 +3,11 @@
 import type { AiSettings } from "./AiSettings";
 import type { AiStatus } from "./AiStatus";
 import type { AnimationPresetInfo } from "./AnimationPresetInfo";
+import type { AssetId } from "./AssetId";
 import type { ChangesetId } from "./ChangesetId";
 import type { CoreInfo } from "./CoreInfo";
+import type { CutSummary } from "./CutSummary";
+import type { FillerOccurrence } from "./FillerOccurrence";
 import type { FontFamily } from "./FontFamily";
 import type { ImportReport } from "./ImportReport";
 import type { ItemId } from "./ItemId";
@@ -21,6 +24,7 @@ import type { ProjectSession } from "./ProjectSession";
 import type { RecentProject } from "./RecentProject";
 import type { RelinkOutcome } from "./RelinkOutcome";
 import type { SequenceId } from "./SequenceId";
+import type { SmartCutSettings } from "./SmartCutSettings";
 import type { Task } from "./Task";
 import type { TaskEventRecord } from "./TaskEventRecord";
 import type { TaskRevertReport } from "./TaskRevertReport";
@@ -203,4 +207,12 @@ transcript: Transcript | null, } | { "kind": "searchTranscripts",
 /**
  * Best matches first (at most 50).
  */
-hits: Array<TranscriptSearchHit>, } | { "kind": "setTranscriptionSettings" };
+hits: Array<TranscriptSearchHit>, } | { "kind": "setTranscriptionSettings" } | { "kind": "getSmartCutSettings" } & SmartCutSettings | { "kind": "updateSmartCutSettings" } & SmartCutSettings | { "kind": "removeWords" } & CutSummary | { "kind": "findFillers", 
+/**
+ * In sequence order.
+ */
+occurrences: Array<FillerOccurrence>, 
+/**
+ * Media of the range not transcribed yet.
+ */
+untranscribedAssets: Array<AssetId>, } | { "kind": "previewSilenceCuts" } & CutSummary | { "kind": "removeSilences" } & CutSummary;

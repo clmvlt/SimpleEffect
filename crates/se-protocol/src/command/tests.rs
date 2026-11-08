@@ -113,3 +113,25 @@ fn frame_render_failures_name_their_request() {
         }
     );
 }
+
+#[test]
+fn smart_cut_commands_carry_ranges_and_silence_params() {
+    let json = r#"{"kind":"removeWords","projectId":"00000000-0001-7000-8000-000000000000","sequenceId":"00000000-0002-7000-8000-000000000000","ranges":[{"start":705600000,"duration":352800000}],"purpose":"fillers","allTracks":false}"#;
+    let Command::RemoveWords {
+        ranges, purpose, ..
+    } = serde_json::from_str(json).unwrap()
+    else {
+        panic!("removeWords must parse as Command::RemoveWords");
+    };
+    assert_eq!(ranges.len(), 1);
+    assert_eq!(purpose, crate::WordCutPurpose::Fillers);
+    let json = r#"{"kind":"previewSilenceCuts","projectId":"00000000-0001-7000-8000-000000000000","sequenceId":"00000000-0002-7000-8000-000000000000","range":null,"params":{"thresholdDbfs":-45.0,"minSilence":352800000,"padding":0},"trackIds":null,"allTracks":true}"#;
+    let Command::PreviewSilenceCuts {
+        params, all_tracks, ..
+    } = serde_json::from_str(json).unwrap()
+    else {
+        panic!("previewSilenceCuts must parse as Command::PreviewSilenceCuts");
+    };
+    assert!((params.threshold_dbfs + 45.0).abs() < f64::EPSILON);
+    assert!(all_tracks);
+}

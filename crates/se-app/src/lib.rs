@@ -47,6 +47,7 @@ pub mod project_actor;
 pub mod project_service;
 pub mod project_view;
 pub mod recovery;
+pub mod smart_cuts;
 pub mod tasks;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
@@ -67,5 +68,6 @@ pub use project_service::{
     animation_preset_infos, graphic_track, item_labels, marker_labels, sequence_labels,
     track_labels, transition_labels,
 };
+pub use smart_cuts::{SmartCutService, SmartCutServiceDeps};
 pub use tasks::{TaskService, TaskServiceDeps};
 pub use transcription::{TranscriptionService, TranscriptionServiceDeps};

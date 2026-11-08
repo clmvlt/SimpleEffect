@@ -51,8 +51,8 @@ pub mod transcript;
 pub mod validation;
 
 pub use analysis::{
-    AnalysisKind, AnalysisResult, AssetAnalysis, AudioAnalysis, AudioSummary, LoudnessCurve,
-    SceneDetection, SceneSummary, SilenceSettings,
+    AnalysisKind, AnalysisResult, AssetAnalysis, AudioAnalysis, AudioSummary, LevelEnvelope,
+    LoudnessCurve, SceneDetection, SceneSummary, SilenceSettings,
 };
 pub use animation_preset::{
     AnimationPhase, AnimationPreset, AnimationPresetLibrary, PresetPlacement, PresetRefusal,
@@ -83,10 +83,11 @@ pub use operation::{
     ApplyAnimationPreset, AssetPatch, Assign, CaptionPatch, ImagePatch, InsertGap, ItemEdge,
     ItemPatch, LinkItems, MarkerPatch, MediaClipPatch, MoveItem, Operation, PropertyAnimation,
     RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack, RemoveTransition,
-    RenameProject, ReorderTracks, RestoreItem, RippleDeleteRange, SequencePatch, SetKeyframes,
-    SetTranscriptionSettings, ShapePatch, SplitItem, TemplatePatch, TextPatch, TouchedEntities,
-    TrackPatch, TransitionPatch, TransitionSnapshot, TrimItem, UnlinkItems, UpdateAsset,
-    UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack, UpdateTransition, apply, apply_all,
+    RenameProject, ReorderTracks, RestoreItem, RippleDeleteRange, RippleDeleteRanges,
+    SequencePatch, SetKeyframes, SetTranscriptionSettings, ShapePatch, SplitItem, TemplatePatch,
+    TextPatch, TouchedEntities, TrackPatch, TransitionPatch, TransitionSnapshot, TrimItem,
+    UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack,
+    UpdateTransition, apply, apply_all, remaining_parts,
 };
 pub use reformat::{
     ClipReframePolicy, FormatAdaptation, SequenceIds, TEXT_WIDTH_SHARE, adapted_patch,

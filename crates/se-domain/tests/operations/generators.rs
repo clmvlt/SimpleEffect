@@ -13,12 +13,12 @@ use se_domain::{
     InsertGap, Item, ItemEdge, ItemId, ItemKind, ItemPatch, Keyframe, LinkGroupId, LinkItems,
     Marker, MarkerColor, MarkerId, MarkerPatch, MediaClipPatch, MoveItem, Operation, Project,
     PropertyAnimation, Reframe, RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack,
-    RemoveTransition, RenameProject, ReorderTracks, RippleDeleteRange, SceneSummary, Sequence,
-    SequenceId, SequencePatch, SetKeyframes, SetTranscriptionSettings, ShapePatch, SplitItem,
-    StreamDecodability, TemplateParamValue, TemplatePatch, TextPatch, TimeRange, TrackId,
-    TrackKind, TrackPatch, TranscriptionSettings, Transition, TransitionAlignment, TransitionId,
-    TransitionKind, TransitionPatch, TrimItem, UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker,
-    UpdateSequence, UpdateTrack, UpdateTransition, Vec2,
+    RemoveTransition, RenameProject, ReorderTracks, RippleDeleteRange, RippleDeleteRanges,
+    SceneSummary, Sequence, SequenceId, SequencePatch, SetKeyframes, SetTranscriptionSettings,
+    ShapePatch, SplitItem, StreamDecodability, TemplateParamValue, TemplatePatch, TextPatch,
+    TimeRange, TrackId, TrackKind, TrackPatch, TranscriptionSettings, Transition,
+    TransitionAlignment, TransitionId, TransitionKind, TransitionPatch, TrimItem, UnlinkItems,
+    UpdateAsset, UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack, UpdateTransition, Vec2,
     test_support::{millis, track},
 };
 
@@ -28,7 +28,7 @@ use crate::picking::{
 
 /// Number of operation kinds the generator produces (every operation but `RestoreItem`, which
 /// the inverses exercise).
-pub const KINDS: u8 = 30;
+pub const KINDS: u8 = 31;
 
 /// Random numbers from which one operation is built.
 #[derive(Debug, Clone, Copy)]
@@ -79,7 +79,8 @@ impl Generator {
             18..=24 => self.other_operation(project, seed),
             25..=27 => self.transition_operation(project, seed),
             28 => preset(project, seed),
-            _ => Some(transcription_settings(seed)),
+            29 => Some(transcription_settings(seed)),
+            _ => self.ranges_operation(project, seed),
         }
     }
 
@@ -195,6 +196,58 @@ impl Generator {
             }
             .into(),
         )
+    }
+
+    /// A multi-range ripple delete: two or three apart ranges, with ids for every item a range
+    /// falls strictly inside.
+    fn ranges_operation(&mut self, project: &Project, seed: Seed) -> Option<Operation> {
+        self.multi_cut(project, seed).map(Operation::from)
+    }
+
+    /// The multi-range ripple delete of `seed` (also used by `multi_cut.rs`).
+    pub fn multi_cut(&mut self, project: &Project, seed: Seed) -> Option<RippleDeleteRanges> {
+        let sequence = *pick(&sequences(project), seed.pick)?;
+        let count = 2 + seed.choice % 2;
+        let mut start = millis(i64::from(seed.offset_ms.unsigned_abs()) / 4);
+        let mut ranges = Vec::new();
+        for index in 0..count {
+            let duration = millis(100 + i64::from((seed.choice >> (index * 4)) % 1500));
+            let range = TimeRange::new(start, duration).ok()?;
+            start = range
+                .end()
+                .checked_add(millis(200 + i64::from(index) * 700))?;
+            ranges.push(range);
+        }
+        let listed = sequence_tracks(project, sequence);
+        let tracks = match seed.choice % 3 {
+            0 => None,
+            _ => Some(vec![*pick(&listed, seed.choice / 3)?]),
+        };
+        let items: Vec<(ItemId, TimeRange)> = project
+            .sequences
+            .iter()
+            .filter(|candidate| candidate.id == sequence)
+            .flat_map(|sequence| &sequence.tracks)
+            .flat_map(|track| &track.items)
+            .map(|item| (item.id, item.timeline_range))
+            .collect();
+        let mut split_ids = BTreeMap::new();
+        for (id, range) in items {
+            let inside = ranges
+                .iter()
+                .filter(|cut| cut.start() > range.start() && cut.end() < range.end())
+                .count();
+            if inside > 0 {
+                let ids = (0..inside).map(|_| ItemId::from_test_index(self.fresh()));
+                split_ids.insert(id, ids.collect());
+            }
+        }
+        Some(RippleDeleteRanges {
+            sequence,
+            ranges,
+            tracks,
+            split_ids,
+        })
     }
 
     /// A fresh id for every item of `sequence` whose range matches `crosses`.

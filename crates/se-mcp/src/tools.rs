@@ -24,6 +24,9 @@ pub mod list_animation_presets;
 pub mod list_assets;
 pub mod list_templates;
 pub mod move_item;
+pub mod remove_fillers;
+pub mod remove_silences;
+pub mod remove_words;
 pub mod ripple_delete_range;
 pub mod search_transcript;
 pub mod set_keyframes;
@@ -68,6 +71,9 @@ pub fn catalogue() -> Vec<ToolEntry> {
         ToolEntry::of::<add_transition::AddTransition>(),
         ToolEntry::of::<add_marker::AddMarker>(),
         ToolEntry::of::<apply_batch::ApplyBatch>(),
+        ToolEntry::of::<remove_words::RemoveWords>(),
+        ToolEntry::of::<remove_fillers::RemoveFillers>(),
+        ToolEntry::of::<remove_silences::RemoveSilences>(),
     ];
     entries
         .into_iter()
@@ -86,8 +92,12 @@ pub fn catalogue() -> Vec<ToolEntry> {
 mod tests {
     use super::*;
 
+    /// Smart cuts (prompt 22): writes resolved on the current document, one transaction each,
+    /// not batchable.
+    const CUT_TOOLS: [&str; 3] = ["remove_words", "remove_fillers", "remove_silences"];
+
     /// Tools that change the project.
-    const WRITE_TOOLS: [&str; 16] = [
+    const WRITE_TOOLS: [&str; 19] = [
         "add_text",
         "add_shape",
         "add_image",
@@ -104,16 +114,19 @@ mod tests {
         "add_transition",
         "add_marker",
         "apply_batch",
+        "remove_words",
+        "remove_fillers",
+        "remove_silences",
     ];
 
     #[test]
     fn every_tool_has_an_object_schema_and_a_unique_name() {
         let tools = catalogue();
-        assert_eq!(tools.len(), 30);
+        assert_eq!(tools.len(), 33);
         let mut names: Vec<&str> = tools.iter().map(ToolEntry::name).collect();
         names.sort_unstable();
         names.dedup();
-        assert_eq!(names.len(), 30);
+        assert_eq!(names.len(), 33);
         for tool in &tools {
             assert_eq!(
                 tool.definition.input_schema["type"],
@@ -138,7 +151,10 @@ mod tests {
 
     #[test]
     fn every_write_tool_can_run_in_a_batch() {
-        for tool in WRITE_TOOLS.iter().filter(|tool| **tool != "apply_batch") {
+        let batched = WRITE_TOOLS
+            .iter()
+            .filter(|tool| **tool != "apply_batch" && !CUT_TOOLS.contains(tool));
+        for tool in batched {
             assert!(
                 super::apply_batch::batchable(tool),
                 "{tool} is missing from apply_batch"

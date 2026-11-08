@@ -24,6 +24,7 @@ tracing = { workspace = true }
 # Integration tests (`tests/`) build the library without `cfg(test)`: enable the fakes.
 se-app = { workspace = true, features = ["test-support"] }
 se-domain = { workspace = true, features = ["test-support"] }
+proptest = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "sync", "test-util", "time"] }
 
 [lints]

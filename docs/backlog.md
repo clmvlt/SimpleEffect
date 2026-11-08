@@ -54,6 +54,7 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 
 ## Audio
 - Transcription (prompt 21): speaker identification (diarization); a Linux CUDA build (today the user's own build through « Dossier de whisper.cpp »); a Vulkan build for AMD/Intel GPUs; bundling the Visual C++ runtime next to whisper-cli on Windows; DTW alignment for imported models (alignment heads detected from the model's header); word bounds refined from the waveform when voice detection is off; transcribing only a range of a long file; checking the macOS cmake build and Metal on a Mac and in a release run.
+- Smart cuts (prompt 22): showing (and restoring) passages cut at the very start or end of a clip (no neighbour to compare with today: undo restores them); « écouter le résultat » playing a preview with the cuts skipped before applying; filler detection from the sound when the transcript lacks them; « keep the best take » helpers in the panel (repeated sentences found in the transcript); clip volume taken into account when reading silences; a « Couper toutes les pistes » option for word cuts in the panel (the protocol has `allTracks`).
 - Local noise reduction / voice enhancement (e.g. RNNoise or a small ONNX model).
 - Loudness normalisation to platform targets (-14 LUFS YouTube, etc.) on export.
 - Local text-to-speech for voice-overs.

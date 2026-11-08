@@ -1,17 +1,17 @@
 //! Successful results of commands.
 
 use se_domain::{
-    ChangesetId, ItemId, JobId, LinkGroupId, MarkerId, SequenceId, TimeRange, TrackId, Transcript,
-    TransitionId,
+    AssetId, ChangesetId, ItemId, JobId, LinkGroupId, MarkerId, SequenceId, TimeRange, TrackId,
+    Transcript, TransitionId,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    AiSettings, AiStatus, AnimationPresetInfo, FontFamily, ImportReport, JobSnapshot,
-    MediaSettings, MediaToolsStatus, NewProjectDefaults, PlacedGraphic, ProjectCacheInfo,
-    ProjectSession, RecentProject, RelinkOutcome, Task, TaskEventRecord, TaskRevertReport,
-    TranscriptSearchHit, TranscriptionStatus,
+    AiSettings, AiStatus, AnimationPresetInfo, CutSummary, FillerOccurrence, FontFamily,
+    ImportReport, JobSnapshot, MediaSettings, MediaToolsStatus, NewProjectDefaults, PlacedGraphic,
+    ProjectCacheInfo, ProjectSession, RecentProject, RelinkOutcome, SmartCutSettings, Task,
+    TaskEventRecord, TaskRevertReport, TranscriptSearchHit, TranscriptionStatus,
 };
 
 /// The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
@@ -317,6 +317,24 @@ pub enum CommandResult {
     },
     /// Answer to [`crate::Command::SetTranscriptionSettings`]: the patch was published.
     SetTranscriptionSettings,
+    /// Answer to [`crate::Command::GetSmartCutSettings`].
+    GetSmartCutSettings(SmartCutSettings),
+    /// Answer to [`crate::Command::UpdateSmartCutSettings`]: the settings as stored.
+    UpdateSmartCutSettings(SmartCutSettings),
+    /// Answer to [`crate::Command::RemoveWords`]: what was cut (the patch was published first;
+    /// no cut and no transaction when nothing matched).
+    RemoveWords(CutSummary),
+    /// Answer to [`crate::Command::FindFillers`].
+    FindFillers {
+        /// In sequence order.
+        occurrences: Vec<FillerOccurrence>,
+        /// Media of the range not transcribed yet.
+        untranscribed_assets: Vec<AssetId>,
+    },
+    /// Answer to [`crate::Command::PreviewSilenceCuts`]: the cuts it would make.
+    PreviewSilenceCuts(CutSummary),
+    /// Answer to [`crate::Command::RemoveSilences`]: what was cut.
+    RemoveSilences(CutSummary),
 }
 
 /// Facts about the running core, shown in the UI and useful in bug reports.

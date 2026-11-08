@@ -28,4 +28,9 @@ voiceDetection: boolean,
  * A folder holding the user's own `whisper-cli` build, searched first; `null` uses the
  * bundled one (and the GPU pack when installed).
  */
-whisperDir: string | null, };
+whisperDir: string | null, 
+/**
+ * Whether hesitations (« euh », « um ») are written in transcripts, so they can be cut
+ * (prompt 22); whisper otherwise tends to clean them away.
+ */
+keepHesitations: boolean, };

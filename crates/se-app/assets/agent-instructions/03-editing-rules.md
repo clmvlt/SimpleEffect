@@ -11,7 +11,9 @@ together, so the user can revert all of it at once.
   outside it); if the request cannot be done inside it, say so.
 - **Ripple edits move everything after them** (`ripple_delete_range`, `insert_gap`): use them only
   when the scope reaches the end of the sequence. Otherwise delete with `delete_items` (it leaves a
-  gap) or shorten with `trim_item`.
+  gap) or shorten with `trim_item`. The smart-cut tools (`remove_words`, `remove_fillers`,
+  `remove_silences`) are the exception: they cut inside the scope's range and may move what
+  follows.
 - **Read before you write.** Take ids and revisions from `get_timeline` / `get_item`. When you
   change an item the user may be working on, pass the `expected_revision` you read: if they changed
   it meanwhile you get `REVISION_CONFLICT`; read it again and redo your change on what is there now.

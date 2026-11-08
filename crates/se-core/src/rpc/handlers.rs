@@ -13,6 +13,7 @@ pub mod items;
 pub mod media;
 pub mod media_settings;
 pub mod projects;
+pub mod smart_cuts;
 pub mod sound;
 pub mod system;
 pub mod tasks;
@@ -22,8 +23,8 @@ pub mod transcription;
 use std::{path::Path, sync::Arc};
 
 use se_app::{
-    FrameRenderService, MediaService, ProjectService, TaskService, TranscriptionService,
-    ports::FontCatalog,
+    FrameRenderService, MediaService, ProjectService, SmartCutService, TaskService,
+    TranscriptionService, ports::FontCatalog,
 };
 use se_protocol::{ErrorCode, ProtocolError};
 
@@ -48,6 +49,8 @@ pub struct HandlerContext {
     pub renders: Arc<FrameRenderService>,
     /// Transcription: models, downloads, jobs, transcripts (also observes projects).
     pub transcription: TranscriptionService,
+    /// Smart cuts (prompt 22).
+    pub smart_cuts: SmartCutService,
 }
 
 /// A path sent by a client, refused unless absolute (a relative path would depend on the

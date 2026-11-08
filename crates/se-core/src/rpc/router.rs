@@ -8,7 +8,7 @@ use super::{
     encode::encode,
     handlers::{
         HandlerContext, ai, editing, frames, graphics, items, media, media_settings, projects,
-        sound, system, tasks, timeline, transcription,
+        smart_cuts, sound, system, tasks, timeline, transcription,
     },
     request::{Rejection, parse_request},
 };
@@ -349,6 +349,87 @@ impl RpcRouter {
             | Command::SetTranscriptionSettings { .. } => {
                 Self::dispatch_transcription(context, command).await
             }
+            Command::GetSmartCutSettings
+            | Command::UpdateSmartCutSettings(_)
+            | Command::RemoveWords { .. }
+            | Command::FindFillers { .. }
+            | Command::PreviewSilenceCuts { .. }
+            | Command::RemoveSilences { .. } => Self::dispatch_smart_cuts(context, command).await,
+        }
+    }
+
+    /// The smart-cut commands (prompt 22).
+    async fn dispatch_smart_cuts(
+        context: &HandlerContext,
+        command: &Command,
+    ) -> Result<CommandResult, ProtocolError> {
+        match command {
+            Command::GetSmartCutSettings => smart_cuts::get_settings(context).await,
+            Command::UpdateSmartCutSettings(settings) => {
+                smart_cuts::update_settings(context, settings).await
+            }
+            Command::RemoveWords {
+                project_id,
+                sequence_id,
+                ranges,
+                purpose,
+                all_tracks,
+            } => {
+                smart_cuts::remove_words(
+                    context,
+                    *project_id,
+                    *sequence_id,
+                    ranges,
+                    *purpose,
+                    *all_tracks,
+                )
+                .await
+            }
+            Command::FindFillers {
+                project_id,
+                sequence_id,
+                range,
+            } => smart_cuts::find_fillers(context, *project_id, *sequence_id, *range).await,
+            Command::PreviewSilenceCuts {
+                project_id,
+                sequence_id,
+                range,
+                params,
+                track_ids,
+                all_tracks,
+            } => {
+                let arguments = smart_cuts::SilenceArguments {
+                    project_id: *project_id,
+                    sequence_id: *sequence_id,
+                    range: *range,
+                    params: *params,
+                    track_ids: track_ids.as_deref(),
+                    all_tracks: *all_tracks,
+                };
+                smart_cuts::preview_silences(context, &arguments).await
+            }
+            Command::RemoveSilences {
+                project_id,
+                sequence_id,
+                range,
+                params,
+                track_ids,
+                all_tracks,
+            } => {
+                let arguments = smart_cuts::SilenceArguments {
+                    project_id: *project_id,
+                    sequence_id: *sequence_id,
+                    range: *range,
+                    params: *params,
+                    track_ids: track_ids.as_deref(),
+                    all_tracks: *all_tracks,
+                };
+                smart_cuts::remove_silences(context, &arguments).await
+            }
+            other => Err(ProtocolError::new(
+                se_protocol::ErrorCode::Internal,
+                format!("{other:?} is not a smart-cut command; please report it"),
+            )),
         }
     }
 
@@ -417,6 +498,7 @@ pub mod testing {
             tasks,
             renders,
             transcription,
+            smart_cuts,
             ..
         } = MediaTestbed::new(Path::new("/projects"));
         HandlerContext {
@@ -431,6 +513,7 @@ pub mod testing {
             fonts: Arc::new(FakeFontCatalog),
             renders,
             transcription,
+            smart_cuts,
         }
     }
 }
@@ -635,6 +718,7 @@ mod tests {
             "refreshAiStatus",
             "getAiSettings",
             "getTranscriptionStatus",
+            "getSmartCutSettings",
         ] {
             let request = format!(r#"{{"type":"request","id":1,"command":{{"kind":"{kind}"}}}}"#);
             assert_eq!(reply(&request).await["result"]["kind"], kind);

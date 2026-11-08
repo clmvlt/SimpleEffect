@@ -659,7 +659,10 @@
       "applyAnimation": "Appliquer une animation",
       "reframeItems": "Recadrage",
       "revertAiTask": "Annuler une tâche IA",
-      "setTranscriptionSettings": "Réglages de transcription"
+      "setTranscriptionSettings": "Réglages de transcription",
+      "removeWords": "Coupe de mots",
+      "removeFillers": "Suppression des hésitations",
+      "removeSilences": "Suppression des silences"
     },
     "transcript": {
       "title": "Transcription",
@@ -703,6 +706,77 @@
         "vocabularyPlaceholder": "SimpleEffect, Dimzou, montage…",
         "nextOnly": "S’applique aux prochaines transcriptions.",
         "save": "Enregistrer"
+      },
+      "tools": {
+        "label": "Outil de la transcription",
+        "text": "Texte",
+        "silences": "Silences",
+        "fillers": "Hésitations"
+      },
+      "cuts": {
+        "nothing": "Rien à couper",
+        "done_one": "{{count}} coupe · {{seconds}} s gagnées",
+        "done_other": "{{count}} coupes · {{seconds}} s gagnées",
+        "preview_one": "{{count}} coupe · {{seconds}} s gagnées",
+        "preview_other": "{{count}} coupes · {{seconds}} s gagnées",
+        "undo": "Annuler",
+        "noFillers": "Aucune hésitation dans la sélection"
+      },
+      "menu": {
+        "cutWords_one": "Couper le mot",
+        "cutWords_other": "Couper les {{count}} mots",
+        "cutFillers": "Supprimer les hésitations de la sélection",
+        "cutSilences": "Supprimer les silences de la sélection"
+      },
+      "passages": {
+        "toggle": "Afficher les passages coupés",
+        "title": "Passage coupé ({{seconds}} s)",
+        "silence": "⋯ {{seconds}} s",
+        "restore": "Restaurer ce passage",
+        "cannotRestore": "Ce passage ne peut pas être restauré à sa place : les plans autour de la coupe ont changé. Annulez la coupe (Ctrl+Z) ou rallongez le plan à la main."
+      },
+      "silences": {
+        "intro": "Les coupes sont prévisualisées en rouge sur la timeline. Chaque blanc restant reste ajustable ensuite (rognage ripple sur la coupe).",
+        "threshold": "Seuil",
+        "dbfs": "{{value}} dBFS",
+        "minSilence": "Silence minimum",
+        "seconds": "{{value}} s",
+        "padding": "Marge conservée avant et après",
+        "paddingValue": "{{value}} ms",
+        "span": "Plage",
+        "spans": {
+          "sequence": "Séquence entière",
+          "inOut": "Entre le point d’entrée et le point de sortie"
+        },
+        "tracks": "Pistes écoutées",
+        "tracksHint": "Toutes les pistes cochées doivent être silencieuses : décochez la musique.",
+        "allTracks": "Couper aussi les graphismes et la musique",
+        "previewing": "Recherche des silences…",
+        "none": "Aucun silence avec ces réglages",
+        "unanalysed_one": "{{count}} média n’est pas encore analysé : ses silences ne sont pas comptés.",
+        "unanalysed_other": "{{count}} médias ne sont pas encore analysés : leurs silences ne sont pas comptés.",
+        "apply_one": "Supprimer le silence",
+        "apply_other": "Supprimer les silences ({{count}})"
+      },
+      "fillers": {
+        "lists": "Listes de mots de remplissage",
+        "listsHint": "Mots ou expressions séparés par des virgules. Majuscules, accents et ponctuation sont ignorés ; « euuuh » compte comme « euh ».",
+        "maxDuration": "Durée maximale d’une hésitation : {{seconds}} s",
+        "maxDurationLabel": "Durée maximale d’une hésitation",
+        "saveLists": "Enregistrer",
+        "searching": "Recherche des hésitations…",
+        "found_one": "{{count}} hésitation trouvée",
+        "found_other": "{{count}} hésitations trouvées",
+        "tickAll": "Tout cocher",
+        "tickNone": "Tout décocher",
+        "untranscribed_one": "{{count}} média n’est pas transcrit : ses hésitations ne sont pas cherchées.",
+        "untranscribed_other": "{{count}} médias ne sont pas transcrits : leurs hésitations ne sont pas cherchées.",
+        "none": "Aucune hésitation trouvée",
+        "noneHint": "Whisper n’écrit pas toujours les « euh » : activez « Conserver les hésitations » dans Réglages → Transcription, puis transcrivez à nouveau.",
+        "tick": "Supprimer « {{text}} » à {{time}}",
+        "listen": "Écouter « {{text}} »",
+        "remove_one": "Supprimer la sélection (1)",
+        "remove_other": "Supprimer la sélection ({{count}})"
       }
     },
     "sequences": {
@@ -1113,6 +1187,8 @@
         "title": "Options",
         "voiceDetection": "Détecter la voix d’abord",
         "voiceDetectionDescription": "Moins de mots inventés sur la musique et les silences, une transcription plus rapide et des mots mieux calés.",
+        "keepHesitations": "Conserver les hésitations",
+        "keepHesitationsDescription": "Écrit les « euh », « hum » et « um » au lieu de les effacer, pour pouvoir les couper (onglet Transcription → Hésitations). S’applique aux prochaines transcriptions.",
         "autoTranscribe": "Transcrire les médias à l’import",
         "autoTranscribeDescription": "Les vidéos et les sons importés sont transcrits en arrière-plan.",
         "whisperDir": "Dossier de whisper.cpp",
@@ -1133,7 +1209,8 @@
     "contexts": {
       "global": "Partout",
       "timeline": "Timeline",
-      "viewer": "Viewer"
+      "viewer": "Viewer",
+      "transcript": "Transcription"
     },
     "or": "ou",
     "keys": {
@@ -1180,6 +1257,7 @@
       "addTransition": "Ajouter une transition à la coupe sous la tête de lecture",
       "deleteSelection": "Supprimer la sélection (en laissant un blanc) ou fermer le blanc sélectionné",
       "rippleDelete": "Supprimer la sélection en refermant le temps (ripple)",
+      "deleteWords": "Couper les mots sélectionnés de la transcription",
       "copy": "Copier la sélection",
       "cut": "Couper la sélection vers le presse-papiers",
       "paste": "Coller à la tête de lecture sur la piste active",

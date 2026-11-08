@@ -9,8 +9,8 @@ use std::{
 
 use async_trait::async_trait;
 use se_domain::{
-    AnalysisResult, AudioAnalysis, Flicks, LoudnessCurve, SceneDetection, SilenceSettings,
-    TimeRange,
+    AnalysisResult, AudioAnalysis, Flicks, LevelEnvelope, LoudnessCurve, SceneDetection,
+    SilenceSettings, TimeRange,
 };
 use se_protocol::{JobKind, MediaToolsStatus};
 use tokio::sync::Notify;
@@ -21,7 +21,28 @@ use crate::ports::{
     MediaTask, MediaTools, ProgressSink,
 };
 
-/// The audio analysis every fake run returns: −16 LUFS, one silence from 2 s to 3 s.
+/// A level envelope of `duration_ms` (20 ms windows) at −15 dBFS, except at −60 dBFS during
+/// `silences` (source milliseconds): what an analysis of speech with those pauses measures.
+#[must_use]
+pub fn levels_with_silences(duration_ms: i64, silences: &[(i64, i64)]) -> LevelEnvelope {
+    let step_ms = 20;
+    let values = (0..duration_ms / step_ms)
+        .map(|index| {
+            let middle = index * step_ms + step_ms / 2;
+            let silent = silences
+                .iter()
+                .any(|(start, end)| *start <= middle && middle < *end);
+            if silent { 60 } else { 15 }
+        })
+        .collect();
+    LevelEnvelope {
+        step: LevelEnvelope::STEP,
+        values,
+    }
+}
+
+/// The audio analysis every fake run returns: −16 LUFS, one silence from 2 s to 3 s (in the
+/// silences and in 10 s of levels).
 #[must_use]
 pub fn fake_audio_analysis(silence: SilenceSettings) -> AudioAnalysis {
     AudioAnalysis {
@@ -39,6 +60,7 @@ pub fn fake_audio_analysis(silence: SilenceSettings) -> AudioAnalysis {
         silences: TimeRange::from_start_end(Flicks::from_millis(2_000), Flicks::from_millis(3_000))
             .into_iter()
             .collect(),
+        levels: Some(levels_with_silences(10_000, &[(2_000, 3_000)])),
     }
 }
 

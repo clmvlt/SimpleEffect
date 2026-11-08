@@ -1,7 +1,7 @@
 //! Wiring of the use cases to their adapters: projects over se-store, media over se-media, AI
 //! tasks over se-agents (acting through `/mcp` with per-run tokens), frames for agents through
-//! the renderer, transcription over se-transcribe (whisper.cpp) sharing the media job queue, all
-//! publishing to the event bus.
+//! the renderer, transcription over se-transcribe (whisper.cpp) sharing the media job queue, smart
+//! cuts over projects, media and transcription, all publishing to the event bus.
 
 use std::{path::PathBuf, sync::Arc};
 
@@ -9,8 +9,8 @@ use se_agents::{FsAgentWorkspaces, providers::claude_code::ClaudeCodeProvider};
 use se_app::{
     AgentEditService, DEFAULT_SAVE_DELAY, FrameRenderService, JobQueue, JobQueueConfig, McpAccess,
     MediaService, MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps,
-    TaskService, TaskServiceDeps, TaskTokenRegistry, TranscriptionService,
-    TranscriptionServiceDeps,
+    SmartCutService, SmartCutServiceDeps, TaskService, TaskServiceDeps, TaskTokenRegistry,
+    TranscriptionService, TranscriptionServiceDeps,
     media_service::settings::keys::TOOLS_DIR,
     ports::{AppLibraryRepository, FontCatalog, IdGenerator},
 };
@@ -44,6 +44,8 @@ pub struct Services {
     pub tokens: Arc<TaskTokenRegistry>,
     /// Transcription (models, downloads, jobs, transcripts), observing projects and imports.
     pub transcription: TranscriptionService,
+    /// Smart cuts: text-based editing, filler words, silences (prompt 22).
+    pub smart_cuts: SmartCutService,
 }
 
 /// Builds the services over the real adapters, for a core listening on `port`.
@@ -84,7 +86,7 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
     ));
     let deps = ProjectServiceDeps {
         repository: Arc::new(FsProjectRepository),
-        library,
+        library: library.clone(),
         events: Arc::new(events.clone()),
         clock: Arc::new(SystemClock),
         ids: Arc::new(UuidV7Ids),
@@ -104,7 +106,14 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         tasks.as_ref().clone(),
         Arc::new(UuidV7Ids),
     ));
+    let smart_cuts = SmartCutService::new(SmartCutServiceDeps {
+        projects: Arc::clone(&projects),
+        media: Arc::clone(&media),
+        transcription: transcription.clone(),
+        library,
+    });
     Ok(Services {
+        smart_cuts,
         projects,
         media,
         tasks,

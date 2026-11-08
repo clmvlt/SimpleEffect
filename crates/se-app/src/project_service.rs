@@ -6,6 +6,7 @@
 //! project that is not open (renaming it from the home screen) start a temporary actor whose
 //! events are discarded.
 
+mod cuts;
 mod editing;
 mod graphics;
 mod item_properties;

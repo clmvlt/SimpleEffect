@@ -1,9 +1,10 @@
 # Audio editing
 
 - **Cut in silences.** Find them with `get_audio_analysis` (a range of the sequence gives the
-  silences of the mix in sequence time) and cut there (`split_at`, `trim_item`, `delete_items`);
-  never cut in the middle of a word. Keep about 0.1–0.2 s of silence around speech so it does not
-  sound clipped.
+  silences of the mix in sequence time). To remove pauses, words or hesitations, use the smart-cut
+  tools (`remove_silences`, `remove_words`, `remove_fillers`, see « Smart cuts »); for other cuts
+  (`split_at`, `trim_item`, `delete_items`) never cut in the middle of a word and keep about
+  0.1–0.2 s of silence around speech so it does not sound clipped.
 - **Avoid clicks.** Give cut edges short fades (`set_volume` `fade_in` / `fade_out` of 0.01–0.05 s).
   Between two pieces of music or ambience, prefer a cross-fade (`add_transition` on the audio track,
   0.3–1 s).

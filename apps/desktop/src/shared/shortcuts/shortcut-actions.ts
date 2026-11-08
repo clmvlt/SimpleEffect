@@ -4,10 +4,15 @@ import type { KeyboardPlatform } from '@se/ui';
  * Where a shortcut applies: `global` everywhere, the others only while that region is active
  * (last clicked or focused, see `ShortcutRegion`).
  */
-export type ShortcutContext = 'global' | 'timeline' | 'viewer';
+export type ShortcutContext = 'global' | 'timeline' | 'viewer' | 'transcript';
 
 /** Every shortcut context, in the order help screens list them. */
-export const SHORTCUT_CONTEXTS: readonly ShortcutContext[] = ['global', 'timeline', 'viewer'];
+export const SHORTCUT_CONTEXTS: readonly ShortcutContext[] = [
+  'global',
+  'timeline',
+  'viewer',
+  'transcript',
+];
 
 /** A named action and its default keys. */
 export interface ShortcutActionDefinition {
@@ -21,8 +26,8 @@ export interface ShortcutActionDefinition {
   readonly repeats?: boolean;
 }
 
-/** Playhead navigation works wherever time is shown. */
-const TIME_CONTEXTS: readonly ShortcutContext[] = ['timeline', 'viewer'];
+/** Playhead navigation works wherever time is shown (the transcript too, prompt 22). */
+const TIME_CONTEXTS: readonly ShortcutContext[] = ['timeline', 'viewer', 'transcript'];
 
 /**
  * The app's named actions and their default shortcuts (the single source of truth for key
@@ -69,6 +74,7 @@ export const SHORTCUT_ACTIONS = {
   addText: { contexts: TIME_CONTEXTS, keys: ['t'] },
   deleteSelection: { contexts: ['timeline'], keys: ['delete', 'backspace'] },
   rippleDelete: { contexts: ['timeline'], keys: ['shift+delete', 'shift+backspace'] },
+  deleteWords: { contexts: ['transcript'], keys: ['delete', 'backspace'] },
   copy: { contexts: ['timeline'], keys: ['mod+c'] },
   cut: { contexts: ['timeline'], keys: ['mod+x'] },
   paste: { contexts: ['timeline'], keys: ['mod+v'] },

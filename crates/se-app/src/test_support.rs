@@ -20,6 +20,7 @@ pub use agent_fakes::{
 pub use font_fakes::{FAKE_FONT_BYTES, FakeFontCatalog};
 pub use job_fakes::{
     FakeFrameExtractor, FakeJobRunner, FakeMediaTools, fake_audio_analysis, fake_scene_detection,
+    levels_with_silences,
 };
 pub use media_fakes::{
     FAKE_FILE_BYTES, FakeMedia, fingerprint, probed_audio, probed_prores, probed_video,

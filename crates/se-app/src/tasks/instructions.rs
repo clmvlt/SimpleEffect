@@ -8,13 +8,14 @@ use se_domain::{AssetKind, Project, Sequence, TrackKind, format_clock};
 use se_protocol::Task;
 
 /// The instruction files, in order.
-const GUIDES: [&str; 6] = [
+const GUIDES: [&str; 7] = [
     include_str!("../../assets/agent-instructions/00-role.md"),
     include_str!("../../assets/agent-instructions/01-time-and-scope.md"),
     include_str!("../../assets/agent-instructions/02-reading-the-project.md"),
     include_str!("../../assets/agent-instructions/03-editing-rules.md"),
     include_str!("../../assets/agent-instructions/04-motion-basics.md"),
     include_str!("../../assets/agent-instructions/05-audio-editing.md"),
+    include_str!("../../assets/agent-instructions/06-smart-cuts.md"),
 ];
 
 /// The instructions added to the CLI's system prompt for `task` on `project` (`None` when the
@@ -213,6 +214,7 @@ mod tests {
         assert!(text.contains("# Editing rules"));
         assert!(text.contains("# Motion basics"));
         assert!(text.contains("# Audio editing"));
+        assert!(text.contains("# Smart cuts"));
         assert!(text.contains("00:00:01.000 to 00:00:02.000"));
         assert!(text.contains(&format!("{} (`{}`)", track.name, track.id)));
         assert!(text.contains("« Main edit »"));

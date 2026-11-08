@@ -67,6 +67,9 @@ const CORE_LABEL_KEYS = {
   'Remove transitions': 'editor.history.removeTransitions',
   'Revert AI task': 'editor.history.revertAiTask',
   'Set transcription settings': 'editor.history.setTranscriptionSettings',
+  'Remove words': 'editor.history.removeWords',
+  'Remove fillers': 'editor.history.removeFillers',
+  'Remove silences': 'editor.history.removeSilences',
 } as const;
 
 /** The undo/redo label to show for a transaction label received from the core. */

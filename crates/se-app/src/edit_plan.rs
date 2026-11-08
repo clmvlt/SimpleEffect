@@ -116,6 +116,12 @@ impl<'a> EditPlan<'a> {
             match operation {
                 Operation::SplitItem(split) => parts.push((split.item, split.new_item_id)),
                 Operation::RippleDeleteRange(ripple) => parts.extend(ripple.split_ids.clone()),
+                Operation::RippleDeleteRanges(ripple) => parts.extend(
+                    ripple
+                        .split_ids
+                        .iter()
+                        .filter_map(|(item, ids)| ids.last().map(|last| (*item, *last))),
+                ),
                 Operation::InsertGap(gap) => parts.extend(gap.split_ids.clone()),
                 _ => {}
             }

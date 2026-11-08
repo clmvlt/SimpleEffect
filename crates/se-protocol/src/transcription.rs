@@ -22,6 +22,10 @@ pub enum TranscriptionBackend {
 
 /// The app's transcription preferences (stored in `library.db`, edited in « Réglages →
 /// Transcription »). Per-project choices (language, vocabulary) live in the document.
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "independent switches of the settings screen, not a state machine"
+)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct TranscriptionPreferences {
@@ -38,6 +42,9 @@ pub struct TranscriptionPreferences {
     /// A folder holding the user's own `whisper-cli` build, searched first; `null` uses the
     /// bundled one (and the GPU pack when installed).
     pub whisper_dir: Option<String>,
+    /// Whether hesitations (« euh », « um ») are written in transcripts, so they can be cut
+    /// (prompt 22); whisper otherwise tends to clean them away.
+    pub keep_hesitations: bool,
 }
 
 impl Default for TranscriptionPreferences {
@@ -48,6 +55,7 @@ impl Default for TranscriptionPreferences {
             auto_transcribe: false,
             voice_detection: true,
             whisper_dir: None,
+            keep_hesitations: true,
         }
     }
 }

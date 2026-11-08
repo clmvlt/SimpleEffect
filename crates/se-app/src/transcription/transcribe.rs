@@ -25,6 +25,7 @@ struct RunPlan {
     model: ModelChoice,
     voice_model: Option<std::path::PathBuf>,
     use_gpu: bool,
+    keep_hesitations: bool,
 }
 
 impl TranscriptionService {
@@ -94,6 +95,7 @@ impl TranscriptionService {
             model,
             voice_model,
             use_gpu: state.preferences.use_gpu,
+            keep_hesitations: state.preferences.keep_hesitations,
         })
     }
 
@@ -124,6 +126,7 @@ impl TranscriptionService {
             voice_model: plan.voice_model.clone(),
             language: settings.language.clone(),
             vocabulary: (!vocabulary.is_empty()).then(|| vocabulary.to_owned()),
+            keep_hesitations: plan.keep_hesitations,
             use_gpu: plan.use_gpu,
         };
         let work = TranscriptionJob {

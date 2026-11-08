@@ -76,6 +76,7 @@ async fn transcribes_french_speech_with_the_bundled_program() {
         voice_model: voice.is_file().then_some(voice),
         language: Some("fr".to_owned()),
         vocabulary: Some("Bonjour, intelligence artificielle".to_owned()),
+        keep_hesitations: false,
         use_gpu: false,
     };
     let progress = Progress::default();

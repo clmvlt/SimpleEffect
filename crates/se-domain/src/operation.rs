@@ -29,6 +29,7 @@ mod placement;
 mod project_ops;
 mod reshape;
 mod ripple_delete_range;
+mod ripple_delete_ranges;
 mod sequence_ops;
 mod split_item;
 #[cfg(test)]
@@ -53,6 +54,7 @@ pub use marker_ops::{AddMarker, MarkerPatch, RemoveMarker, UpdateMarker};
 pub use move_item::MoveItem;
 pub use project_ops::{RenameProject, SetTranscriptionSettings};
 pub use ripple_delete_range::RippleDeleteRange;
+pub use ripple_delete_ranges::{RippleDeleteRanges, remaining_parts};
 pub use sequence_ops::{AddSequence, RemoveSequence, SequencePatch, UpdateSequence};
 pub use split_item::SplitItem;
 pub use touched::TouchedEntities;
@@ -104,6 +106,8 @@ pub enum Operation {
     UnlinkItems(UnlinkItems),
     /// Deletes a time range on tracks and closes the gap.
     RippleDeleteRange(RippleDeleteRange),
+    /// Deletes several time ranges on tracks at once and closes them (smart cuts).
+    RippleDeleteRanges(RippleDeleteRanges),
     /// Opens empty time on tracks, pushing later items right.
     InsertGap(InsertGap),
     /// Adds a track to a sequence.
@@ -179,6 +183,7 @@ operation_payloads!(
     LinkItems,
     UnlinkItems,
     RippleDeleteRange,
+    RippleDeleteRanges,
     InsertGap,
     AddTrack,
     RemoveTrack,
