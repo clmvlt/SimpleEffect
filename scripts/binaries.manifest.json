@@ -1,6 +1,8 @@
 {
-  "$comment": "Pinned sidecar binaries fetched by `pnpm fetch-binaries` into resources/bin/<platform>/. Every download has a pinned SHA-256 from its publisher (GitHub release asset digest or the builder's .sha256 file). Licences and the choice of builds: docs/adr/0018-media-import-jobs-and-cache.md. To upgrade: change url, sha256, size and files together, then run the script on each platform.",
+  "$comment": "Pinned sidecar binaries fetched by `pnpm fetch-binaries` into resources/bin/<platform>/: FFmpeg (ffmpeg, ffprobe at the top level; `license` of a platform is its FFmpeg build's) and whisper.cpp (MIT, in the whisper/ subfolder: the CLI and the libraries it loads from its own folder). Every download has a pinned SHA-256 from its publisher (GitHub release asset digest or the builder's .sha256 file). whisper.cpp has no official macOS CLI build: on macOS the pinned source tarball is compiled locally (`build`: CMake, Metal shaders embedded), so darwin-* can only be fetched on a Mac. Windows gets the CPU build only; its CUDA build is downloaded by the app on request, never by this script. Licences and the choice of FFmpeg builds: docs/adr/0018-media-import-jobs-and-cache.md. To upgrade: change url, sha256, size and files together (and `build` for source downloads), then run the script on each platform.",
   "ffmpegVersion": "9.0.2",
+  "whisperVersion": "1.9.5",
+  "whisperLicense": "MIT — ggml-org/whisper.cpp (https://github.com/ggml-org/whisper.cpp)",
   "platforms": {
     "win32-x64": {
       "license": "GPL-3.0-or-later — Gyan.dev essentials build (https://www.gyan.dev/ffmpeg/builds/)",
@@ -13,6 +15,27 @@
           "files": {
             "ffmpeg.exe": "ffmpeg-9.0.2-essentials_build/bin/ffmpeg.exe",
             "ffprobe.exe": "ffmpeg-9.0.2-essentials_build/bin/ffprobe.exe"
+          }
+        },
+        {
+          "url": "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-x64.zip",
+          "sha256": "6ba69e3482d7826214f90a6a9c84ca07782aec1e1d0c6a7c30c994fd5d816ccb",
+          "size": 8928640,
+          "archive": "zip",
+          "files": {
+            "whisper/whisper-cli.exe": "Release/whisper-cli.exe",
+            "whisper/whisper.dll": "Release/whisper.dll",
+            "whisper/ggml.dll": "Release/ggml.dll",
+            "whisper/ggml-base.dll": "Release/ggml-base.dll",
+            "whisper/ggml-cpu-alderlake.dll": "Release/ggml-cpu-alderlake.dll",
+            "whisper/ggml-cpu-cannonlake.dll": "Release/ggml-cpu-cannonlake.dll",
+            "whisper/ggml-cpu-cascadelake.dll": "Release/ggml-cpu-cascadelake.dll",
+            "whisper/ggml-cpu-haswell.dll": "Release/ggml-cpu-haswell.dll",
+            "whisper/ggml-cpu-icelake.dll": "Release/ggml-cpu-icelake.dll",
+            "whisper/ggml-cpu-sandybridge.dll": "Release/ggml-cpu-sandybridge.dll",
+            "whisper/ggml-cpu-skylakex.dll": "Release/ggml-cpu-skylakex.dll",
+            "whisper/ggml-cpu-sse42.dll": "Release/ggml-cpu-sse42.dll",
+            "whisper/ggml-cpu-x64.dll": "Release/ggml-cpu-x64.dll"
           }
         }
       ]
@@ -33,6 +56,44 @@
           "size": 28317701,
           "archive": "zip",
           "files": { "ffprobe": "ffprobe" }
+        },
+        {
+          "url": "https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v1.9.5.tar.gz",
+          "sha256": "ff1a9053feb509ff9d7729703355541ae9690073a6b1c40eb692c962e0dc1720",
+          "size": 9626464,
+          "archive": "tar.gz",
+          "build": {
+            "system": "cmake",
+            "source": "whisper.cpp-1.9.5",
+            "steps": [
+              [
+                "-S",
+                "{source}",
+                "-B",
+                "{build}",
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DBUILD_SHARED_LIBS=OFF",
+                "-DGGML_NATIVE=OFF",
+                "-DGGML_METAL=ON",
+                "-DGGML_METAL_EMBED_LIBRARY=ON",
+                "-DWHISPER_BUILD_TESTS=OFF",
+                "-DWHISPER_BUILD_SERVER=OFF",
+                "-DWHISPER_SDL2=OFF",
+                "-DCMAKE_OSX_ARCHITECTURES=arm64"
+              ],
+              [
+                "--build",
+                "{build}",
+                "--config",
+                "Release",
+                "--target",
+                "whisper-cli",
+                "-j",
+                "{jobs}"
+              ]
+            ]
+          },
+          "files": { "whisper/whisper-cli": "whisper.cpp-1.9.5/build/bin/whisper-cli" }
         }
       ]
     },
@@ -52,6 +113,44 @@
           "size": 33719233,
           "archive": "zip",
           "files": { "ffprobe": "ffprobe" }
+        },
+        {
+          "url": "https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v1.9.5.tar.gz",
+          "sha256": "ff1a9053feb509ff9d7729703355541ae9690073a6b1c40eb692c962e0dc1720",
+          "size": 9626464,
+          "archive": "tar.gz",
+          "build": {
+            "system": "cmake",
+            "source": "whisper.cpp-1.9.5",
+            "steps": [
+              [
+                "-S",
+                "{source}",
+                "-B",
+                "{build}",
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DBUILD_SHARED_LIBS=OFF",
+                "-DGGML_NATIVE=OFF",
+                "-DGGML_METAL=ON",
+                "-DGGML_METAL_EMBED_LIBRARY=ON",
+                "-DWHISPER_BUILD_TESTS=OFF",
+                "-DWHISPER_BUILD_SERVER=OFF",
+                "-DWHISPER_SDL2=OFF",
+                "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+              ],
+              [
+                "--build",
+                "{build}",
+                "--config",
+                "Release",
+                "--target",
+                "whisper-cli",
+                "-j",
+                "{jobs}"
+              ]
+            ]
+          },
+          "files": { "whisper/whisper-cli": "whisper.cpp-1.9.5/build/bin/whisper-cli" }
         }
       ]
     },
@@ -66,6 +165,32 @@
           "files": {
             "ffmpeg": "ffmpeg-n9.0.2-39-g7adfbe40dc-linux64-gpl-9.0/bin/ffmpeg",
             "ffprobe": "ffmpeg-n9.0.2-39-g7adfbe40dc-linux64-gpl-9.0/bin/ffprobe"
+          }
+        },
+        {
+          "url": "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-ubuntu-x64.tar.gz",
+          "sha256": "a72becf15d7917f990f6313867a52638b82b7f9ef237fb0c980dac56a135781c",
+          "size": 10364195,
+          "archive": "tar.gz",
+          "files": {
+            "whisper/whisper-cli": "whisper-bin-ubuntu-x64/whisper-cli",
+            "whisper/libwhisper.so.1": "whisper-bin-ubuntu-x64/libwhisper.so.1.9.5",
+            "whisper/libggml.so.0": "whisper-bin-ubuntu-x64/libggml.so.0.26.0",
+            "whisper/libggml-base.so.0": "whisper-bin-ubuntu-x64/libggml-base.so.0.26.0",
+            "whisper/libggml-cpu-alderlake.so": "whisper-bin-ubuntu-x64/libggml-cpu-alderlake.so",
+            "whisper/libggml-cpu-cannonlake.so": "whisper-bin-ubuntu-x64/libggml-cpu-cannonlake.so",
+            "whisper/libggml-cpu-cascadelake.so": "whisper-bin-ubuntu-x64/libggml-cpu-cascadelake.so",
+            "whisper/libggml-cpu-cooperlake.so": "whisper-bin-ubuntu-x64/libggml-cpu-cooperlake.so",
+            "whisper/libggml-cpu-haswell.so": "whisper-bin-ubuntu-x64/libggml-cpu-haswell.so",
+            "whisper/libggml-cpu-icelake.so": "whisper-bin-ubuntu-x64/libggml-cpu-icelake.so",
+            "whisper/libggml-cpu-ivybridge.so": "whisper-bin-ubuntu-x64/libggml-cpu-ivybridge.so",
+            "whisper/libggml-cpu-piledriver.so": "whisper-bin-ubuntu-x64/libggml-cpu-piledriver.so",
+            "whisper/libggml-cpu-sandybridge.so": "whisper-bin-ubuntu-x64/libggml-cpu-sandybridge.so",
+            "whisper/libggml-cpu-sapphirerapids.so": "whisper-bin-ubuntu-x64/libggml-cpu-sapphirerapids.so",
+            "whisper/libggml-cpu-skylakex.so": "whisper-bin-ubuntu-x64/libggml-cpu-skylakex.so",
+            "whisper/libggml-cpu-sse42.so": "whisper-bin-ubuntu-x64/libggml-cpu-sse42.so",
+            "whisper/libggml-cpu-x64.so": "whisper-bin-ubuntu-x64/libggml-cpu-x64.so",
+            "whisper/libggml-cpu-zen4.so": "whisper-bin-ubuntu-x64/libggml-cpu-zen4.so"
           }
         }
       ]

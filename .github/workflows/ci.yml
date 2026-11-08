@@ -1,5 +1,5 @@
-# Runs everything `pnpm check` runs, on Linux and Windows, with the pinned ffmpeg sidecars and
-# Playwright's Chromium (engine golden frames).
+# Runs everything `pnpm check` runs, on Linux and Windows, with the pinned sidecars (ffmpeg,
+# ffprobe, whisper.cpp) and Playwright's Chromium (engine golden frames).
 name: CI
 
 on:
@@ -43,7 +43,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # ffmpeg/ffprobe pinned in scripts/binaries.manifest.json, cached until the manifest changes.
+      # ffmpeg/ffprobe and whisper.cpp pinned in scripts/binaries.manifest.json, cached until the
+      # manifest changes.
       - uses: actions/cache@v6
         with:
           path: resources/bin
