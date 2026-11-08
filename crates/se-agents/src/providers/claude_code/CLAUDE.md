@@ -18,13 +18,13 @@ Recorded with the CLI bundled with the Claude desktop app (the same build as the
 - `--session-id <uuid>` is honoured: the `init` line and the `result` line carry that id.
 - The prompt is read from stdin when `-p` has no prompt argument.
 
-**Isolation** (observed on the `init` line and with `--debug-file`, using a temporary `CLAUDE_CONFIG_DIR` holding a `settings.json` with a `UserPromptSubmit` hook and `"model":"sonnet"`, and a `CLAUDE.md`)
+**Isolation** (observed on the `init` line and with `--debug-file`, in a clean environment (`env -i HOME PATH USER TMPDIR LANG`), using a temporary `CLAUDE_CONFIG_DIR` holding a `settings.json` with a `UserPromptSubmit` hook and `"model":"sonnet"`, and a `CLAUDE.md`)
 | Flags | User settings (model, hooks) | Our `--mcp-config` server | Skills / slash commands | Auto-memory |
 |---|---|---|---|---|
-| none | applied (model = sonnet, **hook ran**) | kept | 19 / 49 | on |
-| `--safe-mode` | model still applied | **dropped** | 19 / 49 | off |
-| `--setting-sources ""` (or `local`) | ignored (hook did not run) | kept | 19 / 49 | on |
-| `--restricted` | ignored | kept | 19 / 49 | off |
+| none | applied (model = sonnet, **hook ran**) | kept | 18 / 48 | on |
+| `--safe-mode` | model still applied | **dropped** | 18 / 48 | off |
+| `--setting-sources ""` (or `local`) | ignored (hook did not run) | kept | 18 / 48 | on |
+| `--restricted` | ignored | kept | 18 / 48 | off |
 | `--setting-sources "" --restricted --disable-slash-commands` | ignored | kept | 0 / 0 | off |
 
 Kept: the last row (+ `--strict-mcp-config`, `--tools ""`). Excluded: `--safe-mode` (drops our MCP server), `--bare` (requires an API key: OAuth/keychain never read, so subscription logins fail).
@@ -32,6 +32,8 @@ Kept: the last row (+ `--strict-mcp-config`, `--tools ""`). Excluded: `--safe-mo
 **Logged out** (`not-logged-in.jsonl`): the CLI still prints `system/init`, then a synthetic `assistant` message (`model: "<synthetic>"`) and a `result` with `subtype: "success"`, `is_error: true`, `result: "Not logged in · Please run /login"`, `terminal_reason: "api_error"`; exit code 1. Classified `notAuthenticated` (the message contains `/login`).
 
 **To validate logged in** (TODO before relying on it — see `prompts/PROGRESS.md`): success and long-text fixtures, a resumed session (`--resume` from the same working folder after it was deleted and recreated), a lost session's error, and whether the global `~/.claude/CLAUDE.md` or an ancestor `CLAUDE.md` of the working folder reaches the agent with the kept flags.
+
+**Environment.** A Claude Code session sets many variables for its children (`CLAUDECODE`, `CLAUDE_CODE_SIMPLE`, `CLAUDE_CODE_SESSION_ID`, `CLAUDE_CODE_ENTRYPOINT`, `CLAUDE_AGENT_SDK_*`, a local `ANTHROPIC_BASE_URL`…). SimpleEffect started from inside one (`pnpm dev` from Claude Code's terminal) would pass them on and make our CLI a nested child of that session. `environment.rs` removes them when `CLAUDECODE` is present, keeping user configuration (`CLAUDE_CODE_OAUTH_TOKEN`, `CLAUDE_CODE_USE_BEDROCK`/`VERTEX`/`FOUNDRY`, `CLAUDE_CODE_MAX_OUTPUT_TOKENS`, `ANTHROPIC_API_KEY`); started normally, the environment passes untouched. Record fixtures and run experiments with `env -i` for the same reason.
 
 ## stream-json → AgentEvent
 | Line | Events |

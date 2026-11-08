@@ -5,6 +5,7 @@
 
 mod arguments;
 mod auth;
+mod environment;
 mod failure;
 mod identity;
 mod locate;
@@ -77,9 +78,15 @@ impl AgentProvider for ClaudeCodeProvider {
             path: path.clone(),
             message,
         };
-        let output = run_command(&path, arguments::VERSION_ARGUMENTS, QUICK_COMMAND_TIMEOUT)
-            .await
-            .map_err(|error| unusable(error.to_string()))?;
+        let unset = environment::variables_to_remove();
+        let output = run_command(
+            &path,
+            arguments::VERSION_ARGUMENTS,
+            QUICK_COMMAND_TIMEOUT,
+            &unset,
+        )
+        .await
+        .map_err(|error| unusable(error.to_string()))?;
         if !output.success {
             return Err(unusable(format!(
                 "`claude --version` failed ({}): {}",
@@ -97,10 +104,12 @@ impl AgentProvider for ClaudeCodeProvider {
 
     async fn auth_status(&self) -> Result<AuthStatus, AgentError> {
         let path = self.executable()?;
+        let unset = environment::variables_to_remove();
         let output = run_command(
             &path,
             arguments::AUTH_STATUS_ARGUMENTS,
             QUICK_COMMAND_TIMEOUT,
+            &unset,
         )
         .await?;
         // A logged-out CLI exits with an error but still prints its JSON answer.

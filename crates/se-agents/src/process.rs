@@ -5,7 +5,7 @@
 //! exits. stderr is collected in the background so failures can quote its end.
 
 use std::{
-    ffi::OsStr,
+    ffi::{OsStr, OsString},
     path::Path,
     process::{ExitStatus, Stdio},
     time::Duration,
@@ -46,7 +46,8 @@ pub struct CommandOutput {
 }
 
 impl CliProcess {
-    /// Starts `program` with `args` in `cwd`, writing `input` to its stdin then closing it.
+    /// Starts `program` with `args` in `cwd`, without the environment variables `unset`, writing
+    /// `input` to its stdin then closing it.
     ///
     /// # Errors
     /// [`AgentError::Failed`] when the process cannot start.
@@ -55,6 +56,7 @@ impl CliProcess {
         args: I,
         cwd: Option<&Path>,
         input: Option<String>,
+        unset: &[OsString],
     ) -> Result<Self, AgentError>
     where
         I: IntoIterator<Item = S>,
@@ -76,6 +78,9 @@ impl CliProcess {
                 .stderr(Stdio::piped());
             if let Some(dir) = cwd {
                 command.current_dir(dir);
+            }
+            for name in unset {
+                command.env_remove(name);
             }
         });
         platform::isolate(&mut command);
@@ -157,17 +162,18 @@ impl Drop for CliProcess {
     }
 }
 
-/// Runs a short command (`--version`, `auth status`) to completion within `timeout`.
+/// Runs a short command (`--version`, `auth status`) to completion within `timeout`, without
+/// the environment variables `unset`.
 ///
 /// # Errors
-/// [`AgentError::Failed`] when it cannot start, fails to exit in time, or its output is not
-/// UTF-8 text.
+/// [`AgentError::Failed`] when it cannot start or fails to exit in time.
 pub async fn run_command(
     program: &Path,
     args: &[&str],
     timeout: Duration,
+    unset: &[OsString],
 ) -> Result<CommandOutput, AgentError> {
-    let mut process = CliProcess::spawn(program, args, None, None)?;
+    let mut process = CliProcess::spawn(program, args, None, None, unset)?;
     let mut stdout = Vec::new();
     let run = async {
         if let Some(mut pipe) = process.child.stdout().take() {

@@ -8,7 +8,7 @@ AI CLI providers and their stream parsing (ADR-0003, ADR-0027). Claude Code is t
 |---|---|
 | `providers::claude_code::ClaudeCodeProvider` | `AgentProvider` for Claude Code (`new()`, `PROVIDER_ID` = `claude-code`); flags, isolation and empirical findings in `src/providers/claude_code/CLAUDE.md` |
 | `FsAgentWorkspaces::new(root)` | `AgentWorkspaces`: `<root>/<task id>/` emptied at `prepare`, removed at `release`; `folder(task_id)`; `remove_leftovers()` at startup (se-core calls it) |
-| `process::CliProcess` | The only way to spawn a CLI: isolated (`platform::isolate`), input written to stdin then closed, stdout read by lines (`stdout_lines`), stderr tail collected, `wait`, `kill` (tree), killed on drop |
+| `process::CliProcess` | The only way to spawn a CLI: isolated (`platform::isolate`), variables to unset removed, input written to stdin then closed, stdout read by lines (`stdout_lines`), stderr tail collected, `wait`, `kill` (tree), killed on drop |
 | `process::run_command(program, args, timeout)` | Short commands (`--version`, `auth status`) → `CommandOutput { success, status, stdout, stderr }` |
 
 ## Layout
@@ -23,6 +23,7 @@ AI CLI providers and their stream parsing (ADR-0003, ADR-0027). Claude Code is t
 | `providers/claude_code/arguments.rs` | Pure: the command line of a run, `redacted` (MCP config hidden in logs) |
 | `providers/claude_code/run.rs` | A run: instructions file, process, events forwarded, cancellation, terminal event when the CLI ends without a result |
 | `providers/claude_code/stream.rs` | `StreamParser` (stream-json → `AgentEvent`) and `missing_result` |
+| `providers/claude_code/environment.rs` | Variables of a parent Claude Code session removed from the CLI's environment (only when `CLAUDECODE` is set; user configuration kept) |
 | `providers/claude_code/auth.rs` | `parse_version`, `parse_auth_status` |
 | `providers/claude_code/failure.rs` | `classify` (rate limit, login, crash) and `explain` (actionable messages) |
 

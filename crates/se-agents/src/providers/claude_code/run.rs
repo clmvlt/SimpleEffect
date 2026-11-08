@@ -9,6 +9,7 @@ use tokio::sync::mpsc;
 
 use super::{
     arguments::{INSTRUCTIONS_FILE, redacted, run_arguments},
+    environment,
     stream::{StreamParser, missing_result},
 };
 use crate::process::CliProcess;
@@ -32,11 +33,19 @@ pub(super) async fn start(executable: &Path, spec: AgentRunSpec) -> Result<Agent
         })?;
     let args = run_arguments(&spec, &instructions);
     tracing::info!(executable = %executable.display(), args = ?redacted(&args), "starting Claude Code");
+    let unset = environment::variables_to_remove();
+    if !unset.is_empty() {
+        tracing::info!(
+            count = unset.len(),
+            "started from a Claude Code session: its variables are not passed on"
+        );
+    }
     let process = CliProcess::spawn(
         executable,
         &args,
         Some(&spec.working_dir),
         Some(spec.prompt),
+        &unset,
     )?;
     let (sender, events) = mpsc::channel(EVENT_BUFFER);
     let (cancel, signal) = CancelHandle::new();
