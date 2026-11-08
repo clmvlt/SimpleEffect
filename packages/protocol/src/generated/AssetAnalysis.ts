@@ -2,6 +2,7 @@
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { AudioSummary } from "./AudioSummary";
 import type { SceneSummary } from "./SceneSummary";
+import type { TranscriptSummary } from "./TranscriptSummary";
 
 /**
  * The analysis summaries of an asset, kept in the document. `None` until the analysis ran on
@@ -15,4 +16,8 @@ audio: AudioSummary | null,
 /**
  * Shot changes of the picture.
  */
-scenes: SceneSummary | null, };
+scenes: SceneSummary | null, 
+/**
+ * The words spoken (prompt 21; schema version 7).
+ */
+transcript: TranscriptSummary | null, };

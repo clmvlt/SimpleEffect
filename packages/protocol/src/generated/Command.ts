@@ -7,6 +7,7 @@ import type { AssetId } from "./AssetId";
 import type { CreateProjectRequest } from "./CreateProjectRequest";
 import type { DecodabilityReport } from "./DecodabilityReport";
 import type { DecoderCapabilities } from "./DecoderCapabilities";
+import type { DownloadTarget } from "./DownloadTarget";
 import type { Flicks } from "./Flicks";
 import type { Format } from "./Format";
 import type { FormatAdaptation } from "./FormatAdaptation";
@@ -36,6 +37,8 @@ import type { TaskScope } from "./TaskScope";
 import type { TrackId } from "./TrackId";
 import type { TrackKind } from "./TrackKind";
 import type { TrackPatch } from "./TrackPatch";
+import type { TranscriptionPreferences } from "./TranscriptionPreferences";
+import type { TranscriptionSettings } from "./TranscriptionSettings";
 import type { TransitionId } from "./TransitionId";
 import type { TransitionPatch } from "./TransitionPatch";
 
@@ -546,4 +549,52 @@ requestId: string,
 /**
  * Why, for the agent (English, actionable).
  */
-message: string, };
+message: string, } | { "kind": "getTranscriptionStatus" } | { "kind": "updateTranscriptionPreferences" } & TranscriptionPreferences | { "kind": "startTranscriptionDownload", 
+/**
+ * What to download.
+ */
+target: DownloadTarget, } | { "kind": "cancelTranscriptionDownload", 
+/**
+ * The download.
+ */
+target: DownloadTarget, } | { "kind": "importTranscriptionModel", 
+/**
+ * Absolute path of the `.bin` file.
+ */
+path: string, } | { "kind": "removeTranscriptionFile", 
+/**
+ * What to delete.
+ */
+target: DownloadTarget, } | { "kind": "transcribeAssets", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * Assets with sound.
+ */
+assetIds: Array<AssetId>, } | { "kind": "getTranscript", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The asset.
+ */
+assetId: AssetId, } | { "kind": "searchTranscripts", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * Words to find.
+ */
+query: string, } | { "kind": "setTranscriptionSettings", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The new settings.
+ */
+settings: TranscriptionSettings, };

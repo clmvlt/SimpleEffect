@@ -30,6 +30,7 @@ mod media_settings;
 mod project_entities;
 mod project_session;
 mod tasks;
+mod transcription;
 
 pub use ai::{
     AgentEvent, AgentFailureKind, AiSettings, AiStatus, AuthStatus, EffortLevel,
@@ -74,4 +75,9 @@ pub use project_session::{
 pub use tasks::{
     RunKind, SubmitTaskRequest, Task, TaskEventRecord, TaskRevertReport, TaskRun, TaskScope,
     TaskStatus, TaskUsage,
+};
+pub use transcription::{
+    DownloadProgress, DownloadTarget, GpuRuntimeInfo, TranscriptSearchHit, TranscriptionBackend,
+    TranscriptionModelInfo, TranscriptionPreferences, TranscriptionStatus, VoiceModelInfo,
+    WhisperInfo,
 };

@@ -6,7 +6,7 @@ use ts_rs::TS;
 
 use crate::{
     AiStatus, FrameRenderRequest, JobProgress, JobSnapshot, ProjectHistory, ProjectPatch,
-    ProjectSession, Task, TaskEventRecord,
+    ProjectSession, Task, TaskEventRecord, TranscriptionStatus,
 };
 
 /// An event pushed inside a [`crate::EventEnvelope`], tagged by `kind` (camelCase).
@@ -101,6 +101,12 @@ pub enum CoreEvent {
     /// and uploads one JPEG per time to `/media/renders/{requestId}/{index}`, or answers
     /// [`crate::Command::ReportFrameRenderFailure`] (ADR-0028).
     RenderFramesRequested(FrameRenderRequest),
+    /// The transcription status changed: a download progressed (at most a few times a second),
+    /// finished or failed, a model or the GPU pack was installed or removed.
+    TranscriptionStatusChanged {
+        /// The new status.
+        status: TranscriptionStatus,
+    },
 }
 
 #[cfg(test)]

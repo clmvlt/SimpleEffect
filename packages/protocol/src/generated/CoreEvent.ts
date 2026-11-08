@@ -13,6 +13,7 @@ import type { ProjectSession } from "./ProjectSession";
 import type { Task } from "./Task";
 import type { TaskEventRecord } from "./TaskEventRecord";
 import type { TaskId } from "./TaskId";
+import type { TranscriptionStatus } from "./TranscriptionStatus";
 
 /**
  * An event pushed inside a [`crate::EventEnvelope`], tagged by `kind` (camelCase).
@@ -80,4 +81,8 @@ changesetId: ChangesetId | null,
 /**
  * The items the task added or changed that still exist, in id order.
  */
-touchedItems: Array<ItemId>, } | { "kind": "aiStatusChanged" } & AiStatus | { "kind": "renderFramesRequested" } & FrameRenderRequest;
+touchedItems: Array<ItemId>, } | { "kind": "aiStatusChanged" } & AiStatus | { "kind": "renderFramesRequested" } & FrameRenderRequest | { "kind": "transcriptionStatusChanged", 
+/**
+ * The new status.
+ */
+status: TranscriptionStatus, };
