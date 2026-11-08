@@ -48,6 +48,7 @@ impl AudioAnalyzer {
     #[must_use]
     pub fn finish(self) -> AudioAnalysis {
         let loudness = self.loudness.finish();
+        let (silences, levels) = self.silences.finish_with_levels();
         AudioAnalysis {
             sample_rate: self.sample_rate,
             channels: self.channels,
@@ -57,7 +58,8 @@ impl AudioAnalyzer {
             sample_peak_dbfs: loudness.sample_peak_dbfs,
             short_term: loudness.short_term,
             silence_settings: self.silence_settings,
-            silences: self.silences.finish(),
+            silences,
+            levels: Some(levels),
         }
     }
 }
@@ -82,5 +84,7 @@ mod tests {
         assert!(analysis.integrated_lufs.is_some());
         assert_eq!(analysis.short_term.values.len(), 10);
         assert_eq!(analysis.channels, 1);
+        let levels = analysis.levels.unwrap();
+        assert_eq!(levels.values.len(), 250, "5 s of 20 ms windows");
     }
 }

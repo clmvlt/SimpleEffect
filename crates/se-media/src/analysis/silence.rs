@@ -1,6 +1,7 @@
-//! [`SilenceDetector`]: silent stretches of interleaved PCM, by the RMS level of short windows.
+//! [`SilenceDetector`]: silent stretches of interleaved PCM, by the RMS level of short windows,
+//! and the level of every window ([`LevelEnvelope`], prompt 22).
 
-use se_domain::{SilenceSettings, TimeRange};
+use se_domain::{LevelEnvelope, SilenceSettings, TimeRange};
 
 use super::frame_time;
 
@@ -26,6 +27,8 @@ pub struct SilenceDetector {
     /// First frame of the silent run in progress.
     run_start: Option<u64>,
     silences: Vec<TimeRange>,
+    /// The level of every closed window.
+    levels: Vec<u8>,
 }
 
 impl SilenceDetector {
@@ -47,6 +50,7 @@ impl SilenceDetector {
             frames: 0,
             run_start: None,
             silences: Vec::new(),
+            levels: Vec::new(),
         }
     }
 
@@ -64,12 +68,22 @@ impl SilenceDetector {
 
     /// The silences found, the last window (even partial) included.
     #[must_use]
-    pub fn finish(mut self) -> Vec<TimeRange> {
+    pub fn finish(self) -> Vec<TimeRange> {
+        self.finish_with_levels().0
+    }
+
+    /// The silences found and the level of every window (the last one even partial).
+    #[must_use]
+    pub fn finish_with_levels(mut self) -> (Vec<TimeRange>, LevelEnvelope) {
         if self.window_samples >= self.channels as u64 {
             self.close_window();
         }
         self.end_run();
-        self.silences
+        let levels = LevelEnvelope {
+            step: frame_time(self.window_frames, self.sample_rate),
+            values: self.levels,
+        };
+        (self.silences, levels)
     }
 
     fn close_window(&mut self) {
@@ -78,6 +92,7 @@ impl SilenceDetector {
         #[allow(clippy::cast_precision_loss)]
         let mean_square = self.window_sum / self.window_samples.max(1) as f64;
         let silent = mean_square < self.threshold_mean_square;
+        self.levels.push(LevelEnvelope::value_of(mean_square));
         if silent && self.run_start.is_none() {
             self.run_start = Some(self.frames);
         }
@@ -170,5 +185,28 @@ mod tests {
             detector.push(chunk);
         }
         assert_eq!(detector.finish(), [range(500, 1_250)]);
+    }
+
+    #[test]
+    fn every_20_ms_window_gets_its_level() {
+        let mut detector = SilenceDetector::new(1, RATE, SilenceSettings::SPEECH);
+        // A 0.5 amplitude sine is −9 dBFS RMS; then 0.1 s of digital silence.
+        detector.push(&sine(0.2, 0.5, 1));
+        detector.push(&silence(0.1, 1));
+        let (silences, levels) = detector.finish_with_levels();
+        assert_eq!(silences, []);
+        assert_eq!(levels.step, Flicks::from_millis(20));
+        assert_eq!(levels.values.len(), 15);
+        assert!(levels.values[..10].iter().all(|value| *value == 9));
+        assert!(
+            levels.values[10..]
+                .iter()
+                .all(|value| *value == LevelEnvelope::FLOOR)
+        );
+        assert_eq!(
+            levels.silences(SilenceSettings::SPEECH, range(0, 300)),
+            [],
+            "0.1 s is shorter than the speech minimum"
+        );
     }
 }

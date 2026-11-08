@@ -158,8 +158,9 @@ impl MediaService {
         }
     }
 
-    /// Queues an analysis unless one runs or the database holds it for the current content;
-    /// a stored result whose summary never reached the asset (crash) is summarised now.
+    /// Queues an analysis unless one runs or the database holds it for the current content (and
+    /// is not outdated: an audio analysis without levels is run again, prompt 22); a stored
+    /// result whose summary never reached the asset (crash) is summarised now.
     async fn schedule_analysis(
         &self,
         handle: &ProjectActorHandle,
@@ -184,7 +185,9 @@ impl MediaService {
             content_key: content_key.to_owned(),
         };
         match handle.analyses().load_analysis(asset.id, kind).await {
-            Ok(Some(stored)) if stored.content_key == content_key => {
+            Ok(Some(stored))
+                if stored.content_key == content_key && !stored.result.is_outdated() =>
+            {
                 recorder.record_summary(&stored.result).await;
                 return;
             }
