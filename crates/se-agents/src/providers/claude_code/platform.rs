@@ -4,6 +4,17 @@
 
 use std::path::{Path, PathBuf};
 
+/// Names looked up on the PATH, in order. On Windows the real executable comes before script
+/// wrappers found through PATHEXT: a `.cmd` may add options of its own (a user's wrapper adding
+/// `--allow-dangerously-skip-permissions` breaks `--restricted`) and passes arguments through
+/// cmd.exe. npm installs only have `claude.cmd`, found by the second name.
+#[cfg(windows)]
+pub(super) const PATH_NAMES: &[&str] = &["claude.exe", "claude"];
+
+/// Names looked up on the PATH, in order.
+#[cfg(not(windows))]
+pub(super) const PATH_NAMES: &[&str] = &["claude"];
+
 /// Well-known executables of Claude Code under `home`, most likely first.
 #[cfg(windows)]
 pub(super) fn install_locations(home: &Path) -> Vec<PathBuf> {
@@ -15,8 +26,6 @@ pub(super) fn install_locations(home: &Path) -> Vec<PathBuf> {
             .join("Roaming")
             .join("npm")
             .join("claude.cmd"),
-        // Shim folder of the development machine.
-        home.join(".claude-shim").join("claude.cmd"),
     ]
 }
 

@@ -1,12 +1,15 @@
-//! Finding the `claude` executable: the path chosen in the settings, else the PATH (the `which`
-//! crate honours PATHEXT, so the `claude.cmd` shim of npm installs is found on Windows), else the
-//! usual install folders.
+//! Finding the `claude` executable: the path chosen in the settings, else the PATH (on Windows a
+//! real `claude.exe` first, then what PATHEXT finds — the `claude.cmd` shim of npm installs),
+//! else the usual install folders.
 
 use std::path::{Path, PathBuf};
 
 use se_app::ports::AgentError;
 
-use super::{identity::EXECUTABLE, platform::install_locations};
+use super::{
+    identity::EXECUTABLE,
+    platform::{PATH_NAMES, install_locations},
+};
 
 /// The executable to run.
 ///
@@ -14,7 +17,16 @@ use super::{identity::EXECUTABLE, platform::install_locations};
 /// [`AgentError::NotInstalled`] naming where it looked and what to do.
 pub(super) fn resolve(configured: Option<&Path>) -> Result<PathBuf, AgentError> {
     let home = directories::BaseDirs::new().map(|dirs| dirs.home_dir().to_path_buf());
-    resolve_with(configured, which::which(EXECUTABLE).ok(), home.as_deref())
+    let on_path = PATH_NAMES.iter().find_map(|name| which::which(name).ok());
+    resolve_with(configured, on_path, home.as_deref())
+}
+
+/// The first of [`PATH_NAMES`] found in the folders of `paths` (a PATH value; Windows tests).
+#[cfg(all(test, windows))]
+fn on_path_in(paths: &std::ffi::OsStr, cwd: &Path) -> Option<PathBuf> {
+    PATH_NAMES
+        .iter()
+        .find_map(|name| which::which_in(name, Some(paths), cwd).ok())
 }
 
 /// The rule of [`resolve`], with the PATH lookup and home folder given (tests).
@@ -90,6 +102,31 @@ mod tests {
         assert_eq!(
             resolve_with(None, None, Some(home.path())).unwrap(),
             installed
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_real_executable_on_the_path_wins_over_a_script_wrapper_before_it() {
+        let wrapper = tempfile::tempdir().unwrap();
+        let native = tempfile::tempdir().unwrap();
+        std::fs::write(wrapper.path().join("claude.cmd"), "@echo off").unwrap();
+        std::fs::write(native.path().join("claude.exe"), "").unwrap();
+        let paths = std::env::join_paths([wrapper.path(), native.path()]).unwrap();
+        let found = on_path_in(&paths, wrapper.path()).unwrap();
+        assert!(
+            found.starts_with(native.path()) && found.ends_with("claude.exe"),
+            "{}",
+            found.display()
+        );
+        // Without a real executable, the wrapper is still found (npm installs).
+        let only_wrapper = std::env::join_paths([wrapper.path()]).unwrap();
+        let found = on_path_in(&only_wrapper, wrapper.path()).unwrap();
+        assert!(
+            found
+                .to_string_lossy()
+                .to_lowercase()
+                .ends_with("claude.cmd")
         );
     }
 
