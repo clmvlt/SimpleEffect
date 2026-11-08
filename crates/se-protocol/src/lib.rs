@@ -12,6 +12,7 @@
 //! Allowed workspace dependencies: `se-domain` (see `docs/architecture.md` §3 and §6).
 //! DTOs only: no logic beyond (de)serialisation.
 
+mod ai;
 mod audio_editing;
 mod command;
 mod command_result;
@@ -27,7 +28,12 @@ mod media;
 mod media_settings;
 mod project_entities;
 mod project_session;
+mod tasks;
 
+pub use ai::{
+    AgentEvent, AgentFailureKind, AiSettings, AiStatus, AuthStatus, EffortLevel,
+    InstallationStatus, ModelOption, ProviderCapabilities, ProviderId, ProviderInfo,
+};
 pub use audio_editing::{ItemUpdate, NewTransition};
 pub use command::Command;
 pub use command_result::{CommandResult, CoreInfo};
@@ -62,4 +68,7 @@ pub use project_entities::{
 pub use project_session::{
     CreateProjectRequest, FormatPresetDimensions, HistoryState, NewProjectDefaults, ProjectHistory,
     ProjectSession, RecentProject,
+};
+pub use tasks::{
+    RunKind, SubmitTaskRequest, Task, TaskEventRecord, TaskRun, TaskScope, TaskStatus,
 };

@@ -399,9 +399,27 @@
     },
     "ai": {
       "title": "IA",
-      "empty": {
-        "title": "Assistant IA non configuré",
-        "description": "Connectez un assistant IA installé sur cet ordinateur pour lui confier des tâches de montage."
+      "state": {
+        "checking": {
+          "title": "Recherche de l’assistant IA…",
+          "description": "SimpleEffect vérifie l’assistant installé sur cet ordinateur."
+        },
+        "ready": {
+          "title": "{{name}} est prêt",
+          "description": "Le composeur de tâches arrive bientôt : vous pourrez confier des tâches de montage à {{name}}."
+        },
+        "loggedOut": {
+          "title": "{{name}} est déconnecté",
+          "description": "Ouvre un terminal, lance `{{command}}`, puis tape `{{login}}`. Actualisez ensuite l’état dans Réglages → IA."
+        },
+        "notInstalled": {
+          "title": "{{name}} n’est pas installé",
+          "description": "Installez l’assistant IA sur cet ordinateur (Réglages → IA explique comment), puis actualisez son état."
+        },
+        "unknown": {
+          "title": "État de {{name}} inconnu",
+          "description": "{{reason}}"
+        }
       }
     },
     "timeline": {
@@ -735,7 +753,20 @@
       "closed": "Connexion au cœur fermée"
     },
     "ai": {
-      "notConfigured": "IA non configurée"
+      "fallbackName": "IA",
+      "checking": "Vérification de l’IA…",
+      "ready": "{{name}} connecté",
+      "loggedOut": "{{name}} déconnecté",
+      "notInstalled": "{{name}} non installé",
+      "unknown": "{{name}} : connexion inconnue",
+      "open": "ouvrir les réglages IA",
+      "hint": {
+        "checking": "Recherche de l’assistant IA installé sur cet ordinateur…",
+        "ready": "{{name}} {{version}} est prêt à recevoir des tâches.",
+        "loggedOut": "Ouvre un terminal, lance `{{command}}`, puis tape `{{login}}`.",
+        "notInstalled": "{{name}} n’est pas installé sur cet ordinateur : cliquez pour voir l’aide.",
+        "unknown": "État de connexion inconnu ({{reason}}) : cliquez pour vérifier à nouveau."
+      }
     },
     "version": "Version {{version}}"
   },
@@ -830,7 +861,12 @@
       "INVALID_EDIT_POINT": "Ce point de montage est en dehors de l’élément.",
       "FRAME_RATE_LOCKED": "La séquence contient déjà des éléments : sa cadence ne peut plus changer.",
       "LAST_SEQUENCE": "C’est la seule séquence du projet : créez-en une autre avant de la supprimer."
-    }
+    },
+    "TASK_NOT_FOUND": "Cette tâche IA n’existe plus dans le projet : actualisez la liste des tâches.",
+    "TASK_NOT_ACTIVE": "Cette tâche IA est déjà terminée : il n’y a plus rien à annuler.",
+    "TASK_STILL_ACTIVE": "Cette tâche IA est encore en file ou en cours : attendez qu’elle se termine, ou annulez-la d’abord.",
+    "TASK_NOT_RESUMABLE": "Cette tâche IA ne peut pas être poursuivie : relancez-la ou créez une nouvelle tâche.",
+    "AI_UNAVAILABLE": "L’assistant IA n’est pas disponible (non installé ou déconnecté) : voyez Réglages → IA."
   },
   "format": {
     "ratio": "Format",
@@ -853,7 +889,8 @@
     "title": "Réglages",
     "description": "Préférences de l’application, communes à tous les projets.",
     "sections": {
-      "media": "Médias"
+      "media": "Médias",
+      "ai": "IA"
     },
     "media": {
       "derivedTitle": "Copies de travail",
@@ -890,6 +927,48 @@
       "confirmDescription": "Miniatures, formes d’onde, mezzanines et proxies seront supprimés puis régénérés au besoin. Les analyses sont conservées. Les fichiers en cours d’utilisation restent.",
       "confirm": "Nettoyer",
       "cancel": "Annuler"
+    },
+    "ai": {
+      "providerTitle": "Assistant IA : {{name}}",
+      "cli": "Programme",
+      "installed": "{{name}} {{version}}",
+      "installation": {
+        "checking": "Recherche…",
+        "notInstalled": "{{name}} n’est pas installé (ou introuvable).",
+        "unusable": "{{name}} a été trouvé mais ne répond pas."
+      },
+      "login": "Connexion",
+      "auth": {
+        "checking": "Vérification…",
+        "ready": "Connecté",
+        "readyAccount": "Connecté (compte {{account}})",
+        "loggedOut": "Déconnecté : ouvre un terminal, lance `{{command}}`, puis tape `{{login}}`.",
+        "notInstalled": "Indisponible tant que le programme n’est pas installé.",
+        "unknown": "Inconnue : {{reason}}"
+      },
+      "refresh": "Actualiser",
+      "refreshing": "Vérification…",
+      "installHelp": "Comment installer {{name}}",
+      "executablePath": "Emplacement du programme",
+      "executableAuto": "Recherche automatique (PATH et dossiers d’installation habituels)",
+      "chooseCli": "Choisir…",
+      "chooseCliTitle": "Programme de l’assistant IA",
+      "chooseCliButton": "Utiliser ce programme",
+      "resetCli": "Automatique",
+      "tasksTitle": "Tâches IA",
+      "defaultModel": "Modèle par défaut",
+      "defaultEffort": "Effort par défaut",
+      "cliDefault": "Choix du programme",
+      "effort": {
+        "low": "Faible",
+        "medium": "Moyen",
+        "high": "Élevé",
+        "xhigh": "Très élevé",
+        "max": "Maximal"
+      },
+      "maxConcurrent": "Tâches simultanées",
+      "maxConcurrentDescription": "Au-delà, les nouvelles tâches attendent leur tour.",
+      "privacy": "SimpleEffect utilise l’assistant déjà connecté sur cet ordinateur : il ne lit, ne stocke et ne transmet jamais vos identifiants."
     }
   },
   "shortcuts": {
@@ -955,6 +1034,26 @@
       "nudgeLeftTen": "Décaler la sélection de dix images vers la gauche",
       "nudgeRightTen": "Décaler la sélection de dix images vers la droite",
       "addText": "Ajouter un texte à la tête de lecture"
+    }
+  },
+  "ai": {
+    "devTest": {
+      "title": "Tester une tâche (développement)",
+      "prompt": "Prompt de la tâche",
+      "placeholder": "Décris ce que l’agent doit faire…",
+      "submit": "Envoyer",
+      "tasks": "Tâches du projet",
+      "events": "Événements de la tâche",
+      "cancel": "Annuler",
+      "retry": "Relancer",
+      "followUp": "Suite (avec le prompt)",
+      "status": {
+        "queued": "En file",
+        "running": "En cours",
+        "completed": "Terminée",
+        "failed": "Échouée",
+        "cancelled": "Annulée"
+      }
     }
   }
 }

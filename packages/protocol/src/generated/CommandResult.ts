@@ -1,5 +1,7 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
+import type { AiSettings } from "./AiSettings";
+import type { AiStatus } from "./AiStatus";
 import type { AnimationPresetInfo } from "./AnimationPresetInfo";
 import type { CoreInfo } from "./CoreInfo";
 import type { FontFamily } from "./FontFamily";
@@ -17,6 +19,8 @@ import type { ProjectSession } from "./ProjectSession";
 import type { RecentProject } from "./RecentProject";
 import type { RelinkOutcome } from "./RelinkOutcome";
 import type { SequenceId } from "./SequenceId";
+import type { Task } from "./Task";
+import type { TaskEventRecord } from "./TaskEventRecord";
 import type { TimeRange } from "./TimeRange";
 import type { TrackId } from "./TrackId";
 import type { TransitionId } from "./TransitionId";
@@ -109,4 +113,40 @@ cache: ProjectCacheInfo, } | { "kind": "clearProjectCache",
 /**
  * The cache folder and what is left in it (files in use cannot be deleted).
  */
-cache: ProjectCacheInfo, };
+cache: ProjectCacheInfo, } | { "kind": "submitTask", 
+/**
+ * The new task.
+ */
+task: Task, } | { "kind": "cancelTask" } | { "kind": "retryTask", 
+/**
+ * The task.
+ */
+task: Task, } | { "kind": "followUpTask", 
+/**
+ * The task.
+ */
+task: Task, } | { "kind": "listTasks", 
+/**
+ * Oldest first.
+ */
+tasks: Array<Task>, } | { "kind": "getTaskEvents", 
+/**
+ * The task's log, in order.
+ */
+events: Array<TaskEventRecord>, } | { "kind": "getAiStatus", 
+/**
+ * The provider in use.
+ */
+status: AiStatus, } | { "kind": "refreshAiStatus", 
+/**
+ * The provider in use, checked now.
+ */
+status: AiStatus, } | { "kind": "getAiSettings", 
+/**
+ * The current settings.
+ */
+settings: AiSettings, } | { "kind": "updateAiSettings", 
+/**
+ * The settings as saved.
+ */
+settings: AiSettings, };

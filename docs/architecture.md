@@ -120,13 +120,13 @@ se-domain  ◄── se-protocol
 | `se-domain` | serde, serde_json (embedded preset library, lenient `Animatable` reads), thiserror, uuid, ts-rs (derive only); dev: proptest, insta | do IO, use async/tokio, read the clock, spawn anything |
 | `se-protocol` | se-domain, serde, serde_json, ts-rs | contain logic |
 | `se-app` | se-domain, se-protocol, tokio, async-trait, tracing | touch `std::fs`, `std::process`, network, concrete adapters |
-| adapters | se-app, se-domain, se-protocol (DTOs they write, e.g. `ThumbnailSheet`), their IO libraries | depend on another adapter crate |
+| adapters | se-app, se-domain, se-protocol (DTOs they write, e.g. `ThumbnailSheet`, `Task`, `AgentEvent`), their IO libraries | depend on another adapter crate |
 | `se-mcp` | se-app, se-domain, rmcp, schemars | mutate documents except through se-app use cases |
 | `se-core` | everything | contain domain logic |
 | `se-codegen` | se-protocol, se-domain, ts-rs | be depended on, ship in the app |
 | `se-devtools` | se-domain, se-app, se-store, se-media, tokio, uuid | be depended on, ship in the app |
 
-Adapters implement **ports** declared in `se-app::ports`: `ProjectRepository` (+ `ProjectStore`, one open and locked project, and its `AnalysisStore`), `AppLibraryRepository`, `MediaProber`, `MediaFiles` (existence, fingerprints, folder size and removal), `MediaJobRunner`, `FrameExtractor`, `MediaTools` (ffmpeg folder, version, hardware encoders), `FontCatalog` (bundled and installed fonts, se-fonts), `Transcriber`, `SubjectDetector`, `AgentProvider`, `Exporter`, `EventSink`, `Clock`, `IdGenerator`. Small ports with no adapter crate (`Clock`, `IdGenerator`, `EventSink` over the event bus) are implemented in se-core (`system_ports.rs`).
+Adapters implement **ports** declared in `se-app::ports`: `ProjectRepository` (+ `ProjectStore`, one open and locked project, and its `AnalysisStore`), `AppLibraryRepository`, `MediaProber`, `MediaFiles` (existence, fingerprints, folder size and removal), `MediaJobRunner`, `FrameExtractor`, `MediaTools` (ffmpeg folder, version, hardware encoders), `FontCatalog` (bundled and installed fonts, se-fonts), `Transcriber`, `SubjectDetector`, `AgentProvider` + `AgentWorkspaces` (se-agents), `TaskStore` (`ProjectStore::tasks()`, se-store), `Exporter`, `EventSink`, `Clock`, `IdGenerator`. Small ports with no adapter crate (`Clock`, `IdGenerator`, `EventSink` over the event bus) are implemented in se-core (`system_ports.rs`).
 Every port has an in-memory/fake implementation in `se-app` (feature `test-support`) so use cases are tested without IO.
 
 ## 4. TypeScript packages and rules
@@ -154,13 +154,14 @@ Every port has an in-memory/fake implementation in `se-app` (feature `test-suppo
 - **Keyboard shortcuts** (`shared/shortcuts/`, prompt 10): `SHORTCUT_ACTIONS` is the single table of named actions (`undo`, `markIn`, `nextFrame`, `zoomToFit`…), each with its contexts (`global`, `timeline`, `viewer`), default keys (`mod+shift+z`; `appleKeys` when macOS differs) and whether holding repeats it. Components bind handlers with `useShortcutAction(action, run)`; the `ShortcutRegistry` runs the latest handler of the action a key press matches, when the action is global or belongs to the active context — the `ShortcutRegion` last clicked or focused (`data-shortcut-context`; the timeline claims it on mount). Keys typed in text fields are ignored, symbols ignore Shift (layouts differ), ⌥ letters on macOS are read from `code`; the registry also tracks held keys (`isKeyHeld`, released on key up or window blur) for combinations like K+L. `findShortcutConflicts` must stay empty for the table (tested); tooltips show keys with `useShortcutHint(action)`, and « Raccourcis clavier » (`?`, `app/shortcuts/`) lists every action by context.
 - **Time in the renderer** (`shared/time/`, prompt 10): branded flicks, frame rates, rounding modes, `parseTimecode`/`formatTimecode` and pixels at a zoom, mirroring `se_domain::time` and replaying `docs/test-vectors/*.json` for parity. `shared/canvas/` gives canvases cached token values (`tokenValue`) and `prepareCanvas` (resize only when the size changes).
 - **Sequences** (`features/sequences`, prompt 16, ADR-0026): the timeline's sequence tabs (always shown) open, from their context menu or the « … » button, rename (also by double click), « Format de la séquence… », « Créer une version… », « Dupliquer » and « Supprimer… » (confirmation). The format dialog reuses the format fields of the new-project form (`shared/format`) and locks the frame rate of a sequence holding items; after a change the items newly out of the frame are listed in a toast with « Sélectionner ». The viewer draws the guides chosen per sequence (safe areas of TikTok, Reels, Shorts, YouTube 16:9, thirds, centre cross) and, in reframing mode (double click on a filling clip, or the inspector), moves a clip's kept area by dragging its picture.
+- **AI** (`features/ai`, prompt 17, ADR-0027): `AppLayout` keeps an app-wide AI status store in step with the core (`watchAiStatus`: `getAiStatus` at each connection, then `aiStatusChanged`); the status bar's `AiStatusIndicator` shows the provider green (logged in), orange (logged out — the tooltip gives the terminal login steps from the provider's `command` and `loginCommand`) or grey (not installed) and opens « Réglages → IA » (`openSettings('ai')` of `features/settings`): CLI path and version, login state with « Actualiser », a custom CLI path (bridge `chooseFile`), the installation guide (bridge `openExternal`, `https:` only), default model and effort, tasks running at once. The « IA » tab explains what the provider allows; development builds add « Tester une tâche » (submit over the active sequence, cancel, retry, follow-up, live event stream). The composer and task panel arrive with prompt 20.
 - **Timeline** (`features/timeline`, prompt 10, ADR-0020): shows the active sequence (tabs, « + » creates one). Tracks are DOM rows — video tracks above in reverse document order (they stack first = bottom), audio below — with only the items in view rendered (binary search over each track's sorted items) as `ClipShell`s drawing thumbnails from the sheet and waveforms in a canvas at the peak level matching the zoom. Horizontal scroll and zoom are virtual (Ctrl/⌘+wheel around the pointer, Maj+wheel or swipe, slider, fit, minimap), applied once per animation frame; the playhead moves by style from its own store. Stores: `timeline-view-store` (per sequence: zoom, scroll, in/out points; track heights; snapping; active sequence — saved per project in `localStorage`, never in the project), `playhead-store`, `selection-store`. Track and marker edits are one protocol command each (one undo step). Geometry lives in pure `services/`. Editing (prompt 11, ADR-0021): one pointer handler on the lanes selects (click semantics apply on release, so a drag moves the whole selection), draws the rectangle or starts a gesture controller (`hooks/gestures/`: move with linked items — Alt copies, Ctrl/⌘ inserts —, edge trim — Ctrl/⌘ ripples —, gap handle); media dragged from the bin (`shared/drag`) drops as `placeMedia`; shortcuts cut (`S`, Ctrl/⌘+K), delete (Maj: ripple), copy/cut/paste (internal clipboard, pasted at the playhead on the active track), nudge (`,` `.`, `<` `>`) and toggle snapping (`N`); a context menu on the lanes offers « Couper ici », « Dupliquer », « Lier/Délier », « Propriétés » (inspector tab through `shared/side-panel`), « Afficher dans le panneau Médias » (`revealAsset` from `features/media-bin`) and deletes. Gestures snap by whole frames to the playhead, item edges, markers and in/out points, preview in `gesture-store` and send one command on release.
 - **Viewer** (`features/viewer`, prompt 12): the frame of the active sequence at the playhead. The engine lives outside React: `ViewerEngineController` mounts a fresh canvas in the picture element and starts `@se/engine/preview` on it (imported lazily; a missing WebCodecs shows « Aperçu indisponible »), and `useViewerEngine` forwards the scene (built from the mirror's entities), media URLs (`createMediaLocator`: `/media/assets/<id>/<variant>?t=…&v=<version>`), options and canvas size, and follows `playheadStore` directly. Zoom (Ajuster, 50 %, 100 %, 200 %), « Lire les proxys », the transparency checkerboard, the performance HUD, loop and audio scrub are machine preferences (`se.ui.viewer.v1`); the canvas draws at most the sequence resolution; a spinner appears when decoding takes more than 150 ms; a badge reports media that could not be drawn. Playback (prompt 13, ADR-0023): `PlaybackSession` (outside React, started/stopped by `usePlaybackSession`) runs the engine's `PlaybackController` on the audio clock of `@se/engine/audio` (imported lazily; silent on the performance clock without Web Audio), writes the playhead store (a move made elsewhere is a seek, with an audio scrub snippet when paused), switches the picture engine to playback decoding and publishes the rate in `shared/playback` (the timeline pages while playing). The transport bar under the picture shows the timecode and duration (leaf components: the only per-frame re-renders), go to start/end, frame steps, play/pause, stop, loop, the master meter (RMS bars, held peaks) and the audio scrub toggle; the HUD over the picture shows real frames per second, dropped frames, readers and queued decodes, caches and the prefetch window. Time and playback shortcuts work there too (context `viewer`): Space, J/K/L (K held + J/L steps), Ctrl/⌘+L.
 - The editor (`app/editor/`) loads the project named by `/project/:projectId` (`getProjectSnapshot`, or reopens it from the recent list after a reload or a core restart), shows its name and active sequence, binds Ctrl/⌘+Z and Ctrl/⌘+Maj+Z to `undo`/`redo`, and closes the project when the user goes back home.
 
 ### 4.3 Features
 
-`projects` (home, create/open) · `media-bin` · `timeline` · `sequences` (rename, format, versions, removal, out-of-frame warning; prompt 16) · `viewer` · `inspector` · `ai` (prompt composer, tasks panel, scope overlays) · `transcript` · `captions` · `templates` (library, brand kit) · `export` · `settings` (the « Réglages » dialog opened by a gear button on the home screen and in the editor header; section Médias since prompt 09).
+`projects` (home, create/open) · `media-bin` · `timeline` · `sequences` (rename, format, versions, removal, out-of-frame warning; prompt 16) · `viewer` · `inspector` · `ai` (prompt composer, tasks panel, scope overlays) · `transcript` · `captions` · `templates` (library, brand kit) · `export` · `settings` (the « Réglages » dialog opened by a gear button on the home screen and in the editor header, or by `openSettings(section)`; sections Médias since prompt 09 and IA since prompt 17).
 
 Feature folder layout:
 
@@ -333,6 +334,7 @@ Conventions and their rationale: ADR-0010 and ADR-0012.
 - Graphics commands (prompt 15, ADR-0025), one undoable user transaction each: `addGraphicItem(AddGraphicRequest { sequenceId, at, duration, graphic: text { content } | shape { shape } | image { assetId } })` → `PlacedGraphic { itemId, trackId }` (highest unlocked, visible video track free over the span with nothing above it, or a new video track on top; labels `Add text`/`Add shape`/`Add image`), `setItemAnimations { animations: [ItemAnimation { itemId, animation }] }` (several properties of several items; `Transform items` for placement only, `Change keyframes` when keyframes are written, else `Edit items`), `applyAnimationPreset { itemIds, preset, phase, duration, start }` (`Apply animation`); `listAnimationPresets` → `AnimationPresetInfo { id, name, description, phases, defaultDuration, properties, samples }`; `listFonts` → `FontFamily { name, source: bundled | system, faces: [FontFace { id, weightMin, weightMax, italic, unicodeRange, format }] }` (bundled first). Text, shape and image patches (`updateItems`) carry the static style fields.
 - Media commands (prompt 09): `reportDecoderCapabilities { hevcMain10, h264High, aac, flac }`, `generateDerivedMedia { projectId, assetId, derived: mezzanine | proxy }`, `getMediaSettings` / `updateMediaSettings(MediaSettings { mezzanineQuality, proxyResolution: 540p | 720p, autoProxies, toolsDir })`, `getMediaToolsStatus` → `MediaToolsStatus { ffmpegPath, ffprobePath, ffmpegVersion, hardwareEncoders, problem }`, `getProjectCache { projectId }` / `clearProjectCache { projectId }` → `ProjectCacheInfo { path, sizeBytes }`. Job kinds gain `mezzanine`, `proxy`, `audioAnalysis`, `sceneDetection`; codes `DERIVED_NOT_APPLICABLE`, `MEDIA_TIME_OUT_OF_RANGE`.
 - Media commands (prompt 08): `importMedia { projectId, paths }` → `ImportReport { imported, duplicates, failures }` (one user transaction `Import media`; per-file failures carry a code), `relinkAsset { projectId, assetId, path, force }` → `outcome: relinked | contentDiffers`, `removeAsset`, `listJobs { projectId }`, `cancelJob { jobId }`, `reportDecodability { projectId, assetId, video, audio }`. Events: `jobQueued { job }`, `jobProgress { jobId, projectId, assetId, progress }`, `jobCompleted { job }`, `jobFailed { job }`, `jobCancelled { job }` (`JobSnapshot { id, projectId, assetId, kind, state, attempt }`).
+- AI commands (prompt 17, ADR-0027): `submitTask(SubmitTaskRequest { projectId, prompt, scope: TaskScope { sequenceId, range?, tracks? }, provider?, model?, effort? })` → `{ task }` (queued), `cancelTask { projectId, taskId }`, `retryTask` → `{ task }`, `followUpTask { prompt }` → `{ task }`, `listTasks { projectId }` → `{ tasks }` (oldest first, without events), `getTaskEvents { projectId, taskId }` → `{ events: [TaskEventRecord { sequence, run, at, event: AgentEvent }] }`, `getAiStatus` / `refreshAiStatus` → `{ status: AiStatus { provider: ProviderInfo, installation, auth, capabilities } }`, `getAiSettings` / `updateAiSettings(AiSettings { provider, executablePath, defaultModel, defaultEffort, maxConcurrentTasks })`. Events: `taskUpdated { task }` (every change of a task), `taskEventAppended { projectId, taskId, event }`, `aiStatusChanged(AiStatus)`. Codes `TASK_NOT_FOUND`, `TASK_NOT_ACTIVE`, `TASK_STILL_ACTIVE`, `TASK_NOT_RESUMABLE`, `AI_UNAVAILABLE`.
 - Errors carry a stable `code` (`ErrorCode`) and a human/agent-readable message: `INVALID_REQUEST`, `UNKNOWN_COMMAND`, `INTERNAL`, project codes `PROJECT_NOT_FOUND`, `PROJECT_LOCKED`, `SCHEMA_TOO_NEW`, `PROJECT_CORRUPTED`, `PROJECT_ALREADY_EXISTS`, `PROJECT_NOT_OPEN`, `STORAGE_FAILED`, edit codes `EDIT_REJECTED` (`details.domainCode` holds the `DomainErrorCode`), `NOTHING_TO_UNDO`, `NOTHING_TO_REDO`, media codes `ASSET_NOT_FOUND`, `MEDIA_NOT_FOUND`, `MEDIA_UNSUPPORTED`, `MEDIA_KIND_MISMATCH`, `MEDIA_TOOLS_MISSING`, `JOB_NOT_FOUND`, `RIPPLE_BLOCKED` (prompt 11); later `REVISION_CONFLICT`, `OUT_OF_SCOPE`. The renderer gives the most common `EDIT_REJECTED` domain codes their own message (`errors.edit.<DOMAIN_CODE>`). Codes raised by clients (`TIMEOUT`, `CONNECTION_LOST`, `CLIENT_CLOSED`) are part of the same enum. The renderer translates every code (`errors.<CODE>`).
 
 ## 7. Media pipeline (`se-media`)
@@ -391,11 +393,14 @@ display refresh ─► PlaybackController ──(frame start)──► playhead 
 
 ### 9.1 Ports
 
+Declared in `se_app::ports::agents` (ADR-0003, ADR-0027); DTOs in `se_protocol` (`ai.rs`, `tasks.rs`).
+
 ```rust
 #[async_trait]
 pub trait AgentProvider: Send + Sync {
-    fn id(&self) -> ProviderId;
+    fn info(&self) -> ProviderInfo;                 // id, name, command, login command, help URL
     fn capabilities(&self) -> ProviderCapabilities; // resume, image input, models, effort levels
+    fn set_executable(&self, path: Option<PathBuf>); // the path chosen in the settings
     async fn detect(&self) -> Result<ProviderInstallation, AgentError>; // path, version
     async fn auth_status(&self) -> Result<AuthStatus, AgentError>;      // LoggedIn | LoggedOut | Unknown
     async fn start(&self, spec: AgentRunSpec) -> Result<AgentRun, AgentError>;
@@ -404,47 +409,49 @@ pub trait AgentProvider: Send + Sync {
 pub struct AgentRunSpec {
     pub prompt: String,
     pub system_instructions: String,
-    pub mcp: McpEndpoint,              // url + per-task bearer token
+    pub mcp: Option<McpEndpoint>,      // url + per-task bearer token; required from prompt 18
     pub model: Option<String>,
     pub effort: Option<EffortLevel>,
-    pub resume_session: Option<AgentSessionId>,
+    pub session: AgentSession,         // Start(new uuid) | Resume(uuid)
     pub working_dir: PathBuf,          // empty, task-specific directory
 }
 
 pub struct AgentRun {
-    pub events: BoxStream<'static, AgentEvent>,
-    pub cancel: CancelHandle,
+    pub events: mpsc::Receiver<AgentEvent>, // ends with one Completed | Failed, then closes
+    pub cancel: CancelHandle,               // kills the process tree (also when dropped)
 }
 
 pub enum AgentEvent {
-    SessionStarted { session_id },
+    SessionStarted { session_id, model },
     AssistantText { text },
-    ToolCallStarted { tool, input_summary },
-    ToolCallFinished { tool, ok, output_summary },
-    Usage { input_tokens, output_tokens, cost_usd },
+    ToolCallStarted { call_id, tool, input_summary },
+    ToolCallFinished { call_id, tool, ok, output_summary },
+    Usage { input_tokens, output_tokens, cost_usd, duration_ms },
     Completed { summary },
-    Failed { kind: AgentFailureKind, message }, // NotInstalled, NotAuthenticated, RateLimited, Crashed, Cancelled, ProtocolError
+    Failed { failure: AgentFailureKind, message }, // NotInstalled, NotAuthenticated, RateLimited, Crashed, Cancelled, ProtocolError, Interrupted
 }
 ```
 
-Only `crates/se-agents/src/providers/<provider>/` knows a concrete CLI. Everything else uses the trait.
+`AgentWorkspaces` (`prepare(task_id)` → empty folder, `release(task_id)`) gives each task's runs one folder; `TaskStore` (`save_task`, `load_tasks`, `append_task_event`, `load_task_events`) keeps tasks in `project.db`. Only `crates/se-agents/src/providers/<provider>/` knows a concrete CLI. Everything else uses the traits; the UI shows what `ProviderInfo` says (it never names a CLI).
 
 ### 9.2 Claude Code provider
 
-- Binary resolution: user override → `which` (honours PATHEXT on Windows, where `claude` is usually a `.cmd` shim).
-- Detection: `claude --version`. Auth: `claude auth status --json` → `loggedIn`.
-- Invocation (validated against Claude Code 2.1.312):
-  `claude -p <prompt> --output-format stream-json --verbose --mcp-config <json> --strict-mcp-config --tools "" --allowedTools "mcp__simpleeffect__*" --permission-prompts none --append-system-prompt <instructions> [--model m] [--effort e] (--session-id <uuid> | --resume <uuid>)`.
-- MCP config passed inline: `{"mcpServers":{"simpleeffect":{"type":"http","url":"http://127.0.0.1:<port>/mcp","headers":{"Authorization":"Bearer <task token>"}}}}`.
-- stream-json lines are parsed into `AgentEvent`; unknown line types are logged and ignored (forward compatible).
-- Cancellation kills the whole process tree.
-- Tests use a replay provider fed with recorded stream-json fixtures.
+`se_agents::providers::claude_code::ClaudeCodeProvider`; validated flags and observations in its `CLAUDE.md`.
+- Binary resolution: user override (« Réglages → IA ») → `which` (honours PATHEXT on Windows, where `claude` is usually a `.cmd` shim) → the usual install folders of the OS (desktop apps do not inherit the shell's PATH).
+- Detection: `claude --version`. Auth: `claude auth status --json` → `loggedIn` and the account kind (`subscriptionType`, else `authMethod`); e-mail and organisation are never read.
+- Invocation (validated against Claude Code 2.1.317 and 2.1.319, logged in with a subscription):
+  `claude -p --output-format stream-json --verbose --tools "" --permission-prompts none --setting-sources "" --restricted --disable-slash-commands --strict-mcp-config --append-system-prompt-file <workdir>/.simpleeffect-instructions.md [--mcp-config <json> --allowedTools "mcp__simpleeffect__*"] [--model m] [--effort e] (--session-id <uuid> | --resume <uuid>)`, in the task's working folder, the **prompt on stdin** (arguments with line breaks cannot reach a Windows `.cmd` shim).
+- MCP config passed inline (prompt 18): `{"mcpServers":{"simpleeffect":{"type":"http","url":"http://127.0.0.1:<port>/mcp","headers":{"Authorization":"Bearer <task token>"}}}}`, redacted from logs.
+- stream-json lines are parsed into `AgentEvent` (`system`/`init` → session, `assistant` → text and tool calls, `user` → tool results, `result` → usage then completed or failed); unknown line types are logged and ignored (forward compatible). Failures are classified from the result text or stderr (usage limit, login, lost session, crash, unreadable output).
+- Cancellation kills the whole process tree (`process::CliProcess`: job object on Windows, process group on Unix).
+- Tests use recorded stream-json fixtures (`tests/fixtures/claude_code/`) and a fake `claude` script; the scheduler's tests use se-app's `ReplayProvider`.
 
 ### 9.3 Tasks
 
-- `Task { id, prompt, scope: TaskScope { range: Option<TimeRange>, tracks: Option<Vec<TrackId>>, sequence_id }, provider, model, effort, status, agent_session_id, changeset_id, created_at, events }`.
-- Status: `Queued → Running → Completed | Failed | Cancelled`; follow-ups (`resume`) create a new run in the same task.
-- `TaskScheduler` (se-app): FIFO queue, semaphore (default 3 concurrent runs), persists tasks and event logs in `project.db`, emits `TaskEvent`s to the UI.
+- `Task { id, projectId, prompt, scope: TaskScope { sequenceId, range?, tracks? }, provider, model, effort, status, agentSessionId, createdAt, updatedAt, runs: [TaskRun { runKind: initial | retry | followUp, prompt, status, queuedAt, startedAt, finishedAt }] }`; events apart (`TaskEventRecord`). `changesetId` arrives with prompt 19.
+- Status: `Queued → Running → Completed | Failed { failure, message } | Cancelled` (the latest run's). Follow-ups resume the task's session in a new run; retries rerun the last prompt (resuming only once an earlier run completed).
+- `TaskService` (se-app, the `TaskScheduler`): one FIFO queue for every open project, at most `maxConcurrentTasks` runs (setting 1–8, default 3), cancellation of queued or running runs (process tree killed), persistence of tasks and event logs in `project.db` (`taskUpdated`, `taskEventAppended`), tasks left queued or running by a stopped core failed as `interrupted` when their project reopens, tasks cancelled when their project closes. It also keeps the AI status (checked at startup, on demand and after failed runs; `aiStatusChanged`) and the AI settings, and refuses tasks while the CLI is known missing or logged out (`AI_UNAVAILABLE`).
+- Each run: mark running → prepare the working folder (`<app data>/agent-workdirs/<task id>/`) → `start` → record and publish each event (the session id is kept on the task) → release the folder → final status. Agent instructions are composed from `crates/se-app/assets/agent-instructions/*.md` and the scope.
 
 ### 9.4 MCP server (`se-mcp`)
 
@@ -483,8 +490,9 @@ Only `crates/se-agents/src/providers/<provider>/` knows a concrete CLI. Everythi
 - Snapshots are written 2 s after the last commit and on close (also when the core shuts down); the journal is truncated after a successful snapshot.
 - Trash: the OS trash through the `trash` crate (NSFileManager on macOS, no automation prompt); never a permanent deletion.
 - Document schema version 2 (prompt 08): assets carry a `fingerprint` and a per-stream `decodability` (`migrate_v1_to_v2`). Version 3 (prompt 09): assets carry `analysis` summaries (`migrate_v2_to_v3`; `Asset.analysis` defaults to empty so older journal entries replay). Versions 4–5 (prompts 14–15): transitions, fade shapes, text styles. Version 6 (prompt 16): filling clips carry a `focus` (`migrate_v5_to_v6` centres it).
+- `project.db` schema version 3 (prompt 17): `tasks` rows hold a `Task` JSON (and its status kind), `task_events` rows an `AgentEvent` JSON with its `run` and `sequence`; both carry a `format_version` (newer rows are skipped). Read and written through `TaskStore` (`FsTaskStore`, sharing the store's connection).
 - `project.db` schema version 2 (prompt 09): `analyses` rows record the `content_key` analysed and their payload `format_version` (`AnalysisResult` JSON); read and written through `AnalysisStore` (`FsAnalysisStore`, sharing the store's connection).
-- App data dir (`SE_DATA_DIR`, i.e. Electron's `userData`): `library.db` (recent projects, settings such as `projects.lastParentDir` and the `media.*` keys; later provider config), `templates/`, `brand-kits/`, `models/`, `logs/`. New projects are proposed in `<Documents>/SimpleEffect`.
+- App data dir (`SE_DATA_DIR`, i.e. Electron's `userData`): `library.db` (recent projects, settings such as `projects.lastParentDir`, the `media.*` keys and the `ai.*` keys: `ai.provider`, `ai.executablePath`, `ai.defaultModel`, `ai.defaultEffort`, `ai.maxConcurrentTasks`), `agent-workdirs/` (empty working folders of running agents, cleared at startup), `templates/`, `brand-kits/`, `models/`, `logs/`. New projects are proposed in `<Documents>/SimpleEffect`.
 
 ## 12. Export (`se-export`)
 
@@ -496,14 +504,16 @@ Only `crates/se-agents/src/providers/<provider>/` knows a concrete CLI. Everythi
 
 - se-core listens on 127.0.0.1 only, on a random port, with a random 256-bit token (`?t=` query parameter, compared in constant time; 401 otherwise); rejects requests whose `Host` is not `127.0.0.1:<port>` or `localhost:<port>` (403, defeats DNS rebinding). The token is never logged.
 - Per-task MCP tokens are minted at task start and revoked when the run ends.
-- Agents run with `--tools ""` (no built-in tools), in an empty working directory.
+- Agents run with `--tools ""` (no built-in tools), in an empty working directory, isolated from the user's own CLI configuration (no settings files, hooks, skills or other MCP servers: ADR-0027); prompts go on stdin.
 - Renderer is sandboxed, with a CSP that only allows scripts from the app bundle and connections to `127.0.0.1`; motion templates run in an isolated Worker.
-- The app never reads, stores or forwards AI CLI credentials.
+- The app never reads, stores or forwards AI CLI credentials: it asks the CLI (`claude auth status --json`) and reads only whether it is logged in and the account kind.
+- The renderer can open web pages only through the bridge's `openExternal`, which the main process limits to `https:` URLs (installation guides).
 
 ## 14. Cross-platform notes
 
 - Paths: always `PathBuf`/`path` APIs, never string concatenation; store original absolute paths plus a project-relative hint for relinking.
-- Process spawning goes through one helper per crate that handles Windows specifics (`.cmd` shims, no console window, process-tree kill).
+- Process spawning goes through one helper per crate that handles Windows specifics (`.cmd` shims, no console window, process-tree kill): `se_media::process::Sidecar`, `se_agents::process::CliProcess`. Text with line breaks never goes in arguments of a possible `.cmd` shim (stdin or a file instead).
+- Desktop apps do not inherit the shell's PATH (macOS gives them `/usr/bin:/bin:/usr/sbin:/sbin`): CLIs installed by the user are also searched in their usual install folders.
 - GPU: Chromium uses NVDEC/NVENC, VideoToolbox or VA-API depending on the OS; the engine always checks capabilities at runtime.
 - Whisper backends: CUDA (Windows/Linux NVIDIA), Metal (macOS), CPU fallback.
 
@@ -512,7 +522,7 @@ Only `crates/se-agents/src/providers/<provider>/` knows a concrete CLI. Everythi
 **Add an AI provider**
 1. Create `crates/se-agents/src/providers/<name>/` implementing `AgentProvider`.
 2. Map the CLI's streaming output to `AgentEvent`; add recorded fixtures and replay tests.
-3. Register it in se-core's provider registry; expose it in settings.
+3. Describe it (`ProviderInfo`, `ProviderCapabilities`) and register it in se-core (`services.rs`, `TaskServiceDeps.providers`); the settings list its models and effort levels.
 No change to MCP tools or instructions is needed.
 
 **Add an MCP tool**

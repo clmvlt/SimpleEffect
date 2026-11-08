@@ -37,6 +37,14 @@ export interface ChooseFilesOptions {
   readonly allFilesName: string;
 }
 
+/** Options of {@link SimpleEffectBridge.chooseFile}. */
+export interface ChooseFileOptions {
+  /** Window title of the native dialog (translated by the renderer). */
+  readonly title: string;
+  /** Label of the confirm button (translated by the renderer). */
+  readonly buttonLabel: string;
+}
+
 /** API exposed by the preload script as `window.simpleEffect`. */
 export interface SimpleEffectBridge {
   /**
@@ -51,6 +59,16 @@ export interface SimpleEffectBridge {
    * or an empty list if cancelled.
    */
   chooseFiles(options: ChooseFilesOptions): Promise<string[]>;
+  /**
+   * Shows the native file picker for one file of any type (an executable); resolves with its
+   * absolute path, or `null` if cancelled.
+   */
+  chooseFile(options: ChooseFileOptions): Promise<string | null>;
+  /**
+   * Opens an `https:` page in the user's default browser (installation guides). Other URLs are
+   * refused by the main process.
+   */
+  openExternal(url: string): Promise<void>;
   /** Reveals a file or folder in the OS file manager (Explorer, Finder…). */
   showInFolder(path: string): Promise<void>;
   /**
@@ -65,5 +83,7 @@ export const IPC_CHANNELS = {
   getCoreConnection: 'core:get-connection',
   chooseFolder: 'dialog:choose-folder',
   chooseFiles: 'dialog:choose-files',
+  chooseFile: 'dialog:choose-file',
+  openExternal: 'shell:open-external',
   showInFolder: 'shell:show-in-folder',
 } as const;

@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    AnimationPresetInfo, FontFamily, ImportReport, JobSnapshot, MediaSettings, MediaToolsStatus,
-    NewProjectDefaults, PlacedGraphic, ProjectCacheInfo, ProjectSession, RecentProject,
-    RelinkOutcome,
+    AiSettings, AiStatus, AnimationPresetInfo, FontFamily, ImportReport, JobSnapshot,
+    MediaSettings, MediaToolsStatus, NewProjectDefaults, PlacedGraphic, ProjectCacheInfo,
+    ProjectSession, RecentProject, RelinkOutcome, Task, TaskEventRecord,
 };
 
 /// The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
@@ -200,6 +200,54 @@ pub enum CommandResult {
     ClearProjectCache {
         /// The cache folder and what is left in it (files in use cannot be deleted).
         cache: ProjectCacheInfo,
+    },
+    /// Answer to [`crate::Command::SubmitTask`]: the task, queued (`taskUpdated` events follow).
+    SubmitTask {
+        /// The new task.
+        task: Task,
+    },
+    /// Answer to [`crate::Command::CancelTask`]: cancelled (`taskUpdated` follows once its agent
+    /// stopped).
+    CancelTask,
+    /// Answer to [`crate::Command::RetryTask`]: the task with its new run, queued.
+    RetryTask {
+        /// The task.
+        task: Task,
+    },
+    /// Answer to [`crate::Command::FollowUpTask`]: the task with its new run, queued.
+    FollowUpTask {
+        /// The task.
+        task: Task,
+    },
+    /// Answer to [`crate::Command::ListTasks`].
+    ListTasks {
+        /// Oldest first.
+        tasks: Vec<Task>,
+    },
+    /// Answer to [`crate::Command::GetTaskEvents`].
+    GetTaskEvents {
+        /// The task's log, in order.
+        events: Vec<TaskEventRecord>,
+    },
+    /// Answer to [`crate::Command::GetAiStatus`].
+    GetAiStatus {
+        /// The provider in use.
+        status: AiStatus,
+    },
+    /// Answer to [`crate::Command::RefreshAiStatus`] (`aiStatusChanged` is published too).
+    RefreshAiStatus {
+        /// The provider in use, checked now.
+        status: AiStatus,
+    },
+    /// Answer to [`crate::Command::GetAiSettings`].
+    GetAiSettings {
+        /// The current settings.
+        settings: AiSettings,
+    },
+    /// Answer to [`crate::Command::UpdateAiSettings`].
+    UpdateAiSettings {
+        /// The settings as saved.
+        settings: AiSettings,
     },
 }
 

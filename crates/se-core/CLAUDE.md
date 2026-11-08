@@ -1,13 +1,13 @@
 # se-core
 
 ## Purpose
-The core binary: composition root and local server. It binds `127.0.0.1` on a random port, prints the handshake, serves `/rpc` (WebSocket), `/media` (files with Range) and later `/mcp`, and wires adapters to `se-app` (`ProjectService` over `se-store`, `MediaService` + `JobQueue` over `se-media`). It contains wiring only, never domain logic.
+The core binary: composition root and local server. It binds `127.0.0.1` on a random port, prints the handshake, serves `/rpc` (WebSocket), `/media` (files with Range) and later `/mcp`, and wires adapters to `se-app` (`ProjectService` over `se-store`, `MediaService` + `JobQueue` over `se-media`, `TaskService` over `se-agents`). It contains wiring only, never domain logic.
 
 ## Public API
 The process contract (consumed by `apps/desktop/electron/main/core-supervisor.ts`):
 - **stdout**: exactly one line, `{"port":<u16>,"token":"<64 hex>","version":"<semver>"}` (`se_protocol::CoreHandshake`). Nothing else is ever written to stdout.
 - **Environment**: `SE_DATA_DIR` = app data folder (set by the supervisor to Electron's `userData`; default `<OS data dir>/SimpleEffect`). `SE_LOG` = `tracing` filter (default `info`, e.g. `SE_LOG=se_core=debug`).
-- **Data**: `<SE_DATA_DIR>/library.db` (recent projects, settings). New projects are proposed in `<Documents>/SimpleEffect` (`<SE_DATA_DIR>/projects` without a documents folder).
+- **Data**: `<SE_DATA_DIR>/library.db` (recent projects, settings), `<SE_DATA_DIR>/agent-workdirs/` (working folders of AI runs, leftovers removed at startup). New projects are proposed in `<Documents>/SimpleEffect` (`<SE_DATA_DIR>/projects` without a documents folder).
 - **Logs**: daily files `<SE_DATA_DIR>/logs/se-core.<YYYY-MM-DD>.log` (7 kept), plus stderr (plain text when not a terminal) in debug builds or when the log folder is unusable.
 - **stdin**: kept open by the parent and never read for data; end-of-file means "shut down".
 - **HTTP**: every route requires `Host: 127.0.0.1:<port>` or `localhost:<port>` (else 403) and `?t=<token>` (else 401).
@@ -21,18 +21,18 @@ The process contract (consumed by `apps/desktop/electron/main/core-supervisor.ts
 |---|---|
 | `main.rs` | Entry: resolve paths, init logging, tie child processes to the core, run the server |
 | `platform.rs` | OS specifics: `tie_children_to_this_process()` (Windows: the core joins a kill-on-close job, so no sidecar outlives it, even one killed while process-wrap holds it suspended) |
-| `app_paths.rs` | `AppPaths { data_dir, logs_dir }` from `SE_DATA_DIR` or the OS data dir; `library_db()`, `default_projects_dir()` |
+| `app_paths.rs` | `AppPaths { data_dir, logs_dir }` from `SE_DATA_DIR` or the OS data dir; `library_db()`, `agent_workdirs()`, `default_projects_dir()` |
 | `system_ports.rs` | `SystemClock`, `UuidV7Ids`, `EventSink` for `EventBus` |
 | `logging.rs` | `tracing` + `tracing-appender` (daily rolling file, non-blocking; hold the `LogGuard`) |
 | `server.rs` | Bind, handshake, routes (`/rpc` + `/media` behind the access guard), graceful shutdown (closes projects, publishes `coreShuttingDown`, then drains within `DRAIN_TIMEOUT`) |
-| `services.rs` | Wiring of the use cases: the font catalogue (`se_fonts::LocalFontCatalog`, installed fonts read in a background task at startup), `ProjectService` (se-store, observed by the media service), `MediaService` (se-media prober, files, `FfmpegJobRunner` as runner and frame extractor, `FfmpegTools` (warmed up in a background task), the library for settings, `JobQueue` publishing to the event bus) |
+| `services.rs` | Wiring of the use cases: the font catalogue (`se_fonts::LocalFontCatalog`, installed fonts read in a background task at startup), `ProjectService` (se-store, observed by the media service), `MediaService` (se-media prober, files, `FfmpegJobRunner` as runner and frame extractor, `FfmpegTools` (warmed up in a background task), the library for settings, `JobQueue` publishing to the event bus), `TaskService` (`ClaudeCodeProvider`, `FsAgentWorkspaces` after `remove_leftovers`, the stored AI settings applied by `start`, the provider checked in a background task at startup) observing projects like the media service |
 | `media_routes.rs` | The `/media` router |
 | `font_routes.rs` | The `/media/fonts/{id}` router over the `FontCatalog` |
 | `access_guard.rs` | Host + token middleware, `SessionToken` |
 | `rpc.rs` | `RpcState` and the `/rpc` upgrade handler |
 | `rpc/router.rs` | `RpcRouter`: frame → parse → async `dispatch` (one match arm per command) → encoded response; `router::testing::context()` builds a `HandlerContext` over in-memory ports for unit tests |
 | `rpc/request.rs` | Frame parsing; `INVALID_REQUEST` vs `UNKNOWN_COMMAND` with actionable messages |
-| `rpc/handlers.rs`, `rpc/handlers/<group>.rs` | `HandlerContext { version, paths, projects, media, fonts }`; one file per command group: `system.rs` (`ping`, `getCoreInfo`), `projects.rs` (home screen commands), `editing.rs` (snapshot, sequences — create, rename, format, duplicate/version, remove —, undo/redo), `timeline.rs` (tracks, markers), `items.rs` (item edits of prompt 11), `sound.rs` (item patches, keyframes and transitions of prompt 14), `graphics.rs` (graphics, batched keyframes, presets and fonts of prompt 15), `media.rs` (import, relink, remove, jobs, decodability, decoder capabilities, derived copies, audio silences), `media_settings.rs` (settings, tools status, project cache). Paths must be absolute (`absolute_path`) |
+| `rpc/handlers.rs`, `rpc/handlers/<group>.rs` | `HandlerContext { version, paths, projects, media, tasks, fonts }`; one file per command group: `system.rs` (`ping`, `getCoreInfo`), `projects.rs` (home screen commands), `editing.rs` (snapshot, sequences — create, rename, format, duplicate/version, remove —, undo/redo), `timeline.rs` (tracks, markers), `items.rs` (item edits of prompt 11), `sound.rs` (item patches, keyframes and transitions of prompt 14), `graphics.rs` (graphics, batched keyframes, presets and fonts of prompt 15), `media.rs` (import, relink, remove, jobs, decodability, decoder capabilities, derived copies, audio silences), `media_settings.rs` (settings, tools status, project cache), `tasks.rs` (submit, cancel, retry, follow-up, list, events), `ai.rs` (AI status and settings). Paths must be absolute (`absolute_path`) |
 | `rpc/event_bus.rs` | `EventBus` (bounded `broadcast`, 256 per connection); lag → `resyncRequired` |
 | `rpc/connection.rs` | Per-socket loop (`biased` select: events, then finished responses, then incoming frames, then shutdown); one spawned task per request; tracing span per connection |
 | `rpc/encode.rs` | Message serialisation with an `INTERNAL` fallback |

@@ -1,6 +1,10 @@
 import { isAbsolute } from 'node:path';
 
-import type { ChooseFilesOptions, ChooseFolderOptions } from '../shared/bridge-api';
+import type {
+  ChooseFileOptions,
+  ChooseFilesOptions,
+  ChooseFolderOptions,
+} from '../shared/bridge-api';
 
 /**
  * Validation of IPC arguments coming from the renderer. The renderer is sandboxed but still
@@ -63,4 +67,28 @@ export function parseRevealPath(value: unknown): string {
     throw new TypeError('showInFolder expects an absolute path');
   }
   return value;
+}
+
+/** Options of the single-file picker, checked. */
+export function parseChooseFileOptions(value: unknown): ChooseFileOptions {
+  if (typeof value !== 'object' || value === null) {
+    throw new TypeError('chooseFile expects an options object');
+  }
+  const { title, buttonLabel } = value as Record<string, unknown>;
+  if (typeof title !== 'string' || typeof buttonLabel !== 'string') {
+    throw new TypeError('chooseFile expects string `title` and `buttonLabel`');
+  }
+  return { title, buttonLabel };
+}
+
+/** A page to open in the browser: an `https:` URL without credentials. */
+export function parseExternalUrl(value: unknown): string {
+  if (typeof value !== 'string' || !URL.canParse(value)) {
+    throw new TypeError('openExternal expects a URL');
+  }
+  const url = new URL(value);
+  if (url.protocol !== 'https:' || url.username !== '' || url.password !== '') {
+    throw new TypeError('openExternal only opens https pages');
+  }
+  return url.href;
 }

@@ -1,17 +1,19 @@
-//! [`MediaTestbed`]: a `ProjectService` and a `MediaService` wired to the in-memory fakes, for
-//! tests of the media use cases (se-app) and of what serves them (se-core).
+//! [`MediaTestbed`]: a `ProjectService`, a `MediaService` and a `TaskService` wired to the
+//! in-memory fakes, for tests of the media and task use cases (se-app) and of what serves them
+//! (se-core).
 
 use std::{path::Path, sync::Arc, time::Duration};
 
 use se_domain::{Asset, Format, FormatPreset, FrameRate, ProjectId};
 
 use super::{
-    FakeFrameExtractor, FakeJobRunner, FakeMedia, FakeMediaTools, FixedClock, InMemoryAppLibrary,
-    InMemoryProjectRepository, RecordingEventSink, SequentialIds,
+    FakeAgentWorkspaces, FakeFrameExtractor, FakeJobRunner, FakeMedia, FakeMediaTools, FixedClock,
+    InMemoryAppLibrary, InMemoryProjectRepository, RecordingEventSink, ReplayProvider,
+    SequentialIds,
 };
 use crate::{
     AppError, JobQueue, JobQueueConfig, MediaService, MediaServiceDeps, ProjectService,
-    ProjectServiceConfig, ProjectServiceDeps,
+    ProjectServiceConfig, ProjectServiceDeps, TaskService, TaskServiceDeps,
 };
 
 /// The services and every fake behind them (clones share state with the services).
@@ -20,6 +22,14 @@ pub struct MediaTestbed {
     pub projects: ProjectService,
     /// Media use cases.
     pub media: Arc<MediaService>,
+    /// AI task use cases (also observing projects).
+    pub tasks: TaskService,
+    /// The AI provider of `tasks`.
+    pub agent: ReplayProvider,
+    /// Working folders of agent runs.
+    pub workspaces: Arc<FakeAgentWorkspaces>,
+    /// The clock of every service.
+    pub clock: Arc<FixedClock>,
     /// Media files, probes and files written by jobs.
     pub files: Arc<FakeMedia>,
     /// The job runner (writes transcodes into `files`).
@@ -61,11 +71,21 @@ impl MediaTestbed {
             ids: ids.clone(),
             clock: clock.clone(),
         }));
+        let agent = ReplayProvider::default();
+        let workspaces = Arc::new(FakeAgentWorkspaces::default());
+        let tasks = TaskService::new(TaskServiceDeps {
+            providers: vec![Arc::new(agent.clone())],
+            workspaces: workspaces.clone(),
+            library: library.clone(),
+            events: events.clone(),
+            clock: clock.clone(),
+            ids: ids.clone(),
+        });
         let deps = ProjectServiceDeps {
             repository: Arc::new(repository.clone()),
             library: library.clone(),
             events: events.clone(),
-            clock,
+            clock: clock.clone(),
             ids,
         };
         let config = ProjectServiceConfig {
@@ -73,8 +93,14 @@ impl MediaTestbed {
             save_delay: Duration::from_secs(2),
         };
         Self {
-            projects: ProjectService::new(deps, config).with_observer(media.clone()),
+            projects: ProjectService::new(deps, config)
+                .with_observer(media.clone())
+                .with_observer(Arc::new(tasks.clone())),
             media,
+            tasks,
+            agent,
+            workspaces,
+            clock,
             files,
             runner,
             frames,

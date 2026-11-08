@@ -2,7 +2,9 @@
 
 use std::path::PathBuf;
 
-use se_domain::{AssetId, AssetKind, DomainError, DomainErrorCode, Flicks, JobId, ProjectId};
+use se_domain::{
+    AssetId, AssetKind, DomainError, DomainErrorCode, Flicks, JobId, ProjectId, TaskId,
+};
 use se_protocol::{ErrorCode, ProtocolError};
 
 use crate::ports::{MediaError, StorageError};
@@ -169,6 +171,48 @@ pub enum AppError {
         "there is no media to cross-fade at this cut: both items need media beyond their edges          (trim them to free some), must last long enough, and the cut must not already have a          transition"
     )]
     TransitionNoRoom,
+    /// The project has no such AI task.
+    #[error("project {project_id} has no AI task {task_id}: refresh the task list")]
+    TaskNotFound {
+        /// The project.
+        project_id: ProjectId,
+        /// The task.
+        task_id: TaskId,
+    },
+    /// Cancelling a task that already finished.
+    #[error("AI task {task_id} is not queued or running: it has already finished")]
+    TaskNotActive {
+        /// The task.
+        task_id: TaskId,
+    },
+    /// Retrying or following up a task that has not finished.
+    #[error(
+        "AI task {task_id} is still queued or running: wait for it to finish, or cancel it first"
+    )]
+    TaskStillActive {
+        /// The task.
+        task_id: TaskId,
+    },
+    /// A follow-up of a task whose agent session cannot be resumed.
+    #[error("AI task {task_id} cannot be continued: {reason}")]
+    TaskNotResumable {
+        /// The task.
+        task_id: TaskId,
+        /// Why, and what to do instead.
+        reason: String,
+    },
+    /// A task request that cannot be accepted (empty prompt, scope outside the project…).
+    #[error("invalid AI task: {reason}")]
+    InvalidTask {
+        /// What is wrong and what to do instead.
+        reason: String,
+    },
+    /// The AI provider cannot run tasks (CLI missing or logged out).
+    #[error("AI tasks cannot run: {reason}")]
+    AiUnavailable {
+        /// Why, and what to do.
+        reason: String,
+    },
     /// A bug: an invariant of the application itself was broken.
     #[error("internal error: {0}; please report it")]
     Internal(String),
@@ -182,9 +226,10 @@ impl AppError {
             Self::Storage(error) => storage_code(error),
             Self::ProjectNotOpen { .. } | Self::ActorStopped { .. } => ErrorCode::ProjectNotOpen,
             Self::SameProjectOpen { .. } => ErrorCode::ProjectLocked,
-            Self::EmptyName { .. } | Self::InvalidFormat { .. } | Self::InvalidSetting { .. } => {
-                ErrorCode::InvalidRequest
-            }
+            Self::EmptyName { .. }
+            | Self::InvalidFormat { .. }
+            | Self::InvalidSetting { .. }
+            | Self::InvalidTask { .. } => ErrorCode::InvalidRequest,
             Self::DerivedNotApplicable { .. } => ErrorCode::DerivedNotApplicable,
             Self::MediaTimeOutOfRange { .. } => ErrorCode::MediaTimeOutOfRange,
             Self::JournalBroken { .. } | Self::InvalidDocument { .. } => {
@@ -202,6 +247,11 @@ impl AppError {
             Self::InvalidEdit { .. } => ErrorCode::EditRejected,
             Self::RippleBlocked { .. } => ErrorCode::RippleBlocked,
             Self::TransitionNoRoom => ErrorCode::TransitionNoRoom,
+            Self::TaskNotFound { .. } => ErrorCode::TaskNotFound,
+            Self::TaskNotActive { .. } => ErrorCode::TaskNotActive,
+            Self::TaskStillActive { .. } => ErrorCode::TaskStillActive,
+            Self::TaskNotResumable { .. } => ErrorCode::TaskNotResumable,
+            Self::AiUnavailable { .. } => ErrorCode::AiUnavailable,
             Self::Internal(_) => ErrorCode::Internal,
         }
     }

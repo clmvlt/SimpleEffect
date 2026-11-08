@@ -1,13 +1,14 @@
 import { StatusDot } from '@se/ui';
 import { useTranslation } from 'react-i18next';
 
+import { AiStatusIndicator } from '../../features/ai';
+import { openSettings } from '../../features/settings';
 import { useConnectionStatus } from '../../shared/core';
 import { connectionIndicator } from './connection-indicator';
 
 /**
  * The 24 px bar at the bottom of the window: core connection (announced politely when it
- * changes), AI availability and app version.
- * TODO(prompt-17): show the configured AI provider and its state.
+ * changes), the AI provider's state (a click opens the AI settings) and app version.
  */
 export function StatusBar() {
   const { t } = useTranslation();
@@ -21,10 +22,11 @@ export function StatusBar() {
         <StatusDot tone={indicator.tone} pulse={indicator.pulse} size="xs" />
         {t(indicator.labelKey)}
       </p>
-      <p className="flex items-center gap-1.5">
-        <StatusDot tone="neutral" size="xs" />
-        {t('statusBar.ai.notConfigured')}
-      </p>
+      <AiStatusIndicator
+        onOpenSettings={() => {
+          openSettings('ai');
+        }}
+      />
       <p className="ml-auto tabular-nums">{t('statusBar.version', { version: __APP_VERSION__ })}</p>
     </footer>
   );

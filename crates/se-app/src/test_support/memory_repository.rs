@@ -7,11 +7,13 @@ use std::{
 };
 
 use async_trait::async_trait;
-use se_domain::{AnalysisKind, AssetId, Project};
+use se_domain::{AnalysisKind, AssetId, Project, TaskId};
+use se_protocol::{Task, TaskEventRecord};
 
-use super::lock;
+use super::{lock, memory_tasks::InMemoryTaskStore};
 use crate::ports::{
     AnalysisStore, JournalEntry, ProjectRepository, ProjectStore, StorageError, StoredAnalysis,
+    TaskStore,
 };
 
 /// One fake project folder.
@@ -27,6 +29,10 @@ pub struct StoredFolder {
     pub snapshot_saves: usize,
     /// Analyses saved in its database.
     pub analyses: BTreeMap<(AssetId, AnalysisKind), StoredAnalysis>,
+    /// AI tasks saved in its database, oldest first.
+    pub tasks: Vec<Task>,
+    /// Their event logs.
+    pub task_events: BTreeMap<TaskId, Vec<TaskEventRecord>>,
 }
 
 #[derive(Debug, Default)]
@@ -55,6 +61,8 @@ impl InMemoryProjectRepository {
                 locked: false,
                 snapshot_saves: 0,
                 analyses: BTreeMap::new(),
+                tasks: Vec::new(),
+                task_events: BTreeMap::new(),
             },
         );
     }
@@ -81,7 +89,15 @@ impl InMemoryProjectRepository {
         lock(&self.state).fail_snapshots = fail;
     }
 
-    fn with_folder<T>(
+    /// Replaces the stored tasks of the folder at `path` (as a previous core run left them);
+    /// nothing happens when no folder is there.
+    pub fn set_tasks(&self, path: impl AsRef<Path>, tasks: Vec<Task>) {
+        if let Some(folder) = lock(&self.state).folders.get_mut(path.as_ref()) {
+            folder.tasks = tasks;
+        }
+    }
+
+    pub(super) fn with_folder<T>(
         &self,
         path: &Path,
         action: impl FnOnce(&mut StoredFolder) -> Result<T, StorageError>,
@@ -227,6 +243,13 @@ impl ProjectStore for InMemoryProjectStore {
             repository: self.repository.clone(),
             path: self.path.clone(),
         })
+    }
+
+    fn tasks(&self) -> Arc<dyn TaskStore> {
+        Arc::new(InMemoryTaskStore::new(
+            self.repository.clone(),
+            self.path.clone(),
+        ))
     }
 
     async fn close(&self) -> Result<(), StorageError> {

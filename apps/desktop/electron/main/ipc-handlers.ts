@@ -3,8 +3,10 @@ import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import { IPC_CHANNELS } from '../shared/bridge-api';
 import type { CoreSupervisor } from './core-supervisor';
 import {
+  parseChooseFileOptions,
   parseChooseFilesOptions,
   parseChooseFolderOptions,
+  parseExternalUrl,
   parseRevealPath,
 } from './ipc-arguments';
 
@@ -45,6 +47,25 @@ export function registerIpcHandlers(supervisor: CoreSupervisor): void {
         ? await dialog.showOpenDialog(dialogOptions)
         : await dialog.showOpenDialog(window, dialogOptions);
     return result.canceled ? [] : result.filePaths;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.chooseFile, async (event, value: unknown) => {
+    const options = parseChooseFileOptions(value);
+    const dialogOptions: Electron.OpenDialogOptions = {
+      title: options.title,
+      buttonLabel: options.buttonLabel,
+      properties: ['openFile', 'treatPackageAsDirectory'],
+    };
+    const window = BrowserWindow.fromWebContents(event.sender);
+    const result =
+      window === null
+        ? await dialog.showOpenDialog(dialogOptions)
+        : await dialog.showOpenDialog(window, dialogOptions);
+    return result.canceled ? null : (result.filePaths[0] ?? null);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.openExternal, async (_event, value: unknown) => {
+    await shell.openExternal(parseExternalUrl(value));
   });
 
   ipcMain.handle(IPC_CHANNELS.showInFolder, (_event, value: unknown) => {

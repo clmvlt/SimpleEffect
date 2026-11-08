@@ -1,7 +1,8 @@
-//! `project.db`: the operation journal, the analyses of assets (`analyses.rs`), and tables later
-//! prompts fill (tasks, transcripts).
+//! `project.db`: the operation journal, the analyses of assets (`analyses.rs`), the AI tasks and
+//! their event logs (`tasks.rs`), and tables later prompts fill (transcripts).
 
 mod analyses;
+mod tasks;
 
 use std::path::{Path, PathBuf};
 
@@ -15,7 +16,7 @@ use crate::{
 };
 
 /// Schema migrations of `project.db` (see [`open_database`]). Append, never edit.
-const MIGRATIONS: &[&str] = &[SCHEMA_V1, SCHEMA_V2];
+const MIGRATIONS: &[&str] = &[SCHEMA_V1, SCHEMA_V2, SCHEMA_V3];
 
 /// Version 1. `op_journal` holds the transactions committed since the last snapshot. The other
 /// tables are created now so the schema has one history; their columns are refined by the
@@ -63,6 +64,15 @@ CREATE TABLE analyses (
 const SCHEMA_V2: &str = "
 ALTER TABLE analyses ADD COLUMN content_key TEXT NOT NULL DEFAULT '';
 ALTER TABLE analyses ADD COLUMN format_version INTEGER NOT NULL DEFAULT 1;
+";
+
+/// Version 3 (prompt 17): task rows and event rows record the version of their JSON, and events
+/// the run that produced them (`tasks.payload` is a `se_protocol::Task`, `task_events.payload` a
+/// `se_protocol::AgentEvent`).
+const SCHEMA_V3: &str = "
+ALTER TABLE tasks ADD COLUMN format_version INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE task_events ADD COLUMN run INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE task_events ADD COLUMN format_version INTEGER NOT NULL DEFAULT 1;
 ";
 
 /// Version of the JSON stored in `op_journal.payload` (the `Transaction` format, fixed by the

@@ -53,7 +53,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | [x] | 15 | [Textes, graphiques et keyframes](15-textes-keyframes.md) ⚠️ | 13 | 14, 17 |
 | [x] | 16 | [Formats, séquences multiples, safe areas](16-formats-sequences.md) | 15 | 17 |
 | **Phase 4 — IA** |||||
-| [ ] | 17 | [Runtime des agents IA (générique + Claude Code)](17-agents-runtime.md) ⚠️ | 07 | 08 → 16 |
+| [x] | 17 | [Runtime des agents IA (générique + Claude Code)](17-agents-runtime.md) ⚠️ | 07 | 08 → 16 |
 | [ ] | 18 | [Serveur MCP : outils de lecture](18-mcp-lecture.md) | 16, 17 | 21 |
 | [ ] | 19 | [Serveur MCP : outils d'écriture, portée, changesets](19-mcp-ecriture.md) ⚠️ | 18 | 21 |
 | [ ] | 20 | [UX IA : composeur, tâches parallèles, annulation](20-ux-ia.md) | 19 | 21 |

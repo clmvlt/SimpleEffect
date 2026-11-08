@@ -1,4 +1,10 @@
-import type { CoreClient, MediaSettings, MediaToolsStatus, ProjectCacheInfo } from '@se/protocol';
+import type {
+  AiSettings,
+  CoreClient,
+  MediaSettings,
+  MediaToolsStatus,
+  ProjectCacheInfo,
+} from '@se/protocol';
 
 /** What the settings feature needs from the core client. */
 export type SettingsClient = Pick<CoreClient, 'send'>;
@@ -35,4 +41,17 @@ export async function clearProjectCache(
   projectId: string,
 ): Promise<ProjectCacheInfo> {
   return (await client.send({ kind: 'clearProjectCache', projectId })).cache;
+}
+
+/** The AI settings of the app. */
+export async function getAiSettings(client: SettingsClient): Promise<AiSettings> {
+  return (await client.send({ kind: 'getAiSettings' })).settings;
+}
+
+/** Saves the AI settings; resolves with them as saved. */
+export async function updateAiSettings(
+  client: SettingsClient,
+  settings: AiSettings,
+): Promise<AiSettings> {
+  return (await client.send({ kind: 'updateAiSettings', ...settings })).settings;
 }

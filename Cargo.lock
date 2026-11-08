@@ -1228,8 +1228,18 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 name = "se-agents"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "directories",
+ "process-wrap",
  "se-app",
  "se-domain",
+ "se-protocol",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "which",
+ "windows 0.62.2",
 ]
 
 [[package]]
@@ -1387,6 +1397,8 @@ dependencies = [
  "rusqlite",
  "se-app",
  "se-domain",
+ "se-protocol",
+ "serde",
  "serde_json",
  "tempfile",
  "tokio",

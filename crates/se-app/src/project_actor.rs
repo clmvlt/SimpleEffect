@@ -24,7 +24,7 @@ use tracing::Instrument;
 
 use crate::{
     AppError,
-    ports::{AnalysisStore, Clock, EventSink, IdGenerator, ProjectStore},
+    ports::{AnalysisStore, Clock, EventSink, IdGenerator, ProjectStore, TaskStore},
 };
 
 /// Messages waiting before senders are slowed down.
@@ -82,6 +82,7 @@ pub struct ProjectActorHandle {
     project_id: ProjectId,
     path: PathBuf,
     analyses: Arc<dyn AnalysisStore>,
+    tasks: Arc<dyn TaskStore>,
     sender: mpsc::Sender<Message>,
 }
 
@@ -94,6 +95,7 @@ impl ProjectActorHandle {
             project_id: project.id,
             path: store.path().to_path_buf(),
             analyses: store.analyses(),
+            tasks: store.tasks(),
             sender,
         };
         let span = tracing::info_span!("project_actor", project = %project.id);
@@ -118,6 +120,13 @@ impl ProjectActorHandle {
     #[must_use]
     pub fn analyses(&self) -> &Arc<dyn AnalysisStore> {
         &self.analyses
+    }
+
+    /// The AI tasks of the project (project database). Not document state: written directly by
+    /// the task service, not through the actor.
+    #[must_use]
+    pub fn tasks(&self) -> &Arc<dyn TaskStore> {
+        &self.tasks
     }
 
     /// Commits `transaction` and returns the new revision.

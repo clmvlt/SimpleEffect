@@ -7,8 +7,8 @@ use se_protocol::{
 use super::{
     encode::encode,
     handlers::{
-        HandlerContext, editing, graphics, items, media, media_settings, projects, sound, system,
-        timeline,
+        HandlerContext, ai, editing, graphics, items, media, media_settings, projects, sound,
+        system, tasks, timeline,
     },
     request::{Rejection, parse_request},
 };
@@ -297,6 +297,29 @@ impl RpcRouter {
             Command::ClearProjectCache { project_id } => {
                 media_settings::clear_project_cache(context, *project_id).await
             }
+            Command::SubmitTask(request) => tasks::submit_task(context, request).await,
+            Command::CancelTask {
+                project_id,
+                task_id,
+            } => tasks::cancel_task(context, *project_id, *task_id).await,
+            Command::RetryTask {
+                project_id,
+                task_id,
+            } => tasks::retry_task(context, *project_id, *task_id).await,
+            Command::FollowUpTask {
+                project_id,
+                task_id,
+                prompt,
+            } => tasks::follow_up_task(context, *project_id, *task_id, prompt).await,
+            Command::ListTasks { project_id } => tasks::list_tasks(context, *project_id).await,
+            Command::GetTaskEvents {
+                project_id,
+                task_id,
+            } => tasks::get_task_events(context, *project_id, *task_id).await,
+            Command::GetAiStatus => Ok(ai::get_ai_status(context).await),
+            Command::RefreshAiStatus => Ok(ai::refresh_ai_status(context).await),
+            Command::GetAiSettings => Ok(ai::get_ai_settings(context)),
+            Command::UpdateAiSettings(settings) => ai::update_ai_settings(context, settings).await,
         }
     }
 }
@@ -316,7 +339,10 @@ pub mod testing {
     /// Version `1.2.3`, folders under `data`, projects and media in memory.
     pub fn context() -> HandlerContext {
         let MediaTestbed {
-            projects, media, ..
+            projects,
+            media,
+            tasks,
+            ..
         } = MediaTestbed::new(Path::new("/projects"));
         HandlerContext {
             version: "1.2.3",
@@ -326,6 +352,7 @@ pub mod testing {
             },
             projects: Arc::new(projects),
             media,
+            tasks: Arc::new(tasks),
             fonts: Arc::new(FakeFontCatalog),
         }
     }
@@ -527,6 +554,9 @@ mod tests {
             "getMediaToolsStatus",
             "listAnimationPresets",
             "listFonts",
+            "getAiStatus",
+            "refreshAiStatus",
+            "getAiSettings",
         ] {
             let request = format!(r#"{{"type":"request","id":1,"command":{{"kind":"{kind}"}}}}"#);
             assert_eq!(reply(&request).await["result"]["kind"], kind);

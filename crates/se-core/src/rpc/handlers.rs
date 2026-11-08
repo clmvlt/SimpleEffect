@@ -5,6 +5,7 @@
 //! `Result<CommandResult, ProtocolError>` with a stable code and an actionable message
 //! (`se_app::AppError` converts with `?`).
 
+pub mod ai;
 pub mod editing;
 pub mod graphics;
 pub mod items;
@@ -13,11 +14,12 @@ pub mod media_settings;
 pub mod projects;
 pub mod sound;
 pub mod system;
+pub mod tasks;
 pub mod timeline;
 
 use std::{path::Path, sync::Arc};
 
-use se_app::{MediaService, ProjectService, ports::FontCatalog};
+use se_app::{MediaService, ProjectService, TaskService, ports::FontCatalog};
 use se_protocol::{ErrorCode, ProtocolError};
 
 use crate::app_paths::AppPaths;
@@ -33,6 +35,8 @@ pub struct HandlerContext {
     pub projects: Arc<ProjectService>,
     /// Media use cases (also observes project openings and closings).
     pub media: Arc<MediaService>,
+    /// AI tasks, provider status and settings (also observes project openings and closings).
+    pub tasks: Arc<TaskService>,
     /// Bundled and installed fonts.
     pub fonts: Arc<dyn FontCatalog>,
 }
