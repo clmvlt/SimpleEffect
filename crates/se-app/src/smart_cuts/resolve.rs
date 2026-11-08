@@ -35,7 +35,7 @@ pub fn resolve(
         CutTarget::Words { ranges } => {
             let context = WordContext::new(sequence, media, limit);
             let removed = words_in_ranges(&context.transcript.words, ranges);
-            Ok(context.cuts(sequence, &removed))
+            Ok(context.cuts(sequence, media, &removed))
         }
         CutTarget::Fillers {
             range,
@@ -51,7 +51,7 @@ pub fn resolve(
                 .iter()
                 .flat_map(|span| span.first..=span.last)
                 .collect();
-            Ok(context.cuts(sequence, &removed))
+            Ok(context.cuts(sequence, media, &removed))
         }
         CutTarget::Silences {
             range,

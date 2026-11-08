@@ -4,8 +4,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use se_domain::{
-    AssetId, Flicks, ItemId, ItemKind, Sequence, SequenceTranscript, SequenceWord, TimeRange,
-    TrackId, TrackKind, sequence_transcript,
+    AssetId, Flicks, ItemId, ItemKind, Sequence, SequenceTranscript, SequenceWord, SilenceSettings,
+    TimeRange, TrackId, TrackKind, sequence_transcript,
 };
 use se_protocol::FillerList;
 
@@ -14,8 +14,14 @@ use super::{
     fillers::{FillerPhrases, FillerSpan, find_fillers},
     plan::{CutParams, FrameSnap, plan_cuts},
     resolve::MIN_KEEP,
-    silences::union,
-    words::{word_cut_ranges, words_in_ranges},
+    silences::sequence_silences,
+    words::{SNAP_REACH, snap_to_quiet, word_cut_ranges, words_in_ranges},
+};
+
+/// Quiet enough to snap word cuts to: the speech threshold, from one 20 ms window.
+const QUIET: SilenceSettings = SilenceSettings {
+    threshold_dbfs: SilenceSettings::SPEECH.threshold_dbfs,
+    min_duration: Flicks::from_millis(20),
 };
 
 /// The words of a sequence and what word cuts need around them.
@@ -90,7 +96,12 @@ impl WordContext {
     }
 
     /// The cuts removing the words at `removed`.
-    pub(super) fn cuts(&self, sequence: &Sequence, removed: &BTreeSet<usize>) -> ResolvedCuts {
+    pub(super) fn cuts(
+        &self,
+        sequence: &Sequence,
+        media: &CutMedia,
+        removed: &BTreeSet<usize>,
+    ) -> ResolvedCuts {
         let words: &[SequenceWord] = &self.transcript.words;
         let windows: BTreeMap<_, _> = self
             .clips
@@ -116,7 +127,15 @@ impl WordContext {
             frame_rate: sequence.format.frame_rate,
             snap: FrameSnap::Nearest,
         };
-        let cuts = plan_cuts(&candidates, &params, &union(bounds.clone()), self.limit);
+        let quiet = sequence_silences(
+            sequence,
+            &seeds,
+            |asset| media.levels.get(&asset).map(AsRef::as_ref),
+            QUIET,
+            self.limit,
+        );
+        let snapped = snap_to_quiet(&candidates, &quiet.silences, SNAP_REACH);
+        let cuts = plan_cuts(&snapped, &params, &bounds, self.limit);
         let cuts = if bounds.is_empty() { Vec::new() } else { cuts };
         ResolvedCuts {
             cuts,

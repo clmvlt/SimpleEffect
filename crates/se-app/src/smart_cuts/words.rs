@@ -6,6 +6,11 @@
 //! starts are known to ±30 ms; ends from whisper are rather late, so the end itself is safe).
 //! Margins never take more than half of a pause, so a cut never reaches a kept word. Clip edges
 //! bound everything: words of other clips are not neighbours.
+//!
+//! Word times are not exact (whisper's starts come late by up to ~150 ms with small models), so
+//! when the sound's level is known, an edge falling in sound moves back to where that sound began
+//! if it began just before ([`snap_to_quiet`]): the removed word's onset goes with it, and the next
+//! kept word's onset stays.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -16,6 +21,9 @@ pub const ONSET_MARGIN: Flicks = Flicks::from_millis(30);
 
 /// Silence kept next to a kept word when the pause on its side is cut, at most half of it.
 pub const BREATH: Flicks = Flicks::from_millis(60);
+
+/// How far back an edge in sound may move to the onset of that sound.
+pub const SNAP_REACH: Flicks = Flicks::from_millis(150);
 
 /// The indices of `words` whose middle lies in one of `ranges`.
 #[must_use]
@@ -44,6 +52,37 @@ pub fn word_cut_ranges(
         .into_iter()
         .filter_map(|(first, last)| run_cut(words, first, last, clips))
         .collect()
+}
+
+/// `cuts` with each edge that falls in sound (outside every `quiet` range, sorted) moved back to
+/// the onset of that sound when it lies within `reach` before it; a cut that would vanish keeps its
+/// edges. Connected speech (no quiet instant within reach) is left as it is.
+#[must_use]
+pub fn snap_to_quiet(cuts: &[TimeRange], quiet: &[TimeRange], reach: Flicks) -> Vec<TimeRange> {
+    cuts.iter()
+        .map(|cut| {
+            let start = onset_before(cut.start(), quiet, reach);
+            let end = onset_before(cut.end(), quiet, reach);
+            TimeRange::from_start_end(start, end)
+                .ok()
+                .filter(|snapped| !snapped.is_empty())
+                .unwrap_or(*cut)
+        })
+        .collect()
+}
+
+/// `time`, or the onset of the sound it lies in when that sound began within `reach` before it.
+fn onset_before(time: Flicks, quiet: &[TimeRange], reach: Flicks) -> Flicks {
+    if quiet.iter().any(|range| range.contains(time)) {
+        return time;
+    }
+    let earliest = time.checked_sub(reach).unwrap_or(Flicks::ZERO);
+    quiet
+        .iter()
+        .map(|range| range.end())
+        .filter(|end| *end <= time && *end >= earliest)
+        .max()
+        .unwrap_or(time)
 }
 
 /// Consecutive indices grouped as `(first, last)`.
@@ -206,6 +245,21 @@ mod tests {
         // « tous. » ends clip 1: 50 ms before it, 400 ms to the clip end.
         let cuts = word_cut_ranges(&words, &BTreeSet::from([2]), &clips);
         assert_eq!(to_ms(&cuts), [(725, 1130)]);
+    }
+
+    #[test]
+    fn edges_in_sound_move_back_to_its_onset_within_reach() {
+        // Quiet until 1.9 s (the removed word really starts there), sound to 2.35 s, quiet, then the
+        // next word really starts at 2.38 s (whisper said 2.40).
+        let quiet = [span(0, 1900), span(2350, 2380), span(3000, 3200)];
+        let cuts = snap_to_quiet(&[span(1970, 2390)], &quiet, SNAP_REACH);
+        assert_eq!(to_ms(&cuts), [(1900, 2380)]);
+        // Connected speech: the sound began long before, nothing moves.
+        let cuts = snap_to_quiet(&[span(2600, 2900)], &quiet, SNAP_REACH);
+        assert_eq!(to_ms(&cuts), [(2600, 2900)]);
+        // Edges already in quiet stay.
+        let cuts = snap_to_quiet(&[span(3050, 3150)], &quiet, SNAP_REACH);
+        assert_eq!(to_ms(&cuts), [(3050, 3150)]);
     }
 
     #[test]
