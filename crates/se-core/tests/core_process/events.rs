@@ -4,7 +4,7 @@ use futures_util::StreamExt;
 use tokio::time::timeout;
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::running_core::{RunningCore, STARTUP_TIMEOUT, next_json};
+use crate::running_core::{RunningCore, STARTUP_TIMEOUT, next_frame};
 
 #[tokio::test]
 async fn two_clients_both_receive_the_shutdown_event_then_a_close() {
@@ -19,7 +19,7 @@ async fn two_clients_both_receive_the_shutdown_event_then_a_close() {
     );
 
     for socket in [&mut first, &mut second] {
-        let event = next_json(socket).await;
+        let event = next_frame(socket).await;
         assert_eq!(event["type"], "event");
         assert_eq!(event["event"]["kind"], "coreShuttingDown");
         let after = timeout(STARTUP_TIMEOUT, socket.next())

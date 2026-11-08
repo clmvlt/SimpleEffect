@@ -137,14 +137,31 @@ pub async fn call(socket: &mut RpcSocket, id: u64, command: Value) -> (Value, Ve
     }
 }
 
-/// Sends a request and returns the response frame as JSON.
+/// Sends a request and returns the response frame as JSON (background events skipped).
 pub async fn request(socket: &mut RpcSocket, id: u64, command: Value) -> Value {
     let frame = serde_json::json!({ "type": "request", "id": id, "command": command });
     socket
         .send(Message::text(frame.to_string()))
         .await
         .expect("send request");
-    next_json(socket).await
+    next_frame(socket).await
+}
+
+/// Events the core publishes on its own at any moment after startup (the AI provider is checked
+/// in the background): tests waiting for something else skip them.
+const BACKGROUND_EVENTS: &[&str] = &["aiStatusChanged"];
+
+/// The next frame that is not a background event, parsed as JSON.
+pub async fn next_frame(socket: &mut RpcSocket) -> Value {
+    loop {
+        let message = next_json(socket).await;
+        let kind = &message["event"]["kind"];
+        let background =
+            message["type"] == "event" && BACKGROUND_EVENTS.iter().any(|known| kind == *known);
+        if !background {
+            return message;
+        }
+    }
 }
 
 /// The next text frame, parsed as JSON.

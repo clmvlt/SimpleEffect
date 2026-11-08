@@ -4,7 +4,7 @@ use futures_util::SinkExt;
 use serde_json::json;
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::running_core::{RunningCore, next_json, next_text, request};
+use crate::running_core::{RunningCore, next_frame, next_text, request};
 
 #[tokio::test]
 async fn ping_is_answered_in_the_documented_shape() {
@@ -51,7 +51,7 @@ async fn unknown_commands_and_invalid_json_get_stable_error_codes() {
         .send(Message::text("{not json"))
         .await
         .expect("send garbage");
-    let invalid = next_json(&mut socket).await;
+    let invalid = next_frame(&mut socket).await;
     assert_eq!(invalid["id"], serde_json::Value::Null);
     assert_eq!(invalid["error"]["code"], "INVALID_REQUEST");
 
