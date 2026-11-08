@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-08 — Prompt 20: UX IA : composeur, tâches parallèles, annulation — Done
 
-**Branch**: `feature/20-ux-ia`, merged into `dev` at `MERGE_SHA`
+**Branch**: `feature/20-ux-ia`, merged into `dev` at `dae88fd`
 
 **Done**
 - Protocol and core (ADR-0030): `followUpTask { scope? }` (a new scope on the task's sequence, kept by the task and given to the run's token), `previewTaskRevert` (the actor plans and commits the revert on a copy: `ProjectActorHandle::preview_revert`), `getTaskChanges` (`changeset_items` → `{ changesetId, touchedItems }`), `Task.usage: TaskUsage` (the runs' `usage` events added up by the runner, `task_state::add_usage`; `Task` is `PartialEq` only now), `ProjectPatch.actor` (the committed transaction's actor; `project_patch(…, actor)`). The Claude Code provider reports our MCP tools by their own name (`add_text`) and keeps 1000 characters of tool inputs/outputs.
