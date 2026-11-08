@@ -401,15 +401,7 @@ impl DomainError {
     reason = "thiserror passes fields to format helpers by reference"
 )]
 pub(crate) fn clock(time: &Flicks) -> String {
-    const FLICKS_PER_MILLISECOND: i64 = Flicks::PER_SECOND / 1000;
-    let sign = if time.is_negative() { "-" } else { "" };
-    let magnitude = time.get().unsigned_abs();
-    let unit = FLICKS_PER_MILLISECOND.unsigned_abs();
-    let total_ms = (magnitude + unit / 2) / unit;
-    let (hours, rest) = (total_ms / 3_600_000, total_ms % 3_600_000);
-    let (minutes, rest) = (rest / 60_000, rest % 60_000);
-    let (seconds, milliseconds) = (rest / 1000, rest % 1000);
-    format!("{sign}{hours:02}:{minutes:02}:{seconds:02}.{milliseconds:03}")
+    crate::time::format_clock(*time)
 }
 
 fn describe_violations(violations: &[Violation]) -> String {

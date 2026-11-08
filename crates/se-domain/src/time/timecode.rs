@@ -56,9 +56,32 @@ pub fn format_timecode(time: Flicks, rate: FrameRate) -> String {
     format!("{sign}{hours:02}:{minutes:02}:{seconds:02}:{frame:02}")
 }
 
+/// Formats `time` as wall-clock `HH:MM:SS.mmm`, rounded to the nearest millisecond (halves away
+/// from zero). The format agents and error messages read; `parse_timecode` reads it back.
+#[must_use]
+pub fn format_clock(time: Flicks) -> String {
+    const FLICKS_PER_MILLISECOND: i64 = Flicks::PER_SECOND / 1000;
+    let sign = if time.is_negative() { "-" } else { "" };
+    let magnitude = time.get().unsigned_abs();
+    let unit = FLICKS_PER_MILLISECOND.unsigned_abs();
+    let total_ms = (magnitude + unit / 2) / unit;
+    let (hours, rest) = (total_ms / 3_600_000, total_ms % 3_600_000);
+    let (minutes, rest) = (rest / 60_000, rest % 60_000);
+    let (seconds, milliseconds) = (rest / 1000, rest % 1000);
+    format!("{sign}{hours:02}:{minutes:02}:{seconds:02}.{milliseconds:03}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn clock_times_read_back() {
+        let time = at(51 * Flicks::PER_SECOND + Flicks::PER_SECOND / 4);
+        assert_eq!(format_clock(time), "00:00:51.250");
+        assert_eq!(parse_timecode(&format_clock(time), None), Ok(time));
+        assert_eq!(format_clock(at(-Flicks::PER_SECOND)), "-00:00:01.000");
+    }
 
     fn at(value: i64) -> Flicks {
         Flicks::new(value).unwrap()

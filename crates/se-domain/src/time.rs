@@ -16,4 +16,6 @@ pub use flicks::Flicks;
 pub use frame_rate::FrameRate;
 pub use rounding::RoundingMode;
 pub use time_range::TimeRange;
-pub use timecode::{TimecodeError, TimecodeErrorReason, format_timecode, parse_timecode};
+pub use timecode::{
+    TimecodeError, TimecodeErrorReason, format_clock, format_timecode, parse_timecode,
+};
