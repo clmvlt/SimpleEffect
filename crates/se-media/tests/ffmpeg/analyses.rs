@@ -108,3 +108,51 @@ async fn cuts_between_shots_are_detected() {
         [Flicks::from_millis(2_000), Flicks::from_millis(4_000)]
     );
 }
+
+#[tokio::test]
+async fn speech_audio_is_mono_16_khz_pcm_of_the_first_sound_stream() {
+    use se_app::ports::SpeechAudioExtractor;
+
+    let Some(tools) = tools() else { return };
+    let dir = tempfile::tempdir().unwrap();
+    let input = generate(
+        &tools,
+        dir.path(),
+        "interview.mp4",
+        &[
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=320x240:rate=25:duration=2",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=440:sample_rate=48000:duration=2",
+            "-ac",
+            "2",
+            "-c:v",
+            "libx264",
+            "-c:a",
+            "aac",
+        ],
+    )
+    .await;
+    let output = dir.path().join("transcription").join("speech-16k.wav");
+    let progress = Progress::default();
+    runner(&tools)
+        .extract_speech_audio(&input, &output, &progress)
+        .await
+        .unwrap();
+    assert_eq!(progress.last(), Some(1.0));
+    let probed = probe(&tools, &output).await;
+    let audio = &probed.info.audio_streams[0];
+    assert_eq!(
+        (audio.codec.as_str(), audio.channels, audio.sample_rate),
+        ("pcm_s16le", 1, 16_000)
+    );
+    assert!(probed.info.video_stream.is_none());
+    let leftovers: Vec<_> = std::fs::read_dir(output.parent().unwrap())
+        .unwrap()
+        .collect();
+    assert_eq!(leftovers.len(), 1, "no .part file left");
+}

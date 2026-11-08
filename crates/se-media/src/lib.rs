@@ -26,6 +26,7 @@ pub mod peaks;
 mod platform;
 mod probe;
 pub mod process;
+pub mod speech_audio;
 mod tools;
 
 pub use ffmpeg_tools::FfmpegTools;
