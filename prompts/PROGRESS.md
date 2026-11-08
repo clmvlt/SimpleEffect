@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-08 — Prompt 21: Transcription locale (whisper.cpp) — Done
 
-**Branch**: `feature/21-transcription`, merged into `dev` at `MERGE_SHA`
+**Branch**: `feature/21-transcription`, merged into `dev` at `6035658`
 
 **Done**
 - Binaries (ADR-0031): `pnpm fetch-binaries` installs whisper.cpp 1.9.5 into `resources/bin/<platform>/whisper/` — official CPU builds on Windows and Linux (every ggml CPU variant, sonames on Linux), compiled from the pinned source tarball with Metal embedded on macOS (cmake steps in the manifest; host check; `release.yml` ensures cmake). Per-download stamps (an ffmpeg-only folder fetches only whisper), subfolders validated, electron-builder packages `whisper/**`.
