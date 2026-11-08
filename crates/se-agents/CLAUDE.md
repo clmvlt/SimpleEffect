@@ -25,13 +25,13 @@ AI CLI providers and their stream parsing (ADR-0003, ADR-0027). Claude Code is t
 | `providers/claude_code/stream.rs` | `StreamParser` (stream-json → `AgentEvent`) and `missing_result` |
 | `providers/claude_code/environment.rs` | Variables of a parent Claude Code session removed from the CLI's environment (only when `CLAUDECODE` is set; user configuration kept) |
 | `providers/claude_code/auth.rs` | `parse_version`, `parse_auth_status` |
-| `providers/claude_code/failure.rs` | `classify` (rate limit, login, crash) and `explain` (actionable messages) |
+| `providers/claude_code/failure.rs` | `classify` (rate limit, login, misconfigured — a wrapper adding options —, crash) and `explain` (actionable messages) |
 
 ## Rules and invariants
 - The **only** crate that knows which AI CLI is used (golden rule 3), and only `src/providers/<provider>/` knows a given CLI.
 - Agents are launched with no built-in tools (`--tools ""` for Claude Code), in an empty working folder, isolated from the user's own CLI configuration (ADR-0027).
 - Text with line breaks (prompts, instructions) never goes on the command line: Windows `.cmd` shims cannot receive it. Prompts go to stdin, instructions to a file in the working folder.
-- Resolve executables with the `which` crate (PATHEXT-aware) after the user's override, then the usual install folders (desktop apps lack the shell's PATH).
+- Resolve executables with the `which` crate (PATHEXT-aware) after the user's override, then the usual install folders (desktop apps lack the shell's PATH). On Windows, a real `.exe` on the PATH wins over script wrappers (`.cmd`/`.bat`), which may add options of their own.
 - Every process goes through `CliProcess`: no console window, the whole tree killed on cancel and on drop. A run ends with exactly one terminal event, then its channel closes once the process is gone.
 - Unknown stream lines are logged at debug level and ignored (forward compatible); unreadable ones are counted and make a result-less end a `protocolError`.
 - Never log or persist CLI credentials (`auth status` is parsed for `loggedIn` and the account kind only); redact MCP task tokens (`arguments::redacted`).
