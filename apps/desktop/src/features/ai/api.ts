@@ -1,10 +1,12 @@
 import type {
   AiStatus,
   CoreClient,
+  ItemId,
   SubmitTaskRequest,
   Task,
   TaskEventRecord,
   TaskRevertReport,
+  TaskScope,
 } from '@se/protocol';
 
 /** What the AI feature needs from the core client. */
@@ -35,14 +37,16 @@ export async function retryTask(client: AiClient, projectId: string, taskId: str
   return (await client.send({ kind: 'retryTask', projectId, taskId })).task;
 }
 
-/** Sends a new prompt to a finished task's agent. */
+/** Sends a new prompt to a finished task's agent (with a new scope for this run, if given). */
 export async function followUpTask(
   client: AiClient,
   projectId: string,
   taskId: string,
   prompt: string,
+  scope?: TaskScope,
 ): Promise<Task> {
-  return (await client.send({ kind: 'followUpTask', projectId, taskId, prompt })).task;
+  const command = { kind: 'followUpTask', projectId, taskId, prompt } as const;
+  return (await client.send(scope === undefined ? command : { ...command, scope })).task;
 }
 
 /** Undoes a finished task's edits that nobody changed since; resolves with what was left. */
@@ -52,6 +56,24 @@ export async function revertTask(
   taskId: string,
 ): Promise<TaskRevertReport> {
   return (await client.send({ kind: 'revertTask', projectId, taskId })).report;
+}
+
+/** What reverting a finished task would do now (nothing changes). */
+export async function previewTaskRevert(
+  client: AiClient,
+  projectId: string,
+  taskId: string,
+): Promise<TaskRevertReport> {
+  return (await client.send({ kind: 'previewTaskRevert', projectId, taskId })).report;
+}
+
+/** The items a task added or changed that still exist (its open changeset). */
+export async function getTaskChanges(
+  client: AiClient,
+  projectId: string,
+  taskId: string,
+): Promise<ItemId[]> {
+  return (await client.send({ kind: 'getTaskChanges', projectId, taskId })).touchedItems;
 }
 
 /** The tasks of an open project, oldest first. */

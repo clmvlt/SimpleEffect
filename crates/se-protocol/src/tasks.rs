@@ -75,7 +75,7 @@ pub struct TaskRun {
 }
 
 /// An AI task as clients see it (its events come apart: `getTaskEvents`, `taskEventAppended`).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct Task {
     /// Stable id.
@@ -106,6 +106,21 @@ pub struct Task {
     /// changed nothing). Created by its first edit (prompt 19).
     #[serde(default)]
     pub changeset_id: Option<ChangesetId>,
+    /// What its runs consumed in all (`usage` events added up; zero in older rows).
+    #[serde(default)]
+    pub usage: TaskUsage,
+}
+
+/// Tokens and cost of a task's runs, added up from their `usage` events.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskUsage {
+    /// Input tokens (cached ones included).
+    pub input_tokens: u64,
+    /// Output tokens.
+    pub output_tokens: u64,
+    /// Cost in US dollars of the runs whose CLI reported one; `null` when none did.
+    pub cost_usd: Option<f64>,
 }
 
 /// What reverting an AI task did ([`crate::Command::RevertTask`]).

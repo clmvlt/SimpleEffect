@@ -77,6 +77,15 @@ pub struct AiCommit {
     pub changeset_created: bool,
 }
 
+/// The items an AI task added or changed that still exist.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ChangesetItems {
+    /// The task's open changeset (`None` while it changed nothing or once reverted).
+    pub changeset_id: Option<ChangesetId>,
+    /// Its items still in the project, in id order.
+    pub touched_items: Vec<ItemId>,
+}
+
 /// A message to the actor; every one carries the channel its answer goes to.
 enum Message {
     Apply {
@@ -96,6 +105,14 @@ enum Message {
     Changeset {
         task_id: TaskId,
         reply: oneshot::Sender<Option<Changeset>>,
+    },
+    PreviewRevert {
+        task_id: TaskId,
+        reply: oneshot::Sender<Result<TaskRevertReport, AppError>>,
+    },
+    ChangesetItems {
+        task_id: TaskId,
+        reply: oneshot::Sender<ChangesetItems>,
     },
     Undo {
         reply: oneshot::Sender<Result<u64, AppError>>,
@@ -244,6 +261,24 @@ impl ProjectActorHandle {
     /// [`AppError::ActorStopped`].
     pub async fn changeset(&self, task_id: TaskId) -> Result<Option<Changeset>, AppError> {
         self.ask(|reply| Message::Changeset { task_id, reply })
+            .await
+    }
+
+    /// What [`ProjectActorHandle::revert_task`] would report now; nothing is committed.
+    ///
+    /// # Errors
+    /// [`AppError::NothingToRevert`] when the task has no open changeset; the document's refusal.
+    pub async fn preview_revert(&self, task_id: TaskId) -> Result<TaskRevertReport, AppError> {
+        self.ask(|reply| Message::PreviewRevert { task_id, reply })
+            .await?
+    }
+
+    /// The items of `task_id`'s open changeset that still exist.
+    ///
+    /// # Errors
+    /// [`AppError::ActorStopped`].
+    pub async fn changeset_items(&self, task_id: TaskId) -> Result<ChangesetItems, AppError> {
+        self.ask(|reply| Message::ChangesetItems { task_id, reply })
             .await
     }
 

@@ -88,6 +88,7 @@ export function emptyPatch(revision: number): ProjectPatch {
   return {
     projectId: IDS.project,
     revision,
+    actor: { kind: 'user' },
     upserts: { project: null, sequences: [], tracks: [], items: [], markers: [], assets: [] },
     deletes: { sequences: [], tracks: [], items: [], markers: [], assets: [] },
   };

@@ -3,19 +3,25 @@
 use std::collections::BTreeMap;
 
 use se_domain::{
-    Asset, AssetId, Item, ItemId, Marker, MarkerId, Project, Sequence, SequenceId, TouchedEntities,
-    Track, TrackId,
+    Actor, Asset, AssetId, Item, ItemId, Marker, MarkerId, Project, Sequence, SequenceId,
+    TouchedEntities, Track, TrackId,
 };
 use se_protocol::{EntityDeletes, EntityUpserts, ItemEntity, MarkerEntity, ProjectPatch};
 
 use super::snapshot::{project_header, sequence_entity, track_entity};
 
-/// The patch bringing a client from `before` to `after`, given what the commit `touched`.
+/// The patch bringing a client from `before` to `after`, given what the commit made by `actor`
+/// touched.
 ///
 /// Parents are refreshed with their children: a moved item also refreshes the item lists of its
 /// old and new tracks, a touched track or marker refreshes its sequence (before and after).
 #[must_use]
-pub fn project_patch(before: &Project, after: &Project, touched: &TouchedEntities) -> ProjectPatch {
+pub fn project_patch(
+    before: &Project,
+    after: &Project,
+    touched: &TouchedEntities,
+    actor: Actor,
+) -> ProjectPatch {
     let old = Index::of(before);
     let new = Index::of(after);
     let mut upserts = EntityUpserts::default();
@@ -76,6 +82,7 @@ pub fn project_patch(before: &Project, after: &Project, touched: &TouchedEntitie
     ProjectPatch {
         project_id: after.id,
         revision: after.revision,
+        actor,
         upserts,
         deletes,
     }
@@ -154,7 +161,7 @@ mod tests {
             ops: vec![op.into()],
         };
         let committed = commit(project, &transaction).unwrap();
-        project_patch(project, &committed.project, &committed.touched)
+        project_patch(project, &committed.project, &committed.touched, Actor::User)
     }
 
     #[test]

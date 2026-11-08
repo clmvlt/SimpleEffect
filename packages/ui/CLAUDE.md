@@ -31,7 +31,7 @@ Editor widgets (`src/editor/`, prompt 04, Storybook section « Editor »):
 | `AspectRatioPicker` | 16:9, 9:16, 1:1, 4:5, custom | Radio group with thumbnails to scale; custom width/height fields |
 | `ClipShell`, `ClipBadge` | Body of a timeline item and its tiny AI badge (prompt 10) | `tone` (`video`, `audio`, `graphic`, `caption`), `label`, `badges`, `selected` (accent ring), `dimmed`; `children` is the picture layer (thumbnails, waveform) filling the clip under the label bar. No role: the timeline gives it one |
 | `StatusDot`, `EmptyState`, `KeyboardShortcut` | Status dot, empty placeholder, OS-aware shortcut | `KeyboardShortcut keys={['Mod','Shift','Z']}` → ⌘⇧Z on macOS, Ctrl Shift Z elsewhere (`keyLabels` localises) |
-| `AiTaskCard`, `PromptComposer` | AI task card and request box (visual only) | Card: 5 statuses, log, error, cost and actions slots. Composer: auto-growing text, removable scope chips (Backspace in an empty field removes the last), Ctrl/⌘+Enter sends, model/effort slots |
+| `AiTaskCard`, `PromptComposer` | AI task card and request box (visual only) | Card: 5 statuses, `context` line under the title (scope), log, error, cost and actions slots, `children` under the footer (inline follow-up). Composer: auto-growing text, scope chips (`removable: false` for fixed ones, `detected` dashed, `description` tooltip; Backspace in an empty field removes the last removable one), `scopeAction` after the chips, `onNavigateHistory` (↑ on the first line / ↓ on the last, returns whether it used the key), `textareaRef`, `notice` line, `submitDisabled` (typing stays possible), Ctrl/⌘+Enter sends, model/effort slots |
 
 ## Accent
 **Chosen accent: bright yellow (`yellow`, OKLCH hue 96)**, picked by the user in prompt 03 over the indigo-violet, violet and blue candidates. It is the default of the five accent tokens in `src/tokens/colors.css`. Because it is light, `accent-foreground` is dark: always draw content on `bg-accent` with `text-accent-foreground` (never `text-text`). Nearby shades `lemon` (108) and `gold` (84) live in `src/tokens/accents.css` (`[data-accent='…']`) for the "Foundations/Theme" comparison and a future accent preference. To keep the accent unambiguous, `warning` is orange (65) and `item-caption` violet (290).
@@ -58,7 +58,7 @@ Editor widgets (`src/editor/`, prompt 04, Storybook section « Editor »):
 - Timeline: `item-video|item-audio|item-graphic|item-caption|ai`, each with `-muted` (fill) and `-strong` (border, text); marker fills `marker-green|red|purple|orange|yellow|white|blue|cyan` (Premiere's eight colours).
 - Sizes: `h-control-xs|sm|md` (24/28/32 px, also `size-`, `w-`…), 4 px grid (`p-1` = 4 px), radii `rounded-xs|sm|md|lg`, `shadow-overlay` only on floating layers.
 - Type: `text-2xs|xs|sm|md|lg|xl` = 11/12/13/14/16/20 px; `font-normal|medium|semibold`; `timecode` utility (mono + tabular numerals) for timecodes and numeric readouts.
-- Motion: `duration-(--duration-fast|normal|slow)`, `ease-standard|out|in`, `animate-overlay-in|out`, `animate-content-in|out`, `animate-spin|pulse`; all disabled under `prefers-reduced-motion`.
+- Motion: `duration-(--duration-fast|normal|slow)`, `ease-standard|out|in`, `animate-overlay-in|out`, `animate-content-in|out`, `animate-spin|pulse`, `animate-ai-pulse` (a timeline item an AI task just changed; once, 1.2 s); all disabled under `prefers-reduced-motion`.
 - Layers: `z-(--z-panel)` < `z-(--z-modal)` < `z-(--z-dropdown)` < `z-(--z-toast)` < `z-(--z-tooltip)`.
 
 ## Rules and invariants

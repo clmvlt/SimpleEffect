@@ -98,3 +98,33 @@ export const WithoutScopes: Story = { args: { withScopes: false } };
 export const Busy: Story = { args: { busy: true } };
 
 export const Disabled: Story = { args: { disabled: true } };
+
+/** A range read in the text (dashed), a fixed chip, a scope control and a notice line. */
+export const DetectedScope: Story = {
+  args: { withScopes: false },
+  render: () => (
+    <div className="w-96">
+      <PromptComposer
+        label="Demande à l’IA"
+        submitLabel="Envoyer"
+        value="de 51s à 54s mets un titre"
+        onValueChange={() => undefined}
+        onSubmit={() => undefined}
+        scopes={[
+          { id: 'range', label: '00:51 → 00:54', detected: true, description: 'Lu dans le texte' },
+          { id: 'tracks', label: 'Toutes les pistes', removable: false },
+        ]}
+        onRemoveScope={() => undefined}
+        removeScopeLabel={(scopeLabel) => `Retirer ${scopeLabel}`}
+        scopeAction={
+          <button type="button" className="text-xs text-text-muted">
+            Portée…
+          </button>
+        }
+        notice="Reprend la session de la tâche #3"
+        modelSlot={<ModelSelect />}
+        effortSlot={<EffortSelect />}
+      />
+    </div>
+  ),
+};

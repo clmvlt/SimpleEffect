@@ -34,6 +34,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0027](0027-ai-task-runtime.md) | AI task runtime: task service, runs and sessions, Claude Code invocation and isolation | Accepted |
 | [0028](0028-mcp-server-and-read-tools.md) | MCP server, per-run tokens, read tools and frames rendered by the renderer | Accepted |
 | [0029](0029-agent-edits-scope-and-changesets.md) | Agent edits: one edit service, scope checked before and after, changesets owned by the actor | Accepted |
+| [0030](0030-ai-task-ux.md) | AI task UX: composer scopes, a renderer task mirror, patch actors and revert previews | Accepted |
 
 ## Template
 

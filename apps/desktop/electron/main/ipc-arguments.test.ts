@@ -5,6 +5,7 @@ import {
   parseChooseFilesOptions,
   parseChooseFolderOptions,
   parseExternalUrl,
+  parseNotification,
   parseRevealPath,
 } from './ipc-arguments';
 
@@ -80,6 +81,22 @@ describe('parseExternalUrl', () => {
       3,
     ]) {
       expect(() => parseExternalUrl(url)).toThrow(TypeError);
+    }
+  });
+});
+
+describe('parseNotification', () => {
+  it('keeps short strings and refuses anything else', () => {
+    const notification = { title: 'Tâche IA #3 terminée', body: 'Titre ajouté', tag: 'task-1' };
+    expect(parseNotification(notification)).toEqual(notification);
+    for (const value of [
+      null,
+      'text',
+      { title: 'T', body: 'B' },
+      { title: 'T', body: 3, tag: 'x' },
+      { title: 'T'.repeat(501), body: 'B', tag: 'x' },
+    ]) {
+      expect(() => parseNotification(value)).toThrow(TypeError);
     }
   });
 });

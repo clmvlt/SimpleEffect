@@ -5,7 +5,7 @@ use se_domain::{ChangesetId, ProjectId, TaskId};
 use se_protocol::{CoreEvent, TaskRevertReport};
 
 use super::{TaskService, task_state};
-use crate::AppError;
+use crate::{AppError, ChangesetItems, ProjectActorHandle};
 
 /// Label of the user transaction reverting a task. Stable identifier: the renderer translates it
 /// (`apps/desktop/src/app/editor/history-label.ts`).
@@ -39,20 +39,58 @@ impl TaskService {
         project_id: ProjectId,
         task_id: TaskId,
     ) -> Result<TaskRevertReport, AppError> {
-        let handle = {
-            let mut state = self.shared.state.lock().await;
-            let project = state.project_mut(project_id)?;
-            let task = project.task_mut(task_id)?;
-            if task_state::is_active(&task.status) {
-                return Err(AppError::TaskStillActive { task_id });
-            }
-            project.handle.clone()
-        };
+        let handle = self.finished_task_handle(project_id, task_id).await?;
         let report = handle.revert_task(task_id, REVERT_TASK_LABEL).await?;
         if report.reverted {
             self.set_changeset(project_id, task_id, None).await?;
         }
         Ok(report)
+    }
+
+    /// What [`TaskService::revert`] would report now; nothing changes.
+    ///
+    /// # Errors
+    /// Those of [`TaskService::revert`].
+    pub async fn preview_revert(
+        &self,
+        project_id: ProjectId,
+        task_id: TaskId,
+    ) -> Result<TaskRevertReport, AppError> {
+        let handle = self.finished_task_handle(project_id, task_id).await?;
+        handle.preview_revert(task_id).await
+    }
+
+    /// The items a task added or changed that still exist (its open changeset).
+    ///
+    /// # Errors
+    /// [`AppError::ProjectNotOpen`], [`AppError::TaskNotFound`].
+    pub async fn changes(
+        &self,
+        project_id: ProjectId,
+        task_id: TaskId,
+    ) -> Result<ChangesetItems, AppError> {
+        let handle = {
+            let mut state = self.shared.state.lock().await;
+            let project = state.project_mut(project_id)?;
+            project.task_mut(task_id)?;
+            project.handle.clone()
+        };
+        handle.changeset_items(task_id).await
+    }
+
+    /// The actor of the task's project, refusing active tasks.
+    async fn finished_task_handle(
+        &self,
+        project_id: ProjectId,
+        task_id: TaskId,
+    ) -> Result<ProjectActorHandle, AppError> {
+        let mut state = self.shared.state.lock().await;
+        let project = state.project_mut(project_id)?;
+        let task = project.task_mut(task_id)?;
+        if task_state::is_active(&task.status) {
+            return Err(AppError::TaskStillActive { task_id });
+        }
+        Ok(project.handle.clone())
     }
 
     async fn set_changeset(

@@ -3,7 +3,7 @@
 
 use std::{sync::Arc, time::Duration};
 
-use se_protocol::{AgentEvent, AgentFailureKind, CoreEvent, ProviderId, TaskStatus};
+use se_protocol::{AgentEvent, AgentFailureKind, CoreEvent, ProviderId, Task, TaskStatus};
 use tokio::{
     sync::{oneshot, watch},
     time::Instant,
@@ -266,7 +266,31 @@ impl Recorder {
         }
         match event {
             AgentEvent::SessionStarted { session_id, .. } => {
-                self.shared.set_session(self.key, session_id).await;
+                self.shared
+                    .update_task(self.key, |task| {
+                        let known = task.agent_session_id.as_deref() == Some(session_id);
+                        task.agent_session_id = Some(session_id.clone());
+                        !known
+                    })
+                    .await;
+            }
+            AgentEvent::Usage {
+                input_tokens,
+                output_tokens,
+                cost_usd,
+                ..
+            } => {
+                self.shared
+                    .update_task(self.key, |task| {
+                        task.usage = task_state::add_usage(
+                            task.usage,
+                            *input_tokens,
+                            *output_tokens,
+                            *cost_usd,
+                        );
+                        true
+                    })
+                    .await;
             }
             AgentEvent::Failed { failure, message } => {
                 self.shared.note_failure(&self.provider, *failure, message);
@@ -358,8 +382,9 @@ impl Shared {
         RevokeOnDrop { registry, token }
     }
 
-    /// Records the session the agent announced.
-    async fn set_session(&self, key: RunKey, session_id: &str) {
+    /// Applies what an event tells about the task (`change` returns whether it changed it), then
+    /// saves and publishes the task. A storage failure is logged: the run goes on.
+    async fn update_task(&self, key: RunKey, change: impl FnOnce(&mut Task) -> bool) {
         let now = self.now();
         let mut state = self.state.lock().await;
         let Some(project) = state.projects.get_mut(&key.project_id) else {
@@ -369,14 +394,13 @@ impl Shared {
         let Some(task) = project.tasks.iter_mut().find(|task| task.id == key.task_id) else {
             return;
         };
-        if task.agent_session_id.as_deref() == Some(session_id) {
+        if !change(task) {
             return;
         }
-        task.agent_session_id = Some(session_id.to_owned());
         task.updated_at = now;
         let task = task.clone();
         if let Err(error) = store.save_task(&task).await {
-            tracing::warn!(task = %task.id, %error, "saving a task's session failed");
+            tracing::warn!(task = %task.id, %error, "saving a task failed");
         }
         self.deps.events.publish(CoreEvent::TaskUpdated { task });
     }

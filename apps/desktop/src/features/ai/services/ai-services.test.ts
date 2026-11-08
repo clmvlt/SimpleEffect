@@ -1,12 +1,13 @@
-import type { AiStatus, ConnectionState, CoreEvent, Task, TaskEventRecord } from '@se/protocol';
+import type { AiStatus, ConnectionState, CoreEvent, TaskEventRecord } from '@se/protocol';
 import { describe, expect, it, vi } from 'vitest';
 
 import { aiAvailability, aiIndicator, canSubmitTasks } from './ai-indicator';
 import { aiTextValues } from './ai-texts';
-import { appendEvent, describeEvent, revertOutcome, taskActions, upsertTask } from './task-log';
+import { appendEvent, revertOutcome, taskActions } from './task-log';
+import { task } from '../../../shared/ai-tasks/testing/task-fixture';
 import { watchAiStatus, type AiStatusSource } from './watch-ai-status';
 
-export const READY: AiStatus = {
+const READY: AiStatus = {
   provider: {
     id: 'claude-code',
     name: 'Claude Code',
@@ -18,25 +19,6 @@ export const READY: AiStatus = {
   auth: { kind: 'loggedIn', accountKind: 'max' },
   capabilities: { resumeSessions: true, imageInput: true, models: [], effortLevels: [] },
 };
-
-function task(overrides: Partial<Task> = {}): Task {
-  return {
-    id: 'task-1',
-    projectId: 'project-1',
-    prompt: 'Cut the silences',
-    scope: { sequenceId: 'sequence-1', range: null, tracks: null },
-    provider: 'claude-code',
-    model: null,
-    effort: null,
-    status: { kind: 'queued' },
-    agentSessionId: null,
-    changesetId: null,
-    createdAt: 1,
-    updatedAt: 1,
-    runs: [],
-    ...overrides,
-  };
-}
 
 describe('aiIndicator', () => {
   it('is green when logged in, orange when logged out, grey when not installed', () => {
@@ -79,10 +61,7 @@ describe('aiIndicator', () => {
 });
 
 describe('task log', () => {
-  it('replaces tasks by id and keeps events in sequence order once', () => {
-    const first = task();
-    const updated = task({ status: { kind: 'running' } });
-    expect(upsertTask(upsertTask([], first), updated)).toEqual([updated]);
+  it('keeps events in sequence order once', () => {
     const event = (sequence: number): TaskEventRecord => ({
       sequence,
       run: 0,
@@ -102,6 +81,7 @@ describe('task log', () => {
       retry: false,
       followUp: false,
       revert: false,
+      changes: false,
     });
     const failed = task({
       status: { kind: 'failed', failure: 'rateLimited', message: 'later' },
@@ -112,10 +92,12 @@ describe('task log', () => {
       retry: true,
       followUp: true,
       revert: false,
+      changes: false,
     });
+    expect(taskActions(failed, false).followUp).toBe(false);
     expect(taskActions(task({ status: { kind: 'completed' } })).followUp).toBe(false);
     const edited = task({ status: { kind: 'completed' }, changesetId: 'changeset-1' });
-    expect(taskActions(edited).revert).toBe(true);
+    expect(taskActions(edited)).toMatchObject({ revert: true, changes: true });
     expect(taskActions({ ...edited, status: { kind: 'running' } }).revert).toBe(false);
   });
 
@@ -136,21 +118,6 @@ describe('task log', () => {
       kind: 'nothing',
       kept: 1,
     });
-  });
-
-  it('describes events in one line', () => {
-    const usage: TaskEventRecord = {
-      sequence: 3,
-      run: 0,
-      at: 0,
-      event: { kind: 'usage', inputTokens: 10, outputTokens: 2, costUsd: 0.5, durationMs: 40 },
-    };
-    expect(describeEvent(usage)).toBe('10 → 2 tokens $0.5000 40 ms');
-    const failed: TaskEventRecord = {
-      ...usage,
-      event: { kind: 'failed', failure: 'cancelled', message: 'stopped' },
-    };
-    expect(describeEvent(failed)).toBe('✘ cancelled: stopped');
   });
 });
 

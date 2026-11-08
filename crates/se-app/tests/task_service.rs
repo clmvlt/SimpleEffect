@@ -238,7 +238,7 @@ async fn a_follow_up_resumes_the_session_of_its_task() {
     assert_eq!(task.agent_session_id.as_deref(), Some(session));
     let followed = harness
         .tasks
-        .follow_up(harness.project_id, task_id, "Make it shorter")
+        .follow_up(harness.project_id, task_id, "Make it shorter", None)
         .await
         .unwrap();
     assert_eq!(followed.runs.len(), 2);
@@ -250,6 +250,16 @@ async fn a_follow_up_resumes_the_session_of_its_task() {
     let task = harness.task(task_id).await;
     assert_eq!(task.status, TaskStatus::Completed);
     assert_eq!(task.agent_session_id.as_deref(), Some(session));
+    assert_eq!(
+        (task.usage.input_tokens, task.usage.output_tokens),
+        (240, 16),
+        "the usage of both runs adds up"
+    );
+    assert!(
+        task.usage
+            .cost_usd
+            .is_some_and(|cost| (cost - 0.002).abs() < 1e-9)
+    );
     let events = harness
         .tasks
         .events(harness.project_id, task_id)
@@ -279,7 +289,7 @@ async fn a_retry_runs_the_failed_prompt_again_in_a_new_session() {
     );
     let follow_up = harness
         .tasks
-        .follow_up(harness.project_id, task_id, "Anyway")
+        .follow_up(harness.project_id, task_id, "Anyway", None)
         .await;
     assert!(
         follow_up.is_ok(),
@@ -640,16 +650,27 @@ async fn follow_ups_get_a_new_token_and_cancelled_runs_lose_theirs() {
     let task_id = harness.submit("First").await;
     run_for(100).await;
     harness.agent.set_default_script(ReplayScript::held());
-    harness
+    let mut widened = harness.request("Second").scope;
+    widened.tracks = Some(vec![harness.track_id]);
+    let mut elsewhere = widened.clone();
+    elsewhere.sequence_id = SequenceId::from_test_index(99);
+    let refused = harness
         .tasks
-        .follow_up(harness.project_id, task_id, "Second")
+        .follow_up(harness.project_id, task_id, "Second", Some(elsewhere))
+        .await;
+    assert_eq!(code(refused.unwrap_err()), ErrorCode::InvalidRequest);
+    let followed = harness
+        .tasks
+        .follow_up(harness.project_id, task_id, "Second", Some(widened.clone()))
         .await
         .unwrap();
+    assert_eq!(followed.scope, widened, "the task keeps the run's scope");
     run_for(100).await;
     let specs = harness.agent.specs();
     assert_ne!(specs[0].mcp.bearer_token, specs[1].mcp.bearer_token);
     let context = harness.tokens.resolve(&specs[1].mcp.bearer_token).unwrap();
     assert_eq!(context.run, 1);
+    assert_eq!(context.scope, widened);
     harness
         .tasks
         .cancel(harness.project_id, task_id)

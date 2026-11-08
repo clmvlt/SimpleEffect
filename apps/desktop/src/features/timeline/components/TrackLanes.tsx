@@ -19,6 +19,7 @@ import { clipboardFor } from '../store/clipboard-store';
 import { useGesturePreview } from '../store/gesture-store';
 import { useEditPreferences } from '../store/edit-preferences-store';
 import { setLanesWidth } from '../store/timeline-view-store';
+import { AiScopeOverlays } from './AiScopeOverlays';
 import { GapHighlight } from './GapHighlight';
 import { GapHover, useGapHover } from './GapHover';
 import { GestureOverlay } from './GestureOverlay';
@@ -44,8 +45,8 @@ const NONE: ReadonlySet<ItemId> = new Set();
 
 /**
  * The lanes of every track (only items in view are rendered), the in/out shade, the hovered and
- * selected gaps, the transitions and cut handles, the playhead line, the selection rectangle and
- * what a gesture previews. They take the pointer (selection, drags, trims, gap handle, fades,
+ * selected gaps, the transitions and cut handles, the scopes of active AI tasks, the playhead
+ * line, the selection rectangle and what a gesture previews. They take the pointer (selection, drags, trims, gap handle, fades,
  * volume curves, transitions), media dropped from the bin and right clicks.
  * Their measured width is the viewport width.
  */
@@ -125,6 +126,7 @@ export function TrackLanes({
           />
           <GapHighlight model={model} layout={layout} viewport={viewport} />
           <TransitionMarks model={model} layout={layout} viewport={viewport} />
+          <AiScopeOverlays sequenceId={model.sequence.id} layout={layout} viewport={viewport} />
           <GestureOverlay model={model} layout={layout} viewport={viewport} />
           <PlayheadLine sequenceId={model.sequence.id} viewport={viewport} />
           {box !== null && (

@@ -12,7 +12,7 @@ use crate::{
     AddGraphicRequest, AiSettings, CreateProjectRequest, DecodabilityReport, DecoderCapabilities,
     GenerateDerivedRequest, ImportMediaRequest, ItemAnimation, ItemPlacement, ItemTrim, ItemUpdate,
     MediaSettings, NewTransition, PastedItem, PlaceMediaRequest, PlacementMode, RelinkAssetRequest,
-    SubmitTaskRequest,
+    SubmitTaskRequest, TaskScope,
 };
 
 /// A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -500,6 +500,11 @@ pub enum Command {
         task_id: TaskId,
         /// What the agent must do next.
         prompt: String,
+        /// A new scope for this run and the next ones, on the task's sequence (« Refaire avec
+        /// l'IA » widens it to an item moved since); omitted to keep the task's scope.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        scope: Option<TaskScope>,
     },
     /// The AI tasks of an open project, oldest first. Answered by
     /// [`crate::CommandResult::ListTasks`].
@@ -511,6 +516,22 @@ pub enum Command {
     /// user transaction. Answered by [`crate::CommandResult::RevertTask`] with what was undone
     /// and what was left (conflicts).
     RevertTask {
+        /// The open project.
+        project_id: ProjectId,
+        /// The task.
+        task_id: TaskId,
+    },
+    /// What [`Command::RevertTask`] would do now, without doing it (the UI lists the conflicts
+    /// before the user confirms). Answered by [`crate::CommandResult::PreviewTaskRevert`].
+    PreviewTaskRevert {
+        /// The open project.
+        project_id: ProjectId,
+        /// The task.
+        task_id: TaskId,
+    },
+    /// The items a task added or changed that still exist (its open changeset). Answered by
+    /// [`crate::CommandResult::GetTaskChanges`].
+    GetTaskChanges {
         /// The open project.
         project_id: ProjectId,
         /// The task.

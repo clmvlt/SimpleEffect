@@ -213,6 +213,7 @@ mod tests {
             status: TaskStatus::Queued,
             agent_session_id: None,
             changeset_id: None,
+            usage: se_protocol::TaskUsage::default(),
             created_at,
             updated_at: created_at,
             runs: vec![TaskRun {

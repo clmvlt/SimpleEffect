@@ -1,7 +1,8 @@
-//! AI task commands (prompts 17, 19): submit, cancel, retry, follow up, list, revert, event logs.
+//! AI task commands (prompts 17, 19, 20): submit, cancel, retry, follow up, list, revert (and its
+//! preview), the items a task changed, event logs.
 
 use se_domain::{ProjectId, TaskId};
-use se_protocol::{CommandResult, ProtocolError, SubmitTaskRequest};
+use se_protocol::{CommandResult, ProtocolError, SubmitTaskRequest, TaskScope};
 
 use super::HandlerContext;
 
@@ -40,8 +41,12 @@ pub async fn follow_up_task(
     project_id: ProjectId,
     task_id: TaskId,
     prompt: &str,
+    scope: Option<TaskScope>,
 ) -> Result<CommandResult, ProtocolError> {
-    let task = context.tasks.follow_up(project_id, task_id, prompt).await?;
+    let task = context
+        .tasks
+        .follow_up(project_id, task_id, prompt, scope)
+        .await?;
     Ok(CommandResult::FollowUpTask { task })
 }
 
@@ -62,6 +67,29 @@ pub async fn revert_task(
 ) -> Result<CommandResult, ProtocolError> {
     let report = context.tasks.revert(project_id, task_id).await?;
     Ok(CommandResult::RevertTask { report })
+}
+
+/// `previewTaskRevert`.
+pub async fn preview_task_revert(
+    context: &HandlerContext,
+    project_id: ProjectId,
+    task_id: TaskId,
+) -> Result<CommandResult, ProtocolError> {
+    let report = context.tasks.preview_revert(project_id, task_id).await?;
+    Ok(CommandResult::PreviewTaskRevert { report })
+}
+
+/// `getTaskChanges`.
+pub async fn get_task_changes(
+    context: &HandlerContext,
+    project_id: ProjectId,
+    task_id: TaskId,
+) -> Result<CommandResult, ProtocolError> {
+    let items = context.tasks.changes(project_id, task_id).await?;
+    Ok(CommandResult::GetTaskChanges {
+        changeset_id: items.changeset_id,
+        touched_items: items.touched_items,
+    })
 }
 
 /// `getTaskEvents`.

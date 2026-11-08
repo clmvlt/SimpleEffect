@@ -92,4 +92,64 @@ describe('PromptComposer', () => {
     expect(screen.queryByText('00:12 → 00:45')).not.toBeInTheDocument();
     expect(screen.getByText('Interview A')).toBeInTheDocument();
   });
+
+  it('keeps fixed chips, skips them with Backspace and shows the scope control', async () => {
+    const user = userEvent.setup();
+    const onRemoveScope = vi.fn();
+    render(
+      <PromptComposer
+        label="Demande"
+        value=""
+        onValueChange={() => undefined}
+        onSubmit={() => undefined}
+        scopes={[
+          { id: 'range', label: '00:51 → 00:54', detected: true, description: 'Lu dans le texte' },
+          { id: 'sequence', label: 'Séquence', removable: false },
+        ]}
+        onRemoveScope={onRemoveScope}
+        scopeAction={<button type="button">Portée</button>}
+        notice="Reprendre la session"
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Remove Séquence' })).not.toBeInTheDocument();
+    expect(screen.getByText('00:51 → 00:54').closest('li')).toHaveAttribute('data-detected');
+    expect(screen.getByRole('button', { name: 'Portée' })).toBeInTheDocument();
+    expect(screen.getByText('Reprendre la session')).toBeInTheDocument();
+    await user.click(getField());
+    await user.keyboard('{Backspace}');
+    expect(onRemoveScope).toHaveBeenCalledWith('range');
+  });
+
+  it('browses a history with ↑ on the first line and ↓ on the last one', async () => {
+    const user = userEvent.setup();
+    const history = ['Premier', 'Second'];
+    function HistoryHarness() {
+      const [value, setValue] = useState('');
+      const [cursor, setCursor] = useState<number | null>(null);
+      return (
+        <PromptComposer
+          label="Demande"
+          value={value}
+          onValueChange={setValue}
+          onSubmit={() => undefined}
+          onNavigateHistory={(direction) => {
+            const next =
+              direction === 'previous' ? (cursor ?? history.length) - 1 : (cursor ?? -1) + 1;
+            if (next < 0 || next >= history.length) return false;
+            setCursor(next);
+            setValue(history[next] ?? '');
+            return true;
+          }}
+        />
+      );
+    }
+    render(<HistoryHarness />);
+    await user.click(getField());
+    await user.keyboard('{ArrowUp}');
+    expect(getField()).toHaveValue('Second');
+    await user.keyboard('{ArrowUp}');
+    expect(getField()).toHaveValue('Premier');
+    await user.keyboard('{ArrowDown}');
+    expect(getField()).toHaveValue('Second');
+  });
 });

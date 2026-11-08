@@ -7,7 +7,7 @@ use std::collections::{BTreeSet, HashMap};
 use se_domain::{Actor, Changeset, ItemId, Project, TaskId, Transaction, commit, plan_revert};
 use se_protocol::{CoreEvent, TaskRevertReport};
 
-use super::{AiCommit, runner::ProjectActor};
+use super::{AiCommit, ChangesetItems, runner::ProjectActor};
 use crate::{AppError, new_ids::NewIds, ports::ChangesetWrite};
 
 /// The open changesets of a project's AI tasks, one per task at most.
@@ -135,16 +135,54 @@ impl ProjectActor {
         })
     }
 
-    /// Publishes `taskChangesetUpdated` for `task_id` (its open changeset, or none).
-    fn publish_changeset(&self, task_id: TaskId) {
-        let changeset = self.changesets.get(task_id);
-        self.deps.events.publish(CoreEvent::TaskChangesetUpdated {
-            project_id: self.project.id,
+    /// What reverting `task_id` would report now: the revert planned and committed on a copy,
+    /// which is then dropped.
+    pub(super) fn preview_revert(&self, task_id: TaskId) -> Result<TaskRevertReport, AppError> {
+        let changeset = self
+            .changesets
+            .get(task_id)
+            .ok_or(AppError::NothingToRevert { task_id })?;
+        let plan = plan_revert(&self.project, changeset);
+        let conflicts = plan.conflicts.clone();
+        if plan.ops.is_empty() {
+            return Ok(TaskRevertReport {
+                task_id,
+                reverted: false,
+                reverted_items: Vec::new(),
+                conflicts,
+            });
+        }
+        // Never journaled nor installed: committed on a copy only to know what it would touch.
+        let id = NewIds(self.deps.ids.as_ref()).transaction()?;
+        let transaction = plan.into_transaction(id, String::new());
+        let committed = commit(&self.project, &transaction)?;
+        Ok(TaskRevertReport {
             task_id,
+            reverted: true,
+            reverted_items: committed.touched.items.iter().copied().collect(),
+            conflicts,
+        })
+    }
+
+    /// The items of `task_id`'s open changeset that still exist.
+    pub(super) fn changeset_items(&self, task_id: TaskId) -> ChangesetItems {
+        let changeset = self.changesets.get(task_id);
+        ChangesetItems {
             changeset_id: changeset.map(|changeset| changeset.id),
             touched_items: changeset
                 .map(|changeset| present_items(changeset, &self.project))
                 .unwrap_or_default(),
+        }
+    }
+
+    /// Publishes `taskChangesetUpdated` for `task_id` (its open changeset, or none).
+    fn publish_changeset(&self, task_id: TaskId) {
+        let items = self.changeset_items(task_id);
+        self.deps.events.publish(CoreEvent::TaskChangesetUpdated {
+            project_id: self.project.id,
+            task_id,
+            changeset_id: items.changeset_id,
+            touched_items: items.touched_items,
         });
     }
 }

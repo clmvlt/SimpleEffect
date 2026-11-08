@@ -15,8 +15,8 @@ use se_app::{
     test_support::{MediaTestbed, ReplayScript, probed_video, settle},
 };
 use se_domain::{
-    AnimationPhase, Conflict, ItemEdge, ItemId, ItemKind, ItemPatch, Origin, Project, ProjectId,
-    SequenceId, TextItem, TextPatch, TimeRange, TrackId,
+    Actor, AnimationPhase, Conflict, ItemEdge, ItemId, ItemKind, ItemPatch, Origin, Project,
+    ProjectId, SequenceId, TextItem, TextPatch, TimeRange, TrackId,
     test_support::{example_project, millis},
 };
 use se_protocol::{
@@ -140,6 +140,17 @@ impl Bed {
     fn track(&self, index: usize) -> TrackId {
         self.tracks[index]
     }
+}
+
+/// The actors of the `projectPatched` events among `events`.
+fn patch_actors(events: &[CoreEvent]) -> Vec<Actor> {
+    events
+        .iter()
+        .filter_map(|event| match event {
+            CoreEvent::ProjectPatched(patch) => Some(patch.actor),
+            _ => None,
+        })
+        .collect()
 }
 
 fn text(start: f64, end: f64, track: Option<TrackId>) -> AgentEdit {
@@ -424,7 +435,15 @@ async fn items_the_user_changed_since_are_reported_and_the_rest_is_reverted() {
         .await
         .unwrap()
         .created[0][0];
+    bed.services.events.take();
     bed.apply(&agent, vec![move_to(SHAPE, 5.5)]).await.unwrap();
+    assert_eq!(
+        patch_actors(&bed.services.events.take()),
+        [Actor::AiTask {
+            task_id: agent.task_id
+        }],
+        "patches say which task made them"
+    );
     // The user moves the shape again.
     let v3 = bed.track(2);
     bed.services
@@ -440,17 +459,48 @@ async fn items_the_user_changed_since_are_reported_and_the_rest_is_reverted() {
         )
         .await
         .unwrap();
+    assert_eq!(patch_actors(&bed.services.events.take()), [Actor::User]);
+    let changes = bed
+        .services
+        .tasks
+        .changes(bed.project_id, agent.task_id)
+        .await
+        .unwrap();
+    let mut expected = vec![created, id(SHAPE)];
+    expected.sort();
+    assert_eq!(changes.touched_items, expected);
+    // The preview tells what the revert will do, and changes nothing.
+    let before = bed.project().await.revision;
+    let preview = bed
+        .services
+        .tasks
+        .preview_revert(bed.project_id, agent.task_id)
+        .await
+        .unwrap();
+    assert_eq!(bed.project().await.revision, before);
     let report = bed
         .services
         .tasks
         .revert(bed.project_id, agent.task_id)
         .await
         .unwrap();
-    assert!(report.reverted);
+    assert_eq!(preview.conflicts, report.conflicts);
+    assert_eq!(preview.reverted_items, report.reverted_items);
+    assert!(preview.reverted && report.reverted);
     assert!(matches!(
         report.conflicts.as_slice(),
         [Conflict::ItemChanged { item, .. }] if *item == id(SHAPE)
     ));
+    let changes = bed
+        .services
+        .tasks
+        .changes(bed.project_id, agent.task_id)
+        .await
+        .unwrap();
+    assert_eq!(
+        (changes.changeset_id, changes.touched_items.len()),
+        (None, 0)
+    );
     let project = bed.project().await;
     assert!(find(&project, created).is_none(), "the task's text is gone");
     assert_eq!(

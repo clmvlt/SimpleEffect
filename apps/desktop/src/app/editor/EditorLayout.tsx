@@ -13,7 +13,7 @@ import {
 } from '@se/ui';
 import { useTranslation } from 'react-i18next';
 
-import { AiView } from '../../features/ai';
+import { AiView, useAiTaskSync } from '../../features/ai';
 import { AnimationsPanel, useCreateGraphic } from '../../features/graphics';
 import { InspectorView } from '../../features/inspector';
 import { MediaBinPanel } from '../../features/media-bin';
@@ -29,12 +29,13 @@ export interface EditorLayoutProps {
 
 /**
  * The editor layout: media on the left, viewer in the centre, inspector and AI as tabs on the
- * right, timeline at the bottom. Every boundary is resizable (pointer or keyboard) and the sizes
+ * right, timeline at the bottom; it keeps the project's AI tasks in sync (`useAiTaskSync`). Every boundary is resizable (pointer or keyboard) and the sizes
  * come back on the next start. Layout ids are stable: renaming one resets users' sizes.
  */
 export function EditorLayout({ layoutStorage }: EditorLayoutProps) {
   const { t } = useTranslation();
   const creator = useCreateGraphic();
+  useAiTaskSync();
   return (
     <div className="min-h-0 flex-1">
       <Dock layoutId="editor.rows" orientation="vertical" storage={layoutStorage}>

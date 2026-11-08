@@ -195,6 +195,7 @@ mod tests {
             status: TaskStatus::Queued,
             agent_session_id: None,
             changeset_id: None,
+            usage: se_protocol::TaskUsage::default(),
             created_at: 0,
             updated_at: 0,
             runs: Vec::new(),

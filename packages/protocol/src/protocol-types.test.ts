@@ -80,6 +80,8 @@ describe('derived protocol types', () => {
       | 'followUpTask'
       | 'listTasks'
       | 'revertTask'
+      | 'previewTaskRevert'
+      | 'getTaskChanges'
       | 'getTaskEvents'
       | 'getAiStatus'
       | 'refreshAiStatus'

@@ -50,6 +50,8 @@ function renderPanel(assets: Asset[], bridge: Partial<SimpleEffectBridge> = {}) 
     chooseFiles: () => Promise.resolve([]),
     showInFolder: () => Promise.resolve(),
     getPathForFile: () => '',
+    showNotification: () => Promise.resolve(),
+    onNotificationClick: () => () => undefined,
     chooseFile: () => Promise.resolve(null),
     openExternal: () => Promise.resolve(),
     ...bridge,

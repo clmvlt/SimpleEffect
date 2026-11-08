@@ -3,6 +3,7 @@ import { ClipBadge, ClipShell, cn } from '@se/ui';
 import { Diamond } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
+import { showTask, useItemPulse, useTaskNumber } from '../../../shared/ai-tasks';
 import { useAssetSilences } from '../hooks/use-asset-silences';
 import { mediaClipOf, silencesInItem } from '../services/audio-edits';
 import type { ItemBox } from '../services/item-geometry';
@@ -55,7 +56,8 @@ function sourceOf(item: ItemEntity) {
 
 /**
  * One item in a lane: a `ClipShell` positioned on its visible part, with its thumbnails or
- * waveform, its name, the AI badge when an AI task made it, trim handles on its edges and, for
+ * waveform, its name, the AI badge when an AI task made it (a click shows the task), a brief glow
+ * when an AI patch just changed it, trim handles on its edges and, for
  * media clips, its fades, volume line and silences (`ClipOverlay`). The lanes handle the pointer
  * (`data-item-id`, `data-trim-edge`, `data-fade-handle`, `data-volume-*`).
  */
@@ -92,6 +94,7 @@ export function TimelineItem({
   };
   const trimmable = editable && box.width >= MIN_TRIM_WIDTH;
   const animated = trackKind === 'video' && animatedProperties(item.kind).length > 0;
+  const pulse = useItemPulse(item.id);
   return (
     <div
       role="option"
@@ -106,14 +109,7 @@ export function TimelineItem({
         label={label}
         selected={selected}
         dimmed={dimmed}
-        badges={
-          isAiMade(item) ? (
-            <ClipBadge
-              label={t('editor.timeline.items.aiBadge')}
-              description={t('editor.timeline.items.aiDescription')}
-            />
-          ) : undefined
-        }
+        badges={isAiMade(item) ? <AiOriginBadge item={item} /> : undefined}
       >
         {asset !== null && display.picture === 'thumbnails' && (
           <ThumbnailStrip asset={asset} {...picture} height={height - 2} />
@@ -155,9 +151,46 @@ export function TimelineItem({
           <Diamond className="size-2.5" />
         </button>
       )}
+      {pulse !== undefined && (
+        <span
+          key={pulse}
+          aria-hidden
+          data-ai-pulse=""
+          className="pointer-events-none absolute inset-0 z-10 rounded-sm animate-ai-pulse"
+        />
+      )}
       {trimmable && box.startVisible && <TrimHandle edge="start" />}
       {trimmable && box.endVisible && <TrimHandle edge="end" />}
     </div>
+  );
+}
+
+/** The « IA » badge of an item an AI task made: « Créé par la tâche #3 — voir » shows the task. */
+function AiOriginBadge({ item }: { readonly item: ItemEntity }) {
+  const { t } = useTranslation();
+  const taskId = item.origin.kind === 'aiTask' ? item.origin.taskId : null;
+  const number = useTaskNumber(taskId);
+  const description =
+    number === undefined
+      ? t('editor.timeline.items.aiDescription')
+      : t('editor.timeline.items.aiOrigin', { number });
+  if (taskId === null || number === undefined) {
+    return <ClipBadge label={t('editor.timeline.items.aiBadge')} description={description} />;
+  }
+  return (
+    <button
+      type="button"
+      data-ai-origin={taskId}
+      className="relative z-20 shrink-0 rounded-xs"
+      onPointerDown={(event) => {
+        event.stopPropagation();
+      }}
+      onClick={() => {
+        showTask(taskId);
+      }}
+    >
+      <ClipBadge label={t('editor.timeline.items.aiBadge')} description={description} />
+    </button>
   );
 }
 
