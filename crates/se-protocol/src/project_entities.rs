@@ -6,7 +6,7 @@
 //! re-implements an operation. se-app builds these DTOs from the document.
 
 use se_domain::{
-    Asset, BrandKit, Format, Item, ItemId, Marker, MarkerId, MotionTemplate, ProjectId,
+    Actor, Asset, BrandKit, Format, Item, ItemId, Marker, MarkerId, MotionTemplate, ProjectId,
     ProjectSettings, SequenceId, TrackId, TrackKind, Transition,
 };
 use serde::{Deserialize, Serialize};
@@ -131,6 +131,8 @@ pub struct ProjectPatch {
     /// Revision after the commit. A client whose revision is not `revision − 1` missed a patch
     /// and must reload the snapshot (`getProjectSnapshot`).
     pub revision: u64,
+    /// Who made the commit: the user (edits, undo, redo, reverts), an AI task, or the app.
+    pub actor: Actor,
     /// Entities added or changed.
     pub upserts: EntityUpserts,
     /// Entities removed.
@@ -214,6 +216,7 @@ mod tests {
         let patch = ProjectPatch {
             project_id: example_project().id,
             revision: 7,
+            actor: Actor::User,
             upserts: EntityUpserts::default(),
             deletes: EntityDeletes::default(),
         };

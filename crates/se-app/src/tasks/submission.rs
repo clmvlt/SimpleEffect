@@ -90,23 +90,30 @@ impl TaskService {
     /// [`AppError::TaskStillActive`], [`AppError::AiUnavailable`] and those of
     /// [`TaskService::cancel`].
     pub async fn retry(&self, project_id: ProjectId, task_id: TaskId) -> Result<Task, AppError> {
-        self.queue_new_run(project_id, task_id, RunKind::Retry, None)
+        self.queue_new_run(project_id, task_id, RunKind::Retry, None, None)
             .await
     }
 
-    /// Sends a new prompt to a finished task's agent, resuming its session.
+    /// Sends a new prompt to a finished task's agent, resuming its session. A new `scope` (on the
+    /// task's sequence) replaces the task's for this run and the next ones.
     ///
     /// # Errors
     /// [`AppError::TaskNotResumable`] when the task has no session or its provider cannot resume;
-    /// [`AppError::InvalidTask`] for an empty prompt; those of [`TaskService::retry`].
+    /// [`AppError::InvalidTask`] for an empty prompt or a scope outside the project or on another
+    /// sequence; those of [`TaskService::retry`].
     pub async fn follow_up(
         &self,
         project_id: ProjectId,
         task_id: TaskId,
         prompt: &str,
+        scope: Option<TaskScope>,
     ) -> Result<Task, AppError> {
         let prompt = checked_prompt(prompt)?;
-        self.queue_new_run(project_id, task_id, RunKind::FollowUp, Some(prompt))
+        if let Some(scope) = &scope {
+            let handle = self.shared.handle(project_id).await?;
+            check_scope(&handle.view().await?.project, scope)?;
+        }
+        self.queue_new_run(project_id, task_id, RunKind::FollowUp, Some(prompt), scope)
             .await
     }
 
@@ -116,10 +123,20 @@ impl TaskService {
         task_id: TaskId,
         run_kind: RunKind,
         prompt: Option<String>,
+        scope: Option<TaskScope>,
     ) -> Result<Task, AppError> {
         let provider = {
             let mut state = self.shared.state.lock().await;
             let task = state.project_mut(project_id)?.task_mut(task_id)?;
+            if let Some(scope) = &scope
+                && scope.sequence_id != task.scope.sequence_id
+            {
+                return Err(AppError::InvalidTask {
+                    reason: "a follow-up keeps its task's sequence: submit a new task to work on \
+                             another sequence"
+                        .to_owned(),
+                });
+            }
             task.provider.clone()
         };
         self.shared.ensure_usable(&provider).await?;
@@ -140,6 +157,9 @@ impl TaskService {
                 .last()
                 .map_or_else(|| task.prompt.clone(), |run| run.prompt.clone()),
         };
+        if let Some(scope) = scope {
+            task.scope = scope;
+        }
         task_state::queue_run(task, run_kind, prompt, now);
         let task = task.clone();
         project.handle.tasks().save_task(&task).await?;

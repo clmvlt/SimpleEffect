@@ -8,6 +8,7 @@ import type { TaskId } from "./TaskId";
 import type { TaskRun } from "./TaskRun";
 import type { TaskScope } from "./TaskScope";
 import type { TaskStatus } from "./TaskStatus";
+import type { TaskUsage } from "./TaskUsage";
 
 /**
  * An AI task as clients see it (its events come apart: `getTaskEvents`, `taskEventAppended`).
@@ -65,4 +66,8 @@ runs: Array<TaskRun>,
  * The changeset holding its edits since it started or was last reverted (`null` while it
  * changed nothing). Created by its first edit (prompt 19).
  */
-changesetId: ChangesetId | null, };
+changesetId: ChangesetId | null, 
+/**
+ * What its runs consumed in all (`usage` events added up; zero in older rows).
+ */
+usage: TaskUsage, };

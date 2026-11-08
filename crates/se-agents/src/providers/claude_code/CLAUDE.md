@@ -51,7 +51,7 @@ Kept: the last row (+ `--strict-mcp-config`, `--tools ""`). Excluded: `--safe-mo
 | Line | Events |
 |---|---|
 | `{"type":"system","subtype":"init","session_id","model",…}` | `SessionStarted` (once per session id) |
-| `{"type":"assistant","message":{"content":[…]}}` | `text` blocks → `AssistantText` (blank ones skipped); `tool_use` → `ToolCallStarted { call_id: id, tool: name, input_summary }`; `thinking` and others ignored |
+| `{"type":"assistant","message":{"content":[…]}}` | `text` blocks → `AssistantText` (blank ones skipped); `tool_use` → `ToolCallStarted { call_id: id, tool: name without the `mcp__simpleeffect__` prefix (our tools by their own name, e.g. `add_text`), input_summary }`; `thinking` and others ignored |
 | `{"type":"user","message":{"content":[{"type":"tool_result",…}]}}` | `ToolCallFinished { call_id: tool_use_id, tool (remembered), ok: !is_error, output_summary }` |
 | `{"type":"result",…}` | `Usage { input_tokens (+ cache creation + cache read), output_tokens, cost_usd: total_cost_usd, duration_ms }`, then `Completed { summary: result }` when `subtype == "success"` and not `is_error`, else `Failed` classified from `result` / `errors` / `subtype` |
 | anything else (`stream_event`, `rate_limit_event`, other `system` subtypes…) | ignored (debug log) |

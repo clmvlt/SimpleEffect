@@ -190,7 +190,7 @@ async fn a_recorded_mcp_run_streams_its_tool_calls_through_the_process() {
             _ => None,
         })
         .collect();
-    assert_eq!(tools, ["mcp__simpleeffect__get_timeline"]);
+    assert_eq!(tools, ["get_timeline"]);
     assert!(matches!(events.last(), Some(AgentEvent::Completed { .. })));
     let arguments = std::fs::read_to_string(fake.file("args.txt")).unwrap();
     assert!(arguments.contains("--mcp-config"), "{arguments}");

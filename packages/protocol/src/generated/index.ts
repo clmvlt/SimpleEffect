@@ -1,5 +1,6 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
+export type * from './Actor';
 export type * from './AddGraphicRequest';
 export type * from './AgentEvent';
 export type * from './AgentFailureKind';
@@ -148,6 +149,7 @@ export type * from './TaskRevertReport';
 export type * from './TaskRun';
 export type * from './TaskScope';
 export type * from './TaskStatus';
+export type * from './TaskUsage';
 export type * from './TemplateId';
 export type * from './TemplateItem';
 export type * from './TemplateParamValue';

@@ -32,6 +32,7 @@ import type { RelinkAssetRequest } from "./RelinkAssetRequest";
 import type { SequenceId } from "./SequenceId";
 import type { SubmitTaskRequest } from "./SubmitTaskRequest";
 import type { TaskId } from "./TaskId";
+import type { TaskScope } from "./TaskScope";
 import type { TrackId } from "./TrackId";
 import type { TrackKind } from "./TrackKind";
 import type { TrackPatch } from "./TrackPatch";
@@ -496,11 +497,32 @@ taskId: TaskId,
 /**
  * What the agent must do next.
  */
-prompt: string, } | { "kind": "listTasks", 
+prompt: string, 
+/**
+ * A new scope for this run and the next ones, on the task's sequence (« Refaire avec
+ * l'IA » widens it to an item moved since); omitted to keep the task's scope.
+ */
+scope?: TaskScope, } | { "kind": "listTasks", 
 /**
  * The open project.
  */
 projectId: ProjectId, } | { "kind": "revertTask", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The task.
+ */
+taskId: TaskId, } | { "kind": "previewTaskRevert", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The task.
+ */
+taskId: TaskId, } | { "kind": "getTaskChanges", 
 /**
  * The open project.
  */

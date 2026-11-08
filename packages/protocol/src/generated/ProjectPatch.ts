@@ -1,5 +1,6 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
+import type { Actor } from "./Actor";
 import type { EntityDeletes } from "./EntityDeletes";
 import type { EntityUpserts } from "./EntityUpserts";
 import type { ProjectId } from "./ProjectId";
@@ -18,6 +19,10 @@ projectId: ProjectId,
  * and must reload the snapshot (`getProjectSnapshot`).
  */
 revision: number, 
+/**
+ * Who made the commit: the user (edits, undo, redo, reverts), an AI task, or the app.
+ */
+actor: Actor, 
 /**
  * Entities added or changed.
  */

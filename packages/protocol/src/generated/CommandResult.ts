@@ -3,6 +3,7 @@
 import type { AiSettings } from "./AiSettings";
 import type { AiStatus } from "./AiStatus";
 import type { AnimationPresetInfo } from "./AnimationPresetInfo";
+import type { ChangesetId } from "./ChangesetId";
 import type { CoreInfo } from "./CoreInfo";
 import type { FontFamily } from "./FontFamily";
 import type { ImportReport } from "./ImportReport";
@@ -134,7 +135,19 @@ tasks: Array<Task>, } | { "kind": "revertTask",
 /**
  * What was undone and what was left.
  */
-report: TaskRevertReport, } | { "kind": "getTaskEvents", 
+report: TaskRevertReport, } | { "kind": "previewTaskRevert", 
+/**
+ * What would be undone and what would be left.
+ */
+report: TaskRevertReport, } | { "kind": "getTaskChanges", 
+/**
+ * The task's open changeset (`null` while it changed nothing or once reverted).
+ */
+changesetId: ChangesetId | null, 
+/**
+ * The items it added or changed that still exist, in id order.
+ */
+touchedItems: Array<ItemId>, } | { "kind": "getTaskEvents", 
 /**
  * The task's log, in order.
  */

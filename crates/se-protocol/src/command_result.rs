@@ -1,6 +1,8 @@
 //! Successful results of commands.
 
-use se_domain::{ItemId, LinkGroupId, MarkerId, SequenceId, TimeRange, TrackId, TransitionId};
+use se_domain::{
+    ChangesetId, ItemId, LinkGroupId, MarkerId, SequenceId, TimeRange, TrackId, TransitionId,
+};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -230,6 +232,19 @@ pub enum CommandResult {
         /// What was undone and what was left.
         report: TaskRevertReport,
     },
+    /// Answer to [`crate::Command::PreviewTaskRevert`]: the report a revert would give now
+    /// (`reverted` says whether anything would be undone). Nothing changed.
+    PreviewTaskRevert {
+        /// What would be undone and what would be left.
+        report: TaskRevertReport,
+    },
+    /// Answer to [`crate::Command::GetTaskChanges`].
+    GetTaskChanges {
+        /// The task's open changeset (`null` while it changed nothing or once reverted).
+        changeset_id: Option<ChangesetId>,
+        /// The items it added or changed that still exist, in id order.
+        touched_items: Vec<ItemId>,
+    },
     /// Answer to [`crate::Command::GetTaskEvents`].
     GetTaskEvents {
         /// The task's log, in order.
@@ -307,6 +322,18 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&result).unwrap(),
             r#"{"kind":"createSequence","sequenceId":"00000000-0002-7000-8000-000000000000"}"#
+        );
+    }
+
+    #[test]
+    fn task_changes_list_their_items() {
+        let result = CommandResult::GetTaskChanges {
+            changeset_id: None,
+            touched_items: vec![ItemId::from_test_index(3)],
+        };
+        assert_eq!(
+            serde_json::to_string(&result).unwrap(),
+            r#"{"kind":"getTaskChanges","changesetId":null,"touchedItems":["00000000-0003-7000-8000-000000000000"]}"#
         );
     }
 

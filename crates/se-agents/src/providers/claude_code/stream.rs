@@ -13,13 +13,14 @@ use std::collections::HashMap;
 use se_protocol::{AgentEvent, AgentFailureKind};
 use serde_json::Value;
 
-use super::failure;
+use super::{arguments::MCP_SERVER_NAME, failure};
 
 /// `message.model` of the messages the CLI writes itself instead of the model.
 const SYNTHETIC_MODEL: &str = "<synthetic>";
 
-/// Characters kept of a tool call's input or output.
-const SUMMARY_CHARS: usize = 300;
+/// Characters kept of a tool call's input or output (inputs of write tools fit whole: the task
+/// log shows them as compact lines and fixtures are recorded from it).
+const SUMMARY_CHARS: usize = 1000;
 
 /// Parses the lines of one run, in order.
 #[derive(Debug, Default)]
@@ -97,7 +98,7 @@ impl StreamParser {
                 }
                 "tool_use" => {
                     let call_id = block["id"].as_str().unwrap_or_default().to_owned();
-                    let tool = block["name"].as_str().unwrap_or_default().to_owned();
+                    let tool = tool_name(block["name"].as_str().unwrap_or_default());
                     self.tool_names.insert(call_id.clone(), tool.clone());
                     events.push(AgentEvent::ToolCallStarted {
                         call_id,
@@ -202,6 +203,16 @@ fn result_text(content: &Value) -> String {
     }
 }
 
+/// The name events report for a tool the CLI calls `name`: our MCP tools by their own name
+/// (`mcp__simpleeffect__add_text` → `add_text`), so no other code knows the CLI's naming.
+fn tool_name(name: &str) -> String {
+    name.strip_prefix("mcp__")
+        .and_then(|rest| rest.strip_prefix(MCP_SERVER_NAME))
+        .and_then(|rest| rest.strip_prefix("__"))
+        .unwrap_or(name)
+        .to_owned()
+}
+
 /// `text` shortened to [`SUMMARY_CHARS`] characters, with an ellipsis when cut.
 fn summarize(text: &str) -> String {
     match text.char_indices().nth(SUMMARY_CHARS) {
@@ -264,12 +275,12 @@ mod tests {
                 },
                 AgentEvent::ToolCallStarted {
                     call_id: "toolu_1".to_owned(),
-                    tool: "mcp__simpleeffect__get_timeline".to_owned(),
+                    tool: "get_timeline".to_owned(),
                     input_summary: r#"{"sequence":"s"}"#.to_owned(),
                 },
                 AgentEvent::ToolCallFinished {
                     call_id: "toolu_1".to_owned(),
-                    tool: "mcp__simpleeffect__get_timeline".to_owned(),
+                    tool: "get_timeline".to_owned(),
                     ok: false,
                     output_summary: "OUT_OF_SCOPE\n[image]".to_owned(),
                 },
@@ -365,8 +376,15 @@ mod tests {
     }
 
     #[test]
+    fn our_mcp_tools_are_reported_by_their_own_name() {
+        assert_eq!(tool_name("mcp__simpleeffect__add_text"), "add_text");
+        assert_eq!(tool_name("mcp__other__add_text"), "mcp__other__add_text");
+        assert_eq!(tool_name("Bash"), "Bash");
+    }
+
+    #[test]
     fn long_summaries_are_cut_on_a_character_boundary() {
-        let text = "é".repeat(400);
+        let text = "é".repeat(SUMMARY_CHARS + 100);
         let summary = summarize(&text);
         assert_eq!(summary.chars().count(), SUMMARY_CHARS + 1);
         assert!(summary.ends_with('…'));
@@ -434,7 +452,7 @@ mod tests {
         else {
             panic!("expected the tool call, got {:?}", events[1]);
         };
-        assert_eq!(tool, "mcp__simpleeffect__get_timeline");
+        assert_eq!(tool, "get_timeline");
         assert!(input_summary.contains("range"), "{input_summary}");
         let AgentEvent::ToolCallFinished {
             call_id: finished,

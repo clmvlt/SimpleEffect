@@ -111,6 +111,12 @@ impl ProjectActor {
             Message::Changeset { task_id, reply } => {
                 let _ = reply.send(self.changesets.get(task_id).cloned());
             }
+            Message::PreviewRevert { task_id, reply } => {
+                let _ = reply.send(self.preview_revert(task_id));
+            }
+            Message::ChangesetItems { task_id, reply } => {
+                let _ = reply.send(self.changeset_items(task_id));
+            }
             Message::Snapshot { reply } => {
                 let _ = reply.send(ProjectView {
                     project: Arc::clone(&self.project),
@@ -185,7 +191,8 @@ impl ProjectActor {
     /// Makes a journaled commit the current state, announces it and schedules the snapshot.
     pub(super) fn install(&mut self, committed: Committed) -> u64 {
         let before = std::mem::replace(&mut self.project, Arc::new(committed.project));
-        let patch = project_patch(&before, &self.project, &committed.touched);
+        let actor = committed.inverse.actor;
+        let patch = project_patch(&before, &self.project, &committed.touched, actor);
         self.deps.events.publish(CoreEvent::ProjectPatched(patch));
         self.deps
             .events

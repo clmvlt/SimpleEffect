@@ -14,7 +14,7 @@ use se_protocol::EffortLevel;
 pub(super) const INSTRUCTIONS_FILE: &str = ".simpleeffect-instructions.md";
 
 /// Name of the MCP server in the CLI (tools become `mcp__simpleeffect__<tool>`).
-const MCP_SERVER_NAME: &str = "simpleeffect";
+pub(super) const MCP_SERVER_NAME: &str = "simpleeffect";
 
 /// Arguments of `claude --version`.
 pub(super) const VERSION_ARGUMENTS: &[&str] = &["--version"];

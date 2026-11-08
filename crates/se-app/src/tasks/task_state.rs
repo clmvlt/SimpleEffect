@@ -3,6 +3,7 @@
 
 use se_protocol::{
     AgentFailureKind, EffortLevel, ProviderId, RunKind, Task, TaskRun, TaskScope, TaskStatus,
+    TaskUsage,
 };
 
 use se_domain::{ProjectId, TaskId};
@@ -41,6 +42,7 @@ pub(super) fn new_task(new: NewTask, now: i64) -> Task {
         status: TaskStatus::Queued,
         agent_session_id: None,
         changeset_id: None,
+        usage: TaskUsage::default(),
         created_at: now,
         updated_at: now,
         runs: vec![run],
@@ -134,6 +136,24 @@ fn queued_run(run_kind: RunKind, prompt: String, now: i64) -> TaskRun {
     }
 }
 
+/// `usage` plus one run's `usage` event (costs add up when reported; a run without a cost keeps
+/// the total).
+pub(super) fn add_usage(
+    usage: TaskUsage,
+    input_tokens: u64,
+    output_tokens: u64,
+    cost_usd: Option<f64>,
+) -> TaskUsage {
+    TaskUsage {
+        input_tokens: usage.input_tokens.saturating_add(input_tokens),
+        output_tokens: usage.output_tokens.saturating_add(output_tokens),
+        cost_usd: match (usage.cost_usd, cost_usd) {
+            (Some(total), Some(cost)) => Some(total + cost),
+            (total, cost) => total.or(cost),
+        },
+    }
+}
+
 /// Sets the status of the task and of its latest run (always equal).
 fn set_status(task: &mut Task, status: TaskStatus, now: i64) {
     if let Some(run) = task.runs.last_mut() {
@@ -166,6 +186,18 @@ mod tests {
             },
             10,
         )
+    }
+
+    #[test]
+    fn usage_adds_up_over_runs() {
+        let first = add_usage(TaskUsage::default(), 1000, 50, None);
+        assert_eq!(first.cost_usd, None);
+        let second = add_usage(first, 500, 20, Some(0.25));
+        let third = add_usage(second, 10, 5, Some(0.5));
+        assert_eq!(
+            (third.input_tokens, third.output_tokens, third.cost_usd),
+            (1510, 75, Some(0.75))
+        );
     }
 
     #[test]

@@ -310,12 +310,21 @@ impl RpcRouter {
                 project_id,
                 task_id,
                 prompt,
-            } => tasks::follow_up_task(context, *project_id, *task_id, prompt).await,
+                scope,
+            } => tasks::follow_up_task(context, *project_id, *task_id, prompt, scope.clone()).await,
             Command::ListTasks { project_id } => tasks::list_tasks(context, *project_id).await,
             Command::RevertTask {
                 project_id,
                 task_id,
             } => tasks::revert_task(context, *project_id, *task_id).await,
+            Command::PreviewTaskRevert {
+                project_id,
+                task_id,
+            } => tasks::preview_task_revert(context, *project_id, *task_id).await,
+            Command::GetTaskChanges {
+                project_id,
+                task_id,
+            } => tasks::get_task_changes(context, *project_id, *task_id).await,
             Command::GetTaskEvents {
                 project_id,
                 task_id,
