@@ -82,6 +82,7 @@ const idleBridge: SimpleEffectBridge = {
   chooseFolder: () => Promise.resolve(null),
   chooseFiles: () => Promise.resolve([]),
   chooseFile: () => Promise.resolve(null),
+  chooseSaveFile: () => Promise.resolve(null),
   openExternal: () => Promise.resolve(),
   showInFolder: () => Promise.resolve(),
   getPathForFile: () => '',

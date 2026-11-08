@@ -885,6 +885,95 @@
         "shake": "Secousse",
         "pulse": "Pulsation"
       }
+    },
+    "captions": {
+      "title": "Sous-titres",
+      "noSequence": "Ouvrez une séquence pour voir ses sous-titres.",
+      "trackName": "Sous-titres",
+      "tools": {
+        "label": "Vue",
+        "list": "Sous-titres",
+        "style": "Style"
+      },
+      "empty": {
+        "title": "Aucun sous-titre",
+        "description": "Générez-les depuis la transcription, ou importez un fichier SRT."
+      },
+      "generationStyle": "Style des nouveaux sous-titres",
+      "generate": "Générer",
+      "regenerate": "Régénérer",
+      "generateAll": "Sous-titrer toute la séquence depuis la transcription",
+      "generateSpan": "Sous-titrer la plage entrée/sortie (les sous-titres qu’elle touche sont remplacés)",
+      "made_one": "{{count}} sous-titre créé",
+      "made_other": "{{count}} sous-titres créés",
+      "nothingSpoken": "Aucune parole à sous-titrer ici.",
+      "untranscribed": "Aucun mot transcrit ici : transcrivez d’abord les médias (onglet Transcription).",
+      "import": {
+        "title": "Importer un fichier SRT…",
+        "button": "Importer"
+      },
+      "export": {
+        "title": "Exporter en SRT…",
+        "button": "Exporter"
+      },
+      "exported_one": "{{count}} sous-titre exporté",
+      "exported_other": "{{count}} sous-titres exportés",
+      "srtFilter": "Sous-titres SRT",
+      "allFiles": "Tous les fichiers",
+      "shift": {
+        "title": "Décaler tous les sous-titres…",
+        "label": "Décalage en secondes (négatif : plus tôt)",
+        "placeholder": "-0,5",
+        "apply": "Décaler"
+      },
+      "textLabel": "Texte du sous-titre",
+      "editText": "Modifier le texte",
+      "emphasize": "Mettre ce mot en avant",
+      "unemphasize": "Retirer la mise en avant",
+      "scope": {
+        "label": "Appliquer à",
+        "selection": "Sélection",
+        "track": "Toute la piste",
+        "count_one": "{{count}} sous-titre concerné",
+        "count_other": "{{count}} sous-titres concernés"
+      },
+      "presetsLabel": "Styles prédéfinis",
+      "presets": {
+        "tiktokBold": "TikTok gras",
+        "minimal": "Minimal",
+        "karaoke": "Karaoké",
+        "box": "Boîte"
+      },
+      "animations": {
+        "none": "Aucune",
+        "wordHighlight": "Mot surligné",
+        "popPerWord": "Pop par mot",
+        "boxPerLine": "Boîte par ligne",
+        "revealPerWord": "Apparition mot à mot"
+      },
+      "style": {
+        "text": "Texte",
+        "font": "Police",
+        "size": "Taille",
+        "pixels": "px",
+        "weight": "Graisse",
+        "uppercase": "Majuscules",
+        "colors": "Couleurs",
+        "textColor": "Texte",
+        "activeColor": "Mot prononcé",
+        "emphasisColor": "Mots mis en avant",
+        "effects": "Animation et effets",
+        "animation": "Animation",
+        "highlightSpoken": "Garder les mots prononcés colorés",
+        "outline": "Contour",
+        "shadow": "Ombre",
+        "background": "Boîte",
+        "backgroundColor": "Couleur de la boîte",
+        "layout": "Disposition",
+        "positionY": "Position verticale",
+        "maxChars": "Caractères par ligne",
+        "maxLines": "Lignes"
+      }
     }
   },
   "statusBar": {

@@ -5,6 +5,7 @@ import type { CoreSupervisor } from './core-supervisor';
 import {
   parseChooseFileOptions,
   parseChooseFilesOptions,
+  parseChooseSaveFileOptions,
   parseChooseFolderOptions,
   parseExternalUrl,
   parseNotification,
@@ -64,6 +65,23 @@ export function registerIpcHandlers(supervisor: CoreSupervisor): void {
         ? await dialog.showOpenDialog(dialogOptions)
         : await dialog.showOpenDialog(window, dialogOptions);
     return result.canceled ? null : (result.filePaths[0] ?? null);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.chooseSaveFile, async (event, value: unknown) => {
+    const options = parseChooseSaveFileOptions(value);
+    const dialogOptions: Electron.SaveDialogOptions = {
+      title: options.title,
+      buttonLabel: options.buttonLabel,
+      defaultPath: options.defaultName,
+      filters: [{ name: options.filterName, extensions: [...options.extensions] }],
+      properties: ['showOverwriteConfirmation'],
+    };
+    const window = BrowserWindow.fromWebContents(event.sender);
+    const result =
+      window === null
+        ? await dialog.showSaveDialog(dialogOptions)
+        : await dialog.showSaveDialog(window, dialogOptions);
+    return result.canceled || result.filePath === '' ? null : result.filePath;
   });
 
   ipcMain.handle(IPC_CHANNELS.openExternal, async (_event, value: unknown) => {

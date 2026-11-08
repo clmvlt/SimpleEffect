@@ -16,6 +16,7 @@ import { frameDuration } from '../../../shared/time';
 import { graphicsApi } from '../../graphics';
 import { clearSelection, playheadStore, playheadTimeOf, selectItems } from '../../timeline';
 import { hitTest, type PlacedLayer, type SnapGuides } from '../services/gizmo-geometry';
+import { useCaptionDrag } from './use-caption-drag';
 import {
   gestureStep,
   stepAnimations,
@@ -75,6 +76,11 @@ export function useGizmoPointer(input: GizmoPointerInput): GizmoPointer {
   const stopEscape = useRef<(() => void) | null>(null);
   const [guides, setGuides] = useState<SnapGuides>({ x: [], y: [] });
   const { sequence, layers, displayScale } = input;
+  const captionDrag = useCaptionDrag(sequence);
+  /** Where a caption drag started, and whether it moved beyond a click. */
+  const captionPress = useRef<{ start: Vec2; moved: boolean } | null>(null);
+  const snapOf = (event: { ctrlKey: boolean; metaKey: boolean }) =>
+    event.ctrlKey || event.metaKey ? 0 : SNAP_PIXELS / displayScale;
   const frame = sequence.format;
   const framePoint = (event: { clientX: number; clientY: number; currentTarget: Element }) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -100,6 +106,7 @@ export function useGizmoPointer(input: GizmoPointerInput): GizmoPointer {
   };
   const end = () => {
     gesture.current = null;
+    captionPress.current = null;
     stopEscape.current?.();
     stopEscape.current = null;
     setGuides({ x: [], y: [] });
@@ -110,6 +117,7 @@ export function useGizmoPointer(input: GizmoPointerInput): GizmoPointer {
       if (key.key !== 'Escape') return;
       end();
       clearPropertyPreview();
+      captionDrag.end(null, 0);
     };
     window.addEventListener('keydown', onKey);
     stopEscape.current = () => {
@@ -136,6 +144,13 @@ export function useGizmoPointer(input: GizmoPointerInput): GizmoPointer {
         if (event.shiftKey) ids = ids.includes(hit) ? ids : [...ids, hit];
         else if (!ids.includes(hit)) ids = [hit];
         if (ids !== input.selected) selectItems(ids);
+        // Captions have no transform: dragging one moves its style's position.
+        if (captionDrag.start(hit, ids, point)) {
+          captionPress.current = { start: point, moved: false };
+          listenForEscape();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          return;
+        }
         // The item under the pointer leads (snapping).
         ids = [hit, ...ids.filter((id) => id !== hit)];
       }
@@ -151,6 +166,15 @@ export function useGizmoPointer(input: GizmoPointerInput): GizmoPointer {
       event.currentTarget.setPointerCapture(event.pointerId);
     },
     onPointerMove: (event) => {
+      const press = captionPress.current;
+      if (press !== null) {
+        const point = framePoint(event);
+        const travel = Math.hypot(point.x - press.start.x, point.y - press.start.y);
+        if (!press.moved && travel * displayScale < CLICK_PIXELS) return;
+        press.moved = true;
+        setGuides(captionDrag.move(point, snapOf(event)));
+        return;
+      }
       const current = gesture.current;
       if (current === null) return;
       const point = framePoint(event);
@@ -164,6 +188,12 @@ export function useGizmoPointer(input: GizmoPointerInput): GizmoPointer {
       previewAnimations(result.changes);
     },
     onPointerUp: (event) => {
+      const press = captionPress.current;
+      if (press !== null) {
+        captionDrag.end(press.moved ? framePoint(event) : null, snapOf(event));
+        end();
+        return;
+      }
       const current = gesture.current;
       if (current === null) return;
       const result = current.moved ? animationsAt(event) : null;

@@ -45,6 +45,20 @@ export interface ChooseFileOptions {
   readonly buttonLabel: string;
 }
 
+/** Options of {@link SimpleEffectBridge.chooseSaveFile}. */
+export interface ChooseSaveFileOptions {
+  /** Window title of the native dialog (translated by the renderer). */
+  readonly title: string;
+  /** Label of the confirm button (translated by the renderer). */
+  readonly buttonLabel: string;
+  /** File name proposed (no folder), e.g. `Interview.srt`. */
+  readonly defaultName: string;
+  /** Name of the file type filter (translated), e.g. « Sous-titres SRT ». */
+  readonly filterName: string;
+  /** Extensions of the filter, without dots (`srt`). */
+  readonly extensions: readonly string[];
+}
+
 /** API exposed by the preload script as `window.simpleEffect`. */
 /** A notification of the operating system (an AI task finished while the window was hidden). */
 export interface SystemNotification {
@@ -75,6 +89,11 @@ export interface SimpleEffectBridge {
    */
   chooseFile(options: ChooseFileOptions): Promise<string | null>;
   /**
+   * Shows the native « save as » dialog; resolves with the absolute path chosen (the OS asked
+   * about replacing an existing file), or `null` if cancelled.
+   */
+  chooseSaveFile(options: ChooseSaveFileOptions): Promise<string | null>;
+  /**
    * Opens an `https:` page in the user's default browser (installation guides). Other URLs are
    * refused by the main process.
    */
@@ -101,6 +120,7 @@ export const IPC_CHANNELS = {
   chooseFolder: 'dialog:choose-folder',
   chooseFiles: 'dialog:choose-files',
   chooseFile: 'dialog:choose-file',
+  chooseSaveFile: 'dialog:choose-save-file',
   openExternal: 'shell:open-external',
   showInFolder: 'shell:show-in-folder',
   showNotification: 'notification:show',

@@ -1,6 +1,7 @@
 import type { ItemEntity, ItemId, SequenceEntity } from '@se/protocol';
 
 import { previewedItem, usePropertyPreview } from '../../../shared/animation';
+import { useCaptionPreview, type CaptionPreview } from '../../../shared/caption-preview';
 import { useProjectSelector } from '../../../shared/project-store';
 import { sceneOf, type PlaybackScene } from '../services/viewer-scene';
 
@@ -13,7 +14,9 @@ export function useViewerScene(sequence: SequenceEntity): PlaybackScene | null {
   const tracks = useProjectSelector((state) => state.mirror?.tracks);
   const items = useProjectSelector((state) => state.mirror?.items);
   const assets = useProjectSelector((state) => state.mirror?.assets);
+  const captionStyles = useProjectSelector((state) => state.mirror?.project.captionStyles);
   const preview = usePropertyPreview();
+  const captionPreview = useCaptionPreview();
   if (tracks === undefined || items === undefined || assets === undefined) return null;
   const previewed = new Set([...Object.keys(preview.animations), ...Object.keys(preview.contents)]);
   let shown: Readonly<Record<ItemId, ItemEntity>> = items;
@@ -25,5 +28,29 @@ export function useViewerScene(sequence: SequenceEntity): PlaybackScene | null {
     }
     shown = copy;
   }
-  return sceneOf({ sequence, tracks, items: shown, assets });
+  if (captionPreview !== null) {
+    return sceneOf({
+      sequence,
+      tracks,
+      items: withPreviewStyle(shown, captionPreview),
+      assets,
+      captionStyles: [...(captionStyles ?? []), captionPreview.style],
+    });
+  }
+  return sceneOf({ sequence, tracks, items: shown, assets, captionStyles });
+}
+
+/** `items` whose previewed captions point at the preview's style. */
+function withPreviewStyle(
+  items: Readonly<Record<ItemId, ItemEntity>>,
+  preview: CaptionPreview,
+): Readonly<Record<ItemId, ItemEntity>> {
+  const copy: Record<ItemId, ItemEntity> = { ...items };
+  for (const id of preview.itemIds) {
+    const item = items[id];
+    if (item?.kind.kind === 'caption') {
+      copy[id] = { ...item, kind: { ...item.kind, styleId: preview.style.id } };
+    }
+  }
+  return copy;
 }

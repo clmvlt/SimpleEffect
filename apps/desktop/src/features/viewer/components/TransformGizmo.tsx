@@ -3,6 +3,7 @@ import { useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { usePlaybackRate } from '../../../shared/playback';
+import { useProjectSelector } from '../../../shared/project-store';
 import { startReframing } from '../../../shared/reframe';
 import { useSelectedItemIds } from '../../timeline';
 import { useGizmoPointer } from '../hooks/use-gizmo-pointer';
@@ -59,6 +60,9 @@ export function TransformGizmo({ controller, sequence, displayScale }: Transform
   const frame = sequence.format;
   const shown = playing ? [] : layers.filter((layer) => selected.includes(layer.itemId));
   const [single] = shown.length === 1 ? shown : [];
+  const items = useProjectSelector((state) => state.mirror?.items);
+  // Captions have no transform: they only move (their style's position), without handles.
+  const transformable = single !== undefined && items?.[single.itemId]?.kind.kind !== 'caption';
   const editedLayer = layers.find((layer) => layer.itemId === editing);
   return (
     <div
@@ -106,7 +110,7 @@ export function TransformGizmo({ controller, sequence, displayScale }: Transform
           />
         ))}
       </svg>
-      {single !== undefined && editing === null && (
+      {single !== undefined && transformable && editing === null && (
         <Handles
           layer={single}
           frame={frame}

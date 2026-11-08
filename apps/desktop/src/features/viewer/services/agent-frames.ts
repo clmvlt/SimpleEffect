@@ -90,6 +90,7 @@ function prepare(request: FrameRenderRequest, deps: AgentFrameDeps) {
     tracks: mirror.tracks,
     items: mirror.items,
     assets: mirror.assets,
+    captionStyles: mirror.project.captionStyles,
   });
   return { scene, endpoint, assets: mirror.assets };
 }
