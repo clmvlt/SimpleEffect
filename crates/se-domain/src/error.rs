@@ -216,6 +216,14 @@ pub enum DomainError {
         /// The operation (`rippleDeleteRange`, `insertGap`).
         operation: &'static str,
     },
+    /// Ranges of a multi-range edit overlap, touch or are not sorted by start.
+    #[error(
+        "{operation} needs ranges sorted by start that do not overlap or touch; merge touching          ranges into one"
+    )]
+    RangesNotInOrder {
+        /// The operation (`rippleDeleteRanges`).
+        operation: &'static str,
+    },
     /// An item crossing an edit point must be split but no id was given for its new part.
     #[error(
         "item {item} crosses the edit point and must be split; give the id of its new part in \
@@ -385,6 +393,7 @@ impl DomainError {
             }
             Self::InvalidTrackOrder { .. } => DomainErrorCode::InvalidTrackOrder,
             Self::EmptyDuration { .. } => DomainErrorCode::EmptyDuration,
+            Self::RangesNotInOrder { .. } => DomainErrorCode::InvalidEditPoint,
             Self::MissingSplitId { .. } => DomainErrorCode::MissingSplitId,
             Self::TimeOutOfRange { .. } => DomainErrorCode::TimeOutOfRange,
             Self::AssetInUse { .. } => DomainErrorCode::AssetInUse,

@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use super::LevelEnvelope;
 use crate::time::{Flicks, TimeRange};
 
 /// What silence means for a detection: windows quieter than `threshold_dbfs`, lasting at least
@@ -58,6 +59,10 @@ pub struct AudioAnalysis {
     pub silence_settings: SilenceSettings,
     /// Silent stretches in source time, in order, never overlapping.
     pub silences: Vec<TimeRange>,
+    /// The level every 20 ms, to find silences for any threshold (prompt 22); `None` in
+    /// analyses made before it (they are run again: [`super::AnalysisResult::is_outdated`]).
+    #[serde(default)]
+    pub levels: Option<LevelEnvelope>,
 }
 
 impl AudioAnalysis {
@@ -121,6 +126,7 @@ mod tests {
             },
             silence_settings: SilenceSettings::SPEECH,
             silences: vec![range(1_000, 2_000), range(5_000, 5_500)],
+            levels: None,
         };
         let summary = analysis.summary();
         assert_eq!(summary.silence_count, 2);

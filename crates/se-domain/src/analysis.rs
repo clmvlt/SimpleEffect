@@ -7,6 +7,7 @@
 //! media bin shows and AI agents read with the asset.
 
 mod audio;
+mod levels;
 mod scenes;
 
 use serde::{Deserialize, Serialize};
@@ -16,6 +17,7 @@ use crate::TranscriptSummary;
 
 pub use self::{
     audio::{AudioAnalysis, AudioSummary, LoudnessCurve, SilenceSettings},
+    levels::LevelEnvelope,
     scenes::{SceneDetection, SceneSummary},
 };
 
@@ -51,6 +53,16 @@ pub enum AnalysisResult {
 }
 
 impl AnalysisResult {
+    /// Whether a newer version of this analysis measures more: an audio analysis made before
+    /// prompt 22 has no level envelope (smart cuts need it), so it is run again.
+    #[must_use]
+    pub const fn is_outdated(&self) -> bool {
+        matches!(
+            self,
+            Self::AudioAnalysis(AudioAnalysis { levels: None, .. })
+        )
+    }
+
     /// Which analysis this is.
     #[must_use]
     pub const fn kind(&self) -> AnalysisKind {

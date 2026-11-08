@@ -6,6 +6,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 mod generators;
+mod multi_cut;
 mod picking;
 mod reformat;
 
