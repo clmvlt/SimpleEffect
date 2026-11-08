@@ -21,10 +21,12 @@ pub use job_fakes::{
 pub use media_fakes::{
     FAKE_FILE_BYTES, FakeMedia, fingerprint, probed_audio, probed_prores, probed_video,
 };
-pub use media_testbed::{MediaTestbed, settle};
+pub use media_testbed::{MediaTestbed, TESTBED_MCP_URL, settle};
 pub use memory_library::InMemoryAppLibrary;
 pub use memory_repository::{InMemoryProjectRepository, StoredFolder};
-pub use runtime_fakes::{FixedClock, RecordingEventSink, SequentialIds};
+pub use runtime_fakes::{
+    FakeRendererLink, FixedClock, RecordingEventSink, SequentialIds, SequentialTokens,
+};
 
 /// Locks a fake's state, ignoring poisoning (a panicking test already failed).
 fn lock<T>(mutex: &std::sync::Mutex<T>) -> std::sync::MutexGuard<'_, T> {

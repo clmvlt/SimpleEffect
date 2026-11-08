@@ -37,6 +37,9 @@ export const ERROR_CODES = [
   'TASK_STILL_ACTIVE',
   'TASK_NOT_RESUMABLE',
   'AI_UNAVAILABLE',
+  'RENDERER_UNAVAILABLE',
+  'RENDER_FAILED',
+  'RENDER_REQUEST_NOT_FOUND',
 ] as const satisfies readonly ErrorCode[];
 
 /**

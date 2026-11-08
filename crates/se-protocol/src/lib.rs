@@ -21,6 +21,7 @@ mod envelope;
 mod error;
 mod event;
 mod fonts;
+mod frame_renders;
 mod graphics;
 mod handshake;
 mod jobs;
@@ -47,6 +48,7 @@ pub use envelope::{
 pub use error::{ErrorCode, ProtocolError};
 pub use event::CoreEvent;
 pub use fonts::{FontFace, FontFamily, FontSource};
+pub use frame_renders::FrameRenderRequest;
 pub use graphics::{
     AddGraphicRequest, AnimationPresetInfo, AnimationPresetSample, ItemAnimation, NewGraphic,
     PlacedGraphic,

@@ -44,6 +44,8 @@ se-export = { path = "crates/se-export" }
 anyhow = "1.0.104"
 async-trait = "0.1.92"
 axum = { version = "0.8.9", features = ["ws"] }
+# Images returned by MCP tools travel as base64 (same major as rmcp's).
+base64 = "0.23.1"
 directories = "6.0.0"
 dunce = "1.0.5"
 # EBU R128 loudness (integrated, short-term, range, true peak) of analysed sound.
@@ -52,6 +54,8 @@ futures-util = "0.3.34"
 # Lists the fonts installed on the system (se-fonts).
 fontdb = { version = "0.24.0", default-features = false, features = ["fs", "memmap"] }
 hex = "0.4.3"
+# Request parts handed to MCP tool handlers (the bearer token), as rmcp gives them.
+http = "1.5.0"
 # Sidecar processes in a job object (Windows) or process group (Unix): the whole tree dies on
 # cancel, and no console window opens on Windows.
 process-wrap = { version = "10.0.1", default-features = false, features = [
@@ -65,8 +69,15 @@ process-wrap = { version = "10.0.1", default-features = false, features = [
 insta = { version = "1.49.0", features = ["json"] }
 proptest = "1.12.0"
 rand = "0.10.3"
+# The MCP server of AI agents: streamable HTTP mounted at `/mcp` (se-mcp, ADR-0028).
+rmcp = { version = "3.9.0", default-features = false, features = [
+  "server",
+  "transport-streamable-http-server",
+] }
 # SQLite compiled in (`bundled` enables FTS5), so every platform gets the same engine.
 rusqlite = { version = "0.41.1", features = ["bundled"] }
+# JSON Schemas of MCP tool inputs (the version rmcp uses).
+schemars = "1.2.3"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 tempfile = "3.27.0"
@@ -74,8 +85,9 @@ thiserror = "2.0.21"
 tokio = "1.54.1"
 tokio-tungstenite = "0.30.0"
 trash = "5.3.0"
-# Serves `/media` files with Range requests (206/416) and conditional headers.
-tower-http = { version = "0.7.1", features = ["fs"] }
+# Serves `/media` files with Range requests (206/416) and conditional headers; CORS for the
+# renderer's frame uploads (`PUT /media/renders`).
+tower-http = { version = "0.7.1", features = ["cors", "fs"] }
 tracing = "0.1.44"
 tracing-appender = "0.2.5"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }

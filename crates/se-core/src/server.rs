@@ -11,9 +11,9 @@ use crate::{
     access_guard::{AccessGuard, SessionToken, require_local_access},
     app_paths::AppPaths,
     error::CoreError,
-    font_routes, handshake, media_routes,
+    font_routes, handshake, mcp_routes, media_routes, render_routes,
     rpc::{self, EventBus, HandlerContext, RpcRouter, RpcState},
-    services,
+    services::{self, Services},
 };
 
 /// How long open connections get to close after shutdown starts before the process exits anyway.
@@ -43,7 +43,7 @@ pub async fn run(
     );
 
     let events = EventBus::new();
-    let services = services::build(&paths, &events).await?;
+    let services = services::build(&paths, &events, port).await?;
     let projects = Arc::clone(&services.projects);
     let (stopping_sender, stopping) = watch::channel(false);
     let router = RpcRouter::new(HandlerContext {
@@ -53,9 +53,10 @@ pub async fn run(
         media: Arc::clone(&services.media),
         tasks: Arc::clone(&services.tasks),
         fonts: Arc::clone(&services.fonts),
+        renders: Arc::clone(&services.renders),
     });
     let state = RpcState::new(router, events.clone(), stopping.clone());
-    let app = routes(guard, state, services.media, services.fonts);
+    let app = routes(guard, state, &services, port);
     let server = axum::serve(listener, app).with_graceful_shutdown(async move {
         shutdown.await;
         // Save every open project, then tell every client, then close the sockets (see
@@ -74,19 +75,26 @@ pub async fn run(
     }
 }
 
-/// Every route, behind the access guard (`Host` and token checks).
-fn routes(
-    guard: Arc<AccessGuard>,
-    state: RpcState,
-    media: Arc<se_app::MediaService>,
-    fonts: Arc<dyn se_app::ports::FontCatalog>,
-) -> Router {
-    Router::new()
+/// Every route: the app's routes behind the access guard (`Host` and session token), `/mcp`
+/// behind its own guard (`Host` and a running task's bearer token).
+fn routes(guard: Arc<AccessGuard>, state: RpcState, services: &Services, port: u16) -> Router {
+    let app = Router::new()
         .route("/rpc", get(rpc::upgrade))
         .with_state(state)
-        .merge(media_routes::routes(media))
-        .merge(font_routes::routes(fonts))
-        .layer(middleware::from_fn_with_state(guard, require_local_access))
+        .merge(media_routes::routes(Arc::clone(&services.media)))
+        .merge(font_routes::routes(Arc::clone(&services.fonts)))
+        .merge(render_routes::routes(Arc::clone(&services.renders)))
+        .layer(middleware::from_fn_with_state(guard, require_local_access));
+    let agents = mcp_routes::routes(
+        se_mcp::McpDeps {
+            projects: Arc::clone(&services.projects),
+            media: Arc::clone(&services.media),
+            renders: Arc::clone(&services.renders),
+            tokens: Arc::clone(&services.tokens),
+        },
+        port,
+    );
+    app.merge(agents)
 }
 
 /// Resolves `DRAIN_TIMEOUT` after shutdown starts, bounding the graceful shutdown.

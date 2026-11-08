@@ -1,0 +1,18 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "The project at a glance: its sequences (format, duration, counts), the tracks of your task's sequence, media counts, and your task's scope (sequence, time range, tracks). Call it first.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "type": "object"
+  },
+  "name": "get_project_overview"
+}

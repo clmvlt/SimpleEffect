@@ -1,6 +1,7 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { AiStatus } from "./AiStatus";
+import type { FrameRenderRequest } from "./FrameRenderRequest";
 import type { JobProgress } from "./JobProgress";
 import type { JobSnapshot } from "./JobSnapshot";
 import type { ProjectHistory } from "./ProjectHistory";
@@ -61,4 +62,4 @@ taskId: TaskId,
 /**
  * The new entry of its log.
  */
-event: TaskEventRecord, } | { "kind": "aiStatusChanged" } & AiStatus;
+event: TaskEventRecord, } | { "kind": "aiStatusChanged" } & AiStatus | { "kind": "renderFramesRequested" } & FrameRenderRequest;

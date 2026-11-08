@@ -1,8 +1,8 @@
 //! Creating, opening and closing projects.
 
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
-use se_domain::{Format, FormatPreset, FrameRate, ProjectId, validate_project};
+use se_domain::{Format, FormatPreset, FrameRate, Project, ProjectId, validate_project};
 use se_protocol::{CoreEvent, FormatPresetDimensions, NewProjectDefaults, ProjectSession};
 
 use super::{ProjectService, checked_name, display_path, loading::session_of};
@@ -189,5 +189,13 @@ impl ProjectService {
     /// [`AppError::ProjectNotOpen`].
     pub async fn project_session(&self, project_id: ProjectId) -> Result<ProjectSession, AppError> {
         session_of(&self.handle(project_id).await?).await
+    }
+
+    /// The current document of an open project (read-only: AI read tools, prompt 18).
+    ///
+    /// # Errors
+    /// [`AppError::ProjectNotOpen`].
+    pub async fn project(&self, project_id: ProjectId) -> Result<Arc<Project>, AppError> {
+        Ok(self.handle(project_id).await?.view().await?.project)
     }
 }

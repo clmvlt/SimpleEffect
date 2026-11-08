@@ -524,6 +524,15 @@ pub enum Command {
     GetAiSettings,
     /// Replaces the AI settings. Answered by [`crate::CommandResult::UpdateAiSettings`].
     UpdateAiSettings(AiSettings),
+    /// The renderer cannot draw the frames of a `renderFramesRequested` event (another project
+    /// is open, the sequence is gone, decoding failed…): the agent gets `message`. Answered by
+    /// [`crate::CommandResult::ReportFrameRenderFailure`].
+    ReportFrameRenderFailure {
+        /// The request.
+        request_id: String,
+        /// Why, for the agent (English, actionable).
+        message: String,
+    },
 }
 
 #[cfg(test)]

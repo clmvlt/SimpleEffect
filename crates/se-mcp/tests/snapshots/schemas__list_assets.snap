@@ -1,0 +1,78 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "The media files of the project: id, file name, kind, duration, size, frame rate, sound channels, whether the file is missing, how many items use it, and analysis summaries (loudness, silences, scene changes). Filter by kind or name; paginated.",
+  "inputSchema": {
+    "$defs": {
+      "AssetKindFilter": {
+        "description": "Kinds of media.",
+        "oneOf": [
+          {
+            "const": "video",
+            "description": "Video files.",
+            "type": "string"
+          },
+          {
+            "const": "audio",
+            "description": "Sound files.",
+            "type": "string"
+          },
+          {
+            "const": "image",
+            "description": "Still images.",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "kind": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/AssetKindFilter"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Only this kind of media."
+      },
+      "limit": {
+        "description": "Assets per page; default 50, at most 200.",
+        "format": "uint",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "offset": {
+        "description": "Assets to skip (from a previous page's `next_offset`); default 0.",
+        "format": "uint",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "query": {
+        "description": "Only media whose file name contains this text (case ignored).",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "name": "list_assets"
+}

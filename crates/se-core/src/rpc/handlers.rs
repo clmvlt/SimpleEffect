@@ -7,6 +7,7 @@
 
 pub mod ai;
 pub mod editing;
+pub mod frames;
 pub mod graphics;
 pub mod items;
 pub mod media;
@@ -19,7 +20,7 @@ pub mod timeline;
 
 use std::{path::Path, sync::Arc};
 
-use se_app::{MediaService, ProjectService, TaskService, ports::FontCatalog};
+use se_app::{FrameRenderService, MediaService, ProjectService, TaskService, ports::FontCatalog};
 use se_protocol::{ErrorCode, ProtocolError};
 
 use crate::app_paths::AppPaths;
@@ -39,6 +40,8 @@ pub struct HandlerContext {
     pub tasks: Arc<TaskService>,
     /// Bundled and installed fonts.
     pub fonts: Arc<dyn FontCatalog>,
+    /// Frames drawn by the renderer for agents (failure reports).
+    pub renders: Arc<FrameRenderService>,
 }
 
 /// A path sent by a client, refused unless absolute (a relative path would depend on the

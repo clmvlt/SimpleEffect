@@ -213,6 +213,30 @@ pub enum AppError {
         /// Why, and what to do.
         reason: String,
     },
+    /// No editor window can draw frames for an agent (none open, or none answered in time).
+    #[error("frames cannot be drawn: {reason}")]
+    RendererUnavailable {
+        /// Why, and what to do.
+        reason: String,
+    },
+    /// The renderer could not draw the requested frames.
+    #[error("the editor could not draw the frames: {reason}")]
+    RenderFailed {
+        /// The renderer's explanation.
+        reason: String,
+    },
+    /// A frame request or upload that cannot be accepted (too many frames, not a JPEG…).
+    #[error("invalid frame render: {reason}")]
+    InvalidRender {
+        /// What is wrong.
+        reason: String,
+    },
+    /// Nothing waits for frames of that request any more.
+    #[error("no frame render {request_id} is waiting: it already finished, failed or timed out")]
+    RenderRequestNotFound {
+        /// The request.
+        request_id: String,
+    },
     /// A bug: an invariant of the application itself was broken.
     #[error("internal error: {0}; please report it")]
     Internal(String),
@@ -229,7 +253,8 @@ impl AppError {
             Self::EmptyName { .. }
             | Self::InvalidFormat { .. }
             | Self::InvalidSetting { .. }
-            | Self::InvalidTask { .. } => ErrorCode::InvalidRequest,
+            | Self::InvalidTask { .. }
+            | Self::InvalidRender { .. } => ErrorCode::InvalidRequest,
             Self::DerivedNotApplicable { .. } => ErrorCode::DerivedNotApplicable,
             Self::MediaTimeOutOfRange { .. } => ErrorCode::MediaTimeOutOfRange,
             Self::JournalBroken { .. } | Self::InvalidDocument { .. } => {
@@ -252,6 +277,9 @@ impl AppError {
             Self::TaskStillActive { .. } => ErrorCode::TaskStillActive,
             Self::TaskNotResumable { .. } => ErrorCode::TaskNotResumable,
             Self::AiUnavailable { .. } => ErrorCode::AiUnavailable,
+            Self::RendererUnavailable { .. } => ErrorCode::RendererUnavailable,
+            Self::RenderFailed { .. } => ErrorCode::RenderFailed,
+            Self::RenderRequestNotFound { .. } => ErrorCode::RenderRequestNotFound,
             Self::Internal(_) => ErrorCode::Internal,
         }
     }

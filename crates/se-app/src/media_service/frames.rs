@@ -79,6 +79,23 @@ impl MediaService {
         self.deps.frames.extract_frame(&request).await?;
         Ok(output)
     }
+
+    /// The bytes of [`MediaService::extract_frame`]'s JPEG (AI read tools return them as images).
+    ///
+    /// # Errors
+    /// Those of [`MediaService::extract_frame`]; reading the cached file.
+    pub async fn frame_jpeg(
+        &self,
+        project_id: ProjectId,
+        asset_id: AssetId,
+        time: Flicks,
+        max_width: u32,
+    ) -> Result<Vec<u8>, AppError> {
+        let path = self
+            .extract_frame(project_id, asset_id, time, max_width)
+            .await?;
+        Ok(self.deps.files.read_file(&path).await?)
+    }
 }
 
 /// `time` when it lies inside the media (`[0, duration]`; any non-negative time when the duration

@@ -11,6 +11,9 @@
 //! their project opens again. The service also keeps what is known about the provider
 //! (`aiStatusChanged`) and the AI settings.
 //!
+//! Each run gets its own MCP bearer token (`crate::agent_access`), minted when it starts and
+//! revoked when it ends: an agent can reach the project only while its run is going.
+//!
 //! Task state lives behind one async mutex, held while a change is saved so saves of a task
 //! never overtake each other; events are appended outside it.
 
@@ -35,6 +38,7 @@ use tokio::sync::Mutex;
 use self::queue::RunQueue;
 use crate::{
     AppError,
+    agent_access::McpAccess,
     ports::{AgentProvider, AgentWorkspaces, AppLibraryRepository, Clock, EventSink, IdGenerator},
     project_actor::ProjectActorHandle,
 };
@@ -54,6 +58,8 @@ pub struct TaskServiceDeps {
     pub clock: Arc<dyn Clock>,
     /// Task ids and new agent session ids.
     pub ids: Arc<dyn IdGenerator>,
+    /// The MCP endpoint runs act through, and the registry of their tokens.
+    pub mcp: McpAccess,
 }
 
 /// The AI task use cases. Cheap to clone (shared state).

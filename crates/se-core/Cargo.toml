@@ -50,6 +50,8 @@ se-app = { workspace = true, features = ["test-support"] }
 se-domain = { workspace = true, features = ["test-support"] }
 se-media = { workspace = true }
 futures-util = { workspace = true }
+# A real MCP client (streamable HTTP over reqwest, no TLS) against `/mcp`.
+rmcp = { workspace = true, features = ["client", "transport-streamable-http-client-reqwest"] }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["io-util", "macros", "process", "rt-multi-thread", "time"] }

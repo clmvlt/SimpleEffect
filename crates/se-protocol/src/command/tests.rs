@@ -100,3 +100,16 @@ fn task_commands_name_their_project_and_task() {
     assert_eq!(settings.provider.as_str(), "claude-code");
     assert_eq!(settings.default_effort, Some(crate::EffortLevel::High));
 }
+
+#[test]
+fn frame_render_failures_name_their_request() {
+    let json = r#"{"kind":"reportFrameRenderFailure","requestId":"r1","message":"another project is open"}"#;
+    let command: Command = serde_json::from_str(json).unwrap();
+    assert_eq!(
+        command,
+        Command::ReportFrameRenderFailure {
+            request_id: "r1".to_owned(),
+            message: "another project is open".to_owned(),
+        }
+    );
+}

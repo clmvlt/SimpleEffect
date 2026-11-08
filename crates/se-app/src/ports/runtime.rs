@@ -1,4 +1,5 @@
-//! Small ports for the outside world: events to clients, the wall clock and id generation.
+//! Small ports for the outside world: events to clients, the wall clock, id generation and
+//! secrets.
 
 use se_domain::Uuid;
 use se_protocol::CoreEvent;
@@ -22,4 +23,11 @@ pub trait Clock: Send + Sync {
 pub trait IdGenerator: Send + Sync {
     /// A new version-7 UUID, unique and roughly ordered by creation time.
     fn new_uuid_v7(&self) -> Uuid;
+}
+
+/// Creates unguessable secrets: the bearer tokens of AI tasks' MCP access (ADR-0028).
+pub trait TokenSource: Send + Sync {
+    /// A new secret of 256 random bits from a cryptographically secure generator, as lowercase
+    /// hexadecimal.
+    fn new_token(&self) -> String;
 }

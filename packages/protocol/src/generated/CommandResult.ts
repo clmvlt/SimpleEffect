@@ -149,4 +149,4 @@ settings: AiSettings, } | { "kind": "updateAiSettings",
 /**
  * The settings as saved.
  */
-settings: AiSettings, };
+settings: AiSettings, } | { "kind": "reportFrameRenderFailure" };

@@ -125,6 +125,13 @@ pub enum ErrorCode {
     TaskNotResumable,
     /// The AI provider cannot run tasks: its CLI is not installed or not logged in.
     AiUnavailable,
+    /// No editor window could draw frames of the sequence (none is open, or it did not answer in
+    /// time): open the project in SimpleEffect and try again.
+    RendererUnavailable,
+    /// The renderer could not draw the requested frames (its message says why).
+    RenderFailed,
+    /// No frame render with that id is waiting (it finished, failed or timed out).
+    RenderRequestNotFound,
 }
 
 #[cfg(test)]

@@ -14,7 +14,10 @@ use super::{
     queue::RunKey,
     task_state::{self, SessionPlan},
 };
-use crate::ports::{AgentProvider, AgentRun, AgentRunSpec, AgentSession, TaskStore};
+use crate::{
+    agent_access::{AgentContext, TaskToken, TaskTokenRegistry},
+    ports::{AgentProvider, AgentRun, AgentRunSpec, AgentSession, McpEndpoint, TaskStore},
+};
 
 /// How long a run asked to stop may still report before it is given up on (its process is
 /// killed when the run is dropped).
@@ -28,6 +31,20 @@ struct RunStart {
     provider: Option<Arc<dyn AgentProvider>>,
     recorder: Recorder,
     spec: AgentRunSpec,
+    /// The run's MCP access, revoked when the run is over.
+    access: RevokeOnDrop,
+}
+
+/// Revokes a run's MCP token when dropped: whatever way the run ends, its agent loses access.
+struct RevokeOnDrop {
+    registry: Arc<TaskTokenRegistry>,
+    token: TaskToken,
+}
+
+impl Drop for RevokeOnDrop {
+    fn drop(&mut self) {
+        self.registry.revoke(&self.token);
+    }
 }
 
 /// Appends a run's events to its task's log and publishes them.
@@ -69,6 +86,7 @@ async fn drive(
         provider,
         recorder,
         mut spec,
+        access: _access,
     } = start;
     let task_id = recorder.key.task_id;
     let Some(provider) = provider else {
@@ -264,24 +282,37 @@ impl Shared {
     async fn begin_run(self: &Arc<Self>, key: RunKey) -> Option<RunStart> {
         let now = self.now();
         let session_id = self.deps.ids.new_uuid_v7().to_string();
-        let mut state = self.state.lock().await;
-        let project = state.projects.get_mut(&key.project_id)?;
-        let store = Arc::clone(project.handle.tasks());
-        let task = project
-            .tasks
-            .iter_mut()
-            .find(|task| task.id == key.task_id)?;
-        if task.status != TaskStatus::Queued {
-            return None;
-        }
-        task_state::start_run(task, now);
-        let task = task.clone();
-        if let Err(error) = store.save_task(&task).await {
-            tracing::warn!(task = %task.id, %error, "saving a started task failed");
-        }
-        self.deps
-            .events
-            .publish(CoreEvent::TaskUpdated { task: task.clone() });
+        let (task, store, handle) = {
+            let mut state = self.state.lock().await;
+            let project = state.projects.get_mut(&key.project_id)?;
+            let store = Arc::clone(project.handle.tasks());
+            let handle = project.handle.clone();
+            let task = project
+                .tasks
+                .iter_mut()
+                .find(|task| task.id == key.task_id)?;
+            if task.status != TaskStatus::Queued {
+                return None;
+            }
+            task_state::start_run(task, now);
+            let task = task.clone();
+            if let Err(error) = store.save_task(&task).await {
+                tracing::warn!(task = %task.id, %error, "saving a started task failed");
+            }
+            self.deps
+                .events
+                .publish(CoreEvent::TaskUpdated { task: task.clone() });
+            (task, store, handle)
+        };
+        let project = match handle.view().await {
+            Ok(view) => Some(view.project),
+            Err(error) => {
+                tracing::warn!(task = %task.id, %error, "reading the project for the instructions failed");
+                None
+            }
+        };
+        let run = task_state::current_run(&task);
+        let access = self.grant_access(&task, run);
         let session = match task_state::session_plan(&task) {
             SessionPlan::Fresh => AgentSession::Start(session_id),
             SessionPlan::Resume(session) => AgentSession::Resume(session),
@@ -291,8 +322,11 @@ impl Shared {
                 .runs
                 .last()
                 .map_or_else(|| task.prompt.clone(), |run| run.prompt.clone()),
-            system_instructions: instructions::compose(&task),
-            mcp: None,
+            system_instructions: instructions::compose(&task, project.as_deref()),
+            mcp: McpEndpoint {
+                url: self.deps.mcp.url.clone(),
+                bearer_token: access.token.as_str().to_owned(),
+            },
             model: task.model.clone(),
             effort: task.effort,
             session,
@@ -304,11 +338,24 @@ impl Shared {
                 shared: Arc::clone(self),
                 key,
                 store,
-                run: task_state::current_run(&task),
+                run,
                 provider: task.provider.clone(),
             },
             spec,
+            access,
         })
+    }
+
+    /// A fresh MCP token for run `run` of `task`, revoked when the returned guard is dropped.
+    fn grant_access(&self, task: &se_protocol::Task, run: u32) -> RevokeOnDrop {
+        let registry = Arc::clone(&self.deps.mcp.tokens);
+        let token = registry.mint(AgentContext {
+            project_id: task.project_id,
+            task_id: task.id,
+            run,
+            scope: task.scope.clone(),
+        });
+        RevokeOnDrop { registry, token }
     }
 
     /// Records the session the agent announced.

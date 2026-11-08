@@ -13,7 +13,7 @@ use std::{
 };
 
 use se_agents::providers::claude_code::ClaudeCodeProvider;
-use se_app::ports::{AgentProvider, AgentRun, AgentRunSpec, AgentSession};
+use se_app::ports::{AgentProvider, AgentRun, AgentRunSpec, AgentSession, McpEndpoint};
 use se_protocol::{AgentEvent, AgentFailureKind, AuthStatus};
 use tempfile::TempDir;
 
@@ -68,7 +68,10 @@ impl Fake {
         AgentRunSpec {
             prompt: "Say hello\nin one word.".to_owned(),
             system_instructions: "# Role\nYou edit videos.".to_owned(),
-            mcp: None,
+            mcp: McpEndpoint {
+                url: "http://127.0.0.1:4100/mcp".to_owned(),
+                bearer_token: "task-token".to_owned(),
+            },
             model: Some("haiku".to_owned()),
             effort: None,
             session,
@@ -167,6 +170,31 @@ async fn a_recorded_success_completes_through_the_process() {
             summary: "Bonjour".to_owned()
         })
     );
+}
+
+#[tokio::test]
+async fn a_recorded_mcp_run_streams_its_tool_calls_through_the_process() {
+    let fake = fake(&fixture("mcp-get-timeline.jsonl"));
+    let run = fake
+        .provider
+        .start(fake.spec(AgentSession::Start(
+            "0195f3a2-7c41-7d2e-9a10-3b4c5d6e7f91".to_owned(),
+        )))
+        .await
+        .unwrap();
+    let events = collect(run).await;
+    let tools: Vec<&str> = events
+        .iter()
+        .filter_map(|event| match event {
+            AgentEvent::ToolCallFinished { tool, ok: true, .. } => Some(tool.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(tools, ["mcp__simpleeffect__get_timeline"]);
+    assert!(matches!(events.last(), Some(AgentEvent::Completed { .. })));
+    let arguments = std::fs::read_to_string(fake.file("args.txt")).unwrap();
+    assert!(arguments.contains("--mcp-config"), "{arguments}");
+    assert!(arguments.contains("mcp__simpleeffect__*"), "{arguments}");
 }
 
 #[tokio::test]

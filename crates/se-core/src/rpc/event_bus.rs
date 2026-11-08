@@ -40,6 +40,11 @@ impl EventBus {
     pub fn subscribe(&self) -> broadcast::Receiver<CoreEvent> {
         self.sender.subscribe()
     }
+
+    /// How many connections receive events now (each `/rpc` socket subscribes once).
+    pub fn connection_count(&self) -> usize {
+        self.sender.receiver_count()
+    }
 }
 
 /// The event a connection must forward for one receive result, or `None` once the bus is gone.

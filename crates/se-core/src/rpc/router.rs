@@ -7,8 +7,8 @@ use se_protocol::{
 use super::{
     encode::encode,
     handlers::{
-        HandlerContext, ai, editing, graphics, items, media, media_settings, projects, sound,
-        system, tasks, timeline,
+        HandlerContext, ai, editing, frames, graphics, items, media, media_settings, projects,
+        sound, system, tasks, timeline,
     },
     request::{Rejection, parse_request},
 };
@@ -320,6 +320,10 @@ impl RpcRouter {
             Command::RefreshAiStatus => Ok(ai::refresh_ai_status(context).await),
             Command::GetAiSettings => Ok(ai::get_ai_settings(context)),
             Command::UpdateAiSettings(settings) => ai::update_ai_settings(context, settings).await,
+            Command::ReportFrameRenderFailure {
+                request_id,
+                message,
+            } => frames::report_failure(context, request_id, message),
         }
     }
 }
@@ -342,6 +346,7 @@ pub mod testing {
             projects,
             media,
             tasks,
+            renders,
             ..
         } = MediaTestbed::new(Path::new("/projects"));
         HandlerContext {
@@ -350,10 +355,11 @@ pub mod testing {
                 data_dir: PathBuf::from("data"),
                 logs_dir: PathBuf::from("data").join("logs"),
             },
-            projects: Arc::new(projects),
+            projects,
             media,
             tasks: Arc::new(tasks),
             fonts: Arc::new(FakeFontCatalog),
+            renders,
         }
     }
 }
@@ -561,5 +567,14 @@ mod tests {
             let request = format!(r#"{{"type":"request","id":1,"command":{{"kind":"{kind}"}}}}"#);
             assert_eq!(reply(&request).await["result"]["kind"], kind);
         }
+    }
+
+    #[tokio::test]
+    async fn late_frame_render_failures_are_refused_with_their_code() {
+        let reply = reply(
+            r#"{"type":"request","id":1,"command":{"kind":"reportFrameRenderFailure","requestId":"gone","message":"another project is open"}}"#,
+        )
+        .await;
+        assert_eq!(reply["error"]["code"], "RENDER_REQUEST_NOT_FOUND");
     }
 }

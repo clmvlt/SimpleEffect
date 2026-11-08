@@ -89,6 +89,16 @@ impl InMemoryProjectRepository {
         lock(&self.state).fail_snapshots = fail;
     }
 
+    /// Stores an analysis in the folder at `path` (replacing the asset's previous one of that
+    /// kind); nothing happens when no folder is there.
+    pub fn set_analysis(&self, path: impl AsRef<Path>, analysis: StoredAnalysis) {
+        if let Some(folder) = lock(&self.state).folders.get_mut(path.as_ref()) {
+            folder
+                .analyses
+                .insert((analysis.asset_id, analysis.result.kind()), analysis);
+        }
+    }
+
     /// Replaces the stored tasks of the folder at `path` (as a previous core run left them);
     /// nothing happens when no folder is there.
     pub fn set_tasks(&self, path: impl AsRef<Path>, tasks: Vec<Task>) {

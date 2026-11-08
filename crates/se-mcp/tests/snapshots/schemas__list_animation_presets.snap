@@ -1,0 +1,18 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "The animation presets (fade, slides, pop, blur, typewriter, bounce, shake, pulse…): id, name, description, phases (in, out, emphasis), default duration and the properties each one animates.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "type": "object"
+  },
+  "name": "list_animation_presets"
+}

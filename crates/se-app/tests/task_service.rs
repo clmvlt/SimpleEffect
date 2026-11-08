@@ -606,3 +606,57 @@ async fn the_scope_and_prompt_are_checked() {
     let task = harness.tasks.submit(request).await.unwrap();
     assert_eq!(task.scope.tracks, Some(vec![harness.track_id]));
 }
+
+#[tokio::test(start_paused = true)]
+async fn each_run_gets_an_mcp_token_bound_to_its_task_until_it_ends() {
+    let harness = harness().await;
+    harness.agent.set_default_script(ReplayScript::held());
+    let task_id = harness.submit("Describe the first seconds").await;
+    run_for(100).await;
+    let spec = harness.agent.specs().remove(0);
+    assert_eq!(spec.mcp.url, se_app::test_support::TESTBED_MCP_URL);
+    let context = harness
+        .tokens
+        .resolve(&spec.mcp.bearer_token)
+        .expect("the running task's token resolves");
+    assert_eq!(context.task_id, task_id);
+    assert_eq!(context.project_id, harness.project_id);
+    assert_eq!(context.run, 0);
+    assert_eq!(context.sequence_id(), harness.sequence_id);
+    assert!(spec.system_instructions.contains("# Reading the project"));
+    assert!(spec.system_instructions.contains("« Film »"));
+    harness.agent.release(1);
+    run_for(100).await;
+    assert_eq!(harness.task(task_id).await.status, TaskStatus::Completed);
+    assert_eq!(harness.tokens.resolve(&spec.mcp.bearer_token), None);
+    assert_eq!(harness.tokens.active_count(), 0);
+}
+
+#[tokio::test(start_paused = true)]
+async fn follow_ups_get_a_new_token_and_cancelled_runs_lose_theirs() {
+    let harness = harness().await;
+    harness
+        .agent
+        .set_default_script(ReplayScript::success("ok"));
+    let task_id = harness.submit("First").await;
+    run_for(100).await;
+    harness.agent.set_default_script(ReplayScript::held());
+    harness
+        .tasks
+        .follow_up(harness.project_id, task_id, "Second")
+        .await
+        .unwrap();
+    run_for(100).await;
+    let specs = harness.agent.specs();
+    assert_ne!(specs[0].mcp.bearer_token, specs[1].mcp.bearer_token);
+    let context = harness.tokens.resolve(&specs[1].mcp.bearer_token).unwrap();
+    assert_eq!(context.run, 1);
+    harness
+        .tasks
+        .cancel(harness.project_id, task_id)
+        .await
+        .unwrap();
+    run_for(6_000).await;
+    assert_eq!(harness.task(task_id).await.status, TaskStatus::Cancelled);
+    assert_eq!(harness.tokens.active_count(), 0);
+}

@@ -1,15 +1,15 @@
-//! Fakes of [`EventSink`], [`Clock`] and [`IdGenerator`].
+//! Fakes of [`EventSink`], [`Clock`], [`IdGenerator`], [`TokenSource`] and [`RendererLink`].
 
 use std::sync::{
     Mutex,
-    atomic::{AtomicI64, AtomicU64, Ordering},
+    atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering},
 };
 
 use se_domain::{ProjectId, Uuid};
-use se_protocol::CoreEvent;
+use se_protocol::{CoreEvent, FrameRenderRequest};
 
 use super::lock;
-use crate::ports::{Clock, EventSink, IdGenerator};
+use crate::ports::{Clock, EventSink, IdGenerator, RendererLink, TokenSource};
 
 /// Keeps every published event, in order.
 #[derive(Debug, Default)]
@@ -83,5 +83,55 @@ impl IdGenerator for SequentialIds {
     fn new_uuid_v7(&self) -> Uuid {
         let index = self.next.fetch_add(1, Ordering::SeqCst);
         ProjectId::from_test_index(index).as_uuid()
+    }
+}
+
+/// Secrets from a counter (`token-1`, `token-2`…): predictable, never repeated.
+#[derive(Debug, Default)]
+pub struct SequentialTokens {
+    next: AtomicU64,
+}
+
+impl TokenSource for SequentialTokens {
+    fn new_token(&self) -> String {
+        format!("token-{}", self.next.fetch_add(1, Ordering::SeqCst) + 1)
+    }
+}
+
+/// A renderer connection that records requests; connected by default.
+#[derive(Debug)]
+pub struct FakeRendererLink {
+    connected: AtomicBool,
+    requests: Mutex<Vec<FrameRenderRequest>>,
+}
+
+impl Default for FakeRendererLink {
+    fn default() -> Self {
+        Self {
+            connected: AtomicBool::new(true),
+            requests: Mutex::new(Vec::new()),
+        }
+    }
+}
+
+impl FakeRendererLink {
+    /// Connects or disconnects the fake renderer.
+    pub fn set_connected(&self, connected: bool) {
+        self.connected.store(connected, Ordering::SeqCst);
+    }
+
+    /// The requests sent so far.
+    pub fn requests(&self) -> Vec<FrameRenderRequest> {
+        lock(&self.requests).clone()
+    }
+}
+
+impl RendererLink for FakeRendererLink {
+    fn is_connected(&self) -> bool {
+        self.connected.load(Ordering::SeqCst)
+    }
+
+    fn request_frames(&self, request: FrameRenderRequest) {
+        lock(&self.requests).push(request);
     }
 }

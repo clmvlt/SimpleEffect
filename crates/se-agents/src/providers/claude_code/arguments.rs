@@ -49,12 +49,11 @@ pub(super) fn run_arguments(spec: &AgentRunSpec, instructions_file: &Path) -> Ve
     .to_vec();
     args.push("--append-system-prompt-file".to_owned());
     args.push(instructions_file.display().to_string());
-    if let Some(endpoint) = &spec.mcp {
-        args.push("--mcp-config".to_owned());
-        args.push(mcp_config(&endpoint.url, &endpoint.bearer_token));
-        args.push("--allowedTools".to_owned());
-        args.push(format!("mcp__{MCP_SERVER_NAME}__*"));
-    }
+    // Our MCP server, inline (no file to write), its tools allowed without asking.
+    args.push("--mcp-config".to_owned());
+    args.push(mcp_config(&spec.mcp.url, &spec.mcp.bearer_token));
+    args.push("--allowedTools".to_owned());
+    args.push(format!("mcp__{MCP_SERVER_NAME}__*"));
     if let Some(model) = &spec.model {
         args.push("--model".to_owned());
         args.push(model.clone());
@@ -127,7 +126,10 @@ mod tests {
         AgentRunSpec {
             prompt: "Cut the silences\nthen add captions".to_owned(),
             system_instructions: "# Role\n".to_owned(),
-            mcp: None,
+            mcp: McpEndpoint {
+                url: "http://127.0.0.1:4100/mcp".to_owned(),
+                bearer_token: "secret-token".to_owned(),
+            },
             model: Some("opus".to_owned()),
             effort: Some(EffortLevel::XHigh),
             session,
@@ -153,20 +155,20 @@ mod tests {
         assert_eq!(value_after(&args, "--setting-sources"), Some(""));
         assert!(args.iter().all(|arg| !arg.contains('\n')), "{args:?}");
         assert!(!args.contains(&"--resume".to_owned()));
-        assert!(!args.contains(&"--mcp-config".to_owned()));
     }
 
     #[test]
     fn follow_ups_resume_and_mcp_endpoints_are_inline_and_redacted() {
-        let mut spec = spec(AgentSession::Resume("6f1c2b8e".to_owned()));
-        spec.mcp = Some(McpEndpoint {
-            url: "http://127.0.0.1:4100/mcp".to_owned(),
-            bearer_token: "secret-token".to_owned(),
-        });
+        let spec = spec(AgentSession::Resume("6f1c2b8e".to_owned()));
         let args = run_arguments(&spec, Path::new("/work/i.md"));
         assert_eq!(value_after(&args, "--resume"), Some("6f1c2b8e"));
         let config: serde_json::Value =
             serde_json::from_str(value_after(&args, "--mcp-config").unwrap()).unwrap();
+        assert_eq!(config["mcpServers"]["simpleeffect"]["type"], "http");
+        assert_eq!(
+            config["mcpServers"]["simpleeffect"]["url"],
+            "http://127.0.0.1:4100/mcp"
+        );
         assert_eq!(
             config["mcpServers"]["simpleeffect"]["headers"]["Authorization"],
             "Bearer secret-token"
