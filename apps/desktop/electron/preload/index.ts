@@ -11,6 +11,7 @@ import {
   type ChooseFolderOptions,
   type CoreConnection,
   type SimpleEffectBridge,
+  type SystemNotification,
 } from '../shared/bridge-api';
 
 const bridge: SimpleEffectBridge = {
@@ -27,6 +28,17 @@ const bridge: SimpleEffectBridge = {
   showInFolder: (path: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.showInFolder, path) as Promise<void>,
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
+  showNotification: (notification: SystemNotification) =>
+    ipcRenderer.invoke(IPC_CHANNELS.showNotification, notification) as Promise<void>,
+  onNotificationClick: (listener: (tag: string) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, tag: unknown) => {
+      if (typeof tag === 'string') listener(tag);
+    };
+    ipcRenderer.on(IPC_CHANNELS.notificationClicked, handler);
+    return () => {
+      ipcRenderer.removeListener(IPC_CHANNELS.notificationClicked, handler);
+    };
+  },
 };
 
 contextBridge.exposeInMainWorld('simpleEffect', bridge);

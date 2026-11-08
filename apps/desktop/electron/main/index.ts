@@ -8,6 +8,7 @@ import { CORE_PATH_ENV, resolveCoreBinaryPath } from './core-binary-path';
 import { CoreSupervisor } from './core-supervisor';
 import { registerIpcHandlers } from './ipc-handlers';
 import { createMainWindow } from './main-window';
+import { notificationAppId } from './platform/app-identity';
 
 const supervisor = new CoreSupervisor({
   binaryPath: resolveCoreBinaryPath({
@@ -21,6 +22,9 @@ const supervisor = new CoreSupervisor({
 });
 
 let coreStopped = false;
+
+const appId = notificationAppId(process.platform);
+if (appId !== null) app.setAppUserModelId(appId);
 
 void app.whenReady().then(() => {
   supervisor.start();

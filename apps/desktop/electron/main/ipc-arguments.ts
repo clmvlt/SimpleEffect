@@ -4,7 +4,11 @@ import type {
   ChooseFileOptions,
   ChooseFilesOptions,
   ChooseFolderOptions,
+  SystemNotification,
 } from '../shared/bridge-api';
+
+/** Longest notification title or text accepted (the OS shortens them further). */
+const MAX_NOTIFICATION_TEXT = 500;
 
 /**
  * Validation of IPC arguments coming from the renderer. The renderer is sandboxed but still
@@ -91,4 +95,23 @@ export function parseExternalUrl(value: unknown): string {
     throw new TypeError('openExternal only opens https pages');
   }
   return url.href;
+}
+
+/** A system notification, checked: short strings only. */
+export function parseNotification(value: unknown): SystemNotification {
+  if (typeof value !== 'object' || value === null) {
+    throw new TypeError('showNotification expects a notification object');
+  }
+  const { title, body, tag } = value as Record<string, unknown>;
+  const valid = [title, body, tag].every(
+    (text) => typeof text === 'string' && text.length <= MAX_NOTIFICATION_TEXT,
+  );
+  if (!valid) {
+    throw new TypeError(
+      'showNotification expects string title, body and tag of at most ' +
+        String(MAX_NOTIFICATION_TEXT) +
+        ' characters',
+    );
+  }
+  return { title: title as string, body: body as string, tag: tag as string };
 }

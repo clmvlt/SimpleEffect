@@ -46,6 +46,16 @@ export interface ChooseFileOptions {
 }
 
 /** API exposed by the preload script as `window.simpleEffect`. */
+/** A notification of the operating system (an AI task finished while the window was hidden). */
+export interface SystemNotification {
+  /** Its title (translated by the renderer). */
+  readonly title: string;
+  /** Its text (translated by the renderer). */
+  readonly body: string;
+  /** Given back to `onNotificationClick` listeners when the user clicks it (a task id). */
+  readonly tag: string;
+}
+
 export interface SimpleEffectBridge {
   /**
    * Resolves with the connection of the running core, waiting while it (re)starts.
@@ -76,6 +86,13 @@ export interface SimpleEffectBridge {
    * for files that are not on disk (e.g. dragged from a web page).
    */
   getPathForFile(file: File): string;
+  /** Shows a system notification (nothing happens where the OS has none). */
+  showNotification(notification: SystemNotification): Promise<void>;
+  /**
+   * Calls `listener` with the tag of a system notification the user clicked (the window was
+   * brought to the front first); returns the function that stops listening.
+   */
+  onNotificationClick(listener: (tag: string) => void): () => void;
 }
 
 /** IPC channels between preload and main. */
@@ -86,4 +103,6 @@ export const IPC_CHANNELS = {
   chooseFile: 'dialog:choose-file',
   openExternal: 'shell:open-external',
   showInFolder: 'shell:show-in-folder',
+  showNotification: 'notification:show',
+  notificationClicked: 'notification:clicked',
 } as const;

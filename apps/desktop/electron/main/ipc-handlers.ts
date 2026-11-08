@@ -7,8 +7,10 @@ import {
   parseChooseFilesOptions,
   parseChooseFolderOptions,
   parseExternalUrl,
+  parseNotification,
   parseRevealPath,
 } from './ipc-arguments';
+import { showSystemNotification } from './notifications';
 
 /** Answers the preload bridge's requests (see `electron/shared/bridge-api.ts`). */
 export function registerIpcHandlers(supervisor: CoreSupervisor): void {
@@ -70,5 +72,9 @@ export function registerIpcHandlers(supervisor: CoreSupervisor): void {
 
   ipcMain.handle(IPC_CHANNELS.showInFolder, (_event, value: unknown) => {
     shell.showItemInFolder(parseRevealPath(value));
+  });
+
+  ipcMain.handle(IPC_CHANNELS.showNotification, (event, value: unknown) => {
+    showSystemNotification(event.sender, parseNotification(value));
   });
 }
