@@ -643,7 +643,8 @@
       "addShape": "Ajouter une forme",
       "addImage": "Ajouter une image",
       "applyAnimation": "Appliquer une animation",
-      "reframeItems": "Recadrage"
+      "reframeItems": "Recadrage",
+      "revertAiTask": "Annuler une tâche IA"
     },
     "sequences": {
       "copyName": "{{name}} (copie)",
@@ -1042,6 +1043,13 @@
     }
   },
   "ai": {
+    "revert": {
+      "done": "Les modifications de la tâche IA ont été annulées.",
+      "partial_one": "Tâche IA annulée, sauf {{count}} modification gardée (changée depuis, ou impossible à défaire).",
+      "partial_other": "Tâche IA annulée, sauf {{count}} modifications gardées (changées depuis, ou impossibles à défaire).",
+      "nothing_one": "Rien n’a pu être annulé : {{count}} modification a été changée depuis.",
+      "nothing_other": "Rien n’a pu être annulé : {{count}} modifications ont été changées depuis."
+    },
     "devTest": {
       "title": "Tester une tâche (développement)",
       "prompt": "Prompt de la tâche",
@@ -1052,6 +1060,7 @@
       "cancel": "Annuler",
       "retry": "Relancer",
       "followUp": "Suite (avec le prompt)",
+      "revert": "Annuler la tâche",
       "status": {
         "queued": "En file",
         "running": "En cours",

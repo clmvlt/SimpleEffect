@@ -15,5 +15,6 @@ timecode to the user; use either form in later calls.
   exactly as given, never build them yourself.
 
 **Scope.** The task has a scope (below): a sequence, and possibly a time range and some tracks.
-Read anything you need, inside or outside it, but plan changes inside it only. When the user's
-request does not fit the scope, say so instead of working around it.
+Read anything you need, inside or outside it, but change things inside it only: write tools refuse
+the rest (`OUT_OF_SCOPE`). When the user's request does not fit the scope, say so instead of
+working around it.

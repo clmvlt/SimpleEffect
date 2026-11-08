@@ -4,7 +4,7 @@ import type { TFunction } from 'i18next';
  * Translation keys of the labels se-core gives the user transactions it builds itself
  * (`RENAME_LABEL`, `sequences::sequence_labels`, `tracks::labels`, `markers::labels`,
  * `items::labels`, `transitions::labels` in `crates/se-app/src/project_service/`, `labels` in
- * `crates/se-app/src/media_service.rs`). Keep
+ * `crates/se-app/src/media_service.rs`, `REVERT_TASK_LABEL` in `crates/se-app/src/tasks/revert.rs`). Keep
  * both sides in step. Other labels (from AI agents, later from the UI) are shown as they are.
  */
 const CORE_LABEL_KEYS = {
@@ -65,6 +65,7 @@ const CORE_LABEL_KEYS = {
   'Add transitions': 'editor.history.addTransitions',
   'Change transition': 'editor.history.changeTransition',
   'Remove transitions': 'editor.history.removeTransitions',
+  'Revert AI task': 'editor.history.revertAiTask',
 } as const;
 
 /** The undo/redo label to show for a transaction label received from the core. */

@@ -13,7 +13,7 @@ import { describeEvent, taskActions } from '../../services/task-log';
 
 /**
  * « Tester une tâche » (development builds only): sends a prompt as a task over the active
- * sequence, lists the project's tasks with cancel / retry / follow-up, and shows the selected
+ * sequence, lists the project's tasks with cancel / retry / follow-up / revert, and shows the selected
  * task's event stream as it arrives. Raw on purpose: prompt 20 builds the real task UX.
  */
 export function AgentTestPanel() {
@@ -73,6 +73,9 @@ export function AgentTestPanel() {
             onFollowUp={() => {
               if (prompt.trim() !== '') commands.followUp(task.projectId, task.id, prompt);
             }}
+            onRevert={() => {
+              commands.revert(task.projectId, task.id);
+            }}
           />
         ))}
       </ul>
@@ -102,9 +105,18 @@ interface TaskRowProps {
   readonly onCancel: () => void;
   readonly onRetry: () => void;
   readonly onFollowUp: () => void;
+  readonly onRevert: () => void;
 }
 
-function TaskRow({ task, selected, onSelect, onCancel, onRetry, onFollowUp }: TaskRowProps) {
+function TaskRow({
+  task,
+  selected,
+  onSelect,
+  onCancel,
+  onRetry,
+  onFollowUp,
+  onRevert,
+}: TaskRowProps) {
   const { t } = useTranslation();
   const actions = taskActions(task);
   return (
@@ -129,6 +141,11 @@ function TaskRow({ task, selected, onSelect, onCancel, onRetry, onFollowUp }: Ta
         {actions.followUp && (
           <Button size="xs" variant="ghost" onClick={onFollowUp}>
             {t('ai.devTest.followUp')}
+          </Button>
+        )}
+        {actions.revert && (
+          <Button size="xs" variant="ghost" onClick={onRevert}>
+            {t('ai.devTest.revert')}
           </Button>
         )}
       </div>

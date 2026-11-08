@@ -1,4 +1,4 @@
-import type { Task, TaskEventRecord, TaskStatus } from '@se/protocol';
+import type { Task, TaskEventRecord, TaskRevertReport, TaskStatus } from '@se/protocol';
 
 /** `tasks` with `task` put in place (replacing the same id) or appended. */
 export function upsertTask(tasks: readonly Task[], task: Task): Task[] {
@@ -26,16 +26,34 @@ export interface TaskActions {
   readonly cancel: boolean;
   readonly retry: boolean;
   readonly followUp: boolean;
+  readonly revert: boolean;
 }
 
-/** Cancel while active; retry once failed or cancelled; follow up once its session is known. */
+/**
+ * Cancel while active; retry once failed or cancelled; follow up once its session is known;
+ * revert once finished with edits (an open changeset).
+ */
 export function taskActions(task: Task): TaskActions {
   const active = isTaskActive(task.status);
   return {
     cancel: active,
     retry: task.status.kind === 'failed' || task.status.kind === 'cancelled',
     followUp: !active && task.agentSessionId !== null,
+    revert: !active && task.changesetId !== null,
   };
+}
+
+/** How a revert went, for its toast: everything undone, some edits kept, or nothing undone. */
+export type RevertOutcome =
+  | { readonly kind: 'reverted' }
+  | { readonly kind: 'partial'; readonly kept: number }
+  | { readonly kind: 'nothing'; readonly kept: number };
+
+/** The outcome of a revert report. */
+export function revertOutcome(report: TaskRevertReport): RevertOutcome {
+  const kept = report.conflicts.length;
+  if (!report.reverted) return { kind: 'nothing', kept };
+  return kept === 0 ? { kind: 'reverted' } : { kind: 'partial', kept };
 }
 
 /** One line describing an event of the log (development panel, not translated on purpose). */
