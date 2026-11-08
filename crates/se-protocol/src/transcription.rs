@@ -38,6 +38,9 @@ pub struct TranscriptionPreferences {
     /// A folder holding the user's own `whisper-cli` build, searched first; `null` uses the
     /// bundled one (and the GPU pack when installed).
     pub whisper_dir: Option<String>,
+    /// Whether hesitations (« euh », « um ») are written in transcripts, so they can be cut
+    /// (prompt 22); whisper otherwise tends to clean them away.
+    pub keep_hesitations: bool,
 }
 
 impl Default for TranscriptionPreferences {
@@ -48,6 +51,7 @@ impl Default for TranscriptionPreferences {
             auto_transcribe: false,
             voice_detection: true,
             whisper_dir: None,
+            keep_hesitations: true,
         }
     }
 }

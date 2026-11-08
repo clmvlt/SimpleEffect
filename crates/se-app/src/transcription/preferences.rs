@@ -16,6 +16,8 @@ pub mod keys {
     pub const VOICE_DETECTION: &str = "transcription.voiceDetection";
     /// Folder holding the user's own `whisper-cli` (empty: bundled builds).
     pub const WHISPER_DIR: &str = "transcription.whisperDir";
+    /// Write hesitations in transcripts (`true` or `false`).
+    pub const KEEP_HESITATIONS: &str = "transcription.keepHesitations";
 }
 
 /// The stored preferences (defaults for values never set or unreadable).
@@ -38,6 +40,9 @@ pub async fn load(
             .await?
             .unwrap_or(defaults.voice_detection),
         whisper_dir: text(library, keys::WHISPER_DIR).await?,
+        keep_hesitations: flag(library, keys::KEEP_HESITATIONS)
+            .await?
+            .unwrap_or(defaults.keep_hesitations),
     })
 }
 
@@ -73,6 +78,10 @@ pub async fn save(
         (
             keys::WHISPER_DIR,
             whisper_dir.unwrap_or_default().to_owned(),
+        ),
+        (
+            keys::KEEP_HESITATIONS,
+            preferences.keep_hesitations.to_string(),
         ),
     ];
     for (key, value) in entries {

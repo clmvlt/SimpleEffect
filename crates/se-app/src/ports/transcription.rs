@@ -50,6 +50,9 @@ pub struct TranscriptionRequest {
     pub language: Option<String>,
     /// Names and terms to spell this way (one line), or `None`.
     pub vocabulary: Option<String>,
+    /// Write hesitations (« euh », « um ») instead of cleaning them away, so smart cuts can find
+    /// them (prompt 22).
+    pub keep_hesitations: bool,
     /// Whether the GPU may be used.
     pub use_gpu: bool,
 }

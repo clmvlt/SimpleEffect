@@ -13,7 +13,9 @@ pub const OUTPUT_NAME: &str = "transcript";
 /// - DTW alignment (`-dtw <preset>`) for catalogue models, which needs flash attention off
 ///   (`-nfa`; about 20 % slower, much better word times);
 /// - voice detection (`--vad -vm <model>`) when a voice model is given;
-/// - the vocabulary as the initial prompt;
+/// - the initial prompt: a few hesitations in the transcript's language when they must be kept
+///   (whisper imitates the prompt's style, so it writes « euh » instead of cleaning it away),
+///   then the vocabulary;
 /// - `-ng` when the GPU must not be used.
 #[must_use]
 pub fn arguments(request: &TranscriptionRequest, use_gpu: bool, threads: usize) -> Vec<String> {
@@ -41,13 +43,35 @@ pub fn arguments(request: &TranscriptionRequest, use_gpu: bool, threads: usize) 
     if let Some(voice_model) = &request.voice_model {
         args.extend(["--vad".to_owned(), "-vm".to_owned(), path(voice_model)]);
     }
-    if let Some(vocabulary) = &request.vocabulary {
-        args.extend(["--prompt".to_owned(), vocabulary.clone()]);
+    if let Some(prompt) = initial_prompt(request) {
+        args.extend(["--prompt".to_owned(), prompt]);
     }
     if !use_gpu {
         args.push("-ng".to_owned());
     }
     args
+}
+
+/// Hesitations written in whisper's style, per language (whisper continues the prompt's style).
+fn hesitations(language: Option<&str>) -> &'static str {
+    match language {
+        Some("fr") => "Euh, alors, hum… euh, bon, ben voilà.",
+        Some("en") => "Um, so, uh… I mean, hmm, you know.",
+        _ => "Um, uh, hmm, euh.",
+    }
+}
+
+/// The initial prompt: hesitations (when kept), then the vocabulary.
+fn initial_prompt(request: &TranscriptionRequest) -> Option<String> {
+    let hesitations = request
+        .keep_hesitations
+        .then(|| hesitations(request.language.as_deref()));
+    match (hesitations, request.vocabulary.as_deref()) {
+        (Some(hesitations), Some(vocabulary)) => Some(format!("{hesitations} {vocabulary}")),
+        (Some(hesitations), None) => Some(hesitations.to_owned()),
+        (None, Some(vocabulary)) => Some(vocabulary.to_owned()),
+        (None, None) => None,
+    }
 }
 
 fn path(path: &Path) -> String {
@@ -74,6 +98,7 @@ mod tests {
             voice_model: Some(PathBuf::from("models/ggml-silero-v6.2.0.bin")),
             language: Some("fr".to_owned()),
             vocabulary: Some("SimpleEffect, Dimzou".to_owned()),
+            keep_hesitations: false,
             use_gpu: true,
         }
     }
@@ -103,5 +128,19 @@ mod tests {
         assert!(line.contains("-l auto"));
         assert!(!line.contains("-dtw") && !line.contains("--vad") && !line.contains("--prompt"));
         assert!(line.ends_with("-t 1 -ng"));
+    }
+
+    #[test]
+    fn kept_hesitations_open_the_prompt_in_the_transcripts_language() {
+        let mut request = request();
+        request.keep_hesitations = true;
+        let args = arguments(&request, true, 8);
+        assert!(
+            args.contains(&"Euh, alors, hum… euh, bon, ben voilà. SimpleEffect, Dimzou".to_owned())
+        );
+        request.vocabulary = None;
+        request.language = None;
+        let args = arguments(&request, true, 8);
+        assert!(args.contains(&"Um, uh, hmm, euh.".to_owned()));
     }
 }
