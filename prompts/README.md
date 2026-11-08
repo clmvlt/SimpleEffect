@@ -58,7 +58,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | [x] | 19 | [Serveur MCP : outils d'écriture, portée, changesets](19-mcp-ecriture.md) ⚠️ | 18 | 21 |
 | [x] | 20 | [UX IA : composeur, tâches parallèles, annulation](20-ux-ia.md) | 19 | 21 |
 | **Phase 5 — Transcription et audio intelligent** |||||
-| [ ] | 21 | [Transcription locale (whisper.cpp)](21-transcription.md) | 09, 18 | 19, 20 |
+| [x] | 21 | [Transcription locale (whisper.cpp)](21-transcription.md) | 09, 18 | 19, 20 |
 | [ ] | 22 | [Montage par le texte et coupes intelligentes](22-montage-texte.md) | 14, 19, 21 | — |
 | [ ] | 23 | [Sous-titres automatiques animés](23-sous-titres.md) | 15, 22 | 24 |
 | **Phase 6 — Motion design avancé** |||||
