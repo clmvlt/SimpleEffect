@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-08 — Prompt 17: Runtime des agents IA (générique + Claude Code) — Done
 
-**Branch**: `feature/17-agents-runtime`, merged into `dev` at `<merge>`
+**Branch**: `feature/17-agents-runtime`, merged into `dev` at `179f658`
 
 **Done**
 - se-protocol (ADR-0027): `ai.rs` (`ProviderId`, `ProviderInfo { name, command, loginCommand, helpUrl }`, `InstallationStatus`, `AuthStatus`, `ModelOption`, `EffortLevel`, `ProviderCapabilities`, `AiStatus`, `AiSettings`, `AgentFailureKind`, `AgentEvent`), `tasks.rs` (`TaskScope`, `TaskStatus`, `RunKind`, `TaskRun`, `Task`, `TaskEventRecord`, `SubmitTaskRequest`); commands `submitTask`, `cancelTask`, `retryTask`, `followUpTask`, `listTasks`, `getTaskEvents`, `getAiStatus`, `refreshAiStatus`, `getAiSettings`, `updateAiSettings`; events `taskUpdated`, `taskEventAppended`, `aiStatusChanged`; codes `TASK_NOT_FOUND`, `TASK_NOT_ACTIVE`, `TASK_STILL_ACTIVE`, `TASK_NOT_RESUMABLE`, `AI_UNAVAILABLE`. `command.rs` tests moved to `command/tests.rs`.
