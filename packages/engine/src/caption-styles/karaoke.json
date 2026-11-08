@@ -1,0 +1,27 @@
+{
+  "id": "karaoke",
+  "style": {
+    "fontFamily": "Montserrat",
+    "fontWeight": 800,
+    "italic": false,
+    "fontSize": 62,
+    "textCase": "normal",
+    "lineHeight": 1.2,
+    "textColor": "#ffffff",
+    "activeColor": "#ffd600",
+    "emphasisColor": "#ff5c8a",
+    "outline": { "enabled": true, "color": "#000000", "width": 4 },
+    "shadow": { "enabled": false, "color": "#00000099", "blur": 6, "offset": { "x": 0, "y": 2 } },
+    "background": {
+      "enabled": false,
+      "color": "#000000b3",
+      "padding": { "x": 24, "y": 12 },
+      "cornerRadius": 12
+    },
+    "position": { "x": 0.5, "y": 0.86 },
+    "animation": "wordHighlight",
+    "highlightSpoken": true,
+    "maxCharsPerLine": 32,
+    "maxLines": 2
+  }
+}

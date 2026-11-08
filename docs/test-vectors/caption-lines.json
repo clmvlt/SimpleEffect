@@ -1,0 +1,14 @@
+{
+  "description": "Greedy caption line breaking by characters (se_domain::captions::caption_lines and @se/engine captionLines). Characters are Unicode scalar values; a line holds words while their characters plus one space between each fit in maxChars; a longer word gets a line of its own. lines are [start, end) word indices.",
+  "cases": [
+    { "name": "fits on one line", "words": ["Bonjour", "à", "tous"], "maxChars": 32, "lines": [[0, 3]] },
+    { "name": "exact fit counts the spaces", "words": ["Bonjour", "à", "tous"], "maxChars": 14, "lines": [[0, 3]] },
+    { "name": "one character short", "words": ["Bonjour", "à", "tous"], "maxChars": 13, "lines": [[0, 2], [2, 3]] },
+    { "name": "greedy, not balanced", "words": ["Bonjour", "à", "tous", "et", "bienvenue"], "maxChars": 12, "lines": [[0, 2], [2, 4], [4, 5]] },
+    { "name": "a long word alone", "words": ["anticonstitutionnellement", "oui", "non"], "maxChars": 10, "lines": [[0, 1], [1, 3]] },
+    { "name": "accents count once", "words": ["été", "là", "où"], "maxChars": 9, "lines": [[0, 3]] },
+    { "name": "emoji count as scalars", "words": ["🔥🔥", "go"], "maxChars": 5, "lines": [[0, 2]] },
+    { "name": "punctuation is part of words", "words": ["Prêts", "?", "Allons-y", "!"], "maxChars": 10, "lines": [[0, 2], [2, 4]] },
+    { "name": "no words", "words": [], "maxChars": 10, "lines": [] }
+  ]
+}

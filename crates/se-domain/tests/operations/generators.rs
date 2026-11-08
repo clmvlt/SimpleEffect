@@ -7,18 +7,22 @@ use std::collections::BTreeMap;
 
 use proptest::prelude::*;
 use se_domain::{
-    AddAsset, AddItem, AddMarker, AddSequence, AddTrack, AddTransition, Animatable, AnimationPhase,
-    ApplyAnimationPreset, AssetId, AssetPatch, Assign, CaptionPatch, Color, Decodability,
-    DerivedFile, DerivedStatus, Easing, FadeShape, Flicks, Format, FormatPreset, FrameRate,
-    InsertGap, Item, ItemEdge, ItemId, ItemKind, ItemPatch, Keyframe, LinkGroupId, LinkItems,
-    Marker, MarkerColor, MarkerId, MarkerPatch, MediaClipPatch, MoveItem, Operation, Project,
-    PropertyAnimation, Reframe, RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack,
-    RemoveTransition, RenameProject, ReorderTracks, RippleDeleteRange, RippleDeleteRanges,
-    SceneSummary, Sequence, SequenceId, SequencePatch, SetKeyframes, SetTranscriptionSettings,
-    ShapePatch, SplitItem, StreamDecodability, TemplateParamValue, TemplatePatch, TextPatch,
-    TimeRange, TrackId, TrackKind, TrackPatch, TranscriptionSettings, Transition,
-    TransitionAlignment, TransitionId, TransitionKind, TransitionPatch, TrimItem, UnlinkItems,
-    UpdateAsset, UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack, UpdateTransition, Vec2,
+    AddAsset, AddCaptionStyle, AddItem, AddMarker, AddSequence, AddTrack, AddTransition,
+    Animatable, AnimationPhase, ApplyAnimationPreset, AssetId, AssetPatch, Assign,
+    CaptionAnimation, CaptionItem, CaptionPatch, CaptionStyleId, CaptionStylePatch, CaptionWord,
+    Color, Decodability, DerivedFile, DerivedStatus, DesignPixels, Easing, FadeShape, Flicks,
+    Format, FormatPreset, FrameRate, InsertGap, Item, ItemEdge, ItemId, ItemKind, ItemPatch,
+    Keyframe, LinkGroupId, LinkItems, Marker, MarkerColor, MarkerId, MarkerPatch, MediaClipPatch,
+    MoveItem, Operation, Project, PropertyAnimation, Reframe, RemoveAsset, RemoveCaptionStyle,
+    RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack, RemoveTransition, RenameProject,
+    ReorderTracks, RippleDeleteRange, RippleDeleteRanges, SceneSummary, Sequence, SequenceId,
+    SequencePatch, SetKeyframes, SetTranscriptionSettings, ShapePatch, SplitItem,
+    StreamDecodability, TemplateParamValue, TemplatePatch, TextPatch, TimeRange, TrackId,
+    TrackKind, TrackPatch, TranscriptionSettings, Transition, TransitionAlignment, TransitionId,
+    TransitionKind, TransitionPatch, TrimItem, UnlinkItems, UpdateAsset, UpdateCaptionStyle,
+    UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack, UpdateTransition, Vec2,
+    caption_style_from_preset,
+    captions::retimed_words,
     test_support::{millis, track},
 };
 
@@ -28,7 +32,7 @@ use crate::picking::{
 
 /// Number of operation kinds the generator produces (every operation but `RestoreItem`, which
 /// the inverses exercise).
-pub const KINDS: u8 = 31;
+pub const KINDS: u8 = 32;
 
 /// Random numbers from which one operation is built.
 #[derive(Debug, Clone, Copy)]
@@ -80,8 +84,61 @@ impl Generator {
             25..=27 => self.transition_operation(project, seed),
             28 => preset(project, seed),
             29 => Some(transcription_settings(seed)),
-            _ => self.ranges_operation(project, seed),
+            30 => self.ranges_operation(project, seed),
+            _ => self.caption_operation(project, seed),
         }
+    }
+
+    /// Caption styles (add, change — now and then out of range —, remove — refused while used)
+    /// and caption style changes.
+    fn caption_operation(&mut self, project: &Project, seed: Seed) -> Option<Operation> {
+        let styles: Vec<CaptionStyleId> = project
+            .caption_styles
+            .iter()
+            .map(|style| style.id)
+            .collect();
+        let presets = ["tiktokBold", "minimal", "karaoke", "box"];
+        Some(match seed.choice % 4 {
+            0 => AddCaptionStyle {
+                index: seed.pick.is_multiple_of(2).then_some(0),
+                style: caption_style_from_preset(
+                    presets[usize::try_from(seed.pick).unwrap_or(0) % presets.len()],
+                    CaptionStyleId::from_test_index(self.fresh()),
+                )
+                .ok()?,
+            }
+            .into(),
+            1 => UpdateCaptionStyle {
+                style: *pick(&styles, seed.pick)?,
+                patch: CaptionStylePatch {
+                    font_size: Some(DesignPixels(f64::from(seed.pick % 120))),
+                    max_lines: Some(seed.pick % 6),
+                    animation: Some(CaptionAnimation::PopPerWord),
+                    ..CaptionStylePatch::default()
+                },
+            }
+            .into(),
+            2 => RemoveCaptionStyle {
+                style: *pick(&styles, seed.pick)?,
+            }
+            .into(),
+            _ => {
+                let captions: Vec<ItemId> = items(project)
+                    .into_iter()
+                    .filter(|(_, item)| matches!(item.kind, ItemKind::Caption(_)))
+                    .map(|(_, item)| item.id)
+                    .collect();
+                UpdateItem {
+                    item: *pick(&captions, seed.pick)?,
+                    patch: ItemPatch::Caption(CaptionPatch {
+                        words: None,
+                        style_id: Some(*pick(&styles, seed.pick / 7)?),
+                    }),
+                    expected_revision: None,
+                }
+                .into()
+            }
+        })
     }
 
     fn item_operation(&mut self, project: &Project, seed: Seed) -> Option<Operation> {
@@ -509,15 +566,17 @@ fn update(item: &Item, seed: Seed) -> Operation {
         {
             // A patch of the wrong kind (refused), now and then.
             ItemPatch::Caption(CaptionPatch {
-                text: Some("Oops".to_owned()),
+                words: Some(Vec::new()),
+                style_id: None,
             })
         }
         ItemKind::Shape(_) => ItemPatch::Shape(ShapePatch {
             fill: Some(Color::BLACK),
             ..ShapePatch::default()
         }),
-        ItemKind::Caption(_) => ItemPatch::Caption(CaptionPatch {
-            text: Some(format!("Caption {}", seed.choice % 10)),
+        ItemKind::Caption(caption) => ItemPatch::Caption(CaptionPatch {
+            words: Some(caption_words(caption, item.timeline_range.duration(), seed)),
+            style_id: None,
         }),
         ItemKind::MotionTemplate(_) => ItemPatch::MotionTemplate(TemplatePatch {
             template_id: None,
@@ -628,6 +687,23 @@ fn keyframes(item: &Item, seed: Seed) -> Operation {
         expected_revision: None,
     }
     .into()
+}
+
+/// New words of a caption: an edited text (valid), now and then overlapping words (refused).
+fn caption_words(caption: &CaptionItem, duration: Flicks, seed: Seed) -> Vec<CaptionWord> {
+    if seed.choice.is_multiple_of(9) {
+        return vec![
+            CaptionWord::new("a", Flicks::ZERO, duration),
+            CaptionWord::new("b", Flicks::ZERO, duration),
+        ];
+    }
+    let edits = ["Bonjour à tous", "Merci", "", "Merci d'être là ce soir"];
+    let text = edits[usize::try_from(seed.choice).unwrap_or(0) % edits.len()];
+    let mut words = retimed_words(&caption.words, text, duration);
+    if let Some(first) = words.first_mut() {
+        first.emphasis = seed.pick.is_multiple_of(2);
+    }
+    words
 }
 
 fn track_patch(seed: Seed) -> TrackPatch {

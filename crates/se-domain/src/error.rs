@@ -9,8 +9,8 @@ mod code;
 pub use code::DomainErrorCode;
 
 use crate::{
-    AnimatableProperty, AnimationPhase, AssetId, Flicks, FrameRate, ItemEdge, ItemId, MarkerId,
-    SequenceId, TaskId, TrackId, TransitionId, Violation,
+    AnimatableProperty, AnimationPhase, AssetId, CaptionStyleId, Flicks, FrameRate, ItemEdge,
+    ItemId, MarkerId, SequenceId, TaskId, TrackId, TransitionId, Violation,
 };
 
 /// A refused change. Nothing was modified.
@@ -250,6 +250,38 @@ pub enum DomainError {
         /// One item using it.
         item: ItemId,
     },
+    /// No caption style has this id.
+    #[error(
+        "caption style {style} does not exist in this project; read the project again for its          caption styles"
+    )]
+    CaptionStyleNotFound {
+        /// The unknown id.
+        style: CaptionStyleId,
+    },
+    /// A caption style still used by captions cannot be removed.
+    #[error(
+        "caption style {style} is used by caption {item} (and maybe others); give those captions          another style first"
+    )]
+    CaptionStyleInUse {
+        /// The style.
+        style: CaptionStyleId,
+        /// One caption using it.
+        item: ItemId,
+    },
+    /// No predefined caption style has this name.
+    #[error("there is no caption style preset '{preset}'; use one of: {known}")]
+    UnknownCaptionPreset {
+        /// The requested preset.
+        preset: String,
+        /// The presets that exist, comma separated.
+        known: String,
+    },
+    /// The embedded caption style presets could not be read (a bug, guarded by a test).
+    #[error("the caption style presets cannot be read ({reason}); this is a bug of SimpleEffect")]
+    CaptionPresetsUnavailable {
+        /// What is wrong with them.
+        reason: String,
+    },
     /// Transcription settings with a malformed language or vocabulary.
     #[error("invalid transcription settings: {reason}")]
     InvalidTranscriptionSettings {
@@ -387,7 +419,9 @@ impl DomainError {
             | Self::PresetNotApplicable { .. } => DomainErrorCode::WrongItemKind,
             Self::UnknownAnimationPreset { .. } => DomainErrorCode::UnknownAnimationPreset,
             Self::PresetPhaseNotSupported { .. } => DomainErrorCode::PresetPhaseNotSupported,
-            Self::PresetLibraryUnavailable { .. } => DomainErrorCode::PresetLibraryUnavailable,
+            Self::PresetLibraryUnavailable { .. } | Self::CaptionPresetsUnavailable { .. } => {
+                DomainErrorCode::PresetLibraryUnavailable
+            }
             Self::EmptyItemList { .. } | Self::DuplicateItem { .. } => {
                 DomainErrorCode::InvalidItemList
             }
@@ -397,6 +431,9 @@ impl DomainError {
             Self::MissingSplitId { .. } => DomainErrorCode::MissingSplitId,
             Self::TimeOutOfRange { .. } => DomainErrorCode::TimeOutOfRange,
             Self::AssetInUse { .. } => DomainErrorCode::AssetInUse,
+            Self::CaptionStyleNotFound { .. } => DomainErrorCode::CaptionStyleNotFound,
+            Self::CaptionStyleInUse { .. } => DomainErrorCode::CaptionStyleInUse,
+            Self::UnknownCaptionPreset { .. } => DomainErrorCode::UnknownCaptionPreset,
             Self::InvalidTranscriptionSettings { .. } => {
                 DomainErrorCode::InvalidTranscriptionSettings
             }

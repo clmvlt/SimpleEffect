@@ -71,11 +71,13 @@ pub enum ViolationCode {
     InvalidTransition,
     /// A transition needs more media beyond an item's edge than the item's asset has.
     InsufficientHandles,
+    /// Caption words that are empty, overlap, are not in speaking order or leave their item.
+    InvalidCaptionWords,
 }
 
 impl ViolationCode {
     /// Every code, in declaration order.
-    pub const ALL: [Self; 19] = [
+    pub const ALL: [Self; 20] = [
         Self::DuplicateId,
         Self::UnknownReference,
         Self::AssetKindMismatch,
@@ -95,6 +97,7 @@ impl ViolationCode {
         Self::LinkGroupAcrossSequences,
         Self::InvalidTransition,
         Self::InsufficientHandles,
+        Self::InvalidCaptionWords,
     ];
 
     /// The serialized form (`OVERLAPPING_ITEMS`).
@@ -120,6 +123,7 @@ impl ViolationCode {
             Self::LinkGroupAcrossSequences => "LINK_GROUP_ACROSS_SEQUENCES",
             Self::InvalidTransition => "INVALID_TRANSITION",
             Self::InsufficientHandles => "INSUFFICIENT_HANDLES",
+            Self::InvalidCaptionWords => "INVALID_CAPTION_WORDS",
         }
     }
 }

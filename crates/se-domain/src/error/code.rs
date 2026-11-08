@@ -49,6 +49,12 @@ pub enum DomainErrorCode {
     TimeOutOfRange,
     /// An asset still used by items.
     AssetInUse,
+    /// No caption style has the given id.
+    CaptionStyleNotFound,
+    /// A caption style still used by captions.
+    CaptionStyleInUse,
+    /// No predefined caption style has the given name.
+    UnknownCaptionPreset,
     /// An empty name.
     EmptyName,
     /// An insertion index past the end of a list.

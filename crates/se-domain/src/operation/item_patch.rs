@@ -11,8 +11,9 @@ use ts_rs::TS;
 
 use super::{Assign, checks::swap_field};
 use crate::{
-    Animatable, AssetId, Color, DesignPixels, FadeShape, Flicks, ImageFit, ItemKind, Reframe,
-    ShapeGeometry, TemplateId, TemplateParamValue, TextAlign, TextCase, TextItem, Vec2,
+    Animatable, AssetId, CaptionStyleId, CaptionWord, Color, DesignPixels, FadeShape, Flicks,
+    ImageFit, ItemKind, Reframe, ShapeGeometry, TemplateId, TemplateParamValue, TextAlign,
+    TextCase, TextItem, Vec2,
 };
 
 /// A change of an item's content; its kind must match the item's.
@@ -132,12 +133,15 @@ pub struct TemplatePatch {
     pub params: BTreeMap<String, Option<TemplateParamValue>>,
 }
 
-/// Changes of a [`crate::CaptionItem`].
+/// Changes of a [`crate::CaptionItem`] (clients may omit unchanged fields).
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(default, rename_all = "camelCase")]
+#[ts(optional_fields)]
 pub struct CaptionPatch {
-    /// Another subtitle text.
-    pub text: Option<String>,
+    /// Other words (text, timing, emphasis), item-relative and inside the item.
+    pub words: Option<Vec<CaptionWord>>,
+    /// Another project caption style.
+    pub style_id: Option<CaptionStyleId>,
 }
 
 impl ItemPatch {
@@ -190,7 +194,8 @@ impl ItemPatch {
                 }
             }
             (Self::Caption(patch), ItemKind::Caption(caption)) => {
-                swap_field(&mut caption.text, patch.text.as_ref());
+                swap_field(&mut caption.words, patch.words.as_ref());
+                swap_field(&mut caption.style_id, patch.style_id.as_ref());
             }
             _ => return false,
         }

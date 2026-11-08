@@ -26,6 +26,15 @@ pub(super) fn check(project: &Project, report: &mut Report) {
         "template",
         report,
     );
+    let caption_styles = root.field("captionStyles");
+    report_duplicates(
+        project
+            .caption_styles
+            .iter()
+            .map(|style| (style.id, caption_styles.key(style.id))),
+        "caption style",
+        report,
+    );
     let sequences = root.field("sequences");
     report_duplicates(
         project

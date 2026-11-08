@@ -22,6 +22,8 @@
 //!   [`Actor`].
 //! - [`history`]: [`History`], the user's undo/redo stacks.
 //! - [`changeset`]: [`Changeset`] of an AI task and [`plan_revert`] with its [`Conflict`]s.
+//! - [`caption_preset`] and [`captions`]: predefined caption styles, and the pure rules of
+//!   captions (line breaking, segmentation of spoken words, text edits, merges and splits).
 //! - [`transcript`]: words spoken in media ([`Transcript`]) and in a sequence
 //!   ([`sequence_transcript`]).
 //! - [`error`]: [`DomainError`], why a change was refused.
@@ -34,6 +36,8 @@
 
 pub mod analysis;
 pub mod animation_preset;
+pub mod caption_preset;
+pub mod captions;
 pub mod changeset;
 pub mod color;
 pub mod document;
@@ -58,36 +62,41 @@ pub use animation_preset::{
     AnimationPhase, AnimationPreset, AnimationPresetLibrary, PresetPlacement, PresetRefusal,
     animation_presets, expand_preset, preset_samples,
 };
+pub use caption_preset::{
+    CaptionStylePreset, DEFAULT_CAPTION_PRESET, caption_style_from_preset, caption_style_presets,
+};
 pub use changeset::{Changeset, ChangesetEntry, Conflict, RevertPlan, plan_revert};
 pub use color::{Color, ColorParseError};
 pub use document::{
     Animatable, AnimatableProperty, Asset, AssetDurations, AssetKind, AudioStreamInfo, BrandKit,
-    CURRENT_SCHEMA_VERSION, CaptionItem, ContentFingerprint, DEFAULT_SAMPLE_RATE, Decodability,
-    DerivedFile, DerivedMedia, DerivedStatus, Easing, EasingPreset, FadeShape, FingerprintError,
-    Format, FormatPreset, Handles, ImageFit, ImageItem, Item, ItemKind, Keyframe, Marker,
-    MarkerColor, MediaClip, MediaInfo, MotionTemplate, Origin, Project, ProjectSettings,
-    PropertyMut, PropertyRef, Reframe, Sequence, ShapeGeometry, ShapeItem, ShapeKind,
-    StreamDecodability, Stroke, TemplateItem, TemplateParamValue, TextAlign, TextBackground,
-    TextCase, TextItem, TextShadow, TextStyle, Track, TrackKind, TranscriptionSettings,
-    Transform2D, Transition, TransitionAlignment, TransitionKind, TransitionProblem,
-    VideoStreamInfo, fitted_transition, item_handles, transition_problem, transition_room,
+    CAPTION_LINE_CHARS, CAPTION_LINES, CURRENT_SCHEMA_VERSION, CaptionAnimation, CaptionBox,
+    CaptionItem, CaptionOutline, CaptionShadow, CaptionStyle, CaptionWord, ContentFingerprint,
+    DEFAULT_SAMPLE_RATE, Decodability, DerivedFile, DerivedMedia, DerivedStatus, Easing,
+    EasingPreset, FadeShape, FingerprintError, Format, FormatPreset, Handles, ImageFit, ImageItem,
+    Item, ItemKind, Keyframe, Marker, MarkerColor, MediaClip, MediaInfo, MotionTemplate, Origin,
+    Project, ProjectSettings, PropertyMut, PropertyRef, Reframe, Sequence, ShapeGeometry,
+    ShapeItem, ShapeKind, StreamDecodability, Stroke, TemplateItem, TemplateParamValue, TextAlign,
+    TextBackground, TextCase, TextItem, TextShadow, TextStyle, Track, TrackKind,
+    TranscriptionSettings, Transform2D, Transition, TransitionAlignment, TransitionKind,
+    TransitionProblem, VideoStreamInfo, fitted_transition, item_handles, transition_problem,
+    transition_room,
 };
 pub use error::{DomainError, DomainErrorCode};
 pub use history::{History, HistoryStep};
 pub use ids::{
-    AssetId, ChangesetId, IdError, ItemId, JobId, LinkGroupId, MarkerId, ProjectId, SequenceId,
-    TaskId, TemplateId, TrackId, TransactionId, TransitionId, Uuid,
+    AssetId, CaptionStyleId, ChangesetId, IdError, ItemId, JobId, LinkGroupId, MarkerId, ProjectId,
+    SequenceId, TaskId, TemplateId, TrackId, TransactionId, TransitionId, Uuid,
 };
 pub use operation::{
-    AddAsset, AddItem, AddMarker, AddSequence, AddTrack, AddTransition, Applied,
-    ApplyAnimationPreset, AssetPatch, Assign, CaptionPatch, ImagePatch, InsertGap, ItemEdge,
-    ItemPatch, LinkItems, MarkerPatch, MediaClipPatch, MoveItem, Operation, PropertyAnimation,
-    RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack, RemoveTransition,
-    RenameProject, ReorderTracks, RestoreItem, RippleDeleteRange, RippleDeleteRanges,
-    SequencePatch, SetKeyframes, SetTranscriptionSettings, ShapePatch, SplitItem, TemplatePatch,
-    TextPatch, TouchedEntities, TrackPatch, TransitionPatch, TransitionSnapshot, TrimItem,
-    UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack,
-    UpdateTransition, apply, apply_all, remaining_parts,
+    AddAsset, AddCaptionStyle, AddItem, AddMarker, AddSequence, AddTrack, AddTransition, Applied,
+    ApplyAnimationPreset, AssetPatch, Assign, CaptionPatch, CaptionStylePatch, ImagePatch,
+    InsertGap, ItemEdge, ItemPatch, LinkItems, MarkerPatch, MediaClipPatch, MoveItem, Operation,
+    PropertyAnimation, RemoveAsset, RemoveCaptionStyle, RemoveItem, RemoveMarker, RemoveSequence,
+    RemoveTrack, RemoveTransition, RenameProject, ReorderTracks, RestoreItem, RippleDeleteRange,
+    RippleDeleteRanges, SequencePatch, SetKeyframes, SetTranscriptionSettings, ShapePatch,
+    SplitItem, TemplatePatch, TextPatch, TouchedEntities, TrackPatch, TransitionPatch,
+    TransitionSnapshot, TrimItem, UnlinkItems, UpdateAsset, UpdateCaptionStyle, UpdateItem,
+    UpdateMarker, UpdateSequence, UpdateTrack, UpdateTransition, apply, apply_all, remaining_parts,
 };
 pub use reformat::{
     ClipReframePolicy, FormatAdaptation, SequenceIds, TEXT_WIDTH_SHARE, adapted_patch,

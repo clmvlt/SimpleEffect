@@ -183,6 +183,11 @@ uuid_id!(
     "transition"
 );
 uuid_id!(
+    /// Identifies a [`crate::CaptionStyle`] within its project (prompt 23).
+    CaptionStyleId,
+    "caption style"
+);
+uuid_id!(
     /// Identifies a [`crate::Transaction`]: one atomic group of operations by one actor.
     TransactionId,
     "transaction"

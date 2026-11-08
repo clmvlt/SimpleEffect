@@ -5,7 +5,7 @@ expression: example_project()
 {
   "id": "00000000-0001-7000-8000-000000000000",
   "name": "Example",
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "revision": 42,
   "settings": {
     "defaultFormat": {
@@ -698,7 +698,27 @@ expression: example_project()
               "linkGroup": null,
               "kind": {
                 "kind": "caption",
-                "text": "Merci d'être là"
+                "words": [
+                  {
+                    "text": "Merci",
+                    "start": 0,
+                    "end": 282240000,
+                    "emphasis": false
+                  },
+                  {
+                    "text": "d'être",
+                    "start": 317520000,
+                    "end": 635040000,
+                    "emphasis": false
+                  },
+                  {
+                    "text": "là",
+                    "start": 670320000,
+                    "end": 1058400000,
+                    "emphasis": false
+                  }
+                ],
+                "styleId": "00000000-0001-7000-8000-000000000000"
               }
             }
           ],
@@ -908,5 +928,51 @@ expression: example_project()
     "fonts": [
       "Inter"
     ]
-  }
+  },
+  "captionStyles": [
+    {
+      "id": "00000000-0001-7000-8000-000000000000",
+      "preset": "minimal",
+      "fontFamily": "Inter",
+      "fontWeight": 600,
+      "italic": false,
+      "fontSize": 52.0,
+      "textCase": "normal",
+      "lineHeight": 1.25,
+      "textColor": "#ffffff",
+      "activeColor": "#ffffff",
+      "emphasisColor": "#ffd600",
+      "outline": {
+        "enabled": false,
+        "color": "#000000",
+        "width": 0.0
+      },
+      "shadow": {
+        "enabled": true,
+        "color": "#000000b3",
+        "blur": 6.0,
+        "offset": {
+          "x": 0.0,
+          "y": 2.0
+        }
+      },
+      "background": {
+        "enabled": false,
+        "color": "#000000b3",
+        "padding": {
+          "x": 24.0,
+          "y": 12.0
+        },
+        "cornerRadius": 12.0
+      },
+      "position": {
+        "x": 0.5,
+        "y": 0.9
+      },
+      "animation": "none",
+      "highlightSpoken": false,
+      "maxCharsPerLine": 42,
+      "maxLines": 2
+    }
+  ]
 }
