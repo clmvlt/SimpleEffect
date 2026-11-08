@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-08 — Prompt 18: Serveur MCP : outils de lecture — Done
 
-**Branch**: `feature/18-mcp-lecture`, merged into `dev` at `<merge>`
+**Branch**: `feature/18-mcp-lecture`, merged into `dev` at `1dc1fa7`
 
 **Done**
 - se-app (ADR-0028): `agent_access` (`AgentContext { project_id, task_id, run, scope }`, `TaskTokenRegistry` minting 256-bit tokens through the new `TokenSource` port, `resolve`, `revoke`; `McpAccess { url, tokens }`); the task runner mints a token per run and revokes it on every exit path (`RevokeOnDrop`); `AgentRunSpec.mcp` is now required. `frame_renders::FrameRenderService` (new `RendererLink` port): checks, publishes `renderFramesRequested`, waits ≤ 30 s, `deliver`/`fail`, forgets abandoned requests, `frame_size`. Read use cases `ProjectService::project`, `MediaService::analysis` and `frame_jpeg` (`MediaFiles::read_file`). Agent instructions split into `00-role.md`, `01-time-and-scope.md`, `02-reading-the-project.md`, composed with the scope (timecodes, track names) and a project summary. New `AppError`s and protocol codes `RENDERER_UNAVAILABLE`, `RENDER_FAILED`, `RENDER_REQUEST_NOT_FOUND`. Test support: `SequentialTokens`, `FakeRendererLink`, `set_analysis`, `MediaTestbed` with tokens and renders (`projects` is now an `Arc`).
