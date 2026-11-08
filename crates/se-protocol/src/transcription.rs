@@ -22,6 +22,10 @@ pub enum TranscriptionBackend {
 
 /// The app's transcription preferences (stored in `library.db`, edited in « Réglages →
 /// Transcription »). Per-project choices (language, vocabulary) live in the document.
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "independent switches of the settings screen, not a state machine"
+)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct TranscriptionPreferences {
