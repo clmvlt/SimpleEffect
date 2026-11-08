@@ -329,9 +329,7 @@
         ["à", 0, 50, "c1", 1, 0],
         ["tous.", 50, 450, "c1", 2, 0]
       ],
-      "segments": [
-        ["c1", 0, 450, 0, 2, 0]
-      ]
+      "segments": [["c1", 0, 450, 0, 2, 0]]
     },
     {
       "name": "untranscribed assets and picture tracks say nothing",
