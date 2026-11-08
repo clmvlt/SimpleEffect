@@ -1,4 +1,4 @@
-import type { EffortLevel, SequenceId } from '@se/protocol';
+import type { EffortLevel, SequenceId, TaskId } from '@se/protocol';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 
@@ -14,8 +14,9 @@ import type { RedoTarget, TrackChoice } from '../services/task-scope';
 
 /**
  * The AI composer's state, kept outside React so it survives switching the side panel's tabs: the
- * draft, how the user adjusted the scope, « Refaire avec l'IA », the model and effort chosen, and
- * the prompt history (model, effort and history are machine preferences saved under `ai.v1`).
+ * draft, how the user adjusted the scope, « Refaire avec l'IA », whether to continue the latest
+ * task, the model and effort chosen, and the prompt history (model, effort and history are machine
+ * preferences saved under `ai.v1`).
  */
 export interface ComposerState {
   readonly text: string;
@@ -31,6 +32,8 @@ export interface ComposerState {
   readonly redo: RedoTarget | null;
   /** Send as a follow-up of the redo item's task (its agent keeps its context). */
   readonly resume: boolean;
+  /** The recent task the user chose not to continue (the next prompt starts a new task). */
+  readonly declinedTaskId: TaskId | null;
   /** `null`: the default of « Réglages → IA ». */
   readonly model: string | null;
   readonly effort: EffortLevel | null;
@@ -49,6 +52,7 @@ const EMPTY_DRAFT = {
   chosenTracks: null,
   redo: null,
   resume: false,
+  declinedTaskId: null,
   browsing: NOT_BROWSING,
 } satisfies Partial<ComposerState>;
 

@@ -153,7 +153,7 @@ impl TranscriptionService {
 }
 
 /// Whether an asset has sound to transcribe.
-fn has_sound(asset: &Asset) -> bool {
+pub(super) fn has_sound(asset: &Asset) -> bool {
     asset.kind != AssetKind::Image
         && asset
             .media_info

@@ -8,8 +8,8 @@ with `add_text`.
 - **Create, then check.** Call `create_captions` on the range (default: your scope) with a style
   suited to the video: `tiktokBold` or `karaoke` for short vertical social videos, `minimal` for
   interviews and long horizontal videos, `box` on busy pictures. Look at one or two frames with
-  `get_frames` afterwards. Media not transcribed yet get no caption: say so and suggest
-  « Transcrire » in the media bin.
+  `get_frames` afterwards. Media not transcribed yet get no caption: transcribe them first with
+  `transcribe_media`.
 - **Readability first.** Keep lines short: about 32–42 characters for two-line captions on 16:9,
   15–20 characters on a single line for vertical videos; at most two lines. A caption should stay
   at least 0.7 s and rarely more than 6 s. Change `max_chars_per_line` / `max_lines` on

@@ -20,8 +20,10 @@ Start broad, then zoom in. Read-only tools change nothing: call them as often as
    (only what the sound clips play: cut passages have no words). `search_transcript` finds where
    words are said ("abonnez-vous") and gives the matching words' times: use it to locate a passage
    before cutting or titling it, then read around it with `get_transcript`. Words marked `unsure`
-   may be misheard. Media listed as `untranscribed` have no transcript yet: ask the user to click
-   « Transcrire »; you cannot transcribe yourself.
+   may be misheard. Media listed as `untranscribed` have no transcript yet: transcribe them with
+   `transcribe_media` (local; it waits for the result — call it again while `finished` is false),
+   then read again. If it answers `NO_TRANSCRIPTION_MODEL`, tell the user to download a model in
+   « Réglages → Transcription » (you never download anything yourself).
 9. `list_animation_presets`, `get_brand_kit`, `list_templates`: animation presets, brand kit and
    motion templates (some are not available yet and say so).
 

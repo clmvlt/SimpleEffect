@@ -1389,6 +1389,16 @@
       "effort": "Effort",
       "effortDefault": "Effort par défaut",
       "resume": "Reprendre la session de la tâche #{{number}} (l’agent garde le contexte de ce qu’il a fait)",
+      "continue": "Continuer la tâche #{{number}} (l’agent garde le contexte de ce qu’il a fait ; décocher pour une nouvelle tâche)",
+      "smallSelection": "L’IA ne pourra modifier que la sélection ({{range}}, pistes {{tracks}}), une petite partie de la séquence.",
+      "useWholeSequence": "Toute la séquence",
+      "speech": {
+        "noModel_one": "« {{name}} » n’est pas transcrit et aucun modèle de transcription n’est installé : l’IA ne pourra pas lire ce qui est dit.",
+        "noModel_other": "{{count}} médias, dont « {{name}} », ne sont pas transcrits et aucun modèle de transcription n’est installé : l’IA ne pourra pas lire ce qui est dit.",
+        "unavailable_one": "« {{name}} » n’est pas transcrit et la transcription ne peut pas fonctionner sur cet ordinateur : l’IA ne pourra pas lire ce qui est dit.",
+        "unavailable_other": "{{count}} médias, dont « {{name}} », ne sont pas transcrits et la transcription ne peut pas fonctionner sur cet ordinateur : l’IA ne pourra pas lire ce qui est dit.",
+        "openSettings": "Réglages"
+      },
       "itemReference": "Élément visé : « {{label}} » (item_id {{id}}).",
       "unavailable": {
         "checking": "Envoi possible une fois l’assistant IA trouvé.",

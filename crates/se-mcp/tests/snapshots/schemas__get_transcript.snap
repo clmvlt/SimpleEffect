@@ -8,7 +8,7 @@ expression: definition
     "openWorldHint": false,
     "readOnlyHint": true
   },
-  "description": "The words spoken in a range of the sequence (default: your task's range, else the whole sequence), in sequence time: segments (phrases) with their text, and each word's start and end in seconds (words=false for segments only). Only what the sound clips play counts: cut passages have no words. Paginated by words (offset/limit, next_offset). untranscribed lists media the user has not transcribed yet.",
+  "description": "The words spoken in a range of the sequence (default: your task's range, else the whole sequence), in sequence time: segments (phrases) with their text, and each word's start and end in seconds (words=false for segments only). Only what the sound clips play counts: cut passages have no words. Paginated by words (offset/limit, next_offset). untranscribed lists media without a transcript yet: transcribe them with transcribe_media.",
   "inputSchema": {
     "$defs": {
       "RangeInput": {

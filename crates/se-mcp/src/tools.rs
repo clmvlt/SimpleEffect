@@ -35,13 +35,15 @@ pub mod search_transcript;
 pub mod set_keyframes;
 pub mod set_volume;
 pub mod split_at;
+pub mod transcribe_media;
 pub mod trim_item;
 pub mod update_caption_style;
 pub mod update_item;
 
 use crate::registry::ToolEntry;
 
-/// Every tool served, in the order agents see them: broad reads first, then writes.
+/// Every tool served, in the order agents see them: broad reads first (with `transcribe_media`
+/// next to the transcript readers), then writes.
 #[must_use]
 pub fn catalogue() -> Vec<ToolEntry> {
     let entries = [
@@ -55,6 +57,7 @@ pub fn catalogue() -> Vec<ToolEntry> {
         ToolEntry::of::<get_scene_changes::GetSceneChanges>(),
         ToolEntry::of::<get_transcript::GetTranscript>(),
         ToolEntry::of::<search_transcript::SearchTranscript>(),
+        ToolEntry::of::<transcribe_media::TranscribeMedia>(),
         ToolEntry::of::<list_animation_presets::ListAnimationPresets>(),
         ToolEntry::of::<get_brand_kit::GetBrandKit>(),
         ToolEntry::of::<list_templates::ListTemplates>(),
@@ -136,14 +139,18 @@ mod tests {
         "emphasize_caption_words",
     ];
 
+    /// Tools that add facts next to the project without changing the document (not read-only,
+    /// not destructive).
+    const ANALYSIS_TOOLS: [&str; 1] = ["transcribe_media"];
+
     #[test]
     fn every_tool_has_an_object_schema_and_a_unique_name() {
         let tools = catalogue();
-        assert_eq!(tools.len(), 37);
+        assert_eq!(tools.len(), 38);
         let mut names: Vec<&str> = tools.iter().map(ToolEntry::name).collect();
         names.sort_unstable();
         names.dedup();
-        assert_eq!(names.len(), 37);
+        assert_eq!(names.len(), 38);
         for tool in &tools {
             assert_eq!(
                 tool.definition.input_schema["type"],
@@ -151,16 +158,25 @@ mod tests {
                 "{}",
                 tool.name()
             );
-            let read_only = tool
-                .definition
-                .annotations
-                .as_ref()
+            let annotations = tool.definition.annotations.as_ref();
+            let read_only = annotations
                 .and_then(|annotations| annotations.read_only_hint)
                 .unwrap_or(false);
+            let destructive = annotations
+                .and_then(|annotations| annotations.destructive_hint)
+                .unwrap_or(true);
+            let writes = WRITE_TOOLS.contains(&tool.name());
+            let adds_facts = ANALYSIS_TOOLS.contains(&tool.name());
             assert_eq!(
                 read_only,
-                !WRITE_TOOLS.contains(&tool.name()),
+                !writes && !adds_facts,
                 "{} is annotated read-only = {read_only}",
+                tool.name()
+            );
+            assert_eq!(
+                destructive,
+                writes,
+                "{} is annotated destructive = {destructive}",
                 tool.name()
             );
         }

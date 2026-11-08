@@ -60,10 +60,12 @@
 | `LOCKED_TRACK` | The item is on a track the user locked |
 | `VALIDATION_ERROR` | A write breaks a document rule; the message names it (`rule OVERLAPPING_ITEMS`) |
 | `TRANSITION_NO_ROOM`, `RIPPLE_BLOCKED` | No media to cross-fade at that cut; a ripple edit would cut other content |
+| `NO_TRANSCRIPTION_MODEL`, `TRANSCRIPTION_UNAVAILABLE` | No speech model is installed (the user downloads one in « Réglages → Transcription »), or whisper.cpp cannot run (the message says why) |
 | `INTERNAL` | A bug: report it |
 
 - **Read tools change nothing** (annotation `readOnlyHint: true`); write tools are annotated
-  `readOnlyHint: false`, `destructiveHint: true`.
+  `readOnlyHint: false`, `destructiveHint: true`. `transcribe_media` adds transcripts next to the
+  project without touching the timeline: `readOnlyHint: false`, `destructiveHint: false`.
 
 ## Catalogue
 
@@ -79,6 +81,7 @@
 | `get_scene_changes` | Shot changes — of an asset or of a sequence range, plus the edit's cuts |
 | `get_transcript` | Spoken words of a sequence range, in sequence time (segments, word times, paginated) |
 | `search_transcript` | Where words are said in the sequence (full-text search, word times) |
+| `transcribe_media` | Transcribes untranscribed media locally, then waits for the result |
 | `list_animation_presets` | Animation presets (fade, slides, pop…) |
 | `get_brand_kit` | Brand kit (not available until prompt 25) |
 | `list_templates` | Motion templates (not available until prompt 24) |
@@ -353,8 +356,8 @@ tracks counts once. A word belongs to the clip that plays its middle.
 - `unsure` marks words the model was not sure of (confidence < 0.5): check them with
   `get_frames`/the context before relying on them.
 - `available: false` when no sound clip in the range is transcribed; `untranscribed` lists the
-  media of sound clips in the range without a transcript. Agents cannot transcribe: ask the user
-  to click « Transcrire » (media bin or transcript panel).
+  media of sound clips in the range without a transcript: transcribe them with
+  `transcribe_media`, then read again.
 
 **Errors**: `SEQUENCE_NOT_FOUND`, `INVALID_TIME`, `INVALID_ARGUMENTS`.
 
@@ -381,6 +384,44 @@ task's), `range` (only phrases intersecting it), `limit` (default 20, ≤ 50).
 Read around a result with `get_transcript` before editing.
 
 **Errors**: `INVALID_ARGUMENTS` (a query without words), `SEQUENCE_NOT_FOUND`, `INVALID_TIME`.
+
+### `transcribe_media`
+
+Transcribes media that have no transcript of their current content, **locally** with the speech
+model the user installed (whisper.cpp, the project's language and vocabulary), then waits for the
+result (ADR-0034). It changes no timeline item: transcripts are stored next to the project, like
+analyses, and the task's scope does not limit it. Already transcribed media cost nothing, running
+transcriptions are awaited rather than started again, failed or cancelled ones are tried again.
+
+**Input**:
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `asset_ids` | string[] | media of the sound clips of `range` | Media to transcribe (`list_assets`, `get_transcript`'s `untranscribed`) |
+| `range` | range | task's range, else the whole sequence | Ignored with `asset_ids` |
+| `sequence` | id or name | task's sequence | |
+| `wait_seconds` | number | 90 (≤ 110) | How long to wait; `0` starts and answers at once |
+
+**Output**:
+```json
+{"sequence_id":"…","finished":false,"started":1,
+ "assets":[{"asset_id":"…0001…","name":"interview.mp4","status":"running","progress":0.42},
+           {"asset_id":"…0002…","name":"music.wav","status":"transcribed","word_count":12},
+           {"asset_id":"…0003…","name":"logo.png","status":"unavailable","reason":"no_sound: this media has no sound to transcribe"}],
+ "note":"still transcribing: call transcribe_media again with the same arguments to keep waiting (nothing starts twice), or do other work meanwhile"}
+```
+- `status`: `transcribed` (`word_count`), `queued`, `running` (`progress` 0–1 when known),
+  `failed` (`reason`: whisper.cpp's or ffmpeg's message), `cancelled`, `unavailable` (`reason`:
+  `media_missing` — ask the user to relink —, `no_sound`, `not_ready` — still importing, call
+  again shortly), `not_started`.
+- `finished: false` means a transcription is still queued or running when the wait ended: call
+  again with the same arguments. A few minutes of speech take seconds on a GPU, longer on a CPU.
+- `started` counts the media this call queued.
+
+**Errors**: `NO_TRANSCRIPTION_MODEL` (tell the user to download a model in « Réglages →
+Transcription »; agents never download), `TRANSCRIPTION_UNAVAILABLE`, `ASSET_NOT_FOUND`,
+`SEQUENCE_NOT_FOUND`, `INVALID_TIME`, `INVALID_ARGUMENTS` (empty `asset_ids`, negative
+`wait_seconds`).
 
 ### `list_animation_presets`
 

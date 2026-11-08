@@ -49,8 +49,8 @@ struct Answer {
     segments: Vec<SegmentOutput>,
     total_words: usize,
     next_offset: Option<usize>,
-    /// Assets of sound clips in the range without a transcript (ask the user to transcribe them:
-    /// « Transcrire » in the media bin).
+    /// Assets of sound clips in the range without a transcript (`transcribe_media` transcribes
+    /// them).
     untranscribed: Vec<AssetRef>,
 }
 
@@ -90,7 +90,8 @@ impl McpTool for GetTranscript {
         your task's range, else the whole sequence), in sequence time: segments (phrases) with \
         their text, and each word's start and end in seconds (words=false for segments only). \
         Only what the sound clips play counts: cut passages have no words. Paginated by words \
-        (offset/limit, next_offset). untranscribed lists media the user has not transcribed yet.";
+        (offset/limit, next_offset). untranscribed lists media without a transcript yet: \
+        transcribe them with transcribe_media.";
 
     async fn call(context: ToolContext, input: Input) -> Result<ToolOutput, ToolError> {
         let project = context.project().await?;

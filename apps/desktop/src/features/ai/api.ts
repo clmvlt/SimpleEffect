@@ -7,6 +7,7 @@ import type {
   TaskEventRecord,
   TaskRevertReport,
   TaskScope,
+  TranscriptionStatus,
 } from '@se/protocol';
 
 /** What the AI feature needs from the core client. */
@@ -79,6 +80,12 @@ export async function getTaskChanges(
 /** The tasks of an open project, oldest first. */
 export async function listTasks(client: AiClient, projectId: string): Promise<Task[]> {
   return (await client.send({ kind: 'listTasks', projectId })).tasks;
+}
+
+/** Whether transcription can run (models installed, whisper.cpp found): the composer warns
+ * when the agent could not read what is said. */
+export async function getTranscriptionStatus(client: AiClient): Promise<TranscriptionStatus> {
+  return (await client.send({ kind: 'getTranscriptionStatus' })).status;
 }
 
 /** The event log of a task. */

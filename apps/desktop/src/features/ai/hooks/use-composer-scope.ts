@@ -13,6 +13,8 @@ export interface ComposerScope {
   readonly sequence: SequenceEntity;
   /** Its tracks, in project order. */
   readonly tracks: readonly TrackEntity[];
+  /** End of its last item. */
+  readonly sequenceEnd: Flicks;
   readonly derived: DerivedScope;
   /** The range read in the text, when it is the scope's. */
   readonly phrase: TimePhrase | null;
@@ -64,5 +66,5 @@ export function useComposerScope(): ComposerScope | null {
     wholeSequence,
     chosenTracks,
   });
-  return { sequence, tracks, derived, phrase, redoItem };
+  return { sequence, tracks, sequenceEnd: end, derived, phrase, redoItem };
 }
