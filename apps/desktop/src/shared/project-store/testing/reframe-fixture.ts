@@ -41,7 +41,7 @@ export function videoAsset(id = VIDEO_ASSET, width = 1920, height = 1080): Asset
     },
     fingerprint: null,
     derived: { mezzanine: null, proxy: null },
-    analysis: { audio: null, scenes: null },
+    analysis: { audio: null, scenes: null, transcript: null },
     decodability: { video: 'decodable', audio: 'noStream' },
     missing: false,
   };

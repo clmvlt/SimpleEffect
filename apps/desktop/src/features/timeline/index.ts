@@ -7,7 +7,7 @@
  */
 export { TimelinePanel } from './components/TimelinePanel';
 export { useActiveSequence } from './hooks/use-active-sequence';
-export { useInOutPoints, useInOutSpan } from './hooks/use-in-out';
+export { inOutControls, useInOutPoints, useInOutSpan } from './hooks/use-in-out';
 export { revealTimeRange } from './store/reveal-range';
 export type { InOutPoints, TimeSpan } from './services/in-out';
 export {

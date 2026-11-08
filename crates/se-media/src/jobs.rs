@@ -1,5 +1,6 @@
-//! [`FfmpegJobRunner`]: the `MediaJobRunner` and `FrameExtractor` ports over ffmpeg
-//! (thumbnails, waveform peaks, mezzanines and proxies, audio analyses, scene detection, frames).
+//! [`FfmpegJobRunner`]: the `MediaJobRunner`, `FrameExtractor` and `SpeechAudioExtractor` ports
+//! over ffmpeg (thumbnails, waveform peaks, mezzanines and proxies, audio analyses, scene
+//! detection, frames, speech audio for transcription).
 
 mod audio_analysis;
 mod ffmpeg_progress;
@@ -16,13 +17,13 @@ use std::path::Path;
 use async_trait::async_trait;
 use se_app::ports::{
     FrameExtractor, FrameRequest, MediaError, MediaJobOutput, MediaJobRunner, MediaJobSpec,
-    MediaTask, ProgressSink,
+    MediaTask, ProgressSink, SpeechAudioExtractor,
 };
 use se_domain::AnalysisResult;
 use se_protocol::JobKind;
 
 pub use self::{scene_detection::scene_filter, thumbnails::parse_tile_times};
-use crate::{cache_layout, ffmpeg_tools::FfmpegTools, frames, tools::Tool};
+use crate::{cache_layout, ffmpeg_tools::FfmpegTools, frames, speech_audio, tools::Tool};
 
 /// Runs media jobs with the ffmpeg of its [`FfmpegTools`].
 #[derive(Debug, Clone)]
@@ -88,5 +89,21 @@ impl FrameExtractor for FfmpegJobRunner {
     async fn extract_frame(&self, request: &FrameRequest) -> Result<(), MediaError> {
         let ffmpeg = self.tools.locator().locate(Tool::Ffmpeg)?;
         frames::extract(&ffmpeg, request).await
+    }
+}
+
+#[async_trait]
+impl SpeechAudioExtractor for FfmpegJobRunner {
+    async fn extract_speech_audio(
+        &self,
+        source: &Path,
+        output: &Path,
+        progress: &dyn ProgressSink,
+    ) -> Result<(), MediaError> {
+        let ffmpeg = self.tools.locator().locate(Tool::Ffmpeg)?;
+        // A few seconds even for an hour of sound: no progress in between.
+        speech_audio::extract(&ffmpeg, source, output).await?;
+        progress.report(1.0);
+        Ok(())
     }
 }

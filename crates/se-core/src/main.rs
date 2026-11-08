@@ -39,6 +39,8 @@ async fn main() -> anyhow::Result<()> {
     let paths = app_paths::AppPaths::from_environment()?;
     let _log_guard = logging::init(&paths.logs_dir);
     platform::tie_children_to_this_process();
+    // Before any HTTP client exists (model downloads use rustls with the ring provider).
+    se_transcribe::install_crypto_provider();
     server::run(paths, shutdown::requested()).await?;
     tracing::info!("se-core stopped");
     Ok(())

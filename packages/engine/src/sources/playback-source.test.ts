@@ -28,7 +28,7 @@ function asset(
     mediaInfo: null,
     fingerprint: null,
     derived: { mezzanine: derivedMezzanine, proxy: null },
-    analysis: { audio: null, scenes: null },
+    analysis: { audio: null, scenes: null, transcript: null },
     decodability: { video, audio },
     missing,
   };

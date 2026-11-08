@@ -137,6 +137,18 @@ pub enum ErrorCode {
     OutOfScope,
     /// The AI task has no edit left to revert (it changed nothing, or was reverted already).
     NothingToRevert,
+    /// Transcription cannot run: whisper.cpp is missing or cannot start (the message says why).
+    TranscriptionUnavailable,
+    /// No transcription model is installed (or the chosen one is gone): download or import one.
+    NoTranscriptionModel,
+    /// No model, download or GPU pack matches what was asked.
+    TranscriptionTargetNotFound,
+    /// A file is not a whisper.cpp (ggml) model.
+    InvalidModelFile,
+    /// A download failed or did not match its expected SHA-256.
+    DownloadFailed,
+    /// The asset has no sound to transcribe.
+    NoSpeechStream,
 }
 
 #[cfg(test)]

@@ -16,8 +16,14 @@ Start broad, then zoom in. Read-only tools change nothing: call them as often as
    on what is on screen; a few frames (4–8) are usually enough, at the default width.
 7. `get_source_frames`: pictures of a media file itself, at source times (what a clip could show
    beyond its edges).
-8. `get_transcript`, `list_animation_presets`, `get_brand_kit`, `list_templates`: transcripts,
-   animation presets, brand kit and motion templates (some are not available yet and say so).
+8. `get_transcript`: **what is said** in a range of the sequence, word by word, in sequence time
+   (only what the sound clips play: cut passages have no words). `search_transcript` finds where
+   words are said ("abonnez-vous") and gives the matching words' times: use it to locate a passage
+   before cutting or titling it, then read around it with `get_transcript`. Words marked `unsure`
+   may be misheard. Media listed as `untranscribed` have no transcript yet: ask the user to click
+   « Transcrire »; you cannot transcribe yourself.
+9. `list_animation_presets`, `get_brand_kit`, `list_templates`: animation presets, brand kit and
+   motion templates (some are not available yet and say so).
 
 Describe what you saw precisely (who or what, where, when). If a tool fails, read its error: it
 says what to change (an id, a time out of range, the editor window to open).

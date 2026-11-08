@@ -8,6 +8,7 @@ import type { CoreInfo } from "./CoreInfo";
 import type { FontFamily } from "./FontFamily";
 import type { ImportReport } from "./ImportReport";
 import type { ItemId } from "./ItemId";
+import type { JobId } from "./JobId";
 import type { JobSnapshot } from "./JobSnapshot";
 import type { LinkGroupId } from "./LinkGroupId";
 import type { MarkerId } from "./MarkerId";
@@ -25,6 +26,9 @@ import type { TaskEventRecord } from "./TaskEventRecord";
 import type { TaskRevertReport } from "./TaskRevertReport";
 import type { TimeRange } from "./TimeRange";
 import type { TrackId } from "./TrackId";
+import type { Transcript } from "./Transcript";
+import type { TranscriptSearchHit } from "./TranscriptSearchHit";
+import type { TranscriptionStatus } from "./TranscriptionStatus";
 import type { TransitionId } from "./TransitionId";
 
 /**
@@ -167,4 +171,36 @@ settings: AiSettings, } | { "kind": "updateAiSettings",
 /**
  * The settings as saved.
  */
-settings: AiSettings, } | { "kind": "reportFrameRenderFailure" };
+settings: AiSettings, } | { "kind": "reportFrameRenderFailure" } | { "kind": "getTranscriptionStatus", 
+/**
+ * The status.
+ */
+status: TranscriptionStatus, } | { "kind": "updateTranscriptionPreferences", 
+/**
+ * The status with the saved preferences.
+ */
+status: TranscriptionStatus, } | { "kind": "startTranscriptionDownload" } | { "kind": "cancelTranscriptionDownload" } | { "kind": "importTranscriptionModel", 
+/**
+ * The id of the imported model.
+ */
+modelId: string, 
+/**
+ * The status with the model installed.
+ */
+status: TranscriptionStatus, } | { "kind": "removeTranscriptionFile", 
+/**
+ * The status without the file.
+ */
+status: TranscriptionStatus, } | { "kind": "transcribeAssets", 
+/**
+ * One transcription job per asset, in order.
+ */
+jobIds: Array<JobId>, } | { "kind": "getTranscript", 
+/**
+ * The transcript of the asset's current content; `null` while it is not transcribed.
+ */
+transcript: Transcript | null, } | { "kind": "searchTranscripts", 
+/**
+ * Best matches first (at most 50).
+ */
+hits: Array<TranscriptSearchHit>, } | { "kind": "setTranscriptionSettings" };

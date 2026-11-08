@@ -55,11 +55,22 @@ jobs:
 
       - run: cargo build --release -p se-core
 
-      # ffmpeg/ffprobe pinned in scripts/binaries.manifest.json, cached until the manifest changes.
+      # ffmpeg/ffprobe and whisper.cpp pinned in scripts/binaries.manifest.json, cached until the
+      # manifest changes.
       - uses: actions/cache@v6
         with:
           path: resources/bin
           key: sidecars-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/binaries.manifest.json') }}
+
+      # whisper.cpp has no official macOS build: fetch-binaries compiles it from the pinned sources
+      # with CMake (shipped by GitHub's macOS images; installed here if an image ever drops it).
+      - name: Check CMake (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          if ! command -v cmake >/dev/null; then
+            brew install cmake
+          fi
+          cmake --version
 
       - run: pnpm fetch-binaries --yes
 

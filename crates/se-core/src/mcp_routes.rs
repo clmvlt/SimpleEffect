@@ -117,6 +117,7 @@ mod tests {
                 renders: bed.renders.clone(),
                 tokens: bed.tokens.clone(),
                 edits: bed.edits.clone(),
+                transcription: bed.transcription.clone(),
             },
             port,
         );
@@ -140,6 +141,8 @@ mod tests {
     }
 
     fn client_config(url: &str, token: &str) -> StreamableHttpClientTransportConfig {
+        // reqwest clients need a TLS provider in this workspace, even for `http://`.
+        se_transcribe::install_crypto_provider();
         StreamableHttpClientTransportConfig::with_uri(url.to_owned()).auth_header(token.to_owned())
     }
 
@@ -156,7 +159,7 @@ mod tests {
             .expect("a running task's token connects");
         let tools = client.list_all_tools().await.unwrap();
         assert!(tools.iter().any(|tool| tool.name == "get_frames"));
-        assert_eq!(tools.len(), 29);
+        assert_eq!(tools.len(), 30);
 
         let mut arguments = rmcp::model::JsonObject::new();
         arguments.insert("text".to_owned(), "Abonne-toi".into());

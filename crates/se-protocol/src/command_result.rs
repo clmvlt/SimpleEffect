@@ -1,7 +1,8 @@
 //! Successful results of commands.
 
 use se_domain::{
-    ChangesetId, ItemId, LinkGroupId, MarkerId, SequenceId, TimeRange, TrackId, TransitionId,
+    ChangesetId, ItemId, JobId, LinkGroupId, MarkerId, SequenceId, TimeRange, TrackId, Transcript,
+    TransitionId,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -10,6 +11,7 @@ use crate::{
     AiSettings, AiStatus, AnimationPresetInfo, FontFamily, ImportReport, JobSnapshot,
     MediaSettings, MediaToolsStatus, NewProjectDefaults, PlacedGraphic, ProjectCacheInfo,
     ProjectSession, RecentProject, RelinkOutcome, Task, TaskEventRecord, TaskRevertReport,
+    TranscriptSearchHit, TranscriptionStatus,
 };
 
 /// The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
@@ -272,6 +274,49 @@ pub enum CommandResult {
     },
     /// Answer to [`crate::Command::ReportFrameRenderFailure`]: the agent was told.
     ReportFrameRenderFailure,
+    /// Answer to [`crate::Command::GetTranscriptionStatus`].
+    GetTranscriptionStatus {
+        /// The status.
+        status: TranscriptionStatus,
+    },
+    /// Answer to [`crate::Command::UpdateTranscriptionPreferences`].
+    UpdateTranscriptionPreferences {
+        /// The status with the saved preferences.
+        status: TranscriptionStatus,
+    },
+    /// Answer to [`crate::Command::StartTranscriptionDownload`]: the download started.
+    StartTranscriptionDownload,
+    /// Answer to [`crate::Command::CancelTranscriptionDownload`].
+    CancelTranscriptionDownload,
+    /// Answer to [`crate::Command::ImportTranscriptionModel`].
+    ImportTranscriptionModel {
+        /// The id of the imported model.
+        model_id: String,
+        /// The status with the model installed.
+        status: TranscriptionStatus,
+    },
+    /// Answer to [`crate::Command::RemoveTranscriptionFile`].
+    RemoveTranscriptionFile {
+        /// The status without the file.
+        status: TranscriptionStatus,
+    },
+    /// Answer to [`crate::Command::TranscribeAssets`].
+    TranscribeAssets {
+        /// One transcription job per asset, in order.
+        job_ids: Vec<JobId>,
+    },
+    /// Answer to [`crate::Command::GetTranscript`].
+    GetTranscript {
+        /// The transcript of the asset's current content; `null` while it is not transcribed.
+        transcript: Option<Transcript>,
+    },
+    /// Answer to [`crate::Command::SearchTranscripts`].
+    SearchTranscripts {
+        /// Best matches first (at most 50).
+        hits: Vec<TranscriptSearchHit>,
+    },
+    /// Answer to [`crate::Command::SetTranscriptionSettings`]: the patch was published.
+    SetTranscriptionSettings,
 }
 
 /// Facts about the running core, shown in the UI and useful in bug reports.

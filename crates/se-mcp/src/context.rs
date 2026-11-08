@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use se_app::{
     AgentContext, AgentEditService, FrameRenderService, MediaService, ProjectService,
-    TaskTokenRegistry,
+    TaskTokenRegistry, TranscriptionService,
 };
 use se_domain::{Asset, Flicks, Item, Project, Sequence, TimeRange, Track};
 
@@ -24,6 +24,8 @@ pub struct McpDeps {
     pub tokens: Arc<TaskTokenRegistry>,
     /// Edits of agents: the only way write tools change a project.
     pub edits: Arc<AgentEditService>,
+    /// Transcripts of assets and of sequences.
+    pub transcription: TranscriptionService,
 }
 
 /// One tool call: the services and the calling run.

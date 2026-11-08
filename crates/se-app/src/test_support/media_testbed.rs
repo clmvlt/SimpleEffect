@@ -1,24 +1,34 @@
 //! [`MediaTestbed`]: a `ProjectService`, a `MediaService`, a `TaskService`, an
-//! `AgentEditService` and a `FrameRenderService` wired to the in-memory fakes, for tests of the
-//! media, task and agent use cases (se-app) and of what serves them (se-mcp, se-core).
+//! `AgentEditService`, a `FrameRenderService` and a `TranscriptionService` wired to the in-memory
+//! fakes, for tests of the media, task, agent and transcription use cases (se-app) and of what
+//! serves them (se-mcp, se-core).
 
-use std::{path::Path, sync::Arc, time::Duration};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::Duration,
+};
 
 use se_domain::{Asset, Format, FormatPreset, FrameRate, ProjectId};
 
 use super::{
-    FakeAgentWorkspaces, FakeFrameExtractor, FakeJobRunner, FakeMedia, FakeMediaTools,
-    FakeRendererLink, FixedClock, InMemoryAppLibrary, InMemoryProjectRepository,
-    RecordingEventSink, ReplayProvider, SequentialIds, SequentialTokens,
+    FakeAgentWorkspaces, FakeDownloader, FakeFrameExtractor, FakeJobRunner, FakeMedia,
+    FakeMediaTools, FakeModelFiles, FakeRendererLink, FakeSpeechExtractor, FakeTranscriber,
+    FixedClock, InMemoryAppLibrary, InMemoryProjectRepository, RecordingEventSink, ReplayProvider,
+    SequentialIds, SequentialTokens,
 };
 use crate::{
     AgentEditService, AppError, FrameRenderService, JobQueue, JobQueueConfig, McpAccess,
     MediaService, MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps,
-    TaskService, TaskServiceDeps, TaskTokenRegistry,
+    TaskService, TaskServiceDeps, TaskTokenRegistry, TranscriptionService,
+    TranscriptionServiceDeps,
 };
 
 /// The MCP URL runs of the testbed's task service are given.
 pub const TESTBED_MCP_URL: &str = "http://127.0.0.1:4100/mcp";
+
+/// The models folder of the testbed's transcription service.
+pub const TESTBED_MODELS_DIR: &str = "/app-data/models/whisper";
 
 /// The services and every fake behind them (clones share state with the services).
 pub struct MediaTestbed {
@@ -56,6 +66,16 @@ pub struct MediaTestbed {
     pub renders: Arc<FrameRenderService>,
     /// The renderer connection of `renders`.
     pub renderer: Arc<FakeRendererLink>,
+    /// Transcription use cases (observing projects, told about imports); not started.
+    pub transcription: TranscriptionService,
+    /// whisper.cpp of `transcription`.
+    pub transcriber: FakeTranscriber,
+    /// Speech audio extractions.
+    pub extractor: FakeSpeechExtractor,
+    /// The models folder (and files to import).
+    pub model_files: FakeModelFiles,
+    /// Model downloads (writing into `model_files`).
+    pub downloader: FakeDownloader,
 }
 
 impl MediaTestbed {
@@ -72,17 +92,28 @@ impl MediaTestbed {
         runner.write_files_to(files.clone());
         let frames = Arc::new(FakeFrameExtractor::new(files.clone()));
         let tools = Arc::new(FakeMediaTools::default());
+        let jobs = JobQueue::new(events.clone(), ids.clone(), JobQueueConfig::default());
         let media = Arc::new(MediaService::new(MediaServiceDeps {
             prober: files.clone(),
             files: files.clone(),
             runner: runner.clone(),
             frames: frames.clone(),
             tools: tools.clone(),
-            jobs: JobQueue::new(events.clone(), ids.clone(), JobQueueConfig::default()),
+            jobs: jobs.clone(),
             library: library.clone(),
             ids: ids.clone(),
             clock: clock.clone(),
         }));
+        let fakes = TranscriptionFakes::default();
+        let transcription = TranscriptionService::new(TranscriptionServiceDeps {
+            jobs,
+            library: library.clone(),
+            events: events.clone(),
+            ids: ids.clone(),
+            clock: clock.clone(),
+            ..fakes.deps()
+        });
+        media.add_import_listener(Arc::new(transcription.clone()));
         let agent = ReplayProvider::default();
         let workspaces = Arc::new(FakeAgentWorkspaces::default());
         let tokens = Arc::new(TaskTokenRegistry::new(
@@ -116,7 +147,8 @@ impl MediaTestbed {
         let projects = Arc::new(
             ProjectService::new(deps, config)
                 .with_observer(media.clone())
-                .with_observer(Arc::new(tasks.clone())),
+                .with_observer(Arc::new(tasks.clone()))
+                .with_observer(Arc::new(transcription.clone())),
         );
         let edits = Arc::new(AgentEditService::new(projects.clone(), tasks.clone(), ids));
         Self {
@@ -137,6 +169,11 @@ impl MediaTestbed {
             tokens,
             renders,
             renderer,
+            transcription,
+            transcriber: fakes.transcriber,
+            extractor: fakes.extractor,
+            model_files: fakes.model_files,
+            downloader: fakes.downloader,
         }
     }
 
@@ -169,6 +206,48 @@ impl MediaTestbed {
             .await?
             .snapshot
             .assets)
+    }
+}
+
+/// The transcription fakes of a testbed (clones share state with the service).
+struct TranscriptionFakes {
+    transcriber: FakeTranscriber,
+    extractor: FakeSpeechExtractor,
+    model_files: FakeModelFiles,
+    downloader: FakeDownloader,
+}
+
+impl Default for TranscriptionFakes {
+    fn default() -> Self {
+        let model_files = FakeModelFiles::default();
+        Self {
+            transcriber: FakeTranscriber::default(),
+            extractor: FakeSpeechExtractor::default(),
+            downloader: FakeDownloader::new(model_files.clone()),
+            model_files,
+        }
+    }
+}
+
+impl TranscriptionFakes {
+    /// Service dependencies over these fakes; jobs, library, events, ids and clock are the
+    /// testbed's own (replaced by the caller).
+    fn deps(&self) -> TranscriptionServiceDeps {
+        let events = Arc::new(RecordingEventSink::default());
+        let ids = Arc::new(SequentialIds::default());
+        TranscriptionServiceDeps {
+            transcriber: Arc::new(self.transcriber.clone()),
+            extractor: Arc::new(self.extractor.clone()),
+            downloader: Arc::new(self.downloader.clone()),
+            model_files: Arc::new(self.model_files.clone()),
+            jobs: JobQueue::new(events.clone(), ids.clone(), JobQueueConfig::default()),
+            library: Arc::new(InMemoryAppLibrary::default()),
+            events,
+            ids,
+            clock: Arc::new(FixedClock::default()),
+            models_dir: PathBuf::from(TESTBED_MODELS_DIR),
+            cpu_threads: 16,
+        }
     }
 }
 

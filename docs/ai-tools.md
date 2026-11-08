@@ -77,7 +77,8 @@
 | `get_source_frames` | Pictures of a media file at source times (ffmpeg) |
 | `get_audio_analysis` | Silences, loudness, peaks — of an asset or of a sequence range |
 | `get_scene_changes` | Shot changes — of an asset or of a sequence range, plus the edit's cuts |
-| `get_transcript` | Spoken words (not available until prompt 21) |
+| `get_transcript` | Spoken words of a sequence range, in sequence time (segments, word times, paginated) |
+| `search_transcript` | Where words are said in the sequence (full-text search, word times) |
 | `list_animation_presets` | Animation presets (fade, slides, pop…) |
 | `get_brand_kit` | Brand kit (not available until prompt 25) |
 | `list_templates` | Motion templates (not available until prompt 24) |
@@ -313,11 +314,65 @@ picture clip starts or ends inside the range).
 
 ### `get_transcript`
 
-The words spoken in a range. **Not available yet** (transcription arrives with prompt 21).
+The words spoken in a range of the sequence, in **sequence time** (prompt 21). Words come from
+the transcripts of the media played by the sequence's **sound** clips: a passage cut from the
+sequence has no words, a clip at 2× speed has its words twice as fast, the same sound on two
+tracks counts once. A word belongs to the clip that plays its middle.
 
-**Input**: `range`, `sequence` (accepted for the future contract).
+**Input**:
 
-**Output**: `{"available":false,"message":"Transcription is not available yet in this version of SimpleEffect. …"}`
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `range` | range | task's range, else the whole sequence | Words whose middle lies in it |
+| `sequence` | id or name | task's sequence | |
+| `words` | bool | `true` | `false`: segments without word lists (shorter for long ranges) |
+| `offset` | int | 0 | First word of the page (`next_offset` of the previous answer) |
+| `limit` | int | 400 (≤ 2000) | Words per page |
+
+**Output**:
+```json
+{"sequence_id":"…","time_base":"sequence","range":{…},"available":true,
+ "segments":[{"start":{"timecode":"00:00:00.500","seconds":0.5},"end":{"timecode":"00:00:01.400","seconds":1.4},
+              "text":"Bonjour à tous.","item_id":"…","asset_id":"…",
+              "words":[{"text":"Bonjour","start_seconds":0.5,"end_seconds":0.9},
+                       {"text":"à","start_seconds":0.9,"end_seconds":1.0},
+                       {"text":"tous.","start_seconds":1.0,"end_seconds":1.4,"unsure":true}]}],
+ "total_words":3,"next_offset":null,
+ "untranscribed":[{"asset_id":"…","name":"music.wav"}]}
+```
+- Word times are plain seconds (millisecond precision) to keep long transcripts short; segment
+  times follow the usual `{timecode, seconds}` form. Punctuation is part of its word (`pensez ?`).
+- `unsure` marks words the model was not sure of (confidence < 0.5): check them with
+  `get_frames`/the context before relying on them.
+- `available: false` when no sound clip in the range is transcribed; `untranscribed` lists the
+  media of sound clips in the range without a transcript. Agents cannot transcribe: ask the user
+  to click « Transcrire » (media bin or transcript panel).
+
+**Errors**: `SEQUENCE_NOT_FOUND`, `INVALID_TIME`, `INVALID_ARGUMENTS`.
+
+### `search_transcript`
+
+Where words are said in the sequence (prompt 21): the project's transcripts are searched with a
+full-text index (accents and case ignored, every word required, the last one as a prefix), then
+each matching phrase is placed where the sequence plays it (nowhere when it was cut, several
+times when it is used twice).
+
+**Input**: `query` (required: `"abonnez-vous"`, `"prix euros"`), `sequence` (default: the
+task's), `range` (only phrases intersecting it), `limit` (default 20, ≤ 50).
+
+**Output**:
+```json
+{"sequence_id":"…","time_base":"sequence",
+ "results":[{"start":{"timecode":"00:00:03.000","seconds":3.0},"end":{"timecode":"00:00:04.600","seconds":4.6},
+             "text":"Abonnez-vous à la chaîne !","item_id":"…","asset_id":"…",
+             "matches":[{"text":"Abonnez-vous","start_seconds":3.0,"end_seconds":3.8},
+                        {"text":"chaîne !","start_seconds":4.0,"end_seconds":4.6}]}],
+ "elsewhere":0}
+```
+`elsewhere` counts matching phrases of the project's media that this sequence does not play.
+Read around a result with `get_transcript` before editing.
+
+**Errors**: `INVALID_ARGUMENTS` (a query without words), `SEQUENCE_NOT_FOUND`, `INVALID_TIME`.
 
 ### `list_animation_presets`
 

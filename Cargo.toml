@@ -69,17 +69,24 @@ process-wrap = { version = "10.0.1", default-features = false, features = [
 insta = { version = "1.49.0", features = ["json"] }
 proptest = "1.12.0"
 rand = "0.10.3"
+# HTTPS downloads of transcription models and of the GPU pack, only after the user agreed
+# (se-transcribe): rustls with the ring provider (built with the C compiler alone) and the
+# system's certificate verifier.
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls-no-provider"] }
 # The MCP server of AI agents: streamable HTTP mounted at `/mcp` (se-mcp, ADR-0028).
 rmcp = { version = "3.9.0", default-features = false, features = [
   "server",
   "transport-streamable-http-server",
 ] }
+rustls = { version = "0.23.45", default-features = false, features = ["ring", "std", "tls12"] }
 # SQLite compiled in (`bundled` enables FTS5), so every platform gets the same engine.
 rusqlite = { version = "0.41.1", features = ["bundled"] }
 # JSON Schemas of MCP tool inputs (the version rmcp uses).
 schemars = "1.2.3"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
+# SHA-256 of downloaded and imported transcription models.
+sha2 = "0.11.1"
 tempfile = "3.27.0"
 thiserror = "2.0.21"
 tokio = "1.54.1"

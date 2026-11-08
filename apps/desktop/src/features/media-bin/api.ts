@@ -30,6 +30,15 @@ export async function relinkAsset(
   return (await client.send({ kind: 'relinkAsset', ...request })).outcome;
 }
 
+/** Queues the transcription of assets with sound (prompt 21). */
+export async function transcribeAssets(
+  client: MediaClient,
+  projectId: string,
+  assetIds: readonly string[],
+): Promise<void> {
+  await client.send({ kind: 'transcribeAssets', projectId, assetIds: [...assetIds] });
+}
+
 /** Removes an asset no item uses (undoable). */
 export async function removeAsset(
   client: MediaClient,

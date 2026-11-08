@@ -51,7 +51,7 @@ pub use item_patch::{
 pub use link_items::{LinkItems, UnlinkItems};
 pub use marker_ops::{AddMarker, MarkerPatch, RemoveMarker, UpdateMarker};
 pub use move_item::MoveItem;
-pub use project_ops::RenameProject;
+pub use project_ops::{RenameProject, SetTranscriptionSettings};
 pub use ripple_delete_range::RippleDeleteRange;
 pub use sequence_ops::{AddSequence, RemoveSequence, SequencePatch, UpdateSequence};
 pub use split_item::SplitItem;
@@ -134,6 +134,8 @@ pub enum Operation {
     RemoveAsset(RemoveAsset),
     /// Renames the project.
     RenameProject(RenameProject),
+    /// Sets how the project's media are transcribed.
+    SetTranscriptionSettings(SetTranscriptionSettings),
     /// Adds a cross-fade on the cut between two adjacent items of a track.
     AddTransition(AddTransition),
     /// Resizes or realigns a transition.
@@ -192,6 +194,7 @@ operation_payloads!(
     UpdateAsset,
     RemoveAsset,
     RenameProject,
+    SetTranscriptionSettings,
     AddTransition,
     UpdateTransition,
     RemoveTransition,

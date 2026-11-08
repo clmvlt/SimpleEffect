@@ -20,6 +20,8 @@ pub enum JobKind {
     AudioAnalysis,
     /// Shot changes of the picture.
     SceneDetection,
+    /// The words spoken (whisper.cpp).
+    Transcription,
 }
 
 /// Where a job stands.

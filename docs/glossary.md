@@ -257,3 +257,11 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Volume line (rubber band)** | A clip's volume drawn over its waveform (−60 to +6 dB): dragged to move the whole curve, Ctrl/⌘+click adds a keyframe, Alt+click removes one | `VolumeLine`, `volume-line.ts` |
 | **Gain envelope** | The linear gain of a scheduled voice as points (every 10 ms when it varies) that Web Audio ramps between: volume curve × fades × cross-fade weight | `gainEnvelope`, `clipGainAt`, `GainPoint` |
 | **Silence (display)** | A silent stretch found by the audio analysis, hatched on audio clips (toolbar toggle) | `getAudioSilences`, `useAssetSilences` |
+| **Transcript** | The words spoken in an asset, in source time, with their confidence and segments (phrases), stored in `project.db`; the asset keeps a summary (`Transcrit`) | `Transcript`, `TranscriptStore`, `TranscriptSummary` |
+| **Sequence words** | A sequence's transcript in sequence time: the words its sound clips play (a word belongs to the clip playing its middle), shared by the panel, MCP tools and later text editing | `sequence_transcript`, `sequenceTranscript`, `SequenceTranscript` |
+| **Transcription model** | A whisper.cpp ggml model file (tiny … large-v3-turbo from the catalogue, or imported) in `<app data>/models/whisper/` | `CatalogueModel`, `TranscriptionModelInfo` |
+| **Voice detection (VAD)** | whisper.cpp's Silero model finding speech spans first: fewer invented words over silences or music, and word bounds clamped to speech | `voice_spans`, `TranscriptionPreferences.voiceDetection` |
+| **DTW alignment** | Word timing from whisper's cross-attention (`-dtw <preset>`), far more precise than its heuristic token times; catalogue models only | `ModelChoice.alignment`, `whisper_args` |
+| **GPU pack** | The CUDA build of whisper.cpp for Windows, downloaded with consent into `<app data>/runtimes/` instead of shipping in the installer | `GpuRuntimeOffer`, `gpu_runtime` |
+| **Transcription vocabulary** | Names and terms of a project given to whisper as context so it spells them right | `TranscriptionSettings.vocabulary` |
+| **Unsure word** | A word whose confidence is under 0.5, underlined in the panel and flagged `unsure` for agents | `Transcript::LOW_CONFIDENCE` |

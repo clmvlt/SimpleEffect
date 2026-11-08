@@ -69,7 +69,7 @@ export function session(revision = 3): ProjectSession {
       project: {
         id: IDS.project,
         name: 'Film',
-        settings: { defaultFormat: HD },
+        settings: { defaultFormat: HD, transcription: { language: 'fr', vocabulary: '' } },
         templates: [],
         brandKit: null,
       },

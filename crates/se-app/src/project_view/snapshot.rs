@@ -46,7 +46,7 @@ pub(crate) fn project_header(project: &Project) -> ProjectHeader {
     ProjectHeader {
         id: project.id,
         name: project.name.clone(),
-        settings: project.settings,
+        settings: project.settings.clone(),
         templates: project.templates.clone(),
         brand_kit: project.brand_kit.clone(),
     }

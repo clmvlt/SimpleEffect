@@ -1,9 +1,12 @@
 import type {
   AiSettings,
   CoreClient,
+  DownloadTarget,
   MediaSettings,
   MediaToolsStatus,
   ProjectCacheInfo,
+  TranscriptionPreferences,
+  TranscriptionStatus,
 } from '@se/protocol';
 
 /** What the settings feature needs from the core client. */
@@ -54,4 +57,53 @@ export async function updateAiSettings(
   settings: AiSettings,
 ): Promise<AiSettings> {
   return (await client.send({ kind: 'updateAiSettings', ...settings })).settings;
+}
+
+/** What « Réglages → Transcription » shows: whisper.cpp, the GPU, models and preferences. */
+export async function getTranscriptionStatus(client: SettingsClient): Promise<TranscriptionStatus> {
+  return (await client.send({ kind: 'getTranscriptionStatus' })).status;
+}
+
+/** Saves the transcription preferences; resolves with the status holding them as saved. */
+export async function updateTranscriptionPreferences(
+  client: SettingsClient,
+  preferences: TranscriptionPreferences,
+): Promise<TranscriptionStatus> {
+  return (await client.send({ kind: 'updateTranscriptionPreferences', ...preferences })).status;
+}
+
+/**
+ * Starts downloading a model, the voice model or the GPU pack (only after the user consented);
+ * progress arrives as `transcriptionStatusChanged` events.
+ */
+export async function startTranscriptionDownload(
+  client: SettingsClient,
+  target: DownloadTarget,
+): Promise<void> {
+  await client.send({ kind: 'startTranscriptionDownload', target });
+}
+
+/** Stops a running download (a `transcriptionStatusChanged` event follows). */
+export async function cancelTranscriptionDownload(
+  client: SettingsClient,
+  target: DownloadTarget,
+): Promise<void> {
+  await client.send({ kind: 'cancelTranscriptionDownload', target });
+}
+
+/** Copies a ggml `.bin` file into the models folder; resolves with its id and the new status. */
+export async function importTranscriptionModel(
+  client: SettingsClient,
+  path: string,
+): Promise<{ readonly modelId: string; readonly status: TranscriptionStatus }> {
+  const { modelId, status } = await client.send({ kind: 'importTranscriptionModel', path });
+  return { modelId, status };
+}
+
+/** Deletes an installed model, the voice model or the GPU pack; resolves with the new status. */
+export async function removeTranscriptionFile(
+  client: SettingsClient,
+  target: DownloadTarget,
+): Promise<TranscriptionStatus> {
+  return (await client.send({ kind: 'removeTranscriptionFile', target })).status;
 }

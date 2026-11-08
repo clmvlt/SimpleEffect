@@ -2,6 +2,7 @@
 
 use se_domain::{
     CURRENT_SCHEMA_VERSION, Format, Project, ProjectSettings, Sequence, Track, TrackKind,
+    TranscriptionSettings,
 };
 
 use crate::{AppError, new_ids::NewIds};
@@ -45,6 +46,7 @@ pub fn new_project(ids: NewIds<'_>, name: &str, format: Format) -> Result<Projec
         revision: 0,
         settings: ProjectSettings {
             default_format: format,
+            transcription: TranscriptionSettings::default(),
         },
         assets: Vec::new(),
         sequences: vec![default_sequence(ids, name, format)?],

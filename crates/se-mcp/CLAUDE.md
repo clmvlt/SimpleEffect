@@ -10,7 +10,7 @@ The contract with agents — conventions, every tool's input, output and errors 
 |---|---|
 | `mcp_service(McpDeps)` | The `rmcp` `StreamableHttpService` se-core nests at `/mcp` (sessions in memory, closed after 5 min idle) |
 | `McpServer::new(McpDeps)` | The `ServerHandler`: `get_info` (name `simpleeffect`, short instructions), `list_tools`, `call_tool` (resolves the bearer token of the request's `http::request::Parts` → `ACCESS_REVOKED` when the run is over); `call(agent, name, arguments)` runs a tool without HTTP (tests); `tools()` |
-| `McpDeps { projects, media, renders, tokens, edits }` | The se-app services tools read through, and `edits` (`AgentEditService`), the only way they write |
+| `McpDeps { projects, media, renders, tokens, edits, transcription }` | The se-app services tools read through (`transcription`: `TranscriptionService::sequence_words` and `search`, prompt 21), and `edits` (`AgentEditService`), the only way they write |
 | `bearer_token(&HeaderMap)` | `Authorization: Bearer <token>` (also used by se-core's `/mcp` guard) |
 | `tools::catalogue()` | Every `ToolEntry`, in the order agents see them |
 | `registry::{McpTool, ToolEntry}` | The tool contract and its type-erased form |
@@ -18,7 +18,7 @@ The contract with agents — conventions, every tool's input, output and errors 
 | `time_io::{TimeInput, RangeInput, TimeOutput, RangeOutput}` | Times at the boundary: seconds or timecode in, `{timecode, seconds}` out |
 | `context::{ToolContext, find_sequence, find_tracks, find_item, find_asset, default_range, whole_sequence}` | The call's services and caller; lookups with actionable errors listing what exists |
 | `describe::{item_summary, asset_summary, track_summary, …}` | Compact descriptions shared by tools |
-| `timing::{ClipWindow, merge, complement, spread}` | Source ↔ sequence time of clips, range sets, frames spread over a range |
+| `timing::{ClipWindow, merge, complement, spread}` | Range sets and frames spread over a range; `ClipWindow` (source ↔ sequence time of clips) is re-exported from se-domain since prompt 21 |
 | `writes::{WriteTool, WriteScene, Planned, NamedItem, run, apply, app_error, EditOutput, summaries}` | Write tools: `WriteTool::plan(scene, input)` → se-app `AgentEdit`s (+ which one creates the item, for batch names); `run::<T>` plans on the current document and applies; `app_error` maps refusals (`REVISION_CONFLICT`, `LOCKED_TRACK`, `*_NOT_FOUND`, `VALIDATION_ERROR`); `WriteScene::{time, duration, item ($name or id), item_kind, tracks, video_track}` |
 | `write_inputs::{PositionInput, PointInput, NamedPosition, StrokeInput, AnimationInput, ValueInput, EasingInput, color, span, presets}` | Input pieces shared by write tools (named places, `#rrggbb`, `start` + `end`/`duration`, keyframe values and easings) |
 
@@ -29,7 +29,7 @@ The contract with agents — conventions, every tool's input, output and errors 
 | `registry.rs` | `McpTool` (input type → schema via rmcp's `schema_for_input`, `NAME`, `DESCRIPTION`, `READ_ONLY`, `call`) and `ToolEntry` (definition with annotations + boxed handler parsing the arguments) |
 | `context.rs`, `output.rs`, `time_io.rs`, `describe.rs`, `timing.rs`, `writes.rs`, `write_inputs.rs` | Shared plumbing (see above) |
 | `analyses.rs` | `AnalysisCache` (stored analyses loaded once per asset per call) and `clips_in` (media clips of a kind of track intersecting a range, with their `ClipWindow`) |
-| `tools.rs`, `tools/<tool_name>.rs` | One tool per file. Reads: `get_project_overview`, `get_timeline`, `get_item`, `list_assets`, `get_frames`, `get_source_frames`, `get_audio_analysis`, `get_scene_changes`, `get_transcript` (stub), `list_animation_presets`, `get_brand_kit` (stub), `list_templates` (stub), `get_task_changes`. Writes: `add_text`, `add_shape`, `add_image`, `update_item`, `set_keyframes`, `apply_animation_preset`, `set_volume`, `move_item`, `trim_item`, `split_at`, `delete_items`, `ripple_delete_range`, `insert_gap`, `add_transition`, `add_marker`, `apply_batch` (dispatches to the others' `WriteTool::plan`, `BATCHABLE`) |
+| `tools.rs`, `tools/<tool_name>.rs` | One tool per file. Reads: `get_project_overview`, `get_timeline`, `get_item`, `list_assets`, `get_frames`, `get_source_frames`, `get_audio_analysis`, `get_scene_changes`, `get_transcript` (words of a sequence range in sequence time, segments, word times, paginated), `search_transcript` (full-text search placed where the sequence plays each phrase), `list_animation_presets`, `get_brand_kit` (stub), `list_templates` (stub), `get_task_changes`. Writes: `add_text`, `add_shape`, `add_image`, `update_item`, `set_keyframes`, `apply_animation_preset`, `set_volume`, `move_item`, `trim_item`, `split_at`, `delete_items`, `ripple_delete_range`, `insert_gap`, `add_transition`, `add_marker`, `apply_batch` (dispatches to the others' `WriteTool::plan`, `BATCHABLE`) |
 
 ## Rules and invariants
 - One tool per file; tools call se-app use cases (`ProjectService::project`, `MediaService::analysis`/`frame_jpeg`, `FrameRenderService::render`, `AgentEditService::apply`/`changes`…) and never mutate documents. Read tools are annotated `readOnlyHint: true`; write tools `READ_ONLY = false` (destructive).
@@ -55,7 +55,7 @@ The contract with agents — conventions, every tool's input, output and errors 
 ## How to test
 - `cargo test -p se-mcp`
 - Unit tests in-file: time parsing and output, ranges, lookups, summaries, clip windows and range sets, readable item properties, loudness downsampling, bearer tokens, tool definitions (object schemas, unique names, read-only).
-- `tests/tools.rs`: every read tool against the example project opened over se-app's `MediaTestbed` (analyses seeded in the fake folder, frames delivered to the fake renderer link).
+- `tests/tools.rs`: every read tool against the example project opened over se-app's `MediaTestbed` (analyses and transcripts seeded in the fake folder — `Bed::set_transcript` —, frames delivered to the fake renderer link); `get_transcript` maps the interview's words through its sound clip (a word beyond the clip is not played, pages, unsure words, untranscribed media), `search_transcript` finds a phrase with accents ignored and counts phrases the sequence does not play.
 - `tests/write_tools.rs`: write tools on the example project (creations with animations, refusal codes, timing tools, keyframes and presets, batches with references and atomicity, `get_task_changes` of a real task via `Bed::run_task`) and the replay of `tests/fixtures/subscribe-pop.json` (`add_text` + `apply_animation_preset`) and `subscribe-pop-recorded.json` (the calls of a real Claude Code run; `{created.N}` placeholders): the item is snapshotted (`snapshots/write_tools__subscribe_pop*_item.snap`), then `RevertTask` restores the initial project. Record new fixtures from the task log (`getTaskEvents`: `toolCallStarted.inputSummary` holds the arguments).
 - `tests/schemas.rs`: insta snapshots of every tool definition (`tests/snapshots/`) and a check that `docs/ai-tools.md` has a section per tool.
 - The HTTP side (token guard, real rmcp client, images) is tested in se-core (`src/mcp_routes.rs`).

@@ -14,11 +14,11 @@ use se_domain::{
     Marker, MarkerColor, MarkerId, MarkerPatch, MediaClipPatch, MoveItem, Operation, Project,
     PropertyAnimation, Reframe, RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack,
     RemoveTransition, RenameProject, ReorderTracks, RippleDeleteRange, SceneSummary, Sequence,
-    SequenceId, SequencePatch, SetKeyframes, ShapePatch, SplitItem, StreamDecodability,
-    TemplateParamValue, TemplatePatch, TextPatch, TimeRange, TrackId, TrackKind, TrackPatch,
-    Transition, TransitionAlignment, TransitionId, TransitionKind, TransitionPatch, TrimItem,
-    UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack,
-    UpdateTransition, Vec2,
+    SequenceId, SequencePatch, SetKeyframes, SetTranscriptionSettings, ShapePatch, SplitItem,
+    StreamDecodability, TemplateParamValue, TemplatePatch, TextPatch, TimeRange, TrackId,
+    TrackKind, TrackPatch, TranscriptionSettings, Transition, TransitionAlignment, TransitionId,
+    TransitionKind, TransitionPatch, TrimItem, UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker,
+    UpdateSequence, UpdateTrack, UpdateTransition, Vec2,
     test_support::{millis, track},
 };
 
@@ -28,7 +28,7 @@ use crate::picking::{
 
 /// Number of operation kinds the generator produces (every operation but `RestoreItem`, which
 /// the inverses exercise).
-pub const KINDS: u8 = 29;
+pub const KINDS: u8 = 30;
 
 /// Random numbers from which one operation is built.
 #[derive(Debug, Clone, Copy)]
@@ -78,7 +78,8 @@ impl Generator {
             11..=17 => self.structure_operation(project, seed),
             18..=24 => self.other_operation(project, seed),
             25..=27 => self.transition_operation(project, seed),
-            _ => preset(project, seed),
+            28 => preset(project, seed),
+            _ => Some(transcription_settings(seed)),
         }
     }
 
@@ -592,4 +593,27 @@ fn sequence_patch(seed: Seed) -> SequencePatch {
         name: Some(format!("Cut {}", seed.choice % 9)),
         format: Format::from_preset(preset, FrameRate::FPS_25),
     }
+}
+
+/// New transcription settings: detection or a language (now and then a malformed one, refused),
+/// with or without a vocabulary.
+fn transcription_settings(seed: Seed) -> Operation {
+    let language = match seed.choice % 4 {
+        0 => None,
+        1 => Some("en".to_owned()),
+        2 => Some("fr".to_owned()),
+        _ => Some("Français".to_owned()),
+    };
+    let vocabulary = if seed.pick.is_multiple_of(2) {
+        String::new()
+    } else {
+        format!("SimpleEffect, terme {}", seed.pick % 50)
+    };
+    SetTranscriptionSettings {
+        settings: TranscriptionSettings {
+            language,
+            vocabulary,
+        },
+    }
+    .into()
 }

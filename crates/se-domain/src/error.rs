@@ -242,6 +242,12 @@ pub enum DomainError {
         /// One item using it.
         item: ItemId,
     },
+    /// Transcription settings with a malformed language or vocabulary.
+    #[error("invalid transcription settings: {reason}")]
+    InvalidTranscriptionSettings {
+        /// What is wrong and how to fix it.
+        reason: String,
+    },
     /// A name that is empty or only spaces.
     #[error("a {entity} name cannot be empty")]
     EmptyName {
@@ -382,6 +388,9 @@ impl DomainError {
             Self::MissingSplitId { .. } => DomainErrorCode::MissingSplitId,
             Self::TimeOutOfRange { .. } => DomainErrorCode::TimeOutOfRange,
             Self::AssetInUse { .. } => DomainErrorCode::AssetInUse,
+            Self::InvalidTranscriptionSettings { .. } => {
+                DomainErrorCode::InvalidTranscriptionSettings
+            }
             Self::EmptyName { .. } => DomainErrorCode::EmptyName,
             Self::IndexOutOfBounds { .. } => DomainErrorCode::IndexOutOfBounds,
             Self::InvalidDocument { .. } => DomainErrorCode::InvalidDocument,

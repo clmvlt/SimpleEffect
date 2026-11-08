@@ -4,4 +4,4 @@
 /**
  * What a background job produces.
  */
-export type JobKind = "thumbnails" | "waveformPeaks" | "mezzanine" | "proxy" | "audioAnalysis" | "sceneDetection";
+export type JobKind = "thumbnails" | "waveformPeaks" | "mezzanine" | "proxy" | "audioAnalysis" | "sceneDetection" | "transcription";

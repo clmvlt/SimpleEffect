@@ -25,6 +25,7 @@ pub mod list_assets;
 pub mod list_templates;
 pub mod move_item;
 pub mod ripple_delete_range;
+pub mod search_transcript;
 pub mod set_keyframes;
 pub mod set_volume;
 pub mod split_at;
@@ -46,6 +47,7 @@ pub fn catalogue() -> Vec<ToolEntry> {
         ToolEntry::of::<get_audio_analysis::GetAudioAnalysis>(),
         ToolEntry::of::<get_scene_changes::GetSceneChanges>(),
         ToolEntry::of::<get_transcript::GetTranscript>(),
+        ToolEntry::of::<search_transcript::SearchTranscript>(),
         ToolEntry::of::<list_animation_presets::ListAnimationPresets>(),
         ToolEntry::of::<get_brand_kit::GetBrandKit>(),
         ToolEntry::of::<list_templates::ListTemplates>(),
@@ -107,11 +109,11 @@ mod tests {
     #[test]
     fn every_tool_has_an_object_schema_and_a_unique_name() {
         let tools = catalogue();
-        assert_eq!(tools.len(), 29);
+        assert_eq!(tools.len(), 30);
         let mut names: Vec<&str> = tools.iter().map(ToolEntry::name).collect();
         names.sort_unstable();
         names.dedup();
-        assert_eq!(names.len(), 29);
+        assert_eq!(names.len(), 30);
         for tool in &tools {
             assert_eq!(
                 tool.definition.input_schema["type"],

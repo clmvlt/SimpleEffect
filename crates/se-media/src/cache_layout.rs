@@ -39,9 +39,11 @@ pub fn completion_files(kind: JobKind) -> Option<Vec<String>> {
         JobKind::WaveformPeaks => {
             Some(PEAK_LEVELS.iter().map(|level| peaks_file(*level)).collect())
         }
-        JobKind::Mezzanine | JobKind::Proxy | JobKind::AudioAnalysis | JobKind::SceneDetection => {
-            None
-        }
+        JobKind::Mezzanine
+        | JobKind::Proxy
+        | JobKind::AudioAnalysis
+        | JobKind::SceneDetection
+        | JobKind::Transcription => None,
     }
 }
 

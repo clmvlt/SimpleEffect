@@ -22,6 +22,9 @@ pub enum CoreError {
     /// The app library (`library.db`) cannot be opened.
     #[error("cannot open the app library: {0}")]
     Library(#[source] se_app::ports::StorageError),
+    /// The transcription downloader (HTTPS client) cannot start.
+    #[error("cannot start transcription: {0}")]
+    Transcription(String),
     /// The HTTP server stopped with an IO error.
     #[error("the HTTP server stopped unexpectedly: {0}")]
     Serve(#[source] io::Error),

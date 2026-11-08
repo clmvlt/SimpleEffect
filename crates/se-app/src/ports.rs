@@ -13,6 +13,8 @@ mod runtime;
 mod storage_error;
 mod task_store;
 mod transcode;
+mod transcript_store;
+mod transcription;
 
 pub use agents::{
     AgentError, AgentProvider, AgentRun, AgentRunSpec, AgentSession, AgentWorkspaces, CancelHandle,
@@ -33,4 +35,10 @@ pub use task_store::TaskStore;
 pub use transcode::{
     AudioEncoding, AudioPlan, Container, TranscodePlan, TranscodeRecipe, VideoCodecTarget,
     VideoEncoding, VideoPlan,
+};
+pub use transcript_store::{StoredTranscript, TranscriptHit, TranscriptStore};
+pub use transcription::{
+    DownloadError, DownloadSink, DownloadSpec, FileDownloader, GpuRuntimeOffer, ModelChoice,
+    ModelFile, ModelFiles, SpeechAudioExtractor, Transcriber, TranscriberEnvironment,
+    TranscriberError, TranscriptionOutput, TranscriptionRequest,
 };

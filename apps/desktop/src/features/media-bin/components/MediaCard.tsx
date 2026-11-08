@@ -20,6 +20,7 @@ import { AssetMenuItems, type AssetMenuHandlers } from './AssetMenuItems';
 import { AssetPreview } from './AssetPreview';
 import { JobIndicator } from './JobIndicator';
 import { PlaybackBadge } from './PlaybackBadge';
+import { TranscriptBadge } from './TranscriptBadge';
 
 /** Width of a card's preview in pixels. */
 const PREVIEW_WIDTH = 144;
@@ -68,6 +69,7 @@ export function MediaCard({ asset, selected, ...handlers }: MediaItemProps) {
                 {name}
               </span>
               <PlaybackBadge asset={asset} />
+              <TranscriptBadge asset={asset} />
             </span>
             <JobIndicator asset={asset} />
           </button>

@@ -107,6 +107,9 @@ impl MediaService {
             self.schedule_asset(&handle, &project, asset, Trigger::Change)
                 .await;
         }
+        for listener in self.import_listeners() {
+            listener.assets_imported(&handle, &report.imported).await;
+        }
         Ok(report)
     }
 

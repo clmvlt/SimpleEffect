@@ -30,7 +30,9 @@ use tracing::Instrument;
 
 use crate::{
     AppError,
-    ports::{AnalysisStore, Clock, EventSink, IdGenerator, ProjectStore, TaskStore},
+    ports::{
+        AnalysisStore, Clock, EventSink, IdGenerator, ProjectStore, TaskStore, TranscriptStore,
+    },
 };
 
 /// Messages waiting before senders are slowed down.
@@ -136,6 +138,7 @@ pub struct ProjectActorHandle {
     path: PathBuf,
     analyses: Arc<dyn AnalysisStore>,
     tasks: Arc<dyn TaskStore>,
+    transcripts: Arc<dyn TranscriptStore>,
     sender: mpsc::Sender<Message>,
 }
 
@@ -155,6 +158,7 @@ impl ProjectActorHandle {
             path: store.path().to_path_buf(),
             analyses: store.analyses(),
             tasks: store.tasks(),
+            transcripts: store.transcripts(),
             sender,
         };
         let span = tracing::info_span!("project_actor", project = %project.id);
@@ -186,6 +190,13 @@ impl ProjectActorHandle {
     #[must_use]
     pub fn tasks(&self) -> &Arc<dyn TaskStore> {
         &self.tasks
+    }
+
+    /// The transcripts of the project's assets (project database). Not document state: written
+    /// directly by the transcription service, not through the actor.
+    #[must_use]
+    pub fn transcripts(&self) -> &Arc<dyn TranscriptStore> {
+        &self.transcripts
     }
 
     /// Commits `transaction` and returns the new revision.

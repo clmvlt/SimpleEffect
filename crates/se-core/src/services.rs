@@ -1,6 +1,7 @@
 //! Wiring of the use cases to their adapters: projects over se-store, media over se-media, AI
 //! tasks over se-agents (acting through `/mcp` with per-run tokens), frames for agents through
-//! the renderer, all publishing to the event bus.
+//! the renderer, transcription over se-transcribe (whisper.cpp) sharing the media job queue, all
+//! publishing to the event bus.
 
 use std::{path::PathBuf, sync::Arc};
 
@@ -8,13 +9,15 @@ use se_agents::{FsAgentWorkspaces, providers::claude_code::ClaudeCodeProvider};
 use se_app::{
     AgentEditService, DEFAULT_SAVE_DELAY, FrameRenderService, JobQueue, JobQueueConfig, McpAccess,
     MediaService, MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps,
-    TaskService, TaskServiceDeps, TaskTokenRegistry,
+    TaskService, TaskServiceDeps, TaskTokenRegistry, TranscriptionService,
+    TranscriptionServiceDeps,
     media_service::settings::keys::TOOLS_DIR,
     ports::{AppLibraryRepository, FontCatalog, IdGenerator},
 };
 use se_fonts::LocalFontCatalog;
 use se_media::{FfmpegJobRunner, FfmpegTools, FfprobeProber, FsMediaFiles, ToolLocator};
 use se_store::{FsProjectRepository, SqliteAppLibrary};
+use se_transcribe::{FsModelFiles, HttpDownloader, WhisperLocator, WhisperTranscriber};
 
 use crate::{
     app_paths::AppPaths,
@@ -39,6 +42,8 @@ pub struct Services {
     pub renders: Arc<FrameRenderService>,
     /// MCP tokens of running agents (minted by `tasks`, checked by `/mcp`).
     pub tokens: Arc<TaskTokenRegistry>,
+    /// Transcription (models, downloads, jobs, transcripts), observing projects and imports.
+    pub transcription: TranscriptionService,
 }
 
 /// Builds the services over the real adapters, for a core listening on `port`.
@@ -55,7 +60,18 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
             None
         }
     };
-    let media = Arc::new(media_service(tools_dir, events, library.clone()));
+    let ids: Arc<dyn IdGenerator> = Arc::new(UuidV7Ids);
+    let jobs = JobQueue::new(Arc::new(events.clone()), ids, JobQueueConfig::default());
+    let tools = FfmpegTools::new(ToolLocator::for_current_exe(tools_dir));
+    let runner = Arc::new(FfmpegJobRunner::new(tools.clone()));
+    let media = Arc::new(media_service(
+        tools,
+        runner.clone(),
+        jobs.clone(),
+        library.clone(),
+    ));
+    let transcription = transcription_service(paths, events, library.clone(), jobs, runner)?;
+    media.add_import_listener(Arc::new(transcription.clone()));
     let tokens = Arc::new(TaskTokenRegistry::new(Arc::new(RandomTokens)));
     let mcp = McpAccess {
         url: format!("http://127.0.0.1:{port}/mcp"),
@@ -80,7 +96,8 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
     let projects = Arc::new(
         ProjectService::new(deps, config)
             .with_observer(media.clone())
-            .with_observer(tasks.clone()),
+            .with_observer(tasks.clone())
+            .with_observer(Arc::new(transcription.clone())),
     );
     let edits = Arc::new(AgentEditService::new(
         Arc::clone(&projects),
@@ -95,7 +112,45 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         fonts: font_catalog(),
         renders,
         tokens,
+        transcription,
     })
+}
+
+/// The transcription service over whisper.cpp (bundled builds, the GPU pack under
+/// `<data>/runtimes`), models in `<data>/models/whisper`, sharing the media job queue; the
+/// machine is looked at in the background right away.
+fn transcription_service(
+    paths: &AppPaths,
+    events: &EventBus,
+    library: Arc<dyn AppLibraryRepository>,
+    jobs: JobQueue,
+    runner: Arc<FfmpegJobRunner>,
+) -> Result<TranscriptionService, CoreError> {
+    let downloader = Arc::new(HttpDownloader::new().map_err(CoreError::Transcription)?);
+    let threads = std::thread::available_parallelism().map_or(4, std::num::NonZero::get);
+    let runtimes = paths.runtimes();
+    let locator = WhisperLocator::for_current_exe(WhisperTranscriber::gpu_pack_dir(&runtimes));
+    let transcriber = WhisperTranscriber::new(locator, runtimes, downloader.clone(), threads);
+    let service = TranscriptionService::new(TranscriptionServiceDeps {
+        transcriber: Arc::new(transcriber),
+        extractor: runner,
+        downloader,
+        model_files: Arc::new(FsModelFiles),
+        jobs,
+        library,
+        events: Arc::new(events.clone()),
+        ids: Arc::new(UuidV7Ids),
+        clock: Arc::new(SystemClock),
+        models_dir: paths.whisper_models(),
+        cpu_threads: threads,
+    });
+    let warm_up = service.clone();
+    tokio::spawn(async move {
+        if let Err(error) = warm_up.start().await {
+            tracing::warn!(%error, "reading the transcription preferences failed; defaults apply");
+        }
+    });
+    Ok(service)
 }
 
 /// The AI task service over Claude Code, with the stored AI settings applied and the provider
@@ -140,15 +195,14 @@ fn font_catalog() -> Arc<dyn FontCatalog> {
     catalog
 }
 
-/// The media use cases over ffprobe/ffmpeg found by a [`ToolLocator`]. Hardware encoders are
-/// detected in the background right away, so the first mezzanine does not wait for it.
+/// The media use cases over ffprobe/ffmpeg found by `tools`, running `jobs`. Hardware encoders
+/// are detected in the background right away, so the first mezzanine does not wait for it.
 fn media_service(
-    tools_dir: Option<PathBuf>,
-    events: &EventBus,
+    tools: FfmpegTools,
+    runner: Arc<FfmpegJobRunner>,
+    jobs: JobQueue,
     library: Arc<dyn AppLibraryRepository>,
 ) -> MediaService {
-    let tools = FfmpegTools::new(ToolLocator::for_current_exe(tools_dir));
-    let runner = Arc::new(FfmpegJobRunner::new(tools.clone()));
     let ids: Arc<dyn IdGenerator> = Arc::new(UuidV7Ids);
     let warm_up = tools.clone();
     tokio::spawn(async move { warm_up.warm_up().await });
@@ -158,11 +212,7 @@ fn media_service(
         runner: runner.clone(),
         frames: runner,
         tools: Arc::new(tools),
-        jobs: JobQueue::new(
-            Arc::new(events.clone()),
-            ids.clone(),
-            JobQueueConfig::default(),
-        ),
+        jobs,
         library,
         ids,
         clock: Arc::new(SystemClock),

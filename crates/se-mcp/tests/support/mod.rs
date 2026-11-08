@@ -56,6 +56,7 @@ impl Bed {
             renders: bed.renders.clone(),
             tokens: bed.tokens.clone(),
             edits: bed.edits.clone(),
+            transcription: bed.transcription.clone(),
         });
         let agent = AgentContext {
             project_id,
@@ -189,6 +190,57 @@ impl Bed {
             changes: changes.iter().map(|ms| ms_time(*ms)).collect(),
         };
         self.store(asset, AnalysisResult::SceneDetection(detection));
+    }
+
+    /// Stores a transcript of `asset` (current content) made of `words`: (text, source start ms,
+    /// source end ms, segment).
+    pub fn set_transcript(&self, asset: AssetId, words: &[(&str, i64, i64, u32)]) {
+        let millis = |ms: i64| Flicks::new(ms * 705_600).unwrap();
+        let segment_count = words.iter().map(|word| word.3 + 1).max().unwrap_or(0);
+        let segments = (0..segment_count)
+            .map(|index| {
+                let inside: Vec<_> = words.iter().filter(|word| word.3 == index).collect();
+                se_domain::TranscriptSegment {
+                    start: millis(inside[0].1),
+                    end: millis(inside[inside.len() - 1].2),
+                }
+            })
+            .collect();
+        let transcript = se_domain::Transcript {
+            language: "fr".to_owned(),
+            model: "base".to_owned(),
+            words: words
+                .iter()
+                .map(|(text, start, end, segment)| se_domain::TranscriptWord {
+                    text: (*text).to_owned(),
+                    start: millis(*start),
+                    end: millis(*end),
+                    confidence: if *text == "chaîne !" { 0.3 } else { 0.9 },
+                    segment: *segment,
+                })
+                .collect(),
+            segments,
+        };
+        self.services.repository.set_transcript(
+            PROJECT_PATH,
+            se_app::ports::StoredTranscript {
+                asset_id: asset,
+                content_key: self.content_key(asset),
+                created_at: 0,
+                backend: "cpu".to_owned(),
+                transcript,
+            },
+        );
+    }
+
+    fn content_key(&self, asset: AssetId) -> String {
+        self.project
+            .assets
+            .iter()
+            .find(|candidate| candidate.id == asset)
+            .and_then(|candidate| candidate.fingerprint.as_ref())
+            .map(se_domain::ContentFingerprint::cache_key)
+            .expect("example assets have fingerprints")
     }
 
     fn store(&self, asset: AssetId, result: AnalysisResult) {

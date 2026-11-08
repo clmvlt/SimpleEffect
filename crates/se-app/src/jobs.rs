@@ -104,6 +104,7 @@ impl Default for JobQueueConfig {
                 (JobKind::Proxy, 1),
                 (JobKind::AudioAnalysis, 2),
                 (JobKind::SceneDetection, 1),
+                (JobKind::Transcription, 1),
             ]),
             max_running: 4,
             max_attempts: 2,

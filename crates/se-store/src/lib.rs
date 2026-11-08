@@ -19,6 +19,7 @@ mod fs_analysis_store;
 mod fs_repository;
 mod fs_store;
 mod fs_task_store;
+mod fs_transcript_store;
 mod io_errors;
 mod layout;
 mod library;

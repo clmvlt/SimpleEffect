@@ -73,6 +73,8 @@ pub enum DomainErrorCode {
     FrameRateLocked,
     /// The only sequence of a project cannot be removed.
     LastSequence,
+    /// Transcription settings with a malformed language or vocabulary.
+    InvalidTranscriptionSettings,
 }
 
 impl fmt::Display for DomainErrorCode {

@@ -9,6 +9,7 @@ import { AssetPreview } from './AssetPreview';
 import { JobIndicator } from './JobIndicator';
 import type { MediaItemProps } from './MediaCard';
 import { PlaybackBadge } from './PlaybackBadge';
+import { TranscriptBadge } from './TranscriptBadge';
 
 /** An asset in the list view: small preview, name, kind, duration and state. */
 export function MediaRow({ asset, selected, ...handlers }: MediaItemProps) {
@@ -45,6 +46,7 @@ export function MediaRow({ asset, selected, ...handlers }: MediaItemProps) {
                 {t(`editor.media.kinds.${asset.kind}`)}
                 {duration !== null && <span className="timecode">{formatDuration(duration)}</span>}
                 <PlaybackBadge asset={asset} />
+                <TranscriptBadge asset={asset} />
               </span>
               <JobIndicator asset={asset} />
             </span>

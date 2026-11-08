@@ -1,4 +1,4 @@
-import type { Asset, DerivedKind } from '@se/protocol';
+import { CoreRequestError, type Asset, type DerivedKind } from '@se/protocol';
 import { toast } from '@se/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { useCoreClient } from '../../../shared/core';
 import { useDesktopBridge } from '../../../shared/desktop';
 import { errorMessageKey } from '../../../shared/errors';
-import { generateDerivedMedia, relinkAsset, removeAsset } from '../api';
+import { openSettings } from '../../settings';
+import { generateDerivedMedia, relinkAsset, removeAsset, transcribeAssets } from '../api';
 import { assetName } from '../services/asset-list';
 import { MEDIA_EXTENSIONS } from '../services/media-extensions';
 
@@ -18,7 +19,8 @@ export interface PendingRelink {
 
 /**
  * What can be done with an asset: relink (with confirmation for other content), remove, reveal,
- * generate a proxy or retry a failed mezzanine or proxy.
+ * generate a proxy or retry a failed mezzanine or proxy, transcribe (without a model, the toast
+ * opens « Réglages → Transcription »).
  */
 export function useAssetActions(projectId: string | null) {
   const client = useCoreClient();
@@ -76,6 +78,27 @@ export function useAssetActions(projectId: string | null) {
     },
     reveal: (asset: Asset): void => {
       void bridge.showInFolder(asset.originalPath).catch(fail);
+    },
+    transcribe: async (asset: Asset): Promise<void> => {
+      if (projectId === null) return;
+      try {
+        await transcribeAssets(client, projectId, [asset.id]);
+        toast.success(t('editor.media.toasts.transcriptionQueued', { name: assetName(asset) }));
+      } catch (error) {
+        const settings =
+          error instanceof CoreRequestError &&
+          (error.code === 'NO_TRANSCRIPTION_MODEL' || error.code === 'TRANSCRIPTION_UNAVAILABLE');
+        toast.error(t(errorMessageKey(error)), {
+          action: settings
+            ? {
+                label: t('editor.transcript.openSettings'),
+                onClick: () => {
+                  openSettings('transcription');
+                },
+              }
+            : undefined,
+        });
+      }
     },
     generateDerived: async (asset: Asset, derived: DerivedKind): Promise<void> => {
       if (projectId === null) return;

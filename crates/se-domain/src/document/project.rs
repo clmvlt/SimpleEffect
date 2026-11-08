@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::{Asset, BrandKit, Format, Item, MotionTemplate, Sequence};
+use super::{Asset, BrandKit, Format, Item, MotionTemplate, Sequence, TranscriptionSettings};
 use crate::ids::ProjectId;
 
 /// Version of the document format written by this build. Persistence (prompt 07) migrates older
@@ -14,7 +14,7 @@ use crate::ids::ProjectId;
 /// Version 4 (prompt 14): tracks carry transitions, media clips fade shapes.
 /// Version 5 (prompt 15): full text styles, outlines, image fits, blur, animatable colours.
 /// Version 6 (prompt 16): media clips that fill the frame carry a focus (`reframe.focus`).
-pub const CURRENT_SCHEMA_VERSION: u32 = 6;
+pub const CURRENT_SCHEMA_VERSION: u32 = 7;
 
 /// The whole editable state of a project, serialized as `project.json` (ADR-0006).
 ///
@@ -53,11 +53,14 @@ impl Project {
 }
 
 /// Project-wide preferences.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectSettings {
     /// Format given to new sequences.
     pub default_format: Format,
+    /// How the project's media are transcribed (schema version 7).
+    #[serde(default)]
+    pub transcription: TranscriptionSettings,
 }
 
 #[cfg(test)]

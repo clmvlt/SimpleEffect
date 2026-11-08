@@ -14,8 +14,9 @@ publish: null
 extraMetadata:
   name: simpleeffect
 
-# se-core and the sidecars (ffmpeg, ffprobe from `pnpm fetch-binaries`) share `resources/bin/`,
-# where se-core looks for them first (crates/se-media/src/tools.rs).
+# se-core and the sidecars (ffmpeg, ffprobe and whisper.cpp in its `whisper/` subfolder, from
+# `pnpm fetch-binaries`) share `resources/bin/`, where se-core looks for them first
+# (crates/se-media/src/tools.rs). The filters leave out the fetch stamp (`.fetched.json`).
 win:
   target: nsis
   extraResources:
@@ -23,7 +24,7 @@ win:
       to: bin/se-core.exe
     - from: ../../resources/bin/win32-x64
       to: bin
-      filter: [ffmpeg.exe, ffprobe.exe]
+      filter: [ffmpeg.exe, ffprobe.exe, whisper/**/*]
 nsis:
   artifactName: ${productName}-Setup-${version}.${ext}
 
@@ -35,7 +36,7 @@ mac:
       to: bin/se-core
     - from: ../../resources/bin/darwin-${arch}
       to: bin
-      filter: [ffmpeg, ffprobe]
+      filter: [ffmpeg, ffprobe, whisper/**/*]
 dmg:
   artifactName: ${productName}-${version}-${arch}.${ext}
 
@@ -50,7 +51,7 @@ linux:
       to: bin/se-core
     - from: ../../resources/bin/linux-x64
       to: bin
-      filter: [ffmpeg, ffprobe]
+      filter: [ffmpeg, ffprobe, whisper/**/*]
 appImage:
   artifactName: ${productName}-${version}-${arch}.${ext}
 deb:

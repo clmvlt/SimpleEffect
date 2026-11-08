@@ -5,7 +5,7 @@ use se_domain::{
     Animatable, Asset, AssetKind, CURRENT_SCHEMA_VERSION, CaptionItem, DesignPixels, Flicks,
     Format, FormatPreset, FrameRate, Item, ItemId, ItemKind, LinkGroupId, Marker, MarkerColor,
     MarkerId, MediaClip, Origin, Project, ProjectId, ProjectSettings, Sequence, SequenceId, TaskId,
-    TextItem, TimeRange, Track, TrackId, TrackKind, validate_project,
+    TextItem, TimeRange, Track, TrackId, TrackKind, TranscriptionSettings, validate_project,
 };
 use uuid::Uuid;
 
@@ -307,6 +307,7 @@ pub fn build_project(
         revision: 0,
         settings: ProjectSettings {
             default_format: format,
+            transcription: TranscriptionSettings::default(),
         },
         assets,
         sequences: vec![Sequence {

@@ -3,16 +3,16 @@
 use se_domain::{
     AnimationPhase, AssetId, Flicks, Format, FormatAdaptation, ItemId, JobId, MarkerColor,
     MarkerId, MarkerPatch, ProjectId, PropertyAnimation, SequenceId, TaskId, TrackId, TrackKind,
-    TrackPatch, TransitionId, TransitionPatch,
+    TrackPatch, TranscriptionSettings, TransitionId, TransitionPatch,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
     AddGraphicRequest, AiSettings, CreateProjectRequest, DecodabilityReport, DecoderCapabilities,
-    GenerateDerivedRequest, ImportMediaRequest, ItemAnimation, ItemPlacement, ItemTrim, ItemUpdate,
-    MediaSettings, NewTransition, PastedItem, PlaceMediaRequest, PlacementMode, RelinkAssetRequest,
-    SubmitTaskRequest, TaskScope,
+    DownloadTarget, GenerateDerivedRequest, ImportMediaRequest, ItemAnimation, ItemPlacement,
+    ItemTrim, ItemUpdate, MediaSettings, NewTransition, PastedItem, PlaceMediaRequest,
+    PlacementMode, RelinkAssetRequest, SubmitTaskRequest, TaskScope, TranscriptionPreferences,
 };
 
 /// A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -562,6 +562,70 @@ pub enum Command {
         request_id: String,
         /// Why, for the agent (English, actionable).
         message: String,
+    },
+    /// Transcription on this machine: whisper.cpp, GPU, models, downloads, preferences (prompt
+    /// 21). Answered by [`crate::CommandResult::GetTranscriptionStatus`].
+    GetTranscriptionStatus,
+    /// Replaces the transcription preferences. Answered by
+    /// [`crate::CommandResult::UpdateTranscriptionPreferences`].
+    UpdateTranscriptionPreferences(TranscriptionPreferences),
+    /// Starts downloading a model, the voice model or the GPU pack (after the user agreed to its
+    /// size); progress comes as `transcriptionStatusChanged` events. Answered by
+    /// [`crate::CommandResult::StartTranscriptionDownload`].
+    StartTranscriptionDownload {
+        /// What to download.
+        target: DownloadTarget,
+    },
+    /// Stops a running download (nothing is installed). Answered by
+    /// [`crate::CommandResult::CancelTranscriptionDownload`].
+    CancelTranscriptionDownload {
+        /// The download.
+        target: DownloadTarget,
+    },
+    /// Copies a ggml model file into the models folder (a catalogue model when its SHA-256 says
+    /// so, else a custom one). Answered by [`crate::CommandResult::ImportTranscriptionModel`].
+    ImportTranscriptionModel {
+        /// Absolute path of the `.bin` file.
+        path: String,
+    },
+    /// Deletes an installed model, the voice model or the GPU pack. Answered by
+    /// [`crate::CommandResult::RemoveTranscriptionFile`].
+    RemoveTranscriptionFile {
+        /// What to delete.
+        target: DownloadTarget,
+    },
+    /// Queues the transcription of assets (again for those already transcribed: the new
+    /// transcript replaces the old one). Answered by
+    /// [`crate::CommandResult::TranscribeAssets`].
+    TranscribeAssets {
+        /// The open project.
+        project_id: ProjectId,
+        /// Assets with sound.
+        asset_ids: Vec<AssetId>,
+    },
+    /// The transcript of an asset, in source time. Answered by
+    /// [`crate::CommandResult::GetTranscript`].
+    GetTranscript {
+        /// The open project.
+        project_id: ProjectId,
+        /// The asset.
+        asset_id: AssetId,
+    },
+    /// Transcript segments of the project's assets holding every word of `query` (accents and
+    /// case ignored). Answered by [`crate::CommandResult::SearchTranscripts`].
+    SearchTranscripts {
+        /// The open project.
+        project_id: ProjectId,
+        /// Words to find.
+        query: String,
+    },
+    /// Sets the project's transcription language and vocabulary (one undo step). Answered by
+    /// [`crate::CommandResult::SetTranscriptionSettings`].
+    SetTranscriptionSettings {
+        /// The open project.
+        project_id: ProjectId,
+        /// The new settings.
+        settings: TranscriptionSettings,
     },
 }
 

@@ -91,7 +91,7 @@ export function testAsset(id: string, path: string, kind: Asset['kind'] = 'video
     },
     fingerprint: null,
     derived: { mezzanine: null, proxy: null },
-    analysis: { audio: null, scenes: null },
+    analysis: { audio: null, scenes: null, transcript: null },
     decodability: { video: 'noStream', audio: 'decodable' },
     missing: false,
   };

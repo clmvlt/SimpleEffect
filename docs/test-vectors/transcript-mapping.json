@@ -1,0 +1,368 @@
+{
+  "description": "Shared vectors of the source → sequence correspondence of transcript words (prompt 21). Read by the Rust tests of se-domain (crates/se-domain/tests/transcript_mapping.rs, se_domain::sequence_transcript) and by the renderer's mirror (apps/desktop/src/shared/transcript/sequence-words.test.ts) so both sides map identically. Times are milliseconds (exact in flicks: 1 ms = 705600 flicks). A transcript word is [text, startMs, endMs, segment]; an expected word is [text, startMs, endMs, item, wordIndex, segment]; an expected segment is [item, startMs, endMs, firstWord, wordCount, sourceSegment]. Clips play `asset` from `sourceStartMs` at `speed` over [startMs, endMs) of the sequence. Rules: only sound tracks count; a word belongs to a clip when its middle lies in the source the clip plays; times go through the speed and are clamped to the clip; one word of one asset at one sequence time appears once; words sorted by start then track order; segments group consecutive words of one clip and one source segment.",
+  "transcripts": {
+    "a": [
+      ["Bonjour", 0, 400, 0],
+      ["à", 400, 500, 0],
+      ["tous.", 500, 900, 0],
+      ["Ça", 1500, 1700, 1],
+      ["va ?", 1700, 2000, 1]
+    ],
+    "b": [
+      ["Oui", 300, 450, 0],
+      ["d'accord.", 450, 800, 0]
+    ]
+  },
+  "cases": [
+    {
+      "name": "a whole clip shifts every word",
+      "tracks": [
+        {
+          "kind": "audio",
+          "clips": [
+            {
+              "item": "c1",
+              "asset": "a",
+              "startMs": 10000,
+              "endMs": 12000,
+              "sourceStartMs": 0,
+              "speed": 1
+            }
+          ]
+        }
+      ],
+      "words": [
+        ["Bonjour", 10000, 10400, "c1", 0, 0],
+        ["à", 10400, 10500, "c1", 1, 0],
+        ["tous.", 10500, 10900, "c1", 2, 0],
+        ["Ça", 11500, 11700, "c1", 3, 1],
+        ["va ?", 11700, 12000, "c1", 4, 1]
+      ],
+      "segments": [
+        ["c1", 10000, 10900, 0, 3, 0],
+        ["c1", 11500, 12000, 3, 2, 1]
+      ]
+    },
+    {
+      "name": "a removed passage loses its words",
+      "tracks": [
+        {
+          "kind": "audio",
+          "clips": [
+            {
+              "item": "c1",
+              "asset": "a",
+              "startMs": 0,
+              "endMs": 400,
+              "sourceStartMs": 0,
+              "speed": 1
+            },
+            {
+              "item": "c2",
+              "asset": "a",
+              "startMs": 400,
+              "endMs": 1900,
+              "sourceStartMs": 500,
+              "speed": 1
+            }
+          ]
+        }
+      ],
+      "words": [
+        ["Bonjour", 0, 400, "c1", 0, 0],
+        ["tous.", 400, 800, "c2", 2, 1],
+        ["Ça", 1400, 1600, "c2", 3, 2],
+        ["va ?", 1600, 1900, "c2", 4, 2]
+      ],
+      "segments": [
+        ["c1", 0, 400, 0, 1, 0],
+        ["c2", 400, 800, 1, 1, 0],
+        ["c2", 1400, 1900, 2, 2, 1]
+      ]
+    },
+    {
+      "name": "a cut inside a word gives it to the side holding its middle",
+      "tracks": [
+        {
+          "kind": "audio",
+          "clips": [
+            {
+              "item": "c1",
+              "asset": "a",
+              "startMs": 0,
+              "endMs": 600,
+              "sourceStartMs": 0,
+              "speed": 1
+            },
+            {
+              "item": "c2",
+              "asset": "a",
+              "startMs": 600,
+              "endMs": 2000,
+              "sourceStartMs": 600,
+              "speed": 1
+            }
+          ]
+        }
+      ],
+      "words": [
+        ["Bonjour", 0, 400, "c1", 0, 0],
+        ["à", 400, 500, "c1", 1, 0],
+        ["tous.", 600, 900, "c2", 2, 1],
+        ["Ça", 1500, 1700, "c2", 3, 2],
+        ["va ?", 1700, 2000, "c2", 4, 2]
+      ],
+      "segments": [
+        ["c1", 0, 500, 0, 2, 0],
+        ["c2", 600, 900, 2, 1, 0],
+        ["c2", 1500, 2000, 3, 2, 1]
+      ]
+    },
+    {
+      "name": "speed 2 halves word times",
+      "tracks": [
+        {
+          "kind": "audio",
+          "clips": [
+            {
+              "item": "c1",
+              "asset": "a",
+              "startMs": 0,
+              "endMs": 1000,
+              "sourceStartMs": 0,
+              "speed": 2
+            }
+          ]
+        }
+      ],
+      "words": [
+        ["Bonjour", 0, 200, "c1", 0, 0],
+        ["à", 200, 250, "c1", 1, 0],
+        ["tous.", 250, 450, "c1", 2, 0],
+        ["Ça", 750, 850, "c1", 3, 1],
+        ["va ?", 850, 1000, "c1", 4, 1]
+      ],
+      "segments": [
+        ["c1", 0, 450, 0, 3, 0],
+        ["c1", 750, 1000, 3, 2, 1]
+      ]
+    },
+    {
+      "name": "speed 0.5 doubles them",
+      "tracks": [
+        {
+          "kind": "audio",
+          "clips": [
+            {
+              "item": "c1",
+              "asset": "a",
+              "startMs": 1000,
+              "endMs": 5000,
+              "sourceStartMs": 0,
+              "speed": 0.5
+            }
+          ]
+        }
+      ],
+      "words": [
+        ["Bonjour", 1000, 1800, "c1", 0, 0],
+        ["à", 1800, 2000, "c1", 1, 0],
+        ["tous.", 2000, 2800, "c1", 2, 0],
+        ["Ça", 4000, 4400, "c1", 3, 1],
+        ["va ?", 4400, 5000, "c1", 4, 1]
+      ],
+      "segments": [
+        ["c1", 1000, 2800, 0, 3, 0],
+        ["c1", 4000, 5000, 3, 2, 1]
+      ]
+    },
+    {
+      "name": "linked picture and sound count once",
+      "tracks": [
+        {
+          "kind": "video",
+          "clips": [
+            {
+              "item": "v1",
+              "asset": "a",
+              "startMs": 0,
+              "endMs": 2000,
+              "sourceStartMs": 0,
+              "speed": 1
+            }
+          ]
+        },
+        {
+          "kind": "audio",
+          "clips": [
+            {
+              "item": "c1",
+              "asset": "a",
+              "startMs": 0,
+              "endMs": 2000,
+              "sourceStartMs": 0,
+              "speed": 1
+            }
+          ]
+        }
+      ],
+      "words": [
+        ["Bonjour", 0, 400, "c1", 0, 0],
+        ["à", 400, 500, "c1", 1, 0],
+        ["tous.", 500, 900, "c1", 2, 0],
+        ["Ça", 1500, 1700, "c1", 3, 1],
+        ["va ?", 1700, 2000, "c1", 4, 1]
+      ],
+      "segments": [
+        ["c1", 0, 900, 0, 3, 0],
+        ["c1", 1500, 2000, 3, 2, 1]
+      ]
+    },
+    {
+      "name": "the same sound on two tracks appears once",
+      "tracks": [
+        {
+          "kind": "audio",
+          "clips": [
+            {
+              "item": "c1",
+              "asset": "a",
+              "startMs": 0,
+              "endMs": 2000,
+              "sourceStartMs": 0,
+              "speed": 1
+            }
+          ]
+        },
+        {
+          "kind": "audio",
+          "clips": [
+            {
+              "item": "c2",
+              "asset": "a",
+              "startMs": 0,
+              "endMs": 2000,
+              "sourceStartMs": 0,
+              "speed": 1
+            }
+          ]
+        }
+      ],
+      "words": [
+        ["Bonjour", 0, 400, "c1", 0, 0],
+        ["à", 400, 500, "c1", 1, 0],
+        ["tous.", 500, 900, "c1", 2, 0],
+        ["Ça", 1500, 1700, "c1", 3, 1],
+        ["va ?", 1700, 2000, "c1", 4, 1]
+      ],
+      "segments": [
+        ["c1", 0, 900, 0, 3, 0],
+        ["c1", 1500, 2000, 3, 2, 1]
+      ]
+    },
+    {
+      "name": "two speakers interleave by start",
+      "tracks": [
+        {
+          "kind": "audio",
+          "clips": [
+            {
+              "item": "c1",
+              "asset": "a",
+              "startMs": 0,
+              "endMs": 2000,
+              "sourceStartMs": 0,
+              "speed": 1
+            }
+          ]
+        },
+        {
+          "kind": "audio",
+          "clips": [
+            {
+              "item": "c2",
+              "asset": "b",
+              "startMs": 0,
+              "endMs": 1000,
+              "sourceStartMs": 0,
+              "speed": 1
+            }
+          ]
+        }
+      ],
+      "words": [
+        ["Bonjour", 0, 400, "c1", 0, 0],
+        ["Oui", 300, 450, "c2", 0, 1],
+        ["à", 400, 500, "c1", 1, 2],
+        ["d'accord.", 450, 800, "c2", 1, 3],
+        ["tous.", 500, 900, "c1", 2, 4],
+        ["Ça", 1500, 1700, "c1", 3, 5],
+        ["va ?", 1700, 2000, "c1", 4, 5]
+      ],
+      "segments": [
+        ["c1", 0, 400, 0, 1, 0],
+        ["c2", 300, 450, 1, 1, 0],
+        ["c1", 400, 500, 2, 1, 0],
+        ["c2", 450, 800, 3, 1, 0],
+        ["c1", 500, 900, 4, 1, 0],
+        ["c1", 1500, 2000, 5, 2, 1]
+      ]
+    },
+    {
+      "name": "a clip trimmed at both ends keeps the words it plays",
+      "tracks": [
+        {
+          "kind": "audio",
+          "clips": [
+            {
+              "item": "c1",
+              "asset": "a",
+              "startMs": 0,
+              "endMs": 1150,
+              "sourceStartMs": 450,
+              "speed": 1
+            }
+          ]
+        }
+      ],
+      "words": [
+        ["à", 0, 50, "c1", 1, 0],
+        ["tous.", 50, 450, "c1", 2, 0]
+      ],
+      "segments": [["c1", 0, 450, 0, 2, 0]]
+    },
+    {
+      "name": "untranscribed assets and picture tracks say nothing",
+      "tracks": [
+        {
+          "kind": "video",
+          "clips": [
+            {
+              "item": "v1",
+              "asset": "a",
+              "startMs": 0,
+              "endMs": 2000,
+              "sourceStartMs": 0,
+              "speed": 1
+            }
+          ]
+        },
+        {
+          "kind": "audio",
+          "clips": [
+            {
+              "item": "c1",
+              "asset": "z",
+              "startMs": 0,
+              "endMs": 2000,
+              "sourceStartMs": 0,
+              "speed": 1
+            }
+          ]
+        }
+      ],
+      "words": [],
+      "segments": []
+    }
+  ]
+}

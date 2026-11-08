@@ -1,3 +1,4 @@
+import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 
 import type { KindFilter } from '../services/asset-list';
@@ -40,4 +41,9 @@ export function revealAsset(assetId: string): void {
     query: '',
     revealRequest: revealRequest + 1,
   });
+}
+
+/** The asset whose details the media bin shows (its selection), or `null`. */
+export function useSelectedAssetId(): string | null {
+  return useStore(mediaBinStore, (state) => state.selectedAssetId);
 }

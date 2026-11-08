@@ -54,6 +54,7 @@ pub async fn run(
         tasks: Arc::clone(&services.tasks),
         fonts: Arc::clone(&services.fonts),
         renders: Arc::clone(&services.renders),
+        transcription: services.transcription.clone(),
     });
     let state = RpcState::new(router, events.clone(), stopping.clone());
     let app = routes(guard, state, &services, port);
@@ -92,6 +93,7 @@ fn routes(guard: Arc<AccessGuard>, state: RpcState, services: &Services, port: u
             renders: Arc::clone(&services.renders),
             tokens: Arc::clone(&services.tokens),
             edits: Arc::clone(&services.edits),
+            transcription: services.transcription.clone(),
         },
         port,
     );
