@@ -1,0 +1,88 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Makes captions from the transcript of a range: words grouped into readable captions (line length, lines, pauses, punctuation), each word timed so styles can highlight the word being spoken. They go on the caption track (a video track « Sous-titres » created on top when missing; creating it needs a task over every track) and replace the captions of that track crossing the range, in one undoable transaction. Returns each caption's id, time and text, and the style used. Media not transcribed yet get no caption (listed in `untranscribed`).",
+  "inputSchema": {
+    "$defs": {
+      "RangeInput": {
+        "additionalProperties": false,
+        "description": "A range given by an agent; the end is excluded.",
+        "properties": {
+          "end": {
+            "$ref": "#/$defs/Time",
+            "description": "End of the range (excluded), after `start`."
+          },
+          "start": {
+            "$ref": "#/$defs/Time",
+            "description": "First instant of the range."
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "type": "object"
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "max_chars_per_line": {
+        "description": "Longest line in characters (4–80; default: the style's).",
+        "format": "uint32",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "max_lines": {
+        "description": "Lines per caption (1–4; default: the style's).",
+        "format": "uint32",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "range": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/RangeInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The range to caption (default: your task's range, else the whole sequence). Captions of\nthe caption track crossing it are replaced, so the range grows to cover them whole."
+      },
+      "style": {
+        "description": "A predefined style — `tiktokBold` (one bold upper-case line, words popping),\n`minimal` (two plain lines), `karaoke` (spoken words filling in yellow), `box` (lines on\ndark boxes) — or the `style_id` of a caption style of the project. Default: the style of\nthe captions replaced, else `minimal`.",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "name": "create_captions"
+}

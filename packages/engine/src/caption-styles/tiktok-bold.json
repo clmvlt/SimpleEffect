@@ -18,7 +18,7 @@
       "padding": { "x": 24, "y": 12 },
       "cornerRadius": 16
     },
-    "position": { "x": 0.5, "y": 0.72 },
+    "position": { "x": 0.5, "y": 0.64 },
     "animation": "popPerWord",
     "highlightSpoken": false,
     "maxCharsPerLine": 18,

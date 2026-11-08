@@ -5,8 +5,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use se_domain::{
     AddCaptionStyle, CaptionPatch, CaptionStyle, CaptionStyleId, CaptionStylePatch,
-    DEFAULT_CAPTION_PRESET, DomainError, ItemId, ItemKind, ItemPatch, Project, RemoveCaptionStyle,
-    UpdateCaptionStyle, UpdateItem, caption_style_from_preset,
+    DEFAULT_CAPTION_PRESET, DomainError, Format, ItemId, ItemKind, ItemPatch, Project,
+    RemoveCaptionStyle, UpdateCaptionStyle, UpdateItem, caption_style_from_preset,
 };
 use se_protocol::CaptionStyleChoice;
 
@@ -45,14 +45,20 @@ impl StyleToUse {
     }
 }
 
-/// The style asked for: a preset (a new style), a style of `project`, or `fallback` (the style of
-/// the captions being replaced), else the default preset.
+/// Highest bottom of captions made from a preset in a portrait frame: the platforms of vertical
+/// videos cover the bottom third with their interface.
+pub const PORTRAIT_CAPTION_BOTTOM: f64 = 0.64;
+
+/// The style asked for: a preset (a new style, raised above the bottom third in portrait
+/// frames), a style of `project`, or `fallback` (the style of the captions being replaced), else
+/// the default preset.
 ///
 /// # Errors
 /// An unknown preset or style, id generator failures.
 pub(crate) fn style_to_use(
     plan: &EditPlan<'_>,
     project: &Project,
+    format: &Format,
     choice: Option<&CaptionStyleChoice>,
     fallback: Option<CaptionStyleId>,
 ) -> Result<StyleToUse, AppError> {
@@ -69,15 +75,23 @@ pub(crate) fn style_to_use(
     };
     match (choice, fallback) {
         (Some(CaptionStyleChoice::Existing { style_id }), _) => existing(*style_id),
-        (Some(CaptionStyleChoice::Preset { preset }), _) => new_from_preset(plan, preset),
+        (Some(CaptionStyleChoice::Preset { preset }), _) => new_from_preset(plan, preset, format),
         (None, Some(id)) => existing(id),
-        (None, None) => new_from_preset(plan, DEFAULT_CAPTION_PRESET),
+        (None, None) => new_from_preset(plan, DEFAULT_CAPTION_PRESET, format),
     }
 }
 
-fn new_from_preset(plan: &EditPlan<'_>, preset: &str) -> Result<StyleToUse, AppError> {
+fn new_from_preset(
+    plan: &EditPlan<'_>,
+    preset: &str,
+    format: &Format,
+) -> Result<StyleToUse, AppError> {
     let id = plan.ids().caption_style()?;
-    Ok(StyleToUse::New(caption_style_from_preset(preset, id)?))
+    let mut style = caption_style_from_preset(preset, id)?;
+    if format.height > format.width {
+        style.position.y = style.position.y.min(PORTRAIT_CAPTION_BOTTOM);
+    }
+    Ok(StyleToUse::New(style))
 }
 
 /// The captions among `items` (refused otherwise), with their style.
@@ -185,7 +199,11 @@ pub(crate) fn apply_preset(
         .into_iter()
         .map(|(item, _)| item)
         .collect();
-    let id = new_from_preset(plan, preset)?.commit(plan);
+    let format = match listed.first() {
+        Some(&first) => find_item(&before, first)?.sequence.format,
+        None => before.settings.default_format,
+    };
+    let id = new_from_preset(plan, preset, &format)?.commit(plan);
     restyle(plan, &listed, id);
     drop_unused_styles(plan, &before)?;
     Ok(id)

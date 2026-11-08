@@ -780,6 +780,22 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn caption_commands_reach_their_handlers() {
+        let project = "00000000-0009-7000-8000-000000000000";
+        let sequence = "00000000-0001-7000-8000-000000000000";
+        let generate = reply(&format!(
+            r#"{{"type":"request","id":1,"command":{{"kind":"generateCaptions","projectId":"{project}","sequenceId":"{sequence}"}}}}"#
+        ))
+        .await;
+        assert_eq!(generate["error"]["code"], "PROJECT_NOT_OPEN");
+        let export = reply(&format!(
+            r#"{{"type":"request","id":2,"command":{{"kind":"exportSubtitles","projectId":"{project}","sequenceId":"{sequence}","path":"film.srt"}}}}"#
+        ))
+        .await;
+        assert_eq!(export["error"]["code"], "INVALID_REQUEST");
+    }
+
+    #[tokio::test]
     async fn late_frame_render_failures_are_refused_with_their_code() {
         let reply = reply(
             r#"{"type":"request","id":1,"command":{"kind":"reportFrameRenderFailure","requestId":"gone","message":"another project is open"}}"#,

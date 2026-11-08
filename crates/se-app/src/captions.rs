@@ -17,7 +17,7 @@
 pub(crate) mod edits;
 pub(crate) mod generate;
 mod service;
-pub(crate) mod styles;
+pub mod styles;
 pub mod subtitles;
 pub mod track;
 

@@ -8,7 +8,7 @@ use se_domain::{AssetKind, Project, Sequence, TrackKind, format_clock};
 use se_protocol::Task;
 
 /// The instruction files, in order.
-const GUIDES: [&str; 7] = [
+const GUIDES: [&str; 8] = [
     include_str!("../../assets/agent-instructions/00-role.md"),
     include_str!("../../assets/agent-instructions/01-time-and-scope.md"),
     include_str!("../../assets/agent-instructions/02-reading-the-project.md"),
@@ -16,6 +16,7 @@ const GUIDES: [&str; 7] = [
     include_str!("../../assets/agent-instructions/04-motion-basics.md"),
     include_str!("../../assets/agent-instructions/05-audio-editing.md"),
     include_str!("../../assets/agent-instructions/06-smart-cuts.md"),
+    include_str!("../../assets/agent-instructions/07-captions.md"),
 ];
 
 /// The instructions added to the CLI's system prompt for `task` on `project` (`None` when the

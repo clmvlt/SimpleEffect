@@ -116,7 +116,7 @@ pub(crate) fn plan_captions(
     let sequence = find_sequence(&before, placement.sequence_id)?;
     let (replaced, range) = crossed_captions(sequence, placement.range);
     let fallback = replaced.first().map(|(_, style)| *style);
-    let style = style_to_use(plan, &before, placement.style, fallback)?;
+    let style = style_to_use(plan, &before, &sequence.format, placement.style, fallback)?;
     let drafts = make(style.style(), range);
     if drafts.is_empty() {
         return Ok(PlacedCaptions::default());

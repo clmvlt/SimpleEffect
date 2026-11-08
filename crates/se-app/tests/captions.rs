@@ -641,3 +641,39 @@ async fn agents_make_captions_in_their_scope_and_keep_shared_styles_out_of_it() 
         .await
         .unwrap();
 }
+
+#[tokio::test(start_paused = true)]
+async fn presets_rise_above_the_bottom_third_in_vertical_sequences() {
+    let bed = bed().await;
+    let vertical = se_domain::Format::from_preset(
+        se_domain::FormatPreset::Vertical9x16,
+        se_domain::FrameRate::FPS_29_97,
+    )
+    .unwrap();
+    bed.services
+        .projects
+        .set_sequence_format(
+            bed.project_id,
+            bed.sequence_id,
+            vertical,
+            se_domain::FormatAdaptation {
+                clip_reframe: se_domain::ClipReframePolicy::Fill,
+                fit_text_widths: true,
+            },
+        )
+        .await
+        .unwrap();
+    let report = bed
+        .services
+        .captions
+        .generate(&bed.request(None, Some("minimal")))
+        .await
+        .unwrap();
+    let project = bed.project().await;
+    let style = project
+        .caption_styles
+        .iter()
+        .find(|style| Some(style.id) == report.style_id)
+        .unwrap();
+    assert!((style.position.y - se_app::captions::styles::PORTRAIT_CAPTION_BOTTOM).abs() < 1e-9);
+}

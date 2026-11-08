@@ -161,7 +161,7 @@ mod tests {
             .expect("a running task's token connects");
         let tools = client.list_all_tools().await.unwrap();
         assert!(tools.iter().any(|tool| tool.name == "get_frames"));
-        assert_eq!(tools.len(), 33);
+        assert_eq!(tools.len(), 37);
 
         let mut arguments = rmcp::model::JsonObject::new();
         arguments.insert("text".to_owned(), "Abonne-toi".into());

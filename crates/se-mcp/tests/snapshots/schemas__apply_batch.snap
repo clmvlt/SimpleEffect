@@ -28,7 +28,7 @@ expression: definition
             ]
           },
           "tool": {
-            "description": "A write tool: `add_text`, `add_shape`, `add_image`, `update_item`, `delete_items`, `move_item`,\n`trim_item`, `split_at`, `ripple_delete_range`, `insert_gap`, `set_keyframes`,\n`apply_animation_preset`, `set_volume`, `add_transition`, `add_marker`.",
+            "description": "A write tool: `add_text`, `add_shape`, `add_image`, `update_item`, `delete_items`, `move_item`,\n`trim_item`, `split_at`, `ripple_delete_range`, `insert_gap`, `set_keyframes`,\n`apply_animation_preset`, `set_volume`, `add_transition`, `add_marker`,\n`update_caption_style`, `edit_caption_text`, `emphasize_caption_words`.",
             "type": "string"
           }
         },

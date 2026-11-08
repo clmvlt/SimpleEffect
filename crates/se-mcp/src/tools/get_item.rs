@@ -2,7 +2,7 @@
 //! transform, keyframes, fades, reframing), with times made readable.
 
 use schemars::JsonSchema;
-use se_domain::{Flicks, Item};
+use se_domain::{Flicks, Item, ItemKind, Project};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -33,9 +33,13 @@ struct ItemDetail {
     sequence_id: String,
     track_name: String,
     item: ItemSummary,
-    /// The item's document form (camelCase fields, as stored). Keyframe `time`s are relative to
-    /// the item's start; `sequence_time` gives the same instant in the sequence.
+    /// The item's document form (camelCase fields, as stored). Keyframe `time`s and caption
+    /// word times are relative to the item's start; `sequence_time` gives the same instant in
+    /// the sequence.
     properties: Value,
+    /// For captions: the caption style drawing it (shared with other captions).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    caption_style: Option<Value>,
 }
 
 impl McpTool for GetItem {
@@ -56,6 +60,7 @@ impl McpTool for GetItem {
             track_name: track.name.clone(),
             item: item_summary(&project, track, item),
             properties: properties(item)?,
+            caption_style: caption_style(&project, item),
         })
     }
 }
@@ -72,7 +77,28 @@ fn properties(item: &Item) -> Result<Value, ToolError> {
         }
     }
     readable_keyframes(&mut value, item.timeline_range.start());
+    if let Some(Value::Array(words)) = value.get_mut("words") {
+        for word in words {
+            for field in ["start", "end"] {
+                if let Some(time) = word.get_mut(field) {
+                    readable_time(time, Some(item.timeline_range.start()));
+                }
+            }
+        }
+    }
     Ok(value)
+}
+
+/// The style of a caption, as stored.
+fn caption_style(project: &Project, item: &Item) -> Option<Value> {
+    let ItemKind::Caption(caption) = &item.kind else {
+        return None;
+    };
+    project
+        .caption_styles
+        .iter()
+        .find(|style| style.id == caption.style_id)
+        .and_then(|style| serde_json::to_value(style).ok())
 }
 
 /// Replaces keyframe times, wherever they are, by readable times.
@@ -123,6 +149,25 @@ mod tests {
     use se_domain::test_support::example_project;
 
     use super::*;
+
+    #[test]
+    fn caption_word_times_become_readable_and_the_style_comes_along() {
+        let project = example_project();
+        let item = project.sequences[0].tracks[2]
+            .items
+            .iter()
+            .find(|item| matches!(item.kind, ItemKind::Caption(_)))
+            .unwrap();
+        let value = properties(item).unwrap();
+        assert_eq!(value["words"][1]["text"], "d'être");
+        assert_eq!(value["words"][1]["start"]["timecode"], "00:00:00.450");
+        assert_eq!(
+            value["words"][1]["start"]["sequence_time"]["timecode"],
+            "00:00:08.450"
+        );
+        let style = caption_style(&project, item).unwrap();
+        assert_eq!(style["preset"], "minimal");
+    }
 
     #[test]
     fn clip_times_and_keyframes_become_readable() {
