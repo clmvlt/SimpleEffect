@@ -124,7 +124,7 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Actor** | Who performed a transaction: the user or an AI task | `Actor` |
 | **Origin** | Who created an item (user or AI task), kept for traceability | `Origin` |
 | **History** | The user's undo/redo stack | `History` |
-| **Changeset** | All transactions of one AI task, revertable as a unit | `Changeset` |
+| **Changeset** | All transactions of one AI task, revertable as a unit; owned by the project's actor, stored in `project.db` with each journal entry, closed when the task is reverted | `Changeset`, `Task.changesetId` |
 | **Conflict** | A part of a task's changes a revert leaves in place (item changed since, items the task never touched, inverse no longer applies); for a write, a stale `expectedRevision` | `Conflict`, `REVISION_CONFLICT` |
 | **Revert plan** | The inverse operations of a changeset that still apply to the current document, with the conflicts | `RevertPlan`, `plan_revert` |
 | **Domain error** | Why the domain refused a change: an actionable message and a stable code | `DomainError`, `DomainErrorCode` |
@@ -144,9 +144,14 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **AI status** | What is known about the AI provider: installed (path, version), logged in, capabilities | `AiStatus` |
 | **Replay provider** | Test provider replaying scripted agent runs with simulated delays | `ReplayProvider`, `ReplayScript` |
 | **Scope** | The part of the project a task may edit: sequence, time range, tracks | `TaskScope` |
+| **Scope check** | Every entity an agent's transaction touches must lie in the task's scope before and after it (items entirely inside the range and on the task's tracks); otherwise `OUT_OF_SCOPE` | `agent_edits::scope`, `OUT_OF_SCOPE` |
+| **Agent edit** | One change an agent asks for (add a text, move an item…), typed in flicks and ids; one call's edits form one AI transaction | `AgentEdit`, `AgentEditService` |
+| **Write tool** | An MCP tool that changes the project through `AgentEditService` (annotated destructive) | `WriteTool`, `writes::run` |
+| **Batch** | Several write actions applied as one transaction, all or nothing, with `"as"` names referred to as `"$name"` | `apply_batch`, `ItemRef::Created` |
+| **Revert (task)** | Undoing an AI task's changeset against the current document as one undoable user transaction, reporting conflicts | `revertTask`, `TaskRevertReport`, `REVERT_TASK_LABEL` |
 | **Agent session** | The AI CLI's conversation id, chosen by the app for a new run (`--session-id`) and resumed by follow-ups | `Task.agentSessionId`, `AgentSession` |
 | **Tool** | An MCP function exposed to agents (read or write) | `tools::*` |
-| **Agent instructions** | Provider-agnostic markdown guidance (role, time and scope, reading the project) composed with the task's scope and a project summary into the agent's system prompt | `agent-instructions/`, `tasks::instructions` |
+| **Agent instructions** | Provider-agnostic markdown guidance (role, time and scope, reading the project, editing rules, motion basics, audio editing) composed with the task's scope and a project summary into the agent's system prompt | `agent-instructions/`, `tasks::instructions` |
 | **MCP server** | se-core's `/mcp` endpoint (rmcp, streamable HTTP): the agents' only way to read and change a project (ADR-0028) | `se_mcp::McpServer`, `mcp_service` |
 | **Task token** | The 256-bit bearer token of one run, minted when it starts and revoked when it ends; `/mcp` refuses any other | `TaskToken`, `TaskTokenRegistry` |
 | **Agent context** | Who calls an MCP tool: the run's project, task, run index and scope, resolved from its token | `AgentContext` |

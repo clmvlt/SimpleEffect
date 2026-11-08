@@ -46,6 +46,10 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - `get_frames` without an editor window (prompt 18 needs the project shown in SimpleEffect): a hidden offscreen renderer window or the export worker could draw them.
 - Sequence-level loudness for agents (the mix of every clip with volumes and fades), not only per-clip loudness.
 - Contact sheets for agents: many small frames tiled into one image (fewer tokens than separate images).
+- `list_fonts` for agents (and a check of `font_family` in `add_text`/`update_item`): agents can only guess installed families today; an unknown family falls back in the engine.
+- Sequence tools for agents (`set_sequence_format`, `create_sequence_version`, reframe in another format): they reach outside a task's scope (the whole sequence or a new one), so they need a scope kind of their own.
+- Media placement for agents (`place_media` from the bin into the scope) and template/caption writes (prompts 23–24 add theirs).
+- Reverting one run of a task (follow-ups append to the task's single changeset today) and re-reverting after an undone revert (revisions then differ, so everything conflicts).
 
 ## Audio
 - Local noise reduction / voice enhancement (e.g. RNNoise or a small ONNX model).

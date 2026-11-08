@@ -1,8 +1,9 @@
 # AI tools — the MCP contract with agents
 
-> The tools AI agents use to read (and, from prompt 19, change) a SimpleEffect project. This file
-> is the **contract**: agents' behaviour, `crates/se-app/assets/agent-instructions/` and the tool
-> definitions in `crates/se-mcp/src/tools/` must agree with it. Decisions: ADR-0003, ADR-0028.
+> The tools AI agents use to read and change a SimpleEffect project. This file is the
+> **contract**: agents' behaviour, `crates/se-app/assets/agent-instructions/` and the tool
+> definitions in `crates/se-mcp/src/tools/` must agree with it. Decisions: ADR-0003, ADR-0028,
+> ADR-0029.
 > Schema snapshots: `crates/se-mcp/tests/snapshots/` (a test fails when a tool has no section here).
 
 ## Endpoint and access
@@ -36,7 +37,7 @@
   item).
 - **Outputs** are one compact JSON text block (images follow as MCP image blocks, `image/jpeg`,
   each preceded by a caption line). They carry ids and revisions (`revision` of items, the
-  project's `revision`) for the optimistic concurrency of write tools (prompt 19).
+  project's `revision`) for the optimistic concurrency of write tools (`expected_revision`).
 - **Pagination**: long lists take `offset` / `limit` and answer `total` (or `total_items`) and
   `next_offset` (`null` on the last page). Other lists are capped (and say their total).
 - **Errors** are tool results flagged `isError`, text `{"error":{"code":"…","message":"…"}}`. The
@@ -54,9 +55,15 @@
 | `RENDER_FAILED` | The editor window could not draw the frames (its message says why) |
 | `PROJECT_NOT_OPEN` | The user closed the project |
 | `MEDIA_NOT_FOUND`, `MEDIA_TIME_OUT_OF_RANGE`, `MEDIA_TOOLS_MISSING`, `DERIVED_NOT_APPLICABLE` | Source frame extraction failed (missing file, time outside the media, no ffmpeg) |
+| `OUT_OF_SCOPE` | A write reaches outside the task's scope; the message gives the scope, the faulty item and times, and what to do |
+| `REVISION_CONFLICT` | The item changed since the agent read it (`expected_revision`): read it again |
+| `LOCKED_TRACK` | The item is on a track the user locked |
+| `VALIDATION_ERROR` | A write breaks a document rule; the message names it (`rule OVERLAPPING_ITEMS`) |
+| `TRANSITION_NO_ROOM`, `RIPPLE_BLOCKED` | No media to cross-fade at that cut; a ripple edit would cut other content |
 | `INTERNAL` | A bug: report it |
 
-- **Read tools change nothing** (annotation `readOnlyHint: true`).
+- **Read tools change nothing** (annotation `readOnlyHint: true`); write tools are annotated
+  `readOnlyHint: false`, `destructiveHint: true`.
 
 ## Catalogue
 
@@ -74,6 +81,23 @@
 | `list_animation_presets` | Animation presets (fade, slides, pop…) |
 | `get_brand_kit` | Brand kit (not available until prompt 25) |
 | `list_templates` | Motion templates (not available until prompt 24) |
+| `get_task_changes` | What the calling task changed so far |
+| `add_text` | A styled text, with entrance/exit animations |
+| `add_shape` | A rectangle, rounded rectangle, ellipse or line |
+| `add_image` | An image asset (logo, sticker) |
+| `update_item` | Static properties of an item (text, style, clip speed, fades, reframing, placement) |
+| `set_keyframes` | Keyframes or a static value of one animatable property |
+| `apply_animation_preset` | A preset expanded into keyframes (entrance, exit, emphasis) |
+| `set_volume` | A clip's gain (static or automation) and fades |
+| `move_item` | Moves an item (linked partners follow) |
+| `trim_item` | Moves an item's edge |
+| `split_at` | Cuts items at an instant |
+| `delete_items` | Removes items, leaving gaps |
+| `ripple_delete_range` | Removes a time range and closes it |
+| `insert_gap` | Opens empty time |
+| `add_transition` | A cross-fade on a cut |
+| `add_marker` | A labelled marker |
+| `apply_batch` | Several write actions as one change (all or nothing) |
 
 Ids below are shortened (`…0001…`); real ones are UUIDs.
 
@@ -322,8 +346,259 @@ Motion templates. **Not available yet** (prompt 24).
 
 **Input**: none. **Output**: `{"available":false,"templates":[],"message":"Motion templates are not available yet …"}`
 
+## Write tools (prompt 19)
+
+Write tools change the project **live**, inside the task's scope, through
+`se_app::AgentEditService` (ADR-0029): the tool's input becomes typed edits, planned on the current
+document (each edit sees the previous ones), checked against the scope, and committed as **one**
+transaction of actor `aiTask` by the project's actor, which records it in the task's changeset.
+They are annotated `readOnlyHint: false`, `destructiveHint: true`.
+
+**Scope rule.** Everything an edit touches — items, markers, transitions, tracks — must lie in the
+task's scope **before and after** the edit: on the task's sequence, entirely inside its time range
+(`null`: the whole sequence) and on its tracks (`null`: every track). Items crossing the scope's
+edges cannot be changed; new items must lie inside it. The check runs on the whole transaction, so
+it also covers what an edit drags along: linked partners, items shifted by a ripple edit,
+transitions dropped by a move. AI tasks never change track headers, sequences (name, format),
+assets or the project; they add tracks only when they may use every track.
+
+```json
+{"error":{"code":"OUT_OF_SCOPE","message":"the edit would leave text « Late » 0193… on V3 of « Main edit », 00:00:08.000–00:00:10.000 outside this task's scope (00:00:01.000–00:00:09.000 of « Main edit », every track): keep every change between 00:00:01.000 and 00:00:09.000"}}
+```
+
+**Common rules.**
+- Items are given by `item_id` (from `get_timeline`), or in `apply_batch` by `"$name"` for an item
+  created by an earlier action named with `"as": "name"`.
+- `expected_revision` (tools changing one item; `expected_revisions` for `delete_items`): the
+  revision the agent read. If the item changed since, the edit is refused with
+  `REVISION_CONFLICT`: read it again (`get_item`) and redo the change.
+- Moves, trims, splits and deletes keep **linked items** together (a clip's picture and sound), as
+  the timeline does.
+- Times are sequence times, except keyframe times (`set_keyframes`, `set_volume` automation,
+  `apply_animation_preset` `start`), which are **relative to the item's start**.
+- If the project changes between planning and commit (the user edits), the call is planned again
+  on the new state (a few times), so its scope check always holds.
+
+**Output** (every write tool except `apply_batch`):
+```json
+{"revision":48,"created":["…0f42…"],
+ "items":[{"item_id":"…0f42…","revision":2,"kind":"text","track_id":"…","start":{"timecode":"00:00:51.000","seconds":51.0},
+   "end":{"timecode":"00:00:54.000","seconds":54.0},"label":"Abonne-toi","animated":["scale","opacity"],"origin":"ai_task","task_id":"…"}],
+ "removed":["…"]}
+```
+`created`: items the call created, in order. `items`: summaries (as in `get_timeline`) of the items
+added or changed, with their new revisions. `removed` appears when items were removed.
+
+**Errors of every write tool**: `OUT_OF_SCOPE`, `REVISION_CONFLICT`, `LOCKED_TRACK`,
+`VALIDATION_ERROR` (a document rule: overlap, trim beyond the media, keyframe outside the item…;
+the message names the rule), `ITEM_NOT_FOUND` / `TRACK_NOT_FOUND` / `ASSET_NOT_FOUND`,
+`INVALID_ARGUMENTS`, `INVALID_TIME`, `PROJECT_NOT_OPEN`, `ACCESS_REVOKED`.
+
+Examples of requests and the calls an agent makes:
+
+| Request | Calls |
+|---|---|
+| « De 51 s à 54 s, affiche “Abonne-toi” au centre avec un pop » | `add_text {"text":"Abonne-toi","start":51,"end":54,"position":"center","font_size":140,"font_weight":800,"stroke":{},"animation_in":{"preset":"pop"}}`, then `get_frames {"times":[51.2,52.5]}` |
+| « Un bandeau noir derrière le titre » | `apply_batch` with `add_shape` (`"as":"bar"`) then `add_text` over it, both animated |
+| « Coupe les silences entre 10 s et 20 s » | `get_audio_analysis {"range":{"start":10,"end":20}}`, then `apply_batch` of `split_at` + `delete_items` (or `ripple_delete_range` when the scope reaches the end) |
+| « Baisse la musique sous la voix » | `get_audio_analysis`, then `set_volume` with an `automation` |
+| « Fondu enchaîné à la coupe de 10 s » | `add_transition {"track":"V1","at":10,"duration":0.5}` |
+
+### `add_text`
+
+An editable text over a time range, with optional entrance and exit animations, in one edit.
+
+**Input**:
+| Field | Type | Default |
+|---|---|---|
+| `text` | string (`\n` for line breaks) | required |
+| `start` | time | required |
+| `end` / `duration` | time (exactly one) | required |
+| `position` | `"center"`, `"top"`, `"bottom"`, `"left"`, `"right"`, `"lower_third"` or `{x, y}` (0–1) | `"center"` |
+| `font_size` | design pixels (1080 = shorter side) | 96 |
+| `font_family`, `font_weight` (1–1000), `italic` | | `"Inter"`, 600, false |
+| `color` | `#rrggbb[aa]` | white |
+| `align` | `left`, `center`, `right` | center |
+| `max_width` | design pixels (wrapping) | none |
+| `uppercase`, `shadow` | booleans | false |
+| `stroke` | `{color?, width?}` (outline on) | off |
+| `background` | `{color?}` (box on) | off |
+| `track` | video track (id or name) | the highest free track of the task (a new one on top when the task may use every track) |
+| `animation_in` / `animation_out` | `{preset, duration?}` (`list_animation_presets`) | none |
+
+Named positions: centre (0.5, 0.5), top (0.5, 0.15), bottom (0.5, 0.8), left (0.2, 0.5), right
+(0.8, 0.5), lower third (0.3, 0.75). Output: the common write output (`created` holds the text).
+
+### `add_shape`
+
+A rectangle, rounded rectangle, ellipse or line.
+
+**Input**: `shape` (`rectangle`, `rounded_rectangle`, `ellipse`, `line`; required), `start`,
+`end`/`duration`, `position`, `width`/`height` (design pixels; a line's length/thickness),
+`corner_radius`, `color` (fill), `stroke` `{color?, width?}`, `cover_frame` (stretch over the
+frame), `opacity` (0–1), `track`, `animation_in`, `animation_out`. Defaults: 600 × 338
+(rectangles), 400 × 400 (ellipse), 600 × 8 (line), white, centred.
+
+### `add_image`
+
+An image asset of the project (logo, sticker, picture).
+
+**Input**: `asset` (an `asset_id` of kind `image`; required), `start`, `end`/`duration`,
+`position`, `fit` (`fit`, `fill`, `natural`; default fit), `scale` (1 = as fitted), `opacity`,
+`track`, `animation_in`, `animation_out`. **Errors** also `INVALID_ARGUMENTS` for an asset that is
+not an image.
+
+### `update_item`
+
+Static properties of one item, in one edit; give only the fields to change.
+
+**Input**: `item_id` (required), `expected_revision`, and per kind:
+| Kind | Fields |
+|---|---|
+| text | `text`, `font_family`, `font_size`, `font_weight`, `italic`, `color`, `align`, `max_width` (0 removes wrapping), `uppercase`, `stroke`, `shadow`, `background` (booleans switch them on or off) |
+| shape | `color` (fill), `stroke` (boolean), `width`, `height`, `corner_radius` |
+| image | `fit` |
+| media clip | `speed`, `fade_in`, `fade_out` (lengths), `reframe` (`fit`, `fill`, `custom`) |
+| any visual item | `position`, `scale` (number or `[x, y]`), `rotation` (degrees), `opacity`, `blur` — static values replacing keyframes |
+
+Fields of another kind are refused (`INVALID_ARGUMENTS`: « a text has no speed; a text accepts …»).
+Sizes and colours given here are static (keyframes of those properties are replaced). Timing:
+`move_item`, `trim_item`; animations: `set_keyframes`, `apply_animation_preset`.
+
+### `set_keyframes`
+
+The keyframes (or a static value) of one animatable property.
+
+**Input**:
+| Field | Type |
+|---|---|
+| `item_id` | string (required) |
+| `property` | `position`, `scale`, `rotation`, `anchor`, `opacity`, `blur`, `volumeDb`, `reframeFocus`, `fontSize`, `fillColor`, `letterSpacing`, `reveal`, `strokeColor`, `strokeWidth`, `shadowColor`, `shadowBlur`, `shadowOffset`, `backgroundColor` (the document's names) |
+| `keyframes` | `[{time, value, easing?}]`, time **relative to the item's start**, sorted, within the item |
+| `value` | a static value (instead of `keyframes`) |
+| `expected_revision` | integer |
+
+Values: numbers; `[x, y]` or `{x, y}` for position, scale, anchor, reframeFocus, shadowOffset;
+`"#rrggbb[aa]"` for colours. Easing: `linear` (default), `hold`, `ease_in`, `ease_out`,
+`ease_in_out`, or `[x1, y1, x2, y2]` (cubic Bézier). A value of the wrong type is refused
+(`INVALID_ARGUMENTS`: « values of opacity are numbers »); ranges (opacity 0–1, volume −96–24 dB…)
+are document rules (`VALIDATION_ERROR`).
+
+### `apply_animation_preset`
+
+A preset (`list_animation_presets`) expanded into keyframes: `item_id`, `preset`, `phase` (`in`,
+`out`, `emphasis`; required), `duration` (default: the preset's), `start` (relative to the item;
+default: its start for `in`/`emphasis`, ending at its end for `out`), `expected_revision`.
+Keyframes of the same properties inside the animation's span are replaced. **Errors** also
+`VALIDATION_ERROR` for an unknown preset (the message lists them), a phase the preset lacks, or an
+item without the preset's properties.
+
+### `set_volume`
+
+The gain of a clip with sound and its fades: `item_id` (required), `gain_db` (static, −96–24 dB)
+**or** `automation` (`[{time, gain_db, easing?}]`, times relative to the clip), `fade_in`,
+`fade_out` (lengths; 0 removes), `expected_revision`. One edit (volume keyframes + fade patch).
+
+### `move_item`
+
+`item_id` (required), `start` (sequence time) and/or `track` (id or name, same kind),
+`expected_revision`. Linked partners move by the same amount on their own tracks. Refused
+(`VALIDATION_ERROR`, `OVERLAPPING_ITEMS`) onto another item.
+
+### `trim_item`
+
+`item_id`, `edge` (`start` or `end`), `to` (sequence time), `expected_revision`. A clip plays more
+or less of its media (`TRIM_BEYOND_SOURCE` past it); nothing else moves. Linked partners whose
+same edge sits at the same instant follow.
+
+### `split_at`
+
+`at` (required), `item_ids` (default: every item crossing `at` on the task's unlocked tracks).
+Linked partners crossing `at` are cut too and the right parts stay linked. `created` lists the
+right parts.
+
+### `delete_items`
+
+`item_ids` (required), `expected_revisions` (`{"<item_id>": revision}`, optional). Linked
+partners go too; the time stays empty (nothing moves).
+
+### `ripple_delete_range`
+
+`range` (required), `tracks` (default: the task's tracks; every unlocked track when it may use them
+all). Items crossing the range are cut, what follows moves left; tracks holding linked partners
+are added. Since later items move, it is refused (`OUT_OF_SCOPE`) when that reaches outside a
+time-limited scope.
+
+### `insert_gap`
+
+`at`, `duration` (required), `tracks` (as for `ripple_delete_range`). Opens empty time; items
+crossing `at` are cut, what follows moves right. Same scope rule as `ripple_delete_range`.
+
+### `add_transition`
+
+A cross-fade on the cut between two adjacent items of one track (picture dissolve on video
+tracks, sound cross-fade on audio tracks): `left_item_id` + `right_item_id`, **or** `track` + `at`
+(the cut within half a frame); `duration` (default 0.5 s, shortened to the media both items have
+beyond the cut); `alignment` (`center`, `start`, `end`). **Errors** also `TRANSITION_NO_ROOM` (no
+media to cross-fade, or the cut already has a transition), `INVALID_ARGUMENTS` (no cut there).
+
+### `add_marker`
+
+`time` (required), `label` (default empty), `color` (`green`, `red`, `purple`, `orange`,
+`yellow`, `white`, `blue`, `cyan`; default green). Markers must lie inside the scope's range.
+
+### `apply_batch`
+
+Several write actions as **one** transaction: all applied, or none.
+
+**Input**: `actions` (1–50), each `{tool, arguments, as?}`: `tool` is one of the write tools
+above (not `apply_batch`), `arguments` exactly its input, `as` names the item the action creates
+(`add_text`, `add_shape`, `add_image`, `split_at`) so later actions can use `"$name"` where an item
+id is expected.
+
+```json
+{"actions":[
+  {"tool":"add_shape","as":"bar","arguments":{"shape":"rounded_rectangle","start":51,"end":54,"position":"bottom","width":900,"height":160,"color":"#000000aa"}},
+  {"tool":"add_text","as":"title","arguments":{"text":"Abonne-toi","start":51,"end":54,"position":"bottom"}},
+  {"tool":"apply_animation_preset","arguments":{"item_id":"$title","preset":"pop","phase":"in"}}]}
+```
+
+**Output**: `{revision, actions: [{tool, created: [ids]}], items, removed?}`.
+
+**Errors**: those of the actions, prefixed with the failing action
+(`"action 2 (move_item): item … would overlap …"`); nothing is applied then. `INVALID_ARGUMENTS`
+for an unknown tool, `as` on an action that creates nothing, or more than 50 actions.
+
+### `get_task_changes`
+
+What the calling task changed so far (its open changeset), to check and summarise its work.
+Read-only.
+
+**Input**: none. **Output**:
+```json
+{"changeset_id":"…","edits":2,"created":[<item summary>],"changed":[<item summary>],"removed":["…"]}
+```
+`edits`: write calls committed. `created`: items the task added that still exist; `changed`: items
+that existed before, changed by the task; `removed`: items it removed. `changeset_id` is `null`
+while the task changed nothing (or after a revert).
+
+## Changesets and reverts
+
+Every committed write call of a task is one entry of the task's **changeset**
+(`se_domain::Changeset`, stored in `project.db` with its journal entry in one SQLite transaction).
+The user reverts a finished task with the protocol command `revertTask { projectId, taskId }`: the
+project's actor plans the revert against the current document (`se_domain::plan_revert`), commits
+what still applies as one **user** transaction (undoable, label « Revert AI task ») and answers
+`TaskRevertReport { taskId, reverted, revertedItems, conflicts }`. Conflicts: `itemChanged` (someone
+changed the item after the task: its edits stay), `foreignItems`, `cannotApply`. A running task
+cannot be reverted (`TASK_STILL_ACTIVE`); a task with nothing left gets `NOTHING_TO_REVERT`. Each
+change of a changeset publishes `taskChangesetUpdated { projectId, taskId, changesetId,
+touchedItems }` (the items the task added or changed that still exist), for the UI to highlight
+them.
+
 ## Adding a tool
 
 Recipe in `crates/se-mcp/CLAUDE.md`: a file in `src/tools/`, an entry in `tools::catalogue()`, a
 unit or integration test, the schema snapshot accepted, a section here, and a line in
-`crates/se-app/assets/agent-instructions/` when agents need guidance to use it.
+`crates/se-app/assets/agent-instructions/` when agents need guidance to use it. A write tool also
+implements `WriteTool` (its input as `AgentEdit`s) and gets its arm in `apply_batch`.

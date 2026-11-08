@@ -33,6 +33,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0026](0026-reframing-formats-and-sequence-versions.md) | Reframing, format changes, sequence versions and safe areas | Accepted |
 | [0027](0027-ai-task-runtime.md) | AI task runtime: task service, runs and sessions, Claude Code invocation and isolation | Accepted |
 | [0028](0028-mcp-server-and-read-tools.md) | MCP server, per-run tokens, read tools and frames rendered by the renderer | Accepted |
+| [0029](0029-agent-edits-scope-and-changesets.md) | Agent edits: one edit service, scope checked before and after, changesets owned by the actor | Accepted |
 
 ## Template
 
