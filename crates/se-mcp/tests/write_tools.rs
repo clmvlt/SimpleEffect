@@ -320,16 +320,14 @@ async fn the_task_sees_its_changes() {
     assert!(changes["changeset_id"].is_string());
 }
 
-/// Replays `fixtures/subscribe-pop.json` (an agent's calls for « De 51 s à 54 s affiche le texte
-/// “Abonne-toi” en gros au centre avec une animation pop »): the expected item, then `RevertTask`
-/// gives back the initial project.
-#[tokio::test]
-async fn a_recorded_session_replays_and_reverts() {
+/// Replays the calls of a fixture (`{created.N}` placeholders) as one task scoped to 51–54 s,
+/// snapshots the item created first, then reverts the task: the project is back as it was.
+async fn replay_and_revert(fixture: &str, snapshot: &str) {
     let mut bed = Bed::open().await;
     bed.agent.scope.range = Some(seconds(&[51.0, 54.0]));
     bed.run_task().await;
     let initial = bed.document().await;
-    let fixture: Value = serde_json::from_str(include_str!("fixtures/subscribe-pop.json")).unwrap();
+    let fixture: Value = serde_json::from_str(fixture).unwrap();
     let mut created: Vec<String> = Vec::new();
     for call in fixture["calls"].as_array().unwrap() {
         let mut arguments = call["arguments"].to_string();
@@ -352,7 +350,7 @@ async fn a_recorded_session_replays_and_reverts() {
     for id in ["item_id", "track_id", "task_id"] {
         detail["item"][id] = json!(format!("[{id}]"));
     }
-    insta::assert_json_snapshot!("subscribe_pop_item", detail);
+    insta::assert_json_snapshot!(snapshot, detail);
     let report = bed
         .services
         .tasks
@@ -364,4 +362,25 @@ async fn a_recorded_session_replays_and_reverts() {
         without_revisions(bed.document().await),
         without_revisions(initial)
     );
+}
+
+/// « De 51 s à 54 s affiche le texte “Abonne-toi” en gros au centre avec une animation pop »:
+/// `add_text` then `apply_animation_preset`, the expected item, then `RevertTask`.
+#[tokio::test]
+async fn a_text_then_its_preset_replay_and_revert() {
+    replay_and_revert(
+        include_str!("fixtures/subscribe-pop.json"),
+        "subscribe_pop_item",
+    )
+    .await;
+}
+
+/// The same request as a real Claude Code run made it: one `add_text` with `animation_in`.
+#[tokio::test]
+async fn a_recorded_agent_session_replays_and_reverts() {
+    replay_and_revert(
+        include_str!("fixtures/subscribe-pop-recorded.json"),
+        "subscribe_pop_recorded_item",
+    )
+    .await;
 }
