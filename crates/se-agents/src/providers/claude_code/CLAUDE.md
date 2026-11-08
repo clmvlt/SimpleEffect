@@ -56,7 +56,9 @@ Kept: the last row (+ `--strict-mcp-config`, `--tools ""`). Excluded: `--safe-mo
 | `{"type":"result",…}` | `Usage { input_tokens (+ cache creation + cache read), output_tokens, cost_usd: total_cost_usd, duration_ms }`, then `Completed { summary: result }` when `subtype == "success"` and not `is_error`, else `Failed` classified from `result` / `errors` / `subtype` |
 | anything else (`stream_event`, `rate_limit_event`, other `system` subtypes…) | ignored (debug log) |
 
-Without a `result` line: stderr decides (`No conversation found` → lost session, login phrases → `notAuthenticated`, else `crashed` with the exit status); unreadable lines or a clean exit → `protocolError`.
+Without a `result` line: stderr decides (`No conversation found` → lost session, login phrases → `notAuthenticated`, `not supported in restricted mode` → `misconfigured`, else `crashed` with the exit status); unreadable lines or a clean exit → `protocolError`.
+
+**Wrappers on the PATH** (Windows, 2.1.319): a user's `claude.cmd` running `claude.exe --allow-dangerously-skip-permissions %*` is found first by `which`; every run then fails at once with `Error: bypassPermissions not supported in restricted mode` (stderr, exit 1), since `--restricted` is one of our isolation flags. It is reported as `misconfigured` with the fix: choose the real executable in « Réglages → IA ».
 
 ## Recording fixtures
 1. In a scratch folder named like a task id (`…/rec/0195f3a2-7c41-7d2e-9a10-3b4c5d6e7f80`), write `.simpleeffect-instructions.md`, then run the **Run** command above with `--session-id 0195f3a2-7c41-7d2e-9a10-3b4c5d6e7f81`, the prompt on stdin, stdout to `<name>.raw.jsonl`.

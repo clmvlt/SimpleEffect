@@ -294,6 +294,26 @@ describe('AiView', () => {
     });
   });
 
+  it('explains a failure by its kind and shows the provider’s detail', () => {
+    act(() => {
+      setAiStatus(READY);
+    });
+    renderWithCore(<Panel />, answers);
+    seed([
+      taskOf({
+        projectId: IDS.project,
+        status: {
+          kind: 'failed',
+          failure: 'misconfigured',
+          message: 'Claude Code refused the options SimpleEffect runs it with (…)',
+        },
+      }),
+    ]);
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent(/choisissez l’exécutable claude lui-même dans Réglages → IA/);
+    expect(alert).toHaveTextContent('Claude Code refused the options SimpleEffect runs it with');
+  });
+
   it('lists the conflicts before reverting a task, then reverts the rest', async () => {
     act(() => {
       setAiStatus(READY);

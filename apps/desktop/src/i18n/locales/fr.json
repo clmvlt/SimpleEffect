@@ -1138,7 +1138,8 @@
       "crashed": "L’assistant IA s’est arrêté de façon inattendue : relancez la tâche.",
       "cancelled": "Tâche annulée.",
       "protocolError": "Réponse de l’assistant IA illisible : mettez-le à jour ou relancez la tâche.",
-      "interrupted": "SimpleEffect s’est arrêté pendant la tâche : relancez-la."
+      "interrupted": "SimpleEffect s’est arrêté pendant la tâche : relancez-la.",
+      "misconfigured": "Le programme de l’assistant IA refuse les options de SimpleEffect (un script intermédiaire ajoute les siennes, par exemple « claude.cmd ») : choisissez l’exécutable claude lui-même dans Réglages → IA, puis relancez la tâche."
     },
     "notice": {
       "completed": "Tâche IA #{{number}} terminée",

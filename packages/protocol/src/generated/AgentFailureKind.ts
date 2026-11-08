@@ -4,4 +4,4 @@
 /**
  * Why an agent run failed.
  */
-export type AgentFailureKind = "notInstalled" | "notAuthenticated" | "rateLimited" | "crashed" | "cancelled" | "protocolError" | "interrupted";
+export type AgentFailureKind = "notInstalled" | "notAuthenticated" | "rateLimited" | "crashed" | "cancelled" | "protocolError" | "interrupted" | "misconfigured";
