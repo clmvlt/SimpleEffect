@@ -13,7 +13,7 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useProjectSelector } from '../../../shared/project-store';
-import { useInOutPoints } from '../../timeline';
+import { clearCutPreview, useInOutPoints } from '../../timeline';
 import type { SilenceCutRequest } from '../api';
 import type { SmartCutActions } from '../hooks/use-smart-cuts';
 import { useSmartCutSettings } from '../hooks/use-smart-cut-settings';
@@ -52,6 +52,7 @@ export function SilencePanel({ projectId, sequenceId, cuts }: SilencePanelProps)
   const [chosen, setChosen] = useState<ReadonlySet<TrackId> | null>(null);
   const [allTracks, setAllTracks] = useState(false);
   const mirror = useProjectSelector((state) => state.mirror);
+  const revision = mirror?.revision ?? 0;
   const { inPoint, outPoint } = useInOutPoints(sequenceId);
   const tracks = mirror === null ? [] : soundTracksOf(mirror, sequenceId);
   const end = mirror === null ? (0 as Flicks) : sequenceEnd(mirror, sequenceId);
@@ -70,11 +71,12 @@ export function SilencePanel({ projectId, sequenceId, cuts }: SilencePanelProps)
           trackIds: listenedTracks(tracks, chosen),
           allTracks,
         };
-  const preview = useSilencePreview(request);
+  const preview = useSilencePreview(request, revision);
   const count = preview.summary?.cuts.length ?? 0;
 
   const apply = async () => {
     if (request === null || settings === null) return;
+    clearCutPreview();
     const done = await cuts.cutSilences(request);
     if (done && edited !== null) void save({ ...settings, silence: edited });
   };

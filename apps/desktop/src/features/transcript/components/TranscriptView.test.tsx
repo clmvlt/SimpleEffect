@@ -304,6 +304,9 @@ describe('TranscriptView', () => {
       purpose: 'words',
       allTracks: false,
     });
+    await waitFor(() => {
+      expect(screen.getByLabelText('in')).toHaveTextContent('');
+    });
   });
 
   it('shows cut passages struck through and restores one with a ripple trim', async () => {
@@ -340,6 +343,7 @@ describe('TranscriptView', () => {
     expect(cutPreviewStore.getState().ranges).toHaveLength(2);
     await userEvent.click(screen.getByRole('button', { name: 'Supprimer les silences (2)' }));
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ kind: 'removeSilences' }));
+    expect(cutPreviewStore.getState().ranges).toHaveLength(0);
     await userEvent.click(screen.getByRole('radio', { name: 'Texte' }));
     expect(cutPreviewStore.getState().ranges).toHaveLength(0);
   });

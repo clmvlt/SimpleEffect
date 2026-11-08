@@ -27,20 +27,25 @@ interface Answer {
 }
 
 /**
- * Previews `request` (`null`: nothing to preview) a moment after it last changed, and shows the
- * cuts on the timeline as temporary bands; they disappear with the panel.
+ * Previews `request` (`null`: nothing to preview) a moment after it, or the project (`revision`:
+ * a cut, an edit), last changed, and shows the cuts on the timeline as temporary bands; they
+ * disappear with the panel.
  */
-export function useSilencePreview(request: SilenceCutRequest | null): SilencePreview {
+export function useSilencePreview(
+  request: SilenceCutRequest | null,
+  revision: number,
+): SilencePreview {
   const client = useCoreClient();
   const [answer, setAnswer] = useState<Answer>({ key: null, summary: null, errorKey: null });
-  // The request as text: a stable dependency (the caller builds a new object at every render).
-  const key = request === null ? null : JSON.stringify(request);
+  // The request and revision as text: a stable dependency (the caller builds a new request
+  // object at every render).
+  const key = request === null ? null : JSON.stringify({ request, revision });
   useEffect(() => {
     if (key === null) {
       clearCutPreview();
       return undefined;
     }
-    const asked = JSON.parse(key) as SilenceCutRequest;
+    const asked = (JSON.parse(key) as { request: SilenceCutRequest }).request;
     let current = true;
     const timer = setTimeout(() => {
       previewSilenceCuts(client, asked).then(

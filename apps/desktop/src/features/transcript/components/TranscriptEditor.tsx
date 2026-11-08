@@ -36,6 +36,8 @@ export interface TranscriptEditorProps {
   /** Passages cut out, when shown. */
   readonly passages: readonly CutPassage[];
   readonly cuts: SmartCutActions;
+  /** Called once the selected words were cut (the in/out marked by selecting them is stale). */
+  readonly onSelectionCut: () => void;
 }
 
 /**
@@ -54,6 +56,7 @@ export function TranscriptEditor({
   editable,
   passages,
   cuts,
+  onSelectionCut,
 }: TranscriptEditorProps) {
   const { t } = useTranslation();
   const client = useCoreClient();
@@ -70,7 +73,9 @@ export function TranscriptEditor({
   const cutSelection = () => {
     if (!canCut) return;
     void cuts.cutWords([span], 'words').then((done) => {
-      if (done) selection.clear();
+      if (!done) return;
+      selection.clear();
+      onSelectionCut();
     });
   };
   const cutFillers = async () => {

@@ -181,6 +181,9 @@ export function TranscriptView() {
             editable={mode === 'sequence'}
             passages={passages}
             cuts={cuts}
+            onSelectionCut={() => {
+              inOutControls(sequence).clear();
+            }}
           />
         </ScrollArea>
       ) : model.loading ? (
