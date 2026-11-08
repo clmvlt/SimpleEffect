@@ -154,7 +154,7 @@ impl TranscriptionService {
 }
 
 /// The stored transcript of `asset_id` when it describes the content `content_key`.
-async fn current_transcript(
+pub(super) async fn current_transcript(
     handle: &ProjectActorHandle,
     asset_id: AssetId,
     content_key: &str,

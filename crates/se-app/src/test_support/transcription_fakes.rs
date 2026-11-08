@@ -64,13 +64,15 @@ struct TranscriberState {
     requests: Vec<TranscriptionRequest>,
     whisper_dir: Option<PathBuf>,
     fail_next: Option<String>,
+    held: bool,
 }
 
 /// A transcriber answering [`fake_transcript`] (with the request's model) on the CPU, or the
-/// environment and failures a test sets.
+/// environment and failures a test sets; transcriptions can be held until released.
 #[derive(Debug, Clone)]
 pub struct FakeTranscriber {
     state: Arc<Mutex<TranscriberState>>,
+    released: Arc<Notify>,
 }
 
 impl Default for FakeTranscriber {
@@ -86,7 +88,9 @@ impl Default for FakeTranscriber {
                 requests: Vec::new(),
                 whisper_dir: None,
                 fail_next: None,
+                held: false,
             })),
+            released: Arc::new(Notify::new()),
         }
     }
 }
@@ -100,6 +104,18 @@ impl FakeTranscriber {
     /// The next transcription fails with `message`.
     pub fn fail_next(&self, message: &str) {
         lock(&self.state).fail_next = Some(message.to_owned());
+    }
+
+    /// Transcriptions wait after reporting half their progress until
+    /// [`FakeTranscriber::release`].
+    pub fn hold(&self) {
+        lock(&self.state).held = true;
+    }
+
+    /// Lets held transcriptions finish.
+    pub fn release(&self) {
+        lock(&self.state).held = false;
+        self.released.notify_waiters();
     }
 
     /// Every transcription asked for.
@@ -137,6 +153,15 @@ impl Transcriber for FakeTranscriber {
         };
         if let Some(message) = failure {
             return Err(TranscriberError::Failed(message));
+        }
+        progress.report(0.5);
+        loop {
+            // Created before the flag is read: `notify_waiters` wakes it even if not yet polled.
+            let released = self.released.notified();
+            if !lock(&self.state).held {
+                break;
+            }
+            released.await;
         }
         progress.report(1.0);
         Ok(TranscriptionOutput {

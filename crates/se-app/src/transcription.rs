@@ -10,6 +10,8 @@
 //!   asset as a system transaction); queued on request or after an import (preference).
 //! - **Reading**: an asset's transcript, its words in a sequence's time
 //!   ([`se_domain::sequence_transcript`]) and full-text search, for the protocol and MCP tools.
+//! - **Progress** ([`progress`]): where each asset's transcription stands, and transcribing on an
+//!   AI agent's behalf (start what is missing, wait a while for it; ADR-0034).
 //!
 //! Like the other services it never mutates a document itself: the summary is a transaction sent
 //! to the project's actor; transcripts are not document state (written to the project database
@@ -21,6 +23,7 @@ mod files;
 mod job;
 mod models;
 pub mod preferences;
+mod progress;
 mod reading;
 mod state;
 mod transcribe;
@@ -38,6 +41,7 @@ use se_protocol::TranscriptionBackend;
 use self::state::State;
 pub use self::{
     catalogue::{CatalogueFile, CatalogueModel, Hardware, MODELS, VOICE_MODEL, recommended_model},
+    progress::{AssetTranscription, TranscriptionRound, TranscriptionState, UnavailableReason},
     reading::{MAX_SEARCH_HITS, SequenceWords},
 };
 use crate::{
