@@ -22,6 +22,8 @@ coverage/
 .vitest/
 *.tmp
 *.log
+# Recorded whisper-cli stderr: test fixtures, not logs
+!crates/se-transcribe/tests/fixtures/whisper/*.log
 tmp/
 
 # Editors and OS
