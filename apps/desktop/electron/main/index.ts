@@ -23,7 +23,7 @@ const supervisor = new CoreSupervisor({
 
 let coreStopped = false;
 
-const appId = notificationAppId(process.platform);
+const appId = notificationAppId(process.platform, app.isPackaged, process.execPath);
 if (appId !== null) app.setAppUserModelId(appId);
 
 void app.whenReady().then(() => {

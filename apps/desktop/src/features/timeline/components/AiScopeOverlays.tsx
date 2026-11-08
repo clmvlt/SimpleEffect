@@ -5,8 +5,15 @@ import { useTranslation } from 'react-i18next';
 
 import { activeTasksOn, showTask, useAiTasks } from '../../../shared/ai-tasks';
 import { aiScopeBoxes } from '../services/ai-scope-boxes';
+import { LABEL_BAR_HEIGHT } from '../services/volume-line';
 import type { TrackLayout } from '../services/track-layout';
 import type { Viewport } from '../services/viewport';
+
+/**
+ * Offset of a scope's label from the top of its box: just under the label bar of the items
+ * (their names stay readable), always in view even when lower tracks are scrolled out.
+ */
+const LABEL_OFFSET = LABEL_BAR_HEIGHT + 3;
 
 /** Props of {@link AiScopeOverlays}. */
 export interface AiScopeOverlaysProps {
@@ -49,7 +56,7 @@ export function AiScopeOverlays({ sequenceId, layout, viewport }: AiScopeOverlay
             data-ai-scope-label={task.id}
             title={edited ? t('editor.timeline.ai.userEdited') : undefined}
             className="absolute z-20 inline-flex h-4 max-w-40 items-center gap-1 truncate rounded-xs border border-ai bg-ai-muted px-1 text-2xs leading-3 font-medium text-text hover:bg-ai/40"
-            style={{ left: Math.max(box.left, 0) + 2, top: box.top + 2 }}
+            style={{ left: Math.max(box.left, 0) + 2, top: box.top + LABEL_OFFSET }}
             onPointerDown={(event) => {
               event.stopPropagation();
             }}

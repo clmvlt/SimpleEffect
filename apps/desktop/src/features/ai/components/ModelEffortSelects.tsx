@@ -27,7 +27,7 @@ export function ModelSelect({ capabilities, disabled }: ChoiceSelectProps) {
         updateComposer({ model: value === DEFAULT ? null : value });
       }}
     >
-      <SelectTrigger size="xs" aria-label={t('ai.composer.model')} className="w-28">
+      <SelectTrigger size="xs" aria-label={t('ai.composer.model')} className="w-auto max-w-36">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -59,7 +59,7 @@ export function EffortSelect({ capabilities, disabled }: ChoiceSelectProps) {
         updateComposer({ effort: levels.find((level) => level === value) ?? null });
       }}
     >
-      <SelectTrigger size="xs" aria-label={t('ai.composer.effort')} className="w-28">
+      <SelectTrigger size="xs" aria-label={t('ai.composer.effort')} className="w-auto max-w-36">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
