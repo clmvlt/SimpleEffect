@@ -1,4 +1,4 @@
-import type { Asset, ProjectId, SequenceEntity } from '@se/protocol';
+import type { Asset, AssetId, ProjectId, SequenceEntity, Transcript } from '@se/protocol';
 
 import { useProjectSelector } from '../../../shared/project-store';
 import {
@@ -7,6 +7,7 @@ import {
   sequenceTranscript,
   soundClipsOf,
   type SequenceTranscript,
+  type SoundClip,
 } from '../../../shared/transcript';
 import { mediaTranscript } from '../services/media-words';
 import { useAssetTranscripts } from './use-asset-transcripts';
@@ -26,6 +27,10 @@ export interface TranscriptModel {
   readonly media: readonly Asset[];
   /** Whether transcripts are still being fetched. */
   readonly loading: boolean;
+  /** The sound clips of the active sequence (cut passages are found between them). */
+  readonly clips: readonly SoundClip[];
+  /** The fetched transcript of an asset. */
+  readonly transcriptOf: (assetId: AssetId) => Transcript | undefined;
 }
 
 const NO_ASSETS: readonly Asset[] = [];
@@ -75,5 +80,7 @@ export function useTranscriptModel(
     untranscribed: media.filter((asset) => asset.analysis.transcript === null),
     media,
     loading,
+    clips,
+    transcriptOf: (id) => transcripts.get(id),
   };
 }

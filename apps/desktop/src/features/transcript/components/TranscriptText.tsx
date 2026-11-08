@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 import type { SequenceTranscript } from '../../../shared/transcript';
 import type { WordRange, WordSelection } from '../hooks/use-word-selection';
+import type { CutPassage } from '../services/cut-passages';
 import type { WordMatch } from '../services/word-search';
 import { segmentClock } from '../services/transcript-format';
+import { CutPassageMark } from './CutPassageMark';
 
 /** Confidence under which a word is underlined as unsure (`Transcript::LOW_CONFIDENCE`). */
 const LOW_CONFIDENCE = 0.5;
@@ -19,6 +21,19 @@ export interface TranscriptTextProps {
   readonly matches: readonly WordMatch[];
   /** Index of the current match in `matches`. */
   readonly currentMatch: number | null;
+  /** Passages cut out, shown struck through where they were (« afficher les passages coupés »). */
+  readonly passages?: readonly CutPassage[] | undefined;
+  /** Puts a struck passage back. */
+  readonly onRestore?: ((passage: CutPassage) => void) | undefined;
+}
+
+/** The passages shown before each word index. */
+function passagesByWord(passages: readonly CutPassage[]): Map<number, CutPassage[]> {
+  const byWord = new Map<number, CutPassage[]>();
+  for (const passage of passages) {
+    byWord.set(passage.beforeWord, [...(byWord.get(passage.beforeWord) ?? []), passage]);
+  }
+  return byWord;
 }
 
 function inRange(index: number, range: WordRange | null | undefined): boolean {
@@ -36,8 +51,15 @@ export function TranscriptText({
   selection,
   matches,
   currentMatch,
+  passages = [],
+  onRestore = () => undefined,
 }: TranscriptTextProps) {
   const { t } = useTranslation();
+  const struck = passagesByWord(passages);
+  const marks = (index: number) =>
+    (struck.get(index) ?? []).map((passage) => (
+      <CutPassageMark key={passage.at} passage={passage} onRestore={onRestore} />
+    ));
   const matched = new Set<number>();
   for (const match of matches) {
     for (let index = match.first; index <= match.last; index += 1) matched.add(index);
@@ -68,7 +90,8 @@ export function TranscriptText({
             </span>
             {words.map((word, offset) => {
               const index = segment.firstWord + offset;
-              return (
+              return [
+                ...marks(index),
                 <span
                   key={index}
                   data-word-index={index}
@@ -87,12 +110,15 @@ export function TranscriptText({
                   )}
                 >
                   {word.text}
-                </span>
-              );
+                </span>,
+              ];
             })}
           </p>
         );
       })}
+      {struck.has(transcript.words.length) && (
+        <p className="flex flex-wrap gap-x-1">{marks(transcript.words.length)}</p>
+      )}
     </div>
   );
 }

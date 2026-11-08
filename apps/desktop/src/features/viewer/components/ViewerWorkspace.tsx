@@ -6,6 +6,7 @@ import { ShortcutRegion } from '../../../shared/shortcuts';
 import { useInOutSpan } from '../../timeline';
 import { usePlaybackSession } from '../hooks/use-playback-session';
 import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
+import { usePlayRequests } from '../hooks/use-play-requests';
 import { useViewerFonts } from '../hooks/use-viewer-fonts';
 import { useViewerScene } from '../hooks/use-viewer-scene';
 import type { AudioEngineFactory } from '../services/audio-engine-factory';
@@ -55,6 +56,7 @@ export function ViewerWorkspace({
     scrubAudio: preferences.scrubAudio,
   });
   usePlaybackShortcuts(session);
+  usePlayRequests(session);
   return (
     <ShortcutRegion context="viewer" className="flex size-full flex-col">
       <ViewerStage

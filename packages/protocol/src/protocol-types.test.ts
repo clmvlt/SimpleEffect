@@ -98,6 +98,12 @@ describe('derived protocol types', () => {
       | 'getTranscript'
       | 'searchTranscripts'
       | 'setTranscriptionSettings'
+      | 'getSmartCutSettings'
+      | 'updateSmartCutSettings'
+      | 'removeWords'
+      | 'findFillers'
+      | 'previewSilenceCuts'
+      | 'removeSilences'
     >();
   });
 

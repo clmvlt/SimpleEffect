@@ -20,6 +20,7 @@ import { useGesturePreview } from '../store/gesture-store';
 import { useEditPreferences } from '../store/edit-preferences-store';
 import { setLanesWidth } from '../store/timeline-view-store';
 import { AiScopeOverlays } from './AiScopeOverlays';
+import { CutPreviewOverlay } from './CutPreviewOverlay';
 import { GapHighlight } from './GapHighlight';
 import { GapHover, useGapHover } from './GapHover';
 import { GestureOverlay } from './GestureOverlay';
@@ -127,6 +128,7 @@ export function TrackLanes({
           <GapHighlight model={model} layout={layout} viewport={viewport} />
           <TransitionMarks model={model} layout={layout} viewport={viewport} />
           <AiScopeOverlays sequenceId={model.sequence.id} layout={layout} viewport={viewport} />
+          <CutPreviewOverlay sequenceId={model.sequence.id} viewport={viewport} />
           <GestureOverlay model={model} layout={layout} viewport={viewport} />
           <PlayheadLine sequenceId={model.sequence.id} viewport={viewport} />
           {box !== null && (

@@ -55,6 +55,18 @@ export function TranscriptionOptions({ status, actions }: TranscriptionOptionsPr
           }}
         />
       </Field>
+      <Field
+        label={t('settings.transcription.options.keepHesitations')}
+        description={t('settings.transcription.options.keepHesitationsDescription')}
+        orientation="horizontal"
+      >
+        <Switch
+          checked={preferences.keepHesitations}
+          onCheckedChange={(checked) => {
+            actions.save({ keepHesitations: checked });
+          }}
+        />
+      </Field>
       <WhisperFolder status={status} actions={actions} />
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-text">

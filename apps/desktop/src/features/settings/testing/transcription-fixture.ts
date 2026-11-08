@@ -50,6 +50,7 @@ export function transcriptionStatus(
       autoTranscribe: false,
       voiceDetection: true,
       whisperDir: null,
+      keepHesitations: true,
     },
     ...overrides,
   };

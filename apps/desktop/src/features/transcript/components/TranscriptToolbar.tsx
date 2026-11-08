@@ -1,5 +1,5 @@
 import { IconButton, Input, ToggleGroup, ToggleGroupItem } from '@se/ui';
-import { ChevronDown, ChevronUp } from '@se/ui/icons';
+import { ChevronDown, ChevronUp, Strikethrough } from '@se/ui/icons';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -17,6 +17,9 @@ export interface TranscriptToolbarProps {
   readonly onStep: (step: 1 | -1) => void;
   /** The project settings button (language, vocabulary). */
   readonly settings: ReactNode;
+  /** Whether passages cut out are shown struck through (sequence mode). */
+  readonly showPassages: boolean;
+  readonly onShowPassagesChange: (show: boolean) => void;
 }
 
 /** Mode (sequence or selected media), search with previous/next match, and project settings. */
@@ -29,6 +32,8 @@ export function TranscriptToolbar({
   currentMatch,
   onStep,
   settings,
+  showPassages,
+  onShowPassagesChange,
 }: TranscriptToolbarProps) {
   const { t } = useTranslation();
   return (
@@ -49,7 +54,20 @@ export function TranscriptToolbar({
           </ToggleGroupItem>
           <ToggleGroupItem value="media">{t('editor.transcript.modes.media')}</ToggleGroupItem>
         </ToggleGroup>
-        {settings}
+        <div className="flex items-center gap-0.5">
+          <IconButton
+            icon={Strikethrough}
+            size="xs"
+            variant={showPassages ? 'secondary' : 'ghost'}
+            aria-pressed={showPassages}
+            disabled={mode !== 'sequence'}
+            label={t('editor.transcript.passages.toggle')}
+            onClick={() => {
+              onShowPassagesChange(!showPassages);
+            }}
+          />
+          {settings}
+        </div>
       </div>
       <div className="flex items-center gap-1">
         <Input
