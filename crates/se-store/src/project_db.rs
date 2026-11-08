@@ -1,10 +1,11 @@
 //! `project.db`: the operation journal, the analyses of assets (`analyses.rs`), the AI tasks and
-//! their event logs (`tasks.rs`), the changesets of AI tasks (`changesets.rs`), and tables later
-//! prompts fill (transcripts).
+//! their event logs (`tasks.rs`), the changesets of AI tasks (`changesets.rs`) and the transcripts
+//! of assets with their full-text index (`transcripts.rs`).
 
 mod analyses;
 mod changesets;
 mod tasks;
+mod transcripts;
 
 use std::path::{Path, PathBuf};
 
@@ -18,7 +19,7 @@ use crate::{
 };
 
 /// Schema migrations of `project.db` (see [`open_database`]). Append, never edit.
-const MIGRATIONS: &[&str] = &[SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4];
+const MIGRATIONS: &[&str] = &[SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4, SCHEMA_V5];
 
 /// Version 1. `op_journal` holds the transactions committed since the last snapshot. The other
 /// tables are created now so the schema has one history; their columns are refined by the
@@ -95,6 +96,47 @@ CREATE TABLE changeset_entries (
     format_version INTEGER NOT NULL,
     payload TEXT NOT NULL,
     PRIMARY KEY (changeset_id, sequence)
+);
+";
+
+/// Version 5 (prompt 21): transcripts. Version 1's placeholder tables never held data: they are
+/// replaced by one header row per asset (`transcripts`, with the content transcribed), its words
+/// and segments in source time (flicks), and an FTS5 index of the segments' text without accents.
+const SCHEMA_V5: &str = "
+DROP TABLE transcript_search;
+DROP TABLE transcripts;
+CREATE TABLE transcripts (
+    asset_id TEXT PRIMARY KEY,
+    content_key TEXT NOT NULL,
+    language TEXT NOT NULL,
+    model TEXT NOT NULL,
+    backend TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    format_version INTEGER NOT NULL
+);
+CREATE TABLE transcript_segments (
+    asset_id TEXT NOT NULL REFERENCES transcripts (asset_id) ON DELETE CASCADE,
+    segment INTEGER NOT NULL,
+    start_flicks INTEGER NOT NULL,
+    end_flicks INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    PRIMARY KEY (asset_id, segment)
+) WITHOUT ROWID;
+CREATE TABLE transcript_words (
+    asset_id TEXT NOT NULL REFERENCES transcripts (asset_id) ON DELETE CASCADE,
+    word INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    start_flicks INTEGER NOT NULL,
+    end_flicks INTEGER NOT NULL,
+    confidence REAL NOT NULL,
+    segment INTEGER NOT NULL,
+    PRIMARY KEY (asset_id, word)
+) WITHOUT ROWID;
+CREATE VIRTUAL TABLE transcript_search USING fts5 (
+    asset_id UNINDEXED,
+    segment UNINDEXED,
+    text,
+    tokenize = 'unicode61 remove_diacritics 2'
 );
 ";
 

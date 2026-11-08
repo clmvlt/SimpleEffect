@@ -14,7 +14,8 @@
 //! `transitions` and media clips their fade shapes; version 5 (prompt 15) gave texts their full
 //! style and `reveal`, shapes an outline, images a fit and transforms a blur, and made font
 //! sizes, text colours and shape fills animatable; version 6 (prompt 16) gave media clips that
-//! fill the frame a `focus`. Journals need no migration: no transaction touched assets before
+//! fill the frame a `focus`; version 7 (prompt 21) gave projects their transcription settings and
+//! assets a `transcript` summary. Journals need no migration: no transaction touched assets before
 //! version 2, every field added since has a serde default (empty, linear, off, centred), and
 //! `Animatable` reads the bare values of properties that became animatable.
 
@@ -31,6 +32,7 @@ pub const MIGRATIONS: &[DocumentMigration] = &[
     migrate_v3_to_v4,
     migrate_v4_to_v5,
     migrate_v5_to_v6,
+    migrate_v6_to_v7,
 ];
 
 /// Version 1 → 2: every asset gets `fingerprint: null` and its single decodability becomes one
@@ -150,6 +152,27 @@ fn migrate_v5_to_v6(mut document: Value) -> Result<Value, String> {
                 .entry("focus")
                 .or_insert_with(|| json!({ "kind": "static", "value": { "x": 0.5, "y": 0.5 } }));
         }
+    }
+    Ok(document)
+}
+
+/// Version 6 → 7: the project gets the default transcription settings (French, no vocabulary)
+/// and every asset an empty `transcript` summary.
+fn migrate_v6_to_v7(mut document: Value) -> Result<Value, String> {
+    let Some(settings) = document.get_mut("settings").and_then(Value::as_object_mut) else {
+        return Err("`settings` is missing or not an object".to_owned());
+    };
+    settings
+        .entry("transcription")
+        .or_insert_with(|| json!({ "language": "fr", "vocabulary": "" }));
+    let Some(assets) = document.get_mut("assets").and_then(Value::as_array_mut) else {
+        return Err("`assets` is missing or not a list".to_owned());
+    };
+    for analysis in assets
+        .iter_mut()
+        .filter_map(|asset| asset.get_mut("analysis").and_then(Value::as_object_mut))
+    {
+        analysis.entry("transcript").or_insert(Value::Null);
     }
     Ok(document)
 }
@@ -396,6 +419,23 @@ mod tests {
         );
         assert_eq!(items[2]["kind"], json!({ "kind": "caption", "text": "Hi" }));
         assert_eq!(migrated["schemaVersion"], json!(5));
+    }
+
+    #[test]
+    fn version_7_adds_transcription_settings_and_empty_transcript_summaries() {
+        let document = json!({
+            "schemaVersion": 6,
+            "settings": { "defaultFormat": {} },
+            "assets": [{ "analysis": { "audio": null, "scenes": null } }]
+        });
+        let migrated = migrate_document(document, MIGRATIONS, 7).unwrap();
+        assert_eq!(
+            migrated["settings"]["transcription"],
+            json!({ "language": "fr", "vocabulary": "" })
+        );
+        assert_eq!(migrated["assets"][0]["analysis"]["transcript"], Value::Null);
+        assert_eq!(migrated["schemaVersion"], json!(7));
+        assert!(migrate_document(json!({ "schemaVersion": 6 }), MIGRATIONS, 7).is_err());
     }
 
     #[test]

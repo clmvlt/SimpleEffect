@@ -170,10 +170,20 @@ async fn load_fixture(name: &str) -> se_domain::Project {
 /// The example project as the version-5 fixture holds it: the fast interview clip fits the
 /// frame (version 5 had no focus to animate).
 fn example_project_v5() -> se_domain::Project {
-    let mut project = example_project();
+    let mut project = example_project_v6();
     let second_clip = &mut project.sequences[0].tracks[0].items[1].kind;
     if let se_domain::ItemKind::MediaClip(clip) = second_clip {
         clip.reframe = se_domain::Reframe::Fit;
+    }
+    project
+}
+
+/// The example project as the version-6 fixture holds it: no transcript summary (its
+/// transcription settings are the defaults the migration gives).
+fn example_project_v6() -> se_domain::Project {
+    let mut project = example_project();
+    for asset in &mut project.assets {
+        asset.analysis.transcript = None;
     }
     project
 }
@@ -275,8 +285,13 @@ async fn version_5_documents_load_through_the_migrations() {
 }
 
 #[tokio::test]
-async fn version_6_documents_load_as_they_are() {
-    assert_eq!(load_fixture("project-v6.json").await, example_project());
+async fn version_6_documents_load_through_the_migrations() {
+    assert_eq!(load_fixture("project-v6.json").await, example_project_v6());
+}
+
+#[tokio::test]
+async fn version_7_documents_load_as_they_are() {
+    assert_eq!(load_fixture("project-v7.json").await, example_project());
 }
 
 #[tokio::test]
@@ -316,7 +331,8 @@ async fn duplicates_get_a_numbered_folder_their_data_and_no_journal() {
     let source_db = rusqlite::Connection::open(ProjectLayout::new(&path).database()).unwrap();
     source_db
         .execute(
-            "INSERT INTO transcripts (asset_id, language, created_at, payload) VALUES ('a', 'fr', 0, '{}')",
+            "INSERT INTO transcripts (asset_id, content_key, language, model, backend, created_at, format_version)
+             VALUES ('a', 'k', 'fr', 'base', 'cpu', 0, 1)",
             [],
         )
         .unwrap();
@@ -354,6 +370,8 @@ async fn the_project_database_has_every_table_and_full_text_search() {
         "tasks",
         "task_events",
         "transcripts",
+        "transcript_words",
+        "transcript_segments",
         "analyses",
     ] {
         let count: i64 = connection
@@ -365,7 +383,7 @@ async fn the_project_database_has_every_table_and_full_text_search() {
     }
     connection
         .execute(
-            "INSERT INTO transcript_search (asset_id, text) VALUES ('a', 'bonjour tout le monde')",
+            "INSERT INTO transcript_search (asset_id, segment, text) VALUES ('a', 0, 'bonjour tout le monde')",
             [],
         )
         .unwrap();
