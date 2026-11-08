@@ -146,7 +146,17 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Scope** | The part of the project a task may edit: sequence, time range, tracks | `TaskScope` |
 | **Agent session** | The AI CLI's conversation id, chosen by the app for a new run (`--session-id`) and resumed by follow-ups | `Task.agentSessionId`, `AgentSession` |
 | **Tool** | An MCP function exposed to agents (read or write) | `tools::*` |
-| **Agent instructions** | Provider-agnostic markdown guidance composed into the agent's system prompt | `agent-instructions/` |
+| **Agent instructions** | Provider-agnostic markdown guidance (role, time and scope, reading the project) composed with the task's scope and a project summary into the agent's system prompt | `agent-instructions/`, `tasks::instructions` |
+| **MCP server** | se-core's `/mcp` endpoint (rmcp, streamable HTTP): the agents' only way to read and change a project (ADR-0028) | `se_mcp::McpServer`, `mcp_service` |
+| **Task token** | The 256-bit bearer token of one run, minted when it starts and revoked when it ends; `/mcp` refuses any other | `TaskToken`, `TaskTokenRegistry` |
+| **Agent context** | Who calls an MCP tool: the run's project, task, run index and scope, resolved from its token | `AgentContext` |
+| **Tool** | One MCP capability with an input schema, a handler and a section in `docs/ai-tools.md`; read tools change nothing | `McpTool`, `ToolEntry` |
+| **Tool error** | A failed tool call returned to the agent as a result flagged `isError`, with a stable code and an actionable message | `ToolError` |
+| **Time output** | How tools give times: `{"timecode": "HH:MM:SS.mmm", "seconds": n}` | `TimeOutput`, `format_clock` |
+| **Time base** | Whether times count from the sequence's first frame (`sequence`) or the media file's (`source`) | `time_base` |
+| **Frame render request** | Frames of a sequence an agent asked for, drawn by the renderer and uploaded as JPEGs (`renderFramesRequested`, `PUT /media/renders/…`) | `FrameRenderRequest`, `FrameRenderService` |
+| **Renderer link** | How the core reaches the renderer: connected while an `/rpc` socket is open | `RendererLink` |
+| **Still renderer** | The engine drawing single frames offscreen and encoding them as JPEG, through the viewer's frame renderer and compositor | `StillRenderer`, `createStillRenderer` |
 | **Frame graph** | Everything visible in a sequence at one instant: layers bottom first, transforms resolved, sizes in sequence pixels; the pure output of `evaluate` | `FrameGraph` |
 | **Layer** | One drawable item in a frame graph: `video`, `image`, `shape` or `text` (captions draw as text until prompt 23) | `Layer` |
 | **Natural box** | The box a picture fills at scale 1: the asset's upright display size fitted into the frame, the frame itself for a filling clip (which shows a crop), or the natural size in design pixels (`custom` clips, `natural` images); independent of the decoded variant | `VideoLayer.box`, `reframedPicture` |

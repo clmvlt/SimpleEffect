@@ -43,6 +43,9 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - B-roll suggestions from the user's media library (local embeddings of thumbnails and transcripts).
 - "Style memory": learn the user's editing preferences from accepted/reverted AI changes.
 - Agent-to-agent planning: one planner task splitting a long edit into scoped sub-tasks.
+- `get_frames` without an editor window (prompt 18 needs the project shown in SimpleEffect): a hidden offscreen renderer window or the export worker could draw them.
+- Sequence-level loudness for agents (the mix of every clip with volumes and fades), not only per-clip loudness.
+- Contact sheets for agents: many small frames tiled into one image (fewer tokens than separate images).
 
 ## Audio
 - Local noise reduction / voice enhancement (e.g. RNNoise or a small ONNX model).
