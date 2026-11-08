@@ -6,6 +6,7 @@
 //! (`se_app::AppError` converts with `?`).
 
 pub mod ai;
+pub mod captions;
 pub mod editing;
 pub mod frames;
 pub mod graphics;
@@ -23,7 +24,7 @@ pub mod transcription;
 use std::{path::Path, sync::Arc};
 
 use se_app::{
-    FrameRenderService, MediaService, ProjectService, SmartCutService, TaskService,
+    CaptionService, FrameRenderService, MediaService, ProjectService, SmartCutService, TaskService,
     TranscriptionService, ports::FontCatalog,
 };
 use se_protocol::{ErrorCode, ProtocolError};
@@ -51,6 +52,8 @@ pub struct HandlerContext {
     pub transcription: TranscriptionService,
     /// Smart cuts (prompt 22).
     pub smart_cuts: SmartCutService,
+    /// Captions (prompt 23).
+    pub captions: CaptionService,
 }
 
 /// A path sent by a client, refused unless absolute (a relative path would depend on the

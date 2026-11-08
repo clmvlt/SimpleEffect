@@ -84,6 +84,9 @@ pub enum AppError {
     /// A media port failed (file missing, unreadable, ffmpeg absent…).
     #[error(transparent)]
     Media(#[from] MediaError),
+    /// A subtitle file could not be read, written or understood.
+    #[error(transparent)]
+    Subtitles(#[from] crate::ports::SubtitleError),
     /// The open project has no such asset.
     #[error("project {project_id} has no asset {asset_id}: refresh the media bin")]
     AssetNotFound {
@@ -341,6 +344,10 @@ impl AppError {
             Self::InvalidModelFile { .. } => ErrorCode::InvalidModelFile,
             Self::DownloadFailed { .. } => ErrorCode::DownloadFailed,
             Self::NoSpeechStream { .. } => ErrorCode::NoSpeechStream,
+            Self::Subtitles(crate::ports::SubtitleError::Invalid { .. }) => {
+                ErrorCode::InvalidSubtitleFile
+            }
+            Self::Subtitles(_) => ErrorCode::SubtitleFileFailed,
             Self::Internal(_) => ErrorCode::Internal,
         }
     }

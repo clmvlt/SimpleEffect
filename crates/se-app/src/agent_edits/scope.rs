@@ -9,8 +9,8 @@
 //! what to do instead.
 
 use se_domain::{
-    Item, ItemId, ItemKind, Marker, MarkerId, Project, Sequence, TouchedEntities, Track, TrackId,
-    Transition, format_clock,
+    CaptionStyleId, Item, ItemId, ItemKind, Marker, MarkerId, Project, Sequence, TouchedEntities,
+    Track, TrackId, Transition, format_clock,
 };
 use se_protocol::TaskScope;
 
@@ -51,6 +51,9 @@ pub(crate) fn check_scope(scope: &TaskScope, change: &PlannedChange<'_>) -> Resu
     }
     for &marker in &change.touched.markers {
         checker.marker(marker)?;
+    }
+    for &style in &change.touched.caption_styles {
+        checker.caption_style(style)?;
     }
     Ok(())
 }
@@ -173,7 +176,10 @@ fn kind_name(kind: &ItemKind) -> String {
         ItemKind::Shape(_) => "shape".to_owned(),
         ItemKind::Image(_) => "image".to_owned(),
         ItemKind::MotionTemplate(_) => "motion template".to_owned(),
-        ItemKind::Caption(_) => "caption".to_owned(),
+        ItemKind::Caption(caption) => {
+            let excerpt: String = caption.text().chars().take(40).collect();
+            format!("caption « {excerpt} »")
+        }
     }
 }
 
@@ -228,6 +234,34 @@ impl Checker<'_> {
                 self.scope_text(),
                 self.advice()
             )));
+        }
+        Ok(())
+    }
+
+    /// A caption style may change only when every caption using it, before and after, lies in
+    /// the scope (its look is theirs).
+    fn caption_style(&self, style: CaptionStyleId) -> Result<(), AppError> {
+        for project in [self.change.before, self.change.after] {
+            let users = project.sequences.iter().flat_map(|sequence| {
+                sequence.tracks.iter().flat_map(move |track| {
+                    track.items.iter().map(move |item| Placed {
+                        sequence,
+                        track,
+                        item,
+                    })
+                })
+            });
+            for placed in users {
+                let styled = matches!(&placed.item.kind, ItemKind::Caption(caption) if caption.style_id == style);
+                if styled && !item_in_scope(self.scope, placed.sequence, placed.track, placed.item)
+                {
+                    return Err(out_of_scope(format!(
+                        "caption style {style} is also used by {}, outside this task's scope                          ({}): change the style of the captions of the scope only (list them in                          `items`: they get a style of their own)",
+                        describe_item(&placed),
+                        self.scope_text()
+                    )));
+                }
+            }
         }
         Ok(())
     }

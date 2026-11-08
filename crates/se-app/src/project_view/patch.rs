@@ -76,7 +76,8 @@ pub fn project_patch(
             None => deletes.assets.push(*id),
         }
     }
-    if touched.project {
+    // Caption styles travel with the project's own fields (few, small, read with them).
+    if touched.project || !touched.caption_styles.is_empty() {
         upserts.project = Some(project_header(after));
     }
     ProjectPatch {

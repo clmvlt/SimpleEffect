@@ -56,6 +56,7 @@ pub async fn run(
         renders: Arc::clone(&services.renders),
         transcription: services.transcription.clone(),
         smart_cuts: services.smart_cuts.clone(),
+        captions: services.captions.clone(),
     });
     let state = RpcState::new(router, events.clone(), stopping.clone());
     let app = routes(guard, state, &services, port);
@@ -96,6 +97,7 @@ fn routes(guard: Arc<AccessGuard>, state: RpcState, services: &Services, port: u
             edits: Arc::clone(&services.edits),
             transcription: services.transcription.clone(),
             smart_cuts: services.smart_cuts.clone(),
+            captions: services.captions.clone(),
         },
         port,
     );

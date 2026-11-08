@@ -7,8 +7,8 @@ use se_protocol::{
 use super::{
     encode::encode,
     handlers::{
-        HandlerContext, ai, editing, frames, graphics, items, media, media_settings, projects,
-        smart_cuts, sound, system, tasks, timeline, transcription,
+        HandlerContext, ai, captions, editing, frames, graphics, items, media, media_settings,
+        projects, smart_cuts, sound, system, tasks, timeline, transcription,
     },
     request::{Rejection, parse_request},
 };
@@ -355,6 +355,58 @@ impl RpcRouter {
             | Command::FindFillers { .. }
             | Command::PreviewSilenceCuts { .. }
             | Command::RemoveSilences { .. } => Self::dispatch_smart_cuts(context, command).await,
+            Command::GenerateCaptions(_)
+            | Command::ImportSubtitles(_)
+            | Command::ExportSubtitles { .. }
+            | Command::EditCaptionText(_)
+            | Command::MergeCaptions { .. }
+            | Command::SplitCaption { .. }
+            | Command::ShiftCaptions { .. }
+            | Command::SetCaptionEmphasis(_)
+            | Command::UpdateCaptionStyle(_)
+            | Command::ApplyCaptionPreset { .. } => Self::dispatch_captions(context, command).await,
+        }
+    }
+
+    /// The caption commands (prompt 23).
+    async fn dispatch_captions(
+        context: &HandlerContext,
+        command: &Command,
+    ) -> Result<CommandResult, ProtocolError> {
+        match command {
+            Command::GenerateCaptions(request) => captions::generate(context, request).await,
+            Command::ImportSubtitles(request) => captions::import_subtitles(context, request).await,
+            Command::ExportSubtitles {
+                project_id,
+                sequence_id,
+                path,
+            } => captions::export_subtitles(context, *project_id, *sequence_id, path).await,
+            Command::EditCaptionText(edit) => captions::edit_text(context, edit).await,
+            Command::MergeCaptions {
+                project_id,
+                item_ids,
+            } => captions::merge(context, *project_id, item_ids).await,
+            Command::SplitCaption {
+                project_id,
+                item_id,
+                word_index,
+            } => captions::split(context, *project_id, *item_id, *word_index).await,
+            Command::ShiftCaptions {
+                project_id,
+                item_ids,
+                delta,
+            } => captions::shift(context, *project_id, item_ids, *delta).await,
+            Command::SetCaptionEmphasis(edit) => captions::set_emphasis(context, edit).await,
+            Command::UpdateCaptionStyle(edit) => captions::update_style(context, edit).await,
+            Command::ApplyCaptionPreset {
+                project_id,
+                item_ids,
+                preset,
+            } => captions::apply_preset(context, *project_id, item_ids, preset).await,
+            _ => Err(ProtocolError::new(
+                se_protocol::ErrorCode::Internal,
+                "a non-caption command reached the caption dispatcher",
+            )),
         }
     }
 
@@ -499,6 +551,7 @@ pub mod testing {
             renders,
             transcription,
             smart_cuts,
+            captions,
             ..
         } = MediaTestbed::new(Path::new("/projects"));
         HandlerContext {
@@ -514,6 +567,7 @@ pub mod testing {
             renders,
             transcription,
             smart_cuts,
+            captions,
         }
     }
 }

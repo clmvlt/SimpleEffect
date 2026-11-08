@@ -9,11 +9,12 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    AddGraphicRequest, AiSettings, CreateProjectRequest, DecodabilityReport, DecoderCapabilities,
-    DownloadTarget, GenerateDerivedRequest, ImportMediaRequest, ItemAnimation, ItemPlacement,
-    ItemTrim, ItemUpdate, MediaSettings, NewTransition, PastedItem, PlaceMediaRequest,
-    PlacementMode, RelinkAssetRequest, SilenceCutParams, SmartCutSettings, SubmitTaskRequest,
-    TaskScope, TranscriptionPreferences, WordCutPurpose,
+    AddGraphicRequest, AiSettings, CaptionEmphasisEdit, CaptionStyleEdit, CaptionTextEdit,
+    CreateProjectRequest, DecodabilityReport, DecoderCapabilities, DownloadTarget,
+    GenerateCaptionsRequest, GenerateDerivedRequest, ImportMediaRequest, ImportSubtitlesRequest,
+    ItemAnimation, ItemPlacement, ItemTrim, ItemUpdate, MediaSettings, NewTransition, PastedItem,
+    PlaceMediaRequest, PlacementMode, RelinkAssetRequest, SilenceCutParams, SmartCutSettings,
+    SubmitTaskRequest, TaskScope, TranscriptionPreferences, WordCutPurpose,
 };
 
 /// A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -693,6 +694,69 @@ pub enum Command {
         track_ids: Option<Vec<TrackId>>,
         /// Cut every unlocked track.
         all_tracks: bool,
+    },
+    /// Makes captions from the transcript of a sequence range on its caption track (created on
+    /// top when missing), replacing the captions crossing the range (one undo step). Answered by
+    /// [`crate::CommandResult::GenerateCaptions`].
+    GenerateCaptions(GenerateCaptionsRequest),
+    /// Turns an SRT file into captions (words spread equally over each cue; one undo step).
+    /// Answered by [`crate::CommandResult::ImportSubtitles`].
+    ImportSubtitles(ImportSubtitlesRequest),
+    /// Writes the captions of a sequence to an SRT file. Answered by
+    /// [`crate::CommandResult::ExportSubtitles`].
+    ExportSubtitles {
+        /// The open project.
+        project_id: ProjectId,
+        /// The sequence read.
+        sequence_id: SequenceId,
+        /// Absolute path of the `.srt` file (replaced when it exists).
+        path: String,
+    },
+    /// Changes the text of a caption (unchanged words keep their timing). Answered by
+    /// [`crate::CommandResult::EditCaptionText`].
+    EditCaptionText(CaptionTextEdit),
+    /// Merges adjacent captions of one track into the first. Answered by
+    /// [`crate::CommandResult::MergeCaptions`].
+    MergeCaptions {
+        /// The open project.
+        project_id: ProjectId,
+        /// Two or more captions following each other on one track.
+        item_ids: Vec<ItemId>,
+    },
+    /// Splits a caption so that a word starts the new right part. Answered by
+    /// [`crate::CommandResult::SplitCaption`].
+    SplitCaption {
+        /// The open project.
+        project_id: ProjectId,
+        /// The caption.
+        item_id: ItemId,
+        /// The first word of the right part (1 to the number of words − 1).
+        word_index: u32,
+    },
+    /// Moves captions in time together. Answered by [`crate::CommandResult::ShiftCaptions`].
+    ShiftCaptions {
+        /// The open project.
+        project_id: ProjectId,
+        /// The captions (every caption of a track for a global shift).
+        item_ids: Vec<ItemId>,
+        /// How far (negative: earlier).
+        delta: Flicks,
+    },
+    /// Puts words of a caption forward (the style's emphasis colour) or back. Answered by
+    /// [`crate::CommandResult::SetCaptionEmphasis`].
+    SetCaptionEmphasis(CaptionEmphasisEdit),
+    /// Changes the look of captions (copy on write of shared styles). Answered by
+    /// [`crate::CommandResult::UpdateCaptionStyle`].
+    UpdateCaptionStyle(CaptionStyleEdit),
+    /// Gives captions a new style made from a predefined one. Answered by
+    /// [`crate::CommandResult::ApplyCaptionPreset`].
+    ApplyCaptionPreset {
+        /// The open project.
+        project_id: ProjectId,
+        /// The captions.
+        item_ids: Vec<ItemId>,
+        /// The preset's id (`tiktokBold`, `minimal`, `karaoke`, `box`).
+        preset: String,
     },
 }
 

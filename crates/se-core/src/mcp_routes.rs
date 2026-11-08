@@ -119,6 +119,7 @@ mod tests {
                 edits: bed.edits.clone(),
                 transcription: bed.transcription.clone(),
                 smart_cuts: bed.smart_cuts.clone(),
+                captions: bed.captions.clone(),
             },
             port,
         );

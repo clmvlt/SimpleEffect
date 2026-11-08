@@ -34,6 +34,7 @@
 
 pub mod agent_access;
 pub mod agent_edits;
+pub mod captions;
 mod edit_plan;
 mod error;
 pub mod frame_renders;
@@ -55,6 +56,7 @@ pub mod transcription;
 
 pub use agent_access::{AgentContext, McpAccess, TaskToken, TaskTokenRegistry};
 pub use agent_edits::{AgentEditService, EditFailure};
+pub use captions::{CaptionService, CaptionServiceDeps};
 pub use edit_plan::DEFAULT_IMAGE_DURATION;
 pub use error::AppError;
 pub use frame_renders::{FrameRenderService, FrameRenderSpec};

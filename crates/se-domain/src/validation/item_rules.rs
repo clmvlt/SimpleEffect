@@ -34,7 +34,7 @@ pub(super) fn check(context: &ItemContext<'_>, report: &mut Report) {
         ItemKind::Text(text) => graphic_rules::check_text(text, &kind_path, report),
         ItemKind::Shape(shape) => graphic_rules::check_shape(shape, &kind_path, report),
         ItemKind::Caption(caption) => {
-            caption_rules::check_caption(caption, context, &kind_path, report)
+            caption_rules::check_caption(caption, context, &kind_path, report);
         }
     }
     animation_rules::check(context.item, &kind_path, report);

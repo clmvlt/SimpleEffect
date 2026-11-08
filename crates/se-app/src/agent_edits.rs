@@ -23,7 +23,9 @@ mod transitions;
 
 pub use cuts::CutOutcome;
 pub use planner::EditFailure;
-pub use request::{AgentEdit, AgentEditReport, ItemRef, NewAgentItem, PresetSpec, TaskChanges};
+pub use request::{
+    AgentEdit, AgentEditReport, ItemRef, NewAgentCaptions, NewAgentItem, PresetSpec, TaskChanges,
+};
 
 use std::{collections::BTreeSet, sync::Arc};
 

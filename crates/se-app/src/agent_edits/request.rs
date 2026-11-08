@@ -5,9 +5,11 @@
 use std::sync::Arc;
 
 use se_domain::{
-    AnimationPhase, ChangesetId, Flicks, ItemEdge, ItemId, ItemKind, ItemPatch, MarkerColor,
-    Project, PropertyAnimation, TimeRange, TrackId, TransitionAlignment,
+    AnimationPhase, CaptionStylePatch, ChangesetId, Flicks, ItemEdge, ItemId, ItemKind, ItemPatch,
+    MarkerColor, Project, PropertyAnimation, TimeRange, TrackId, TransitionAlignment,
+    captions::TimedWord,
 };
+use se_protocol::{CaptionSegmentation, CaptionStyleChoice};
 
 /// An item an edit works on: an existing one, or one created by an earlier edit of the same
 /// call (`apply_batch` references).
@@ -37,6 +39,19 @@ pub struct PresetSpec {
     pub phase: AnimationPhase,
     /// Length of the animation; the preset's default when `None`.
     pub duration: Option<Flicks>,
+}
+
+/// Captions an agent makes from spoken words (prompt 23).
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewAgentCaptions {
+    /// The range to fill (captions of the caption track crossing it are replaced).
+    pub range: TimeRange,
+    /// The words spoken in the sequence (sequence time), read by the tool beforehand.
+    pub words: Vec<TimedWord>,
+    /// The style (`None`: the replaced captions' style, else the default preset).
+    pub style: Option<CaptionStyleChoice>,
+    /// Segmentation overrides.
+    pub segmentation: Option<CaptionSegmentation>,
 }
 
 /// A new text, shape or image placed by an agent.
@@ -158,6 +173,38 @@ pub enum AgentEdit {
         label: String,
         /// Its colour.
         color: MarkerColor,
+    },
+    /// Makes captions from spoken words on the caption track (created on top when missing).
+    AddCaptions(Box<NewAgentCaptions>),
+    /// Changes the text of a caption (unchanged words keep their timing).
+    EditCaptionText {
+        /// The caption.
+        item: ItemRef,
+        /// Its new text.
+        text: String,
+    },
+    /// Puts words of a caption forward or back.
+    SetCaptionEmphasis {
+        /// The caption.
+        item: ItemRef,
+        /// Indices of its words.
+        words: Vec<u32>,
+        /// Forward or back.
+        emphasis: bool,
+    },
+    /// Changes the look of captions (copy on write of styles shared with other captions).
+    UpdateCaptionStyle {
+        /// The captions.
+        items: Vec<ItemRef>,
+        /// What changes.
+        patch: CaptionStylePatch,
+    },
+    /// Gives captions a new style made from a preset.
+    ApplyCaptionPreset {
+        /// The captions.
+        items: Vec<ItemRef>,
+        /// The preset's id.
+        preset: String,
     },
 }
 

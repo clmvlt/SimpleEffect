@@ -2,6 +2,7 @@
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { Asset } from "./Asset";
 import type { BrandKit } from "./BrandKit";
+import type { CaptionStyle } from "./CaptionStyle";
 import type { MotionTemplate } from "./MotionTemplate";
 import type { ProjectId } from "./ProjectId";
 import type { ProjectSettings } from "./ProjectSettings";
@@ -48,4 +49,8 @@ templates: Array<MotionTemplate>,
 /**
  * The brand identity used by this project, if one was set.
  */
-brandKit: BrandKit | null, };
+brandKit: BrandKit | null, 
+/**
+ * Looks shared by its captions (schema version 8).
+ */
+captionStyles: Array<CaptionStyle>, };

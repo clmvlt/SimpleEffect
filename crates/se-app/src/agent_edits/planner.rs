@@ -3,8 +3,8 @@
 //! names it.
 
 use se_domain::{
-    AddMarker, ApplyAnimationPreset, Flicks, ItemId, Marker, Operation, Project, SetKeyframes,
-    UpdateItem, animation_presets,
+    AddMarker, ApplyAnimationPreset, Flicks, ItemId, Marker, Operation, Origin, Project,
+    SetKeyframes, UpdateItem, animation_presets,
 };
 
 use super::{
@@ -13,7 +13,17 @@ use super::{
     timing::{plan_delete, plan_gap, plan_move, plan_ripple_delete, plan_split, plan_trim},
     transitions::plan_transition,
 };
-use crate::{AppError, agent_access::AgentContext, edit_plan::EditPlan, new_ids::NewIds};
+use crate::{
+    AppError,
+    agent_access::AgentContext,
+    captions::{
+        edits as caption_edits,
+        generate::{CaptionPlacement, plan_generation},
+        styles as caption_styles,
+    },
+    edit_plan::EditPlan,
+    new_ids::NewIds,
+};
 
 /// Why planning failed: the error, and the edit (0-based) that caused it when known.
 #[derive(Debug, Clone, PartialEq)]
@@ -144,6 +154,11 @@ impl<'a> AgentPlanner<'a> {
                 plan_transition(self, *left, *right, *duration, *alignment)?;
                 Vec::new()
             }
+            AgentEdit::AddCaptions(_)
+            | AgentEdit::EditCaptionText { .. }
+            | AgentEdit::SetCaptionEmphasis { .. }
+            | AgentEdit::UpdateCaptionStyle { .. }
+            | AgentEdit::ApplyCaptionPreset { .. } => self.add_caption_edit(edit)?,
             AgentEdit::AddMarker { time, label, color } => {
                 let marker = Marker {
                     id: self.plan.ids().marker()?,
@@ -161,6 +176,57 @@ impl<'a> AgentPlanner<'a> {
         };
         self.plan.project()?;
         Ok(created)
+    }
+
+    /// Plans a caption edit; returns the captions it created.
+    fn add_caption_edit(&mut self, edit: &AgentEdit) -> Result<Vec<ItemId>, AppError> {
+        match edit {
+            AgentEdit::AddCaptions(new) => {
+                let placement = CaptionPlacement {
+                    sequence_id: self.agent.sequence_id(),
+                    range: new.range,
+                    style: new.style.as_ref(),
+                    track_name: None,
+                    origin: Origin::AiTask {
+                        task_id: self.agent.task_id,
+                    },
+                };
+                let placed = plan_generation(
+                    &mut self.plan,
+                    &placement,
+                    &new.words,
+                    new.segmentation.as_ref(),
+                )?;
+                return Ok(placed.item_ids);
+            }
+            AgentEdit::EditCaptionText { item, text } => {
+                let item = self.resolve(*item)?;
+                caption_edits::plan_text(&mut self.plan, item, text)?;
+            }
+            AgentEdit::SetCaptionEmphasis {
+                item,
+                words,
+                emphasis,
+            } => {
+                let item = self.resolve(*item)?;
+                caption_edits::plan_emphasis(&mut self.plan, item, words, *emphasis)?;
+            }
+            AgentEdit::UpdateCaptionStyle { items, patch } => {
+                let items = self.resolve_all(items)?;
+                caption_styles::patch_styles(&mut self.plan, &items, patch)?;
+            }
+            AgentEdit::ApplyCaptionPreset { items, preset } => {
+                let items = self.resolve_all(items)?;
+                caption_styles::apply_preset(&mut self.plan, &items, preset)?;
+            }
+            _ => {}
+        }
+        Ok(Vec::new())
+    }
+
+    /// The ids of several references.
+    fn resolve_all(&self, items: &[ItemRef]) -> Result<Vec<ItemId>, AppError> {
+        items.iter().map(|item| self.resolve(*item)).collect()
     }
 
     /// Plans a change of an item's content: a patch, a property or a preset.

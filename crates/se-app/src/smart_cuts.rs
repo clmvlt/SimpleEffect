@@ -7,7 +7,7 @@
 //!    ([`words`]), fillers found in them ([`fillers`]), or silences read from the assets' level
 //!    envelopes ([`silences`]) — turned into frame-aligned ranges by [`plan::plan_cuts`];
 //! 2. **tracks** ([`apply::cut_tracks`]): the speech's tracks and their linked partners (or every
-//!    unlocked track);
+//!    unlocked track), plus the caption tracks (captions follow the speech, prompt 23);
 //! 3. **plan** ([`apply::plan_cut`]): one `RippleDeleteRanges` and the links of the new parts.
 //!
 //! The result is one transaction of ordinary items: undone in one step, adjustable by hand.
@@ -72,6 +72,21 @@ pub fn resolve_with_tracks(
         .cuts
         .first()
         .map_or(Flicks::ZERO, |cut| cut.start());
-    let tracks = apply::cut_tracks(sequence, &resolved.seeds, from, request.all_tracks);
+    let mut tracks = apply::cut_tracks(sequence, &resolved.seeds, from, request.all_tracks);
+    // Captions follow the speech: caption tracks with captions at or after the first cut are
+    // cut too (prompt 23).
+    tracks.extend(
+        sequence
+            .tracks
+            .iter()
+            .filter(|track| !track.locked && crate::captions::track::is_caption_track(track))
+            .filter(|track| {
+                track
+                    .items
+                    .iter()
+                    .any(|item| item.timeline_range.end() > from)
+            })
+            .map(|track| track.id),
+    );
     Ok((resolved, tracks))
 }

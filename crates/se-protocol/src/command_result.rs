@@ -1,17 +1,18 @@
 //! Successful results of commands.
 
 use se_domain::{
-    AssetId, ChangesetId, ItemId, JobId, LinkGroupId, MarkerId, SequenceId, TimeRange, TrackId,
-    Transcript, TransitionId,
+    AssetId, CaptionStyleId, ChangesetId, ItemId, JobId, LinkGroupId, MarkerId, SequenceId,
+    TimeRange, TrackId, Transcript, TransitionId,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    AiSettings, AiStatus, AnimationPresetInfo, CutSummary, FillerOccurrence, FontFamily,
-    ImportReport, JobSnapshot, MediaSettings, MediaToolsStatus, NewProjectDefaults, PlacedGraphic,
-    ProjectCacheInfo, ProjectSession, RecentProject, RelinkOutcome, SmartCutSettings, Task,
-    TaskEventRecord, TaskRevertReport, TranscriptSearchHit, TranscriptionStatus,
+    AiSettings, AiStatus, AnimationPresetInfo, CaptionsReport, CutSummary, FillerOccurrence,
+    FontFamily, ImportReport, JobSnapshot, MediaSettings, MediaToolsStatus, NewProjectDefaults,
+    PlacedGraphic, ProjectCacheInfo, ProjectSession, RecentProject, RelinkOutcome,
+    SmartCutSettings, Task, TaskEventRecord, TaskRevertReport, TranscriptSearchHit,
+    TranscriptionStatus,
 };
 
 /// The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
@@ -335,6 +336,41 @@ pub enum CommandResult {
     PreviewSilenceCuts(CutSummary),
     /// Answer to [`crate::Command::RemoveSilences`]: what was cut.
     RemoveSilences(CutSummary),
+    /// Answer to [`crate::Command::GenerateCaptions`]: what was made (the patch came first).
+    GenerateCaptions(CaptionsReport),
+    /// Answer to [`crate::Command::ImportSubtitles`]: what was made.
+    ImportSubtitles(CaptionsReport),
+    /// Answer to [`crate::Command::ExportSubtitles`]: the file was written.
+    ExportSubtitles {
+        /// Subtitles written.
+        cue_count: u32,
+    },
+    /// Answer to [`crate::Command::EditCaptionText`]: committed.
+    EditCaptionText,
+    /// Answer to [`crate::Command::MergeCaptions`]: the caption holding them all.
+    MergeCaptions {
+        /// The first caption, now spanning the others.
+        item_id: ItemId,
+    },
+    /// Answer to [`crate::Command::SplitCaption`]: the new right part.
+    SplitCaption {
+        /// The new caption.
+        item_id: ItemId,
+    },
+    /// Answer to [`crate::Command::ShiftCaptions`]: committed.
+    ShiftCaptions,
+    /// Answer to [`crate::Command::SetCaptionEmphasis`]: committed.
+    SetCaptionEmphasis,
+    /// Answer to [`crate::Command::UpdateCaptionStyle`]: the styles the captions now use.
+    UpdateCaptionStyle {
+        /// Styles changed in place or created for the captions.
+        style_ids: Vec<CaptionStyleId>,
+    },
+    /// Answer to [`crate::Command::ApplyCaptionPreset`]: the new style.
+    ApplyCaptionPreset {
+        /// The style made from the preset.
+        style_id: CaptionStyleId,
+    },
 }
 
 /// Facts about the running core, shown in the UI and useful in bug reports.
@@ -397,6 +433,21 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&result).unwrap(),
             r#"{"kind":"getTaskChanges","changesetId":null,"touchedItems":["00000000-0003-7000-8000-000000000000"]}"#
+        );
+    }
+
+    #[test]
+    fn caption_reports_sit_next_to_the_kind() {
+        let result = CommandResult::GenerateCaptions(CaptionsReport {
+            item_ids: vec![ItemId::from_test_index(4)],
+            track_id: Some(TrackId::from_test_index(5)),
+            style_id: None,
+            replaced: 2,
+            untranscribed_assets: Vec::new(),
+        });
+        assert_eq!(
+            serde_json::to_string(&result).unwrap(),
+            r#"{"kind":"generateCaptions","itemIds":["00000000-0004-7000-8000-000000000000"],"trackId":"00000000-0005-7000-8000-000000000000","styleId":null,"replaced":2,"untranscribedAssets":[]}"#
         );
     }
 

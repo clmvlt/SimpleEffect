@@ -4,8 +4,8 @@
 use std::sync::Arc;
 
 use se_app::{
-    AgentContext, AgentEditService, FrameRenderService, MediaService, ProjectService,
-    SmartCutService, TaskTokenRegistry, TranscriptionService,
+    AgentContext, AgentEditService, CaptionService, FrameRenderService, MediaService,
+    ProjectService, SmartCutService, TaskTokenRegistry, TranscriptionService,
 };
 use se_domain::{Asset, Flicks, Item, Project, Sequence, TimeRange, Track};
 
@@ -28,6 +28,8 @@ pub struct McpDeps {
     pub transcription: TranscriptionService,
     /// Smart cuts: their settings and the media facts they read (prompt 22).
     pub smart_cuts: SmartCutService,
+    /// Captions: the words they are made of (prompt 23).
+    pub captions: CaptionService,
 }
 
 /// One tool call: the services and the calling run.
