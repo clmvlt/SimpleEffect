@@ -43,4 +43,14 @@ describe('AiTaskCard', () => {
     expect(screen.getByText('0,02 $')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Relancer' })).toBeInTheDocument();
   });
+
+  it('shows its context line and extra content', () => {
+    render(
+      <AiTaskCard status="completed" title="Titre" context="00:51 → 00:54 · V2">
+        <form aria-label="Suite" />
+      </AiTaskCard>,
+    );
+    expect(screen.getByText('00:51 → 00:54 · V2')).toBeInTheDocument();
+    expect(screen.getByRole('form', { name: 'Suite' })).toBeInTheDocument();
+  });
 });
