@@ -252,6 +252,44 @@ pub enum AppError {
         /// The task.
         task_id: TaskId,
     },
+    /// Transcription cannot run (whisper.cpp missing or unable to start).
+    #[error("transcription is unavailable: {reason}")]
+    TranscriptionUnavailable {
+        /// Why, and what to do.
+        reason: String,
+    },
+    /// No usable transcription model is installed.
+    #[error(
+        "no transcription model is installed: download one in « Réglages → Transcription » (or \
+         import a ggml file)"
+    )]
+    NoTranscriptionModel,
+    /// No model, download or GPU pack matches the request.
+    #[error("{what} does not exist; see « Réglages → Transcription » for what is available")]
+    TranscriptionTargetNotFound {
+        /// What was asked.
+        what: String,
+    },
+    /// A file that is not a whisper.cpp model.
+    #[error(
+        "{path} is not a whisper.cpp model (ggml .bin file); choose a file such as ggml-base.bin"
+    )]
+    InvalidModelFile {
+        /// The file.
+        path: String,
+    },
+    /// A download that failed or did not match.
+    #[error("{reason}")]
+    DownloadFailed {
+        /// What failed and what to do.
+        reason: String,
+    },
+    /// An asset without sound asked for a transcription.
+    #[error("asset {asset_id} has no sound to transcribe")]
+    NoSpeechStream {
+        /// The asset.
+        asset_id: AssetId,
+    },
     /// A bug: an invariant of the application itself was broken.
     #[error("internal error: {0}; please report it")]
     Internal(String),
@@ -297,6 +335,12 @@ impl AppError {
             Self::RenderRequestNotFound { .. } => ErrorCode::RenderRequestNotFound,
             Self::OutOfScope { .. } => ErrorCode::OutOfScope,
             Self::NothingToRevert { .. } => ErrorCode::NothingToRevert,
+            Self::TranscriptionUnavailable { .. } => ErrorCode::TranscriptionUnavailable,
+            Self::NoTranscriptionModel => ErrorCode::NoTranscriptionModel,
+            Self::TranscriptionTargetNotFound { .. } => ErrorCode::TranscriptionTargetNotFound,
+            Self::InvalidModelFile { .. } => ErrorCode::InvalidModelFile,
+            Self::DownloadFailed { .. } => ErrorCode::DownloadFailed,
+            Self::NoSpeechStream { .. } => ErrorCode::NoSpeechStream,
             Self::Internal(_) => ErrorCode::Internal,
         }
     }

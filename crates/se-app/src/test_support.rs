@@ -10,7 +10,9 @@ mod memory_changesets;
 mod memory_library;
 mod memory_repository;
 mod memory_tasks;
+mod memory_transcripts;
 mod runtime_fakes;
+mod transcription_fakes;
 
 pub use agent_fakes::{
     FakeAgentWorkspaces, REPLAY_PROVIDER_ID, ReplayProvider, ReplayScript, ReplayStep,
@@ -22,12 +24,16 @@ pub use job_fakes::{
 pub use media_fakes::{
     FAKE_FILE_BYTES, FakeMedia, fingerprint, probed_audio, probed_prores, probed_video,
 };
-pub use media_testbed::{MediaTestbed, TESTBED_MCP_URL, settle};
+pub use media_testbed::{MediaTestbed, TESTBED_MCP_URL, TESTBED_MODELS_DIR, settle};
 pub use memory_changesets::StoredChangeset;
 pub use memory_library::InMemoryAppLibrary;
 pub use memory_repository::{InMemoryProjectRepository, StoredFolder};
 pub use runtime_fakes::{
     FakeRendererLink, FixedClock, RecordingEventSink, SequentialIds, SequentialTokens,
+};
+pub use transcription_fakes::{
+    FAKE_WHISPER_PATH, FakeDownloader, FakeModelFile, FakeModelFiles, FakeSpeechExtractor,
+    FakeTranscriber, fake_gpu_offer, fake_transcript,
 };
 
 /// Locks a fake's state, ignoring poisoning (a panicking test already failed).

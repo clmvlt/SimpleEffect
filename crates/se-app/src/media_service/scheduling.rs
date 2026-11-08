@@ -96,7 +96,9 @@ pub(super) fn priority(kind: JobKind, used: bool) -> JobPriority {
         JobKind::Proxy => JobPriority::Normal,
         JobKind::Mezzanine if used => JobPriority::Normal,
         JobKind::Mezzanine => JobPriority::Idle,
-        JobKind::AudioAnalysis | JobKind::SceneDetection => JobPriority::Low,
+        JobKind::AudioAnalysis | JobKind::SceneDetection | JobKind::Transcription => {
+            JobPriority::Low
+        }
     }
 }
 

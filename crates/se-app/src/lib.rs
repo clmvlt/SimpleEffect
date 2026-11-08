@@ -50,6 +50,7 @@ pub mod recovery;
 pub mod tasks;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
+pub mod transcription;
 
 pub use agent_access::{AgentContext, McpAccess, TaskToken, TaskTokenRegistry};
 pub use agent_edits::{AgentEditService, EditFailure};
@@ -57,7 +58,7 @@ pub use edit_plan::DEFAULT_IMAGE_DURATION;
 pub use error::AppError;
 pub use frame_renders::{FrameRenderService, FrameRenderSpec};
 pub use jobs::{JobAttempt, JobPriority, JobQueue, JobQueueConfig, JobRequest, JobWork};
-pub use media_service::{AssetFiles, MediaService, MediaServiceDeps};
+pub use media_service::{AssetFiles, ImportListener, MediaService, MediaServiceDeps};
 pub use project_actor::{
     ActorDeps, AiCommit, ChangesetItems, DEFAULT_SAVE_DELAY, ProjectActorHandle, ProjectView,
 };
@@ -67,3 +68,4 @@ pub use project_service::{
     track_labels, transition_labels,
 };
 pub use tasks::{TaskService, TaskServiceDeps};
+pub use transcription::{TranscriptionService, TranscriptionServiceDeps};

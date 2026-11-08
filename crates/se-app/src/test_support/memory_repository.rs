@@ -14,10 +14,11 @@ use super::{
     lock,
     memory_changesets::{StoredChangeset, apply_write, open_changesets},
     memory_tasks::InMemoryTaskStore,
+    memory_transcripts::InMemoryTranscriptStore,
 };
 use crate::ports::{
     AnalysisStore, ChangesetWrite, JournalEntry, ProjectRepository, ProjectStore, StorageError,
-    StoredAnalysis, TaskStore,
+    StoredAnalysis, StoredTranscript, TaskStore, TranscriptStore,
 };
 
 /// One fake project folder.
@@ -39,6 +40,8 @@ pub struct StoredFolder {
     pub task_events: BTreeMap<TaskId, Vec<TaskEventRecord>>,
     /// AI changesets saved in its database, open or reverted, in creation order.
     pub changesets: Vec<StoredChangeset>,
+    /// Transcripts saved in its database.
+    pub transcripts: BTreeMap<AssetId, StoredTranscript>,
 }
 
 #[derive(Debug, Default)]
@@ -70,6 +73,7 @@ impl InMemoryProjectRepository {
                 tasks: Vec::new(),
                 task_events: BTreeMap::new(),
                 changesets: Vec::new(),
+                transcripts: BTreeMap::new(),
             },
         );
     }
@@ -103,6 +107,14 @@ impl InMemoryProjectRepository {
             folder
                 .analyses
                 .insert((analysis.asset_id, analysis.result.kind()), analysis);
+        }
+    }
+
+    /// Stores a transcript in the folder at `path` (replacing the asset's previous one); nothing
+    /// happens when no folder is there.
+    pub fn set_transcript(&self, path: impl AsRef<Path>, transcript: StoredTranscript) {
+        if let Some(folder) = lock(&self.state).folders.get_mut(path.as_ref()) {
+            folder.transcripts.insert(transcript.asset_id, transcript);
         }
     }
 
@@ -285,6 +297,13 @@ impl ProjectStore for InMemoryProjectStore {
 
     fn tasks(&self) -> Arc<dyn TaskStore> {
         Arc::new(InMemoryTaskStore::new(
+            self.repository.clone(),
+            self.path.clone(),
+        ))
+    }
+
+    fn transcripts(&self) -> Arc<dyn TranscriptStore> {
+        Arc::new(InMemoryTranscriptStore::new(
             self.repository.clone(),
             self.path.clone(),
         ))

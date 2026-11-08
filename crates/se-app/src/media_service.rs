@@ -105,11 +105,21 @@ pub struct AssetFiles {
     pub proxy: Option<PathBuf>,
 }
 
+/// Told about every import, after its assets were committed and their jobs queued (automatic
+/// transcription, prompt 21). Must not call back into the media service.
+#[async_trait]
+pub trait ImportListener: Send + Sync {
+    /// `assets` were just imported into the project of `handle`.
+    async fn assets_imported(&self, handle: &ProjectActorHandle, assets: &[AssetId]);
+}
+
 /// The media use cases.
 pub struct MediaService {
     deps: MediaServiceDeps,
     /// Open projects, as told by [`ProjectObserver`] calls.
     open: Mutex<HashMap<ProjectId, ProjectActorHandle>>,
+    /// Told about imports.
+    import_listeners: Mutex<Vec<Arc<dyn ImportListener>>>,
 }
 
 impl MediaService {
@@ -119,7 +129,24 @@ impl MediaService {
         Self {
             deps,
             open: Mutex::new(HashMap::new()),
+            import_listeners: Mutex::new(Vec::new()),
         }
+    }
+
+    /// Tells `listener` about every later import.
+    pub fn add_import_listener(&self, listener: Arc<dyn ImportListener>) {
+        self.import_listeners
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(listener);
+    }
+
+    /// The import listeners, copied out of their lock.
+    fn import_listeners(&self) -> Vec<Arc<dyn ImportListener>> {
+        self.import_listeners
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
     }
 
     fn registry(&self) -> MutexGuard<'_, HashMap<ProjectId, ProjectActorHandle>> {
