@@ -22,6 +22,14 @@ export {
 export type { PlaybackPrefetchStats, PreviewPlayback } from './playback-prefetcher';
 export { prefetchSpans, type PrefetchSpan } from './prefetch-plan';
 export { createPreviewEngine } from './preview-engine';
+export {
+  STILL_JPEG_QUALITY,
+  createStillRenderer,
+  createStillRendererWith,
+  type Still,
+  type StillRenderer,
+  type StillRendererOptions,
+} from './still-renderer';
 export type { CompositorBackground, RenderCanvas } from '../composite/compositor';
 export type { DecoderPoolStats } from '../decode/decoder-pool';
 export type { MediaLocator, MediaVariant } from '../decode/media-variant';
