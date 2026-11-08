@@ -363,7 +363,7 @@ Decisions: ADR-0007 (sidecars, mezzanines), ADR-0018 (import, jobs, cache) and A
 - **Settings** (`library.db`, `MediaService::media_settings` / `update_media_settings`): `media.mezzanineQuality` (CRF 8–28, default 14), `media.proxyResolution`, `media.autoProxies`, `media.toolsDir` (applied at once to the shared `ToolLocator`), `media.decoders.*` (capabilities).
 - Decode source selection (prompts 12/13): `playbackSource` (original or mezzanine); preview may switch to the proxy.
 - **`/media/fonts/{id}`** (se-core, ADR-0025): a face of the font catalogue (bundled faces from memory, installed ones through `ServeFile`), 404 for unknown ids.
-- **`/media` routes** (se-core, token as `?t=`): `/media/assets/{id}/original`, `/thumbnails` (JSON), `/thumbnails/sheet`, `/thumbnails/poster`, `/peaks/{256|1024|4096}`, `/mezzanine`, `/proxy` (ready ones only); Range (206/416), `HEAD`, conditional requests, `Cache-Control: no-cache`; 404 for unknown assets and outputs not generated yet. Later: `/media/renders/{job}` (upload of rendered chunks).
+- **`/media` routes** (se-core, token as `?t=`): `/media/assets/{id}/original`, `/thumbnails` (JSON), `/thumbnails/sheet`, `/thumbnails/poster`, `/peaks/{256|1024|4096}`, `/mezzanine`, `/proxy` (ready ones only); Range (206/416), `HEAD`, conditional requests, `Cache-Control: no-cache`; 404 for unknown assets and outputs not generated yet; CORS for reads from the renderer's origin (`file://` packaged, the Vite dev server in development: the engine reads media with `fetch`). Later: `/media/renders/{job}` (upload of rendered chunks).
 
 ## 8. Rendering engine (`@se/engine`)
 

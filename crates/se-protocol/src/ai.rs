@@ -189,6 +189,9 @@ pub enum AgentFailureKind {
     ProtocolError,
     /// The core stopped while the run was queued or running (set when the project reopens).
     Interrupted,
+    /// The CLI refused the options the app runs it with: the program used adds incompatible
+    /// options of its own (a wrapper script, a configuration). Choosing the CLI itself fixes it.
+    Misconfigured,
 }
 
 /// What an agent run reports, in order. A run ends with exactly one [`AgentEvent::Completed`]

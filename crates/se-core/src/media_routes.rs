@@ -12,7 +12,8 @@
 //! | `GET /media/assets/{id}/mezzanine` | the mezzanine, once ready (type from its extension) |
 //! | `GET /media/assets/{id}/proxy` | the proxy, once ready |
 //!
-//! 404 when no open project has the asset, or the file does not exist (yet).
+//! 404 when no open project has the asset, or the file does not exist (yet). CORS for reads from
+//! the renderer's origin (`media_cors`).
 
 use std::{path::PathBuf, sync::Arc};
 
@@ -33,6 +34,8 @@ use se_media::{
 use tower::ServiceExt;
 use tower_http::services::ServeFile;
 
+use crate::media_cors::read_only_cors;
+
 /// The `/media` router over the media use cases.
 pub fn routes(media: Arc<MediaService>) -> Router {
     Router::new()
@@ -46,6 +49,7 @@ pub fn routes(media: Arc<MediaService>) -> Router {
         .route("/media/assets/{id}/peaks/{level}", get(peaks))
         .route("/media/assets/{id}/mezzanine", get(mezzanine))
         .route("/media/assets/{id}/proxy", get(proxy))
+        .layer(read_only_cors())
         .with_state(media)
 }
 
@@ -254,6 +258,44 @@ mod tests {
 
         let beyond = get(&router, &uri, Some("bytes=5000-6000")).await;
         assert_eq!(beyond.status(), StatusCode::RANGE_NOT_SATISFIABLE);
+    }
+
+    #[tokio::test]
+    async fn the_renderer_reads_media_from_another_origin() {
+        let dir = tempfile::tempdir().unwrap();
+        let (router, asset, _projects) = router_with_asset(dir.path()).await;
+        let uri = format!("/media/assets/{asset}/original");
+        // The dev server's page asks with a Range header (Mediabunny pages through files).
+        let preflight = HttpRequest::builder()
+            .method("OPTIONS")
+            .uri(&uri)
+            .header(header::ORIGIN, "http://localhost:5173")
+            .header(header::ACCESS_CONTROL_REQUEST_METHOD, "GET")
+            .header(header::ACCESS_CONTROL_REQUEST_HEADERS, "range")
+            .body(Body::empty())
+            .unwrap();
+        let answer = router.clone().oneshot(preflight).await.unwrap();
+        assert_eq!(answer.status(), StatusCode::OK);
+        assert_eq!(
+            answer.headers()[header::ACCESS_CONTROL_ALLOW_ORIGIN],
+            "http://localhost:5173"
+        );
+        let request = HttpRequest::get(&uri)
+            .header(header::ORIGIN, "http://localhost:5173")
+            .header(RANGE, "bytes=0-9")
+            .body(Body::empty())
+            .unwrap();
+        let part = router.clone().oneshot(request).await.unwrap();
+        assert_eq!(part.status(), StatusCode::PARTIAL_CONTENT);
+        assert_eq!(
+            part.headers()[header::ACCESS_CONTROL_ALLOW_ORIGIN],
+            "http://localhost:5173"
+        );
+        let exposed = part.headers()[header::ACCESS_CONTROL_EXPOSE_HEADERS]
+            .to_str()
+            .unwrap()
+            .to_ascii_lowercase();
+        assert!(exposed.contains("content-range"), "{exposed}");
     }
 
     #[tokio::test]

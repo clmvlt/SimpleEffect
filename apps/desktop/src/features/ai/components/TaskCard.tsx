@@ -98,7 +98,16 @@ export function TaskCard({ task, focusNonce }: TaskCardProps) {
             />
           )
         }
-        error={task.status.kind === 'failed' ? t(`ai.failure.${task.status.failure}`) : undefined}
+        error={
+          task.status.kind === 'failed' ? (
+            <>
+              {t(`ai.failure.${task.status.failure}`)}
+              <span data-failure-detail="" className="mt-1 block text-2xs break-words opacity-80">
+                {task.status.message}
+              </span>
+            </>
+          ) : undefined
+        }
         cost={
           hasUsage(task.usage)
             ? usage.cost === null

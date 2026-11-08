@@ -25,6 +25,11 @@ const AUTH_PHRASES: &[&str] = &[
     "please log in",
 ];
 
+/// The CLI refusing our isolation flags because the program run adds its own permission options
+/// (2.1.319 through a user's `claude.cmd` wrapper adding `--allow-dangerously-skip-permissions`:
+/// `Error: bypassPermissions not supported in restricted mode`, stderr only, exit 1).
+const MISCONFIGURED_PHRASES: &[&str] = &["not supported in restricted mode"];
+
 /// `--resume` of a session the CLI does not have (2.1.319: `No conversation found with session
 /// ID: <id>`, on stderr and in the `result` line's `errors`).
 const LOST_SESSION: &str = "no conversation found";
@@ -53,6 +58,11 @@ fn classify(message: &str) -> AgentFailureKind {
         AgentFailureKind::RateLimited
     } else if AUTH_PHRASES.iter().any(|phrase| lower.contains(phrase)) {
         AgentFailureKind::NotAuthenticated
+    } else if MISCONFIGURED_PHRASES
+        .iter()
+        .any(|phrase| lower.contains(phrase))
+    {
+        AgentFailureKind::Misconfigured
     } else {
         AgentFailureKind::Crashed
     }
@@ -68,6 +78,11 @@ fn explain(failure: AgentFailureKind, detail: &str, context: Option<&str>) -> St
         AgentFailureKind::NotAuthenticated => format!(
             "Claude Code is not logged in ({detail}): open a terminal, run `claude`, then type \
              `/login`, and retry the task"
+        ),
+        AgentFailureKind::Misconfigured => format!(
+            "Claude Code refused the options SimpleEffect runs it with ({detail}): the program \
+             used adds options of its own, often a wrapper script found on the PATH; choose the \
+             claude executable itself in Settings → AI (CLI location), then retry the task"
         ),
         _ if lower.contains(LOST_SESSION) => format!(
             "the agent session to resume no longer exists ({detail}): retry the task, or submit \
@@ -104,6 +119,18 @@ mod tests {
         let (kind, message) = kind_and_message(&login);
         assert_eq!(kind, AgentFailureKind::NotAuthenticated);
         assert!(message.contains("open a terminal"));
+    }
+
+    #[test]
+    fn a_wrapper_adding_permission_options_is_a_configuration_problem() {
+        // Recorded on Windows through a `claude.cmd` adding --allow-dangerously-skip-permissions.
+        let refused = failed(
+            "Error: bypassPermissions not supported in restricted mode",
+            Some("Claude Code stopped (exit code: 1)"),
+        );
+        let (kind, message) = kind_and_message(&refused);
+        assert_eq!(kind, AgentFailureKind::Misconfigured);
+        assert!(message.contains("Settings → AI"), "{message}");
     }
 
     #[test]
