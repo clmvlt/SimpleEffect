@@ -16,11 +16,13 @@ import { useTranslation } from 'react-i18next';
 import { useAiSettings } from '../hooks/use-ai-settings';
 import { useMediaSettings } from '../hooks/use-media-settings';
 import { useProjectCache } from '../hooks/use-project-cache';
-import type { SettingsSection } from '../store/settings-dialog-store';
+import { useTranscriptionSettings } from '../hooks/use-transcription-settings';
+import { settingsSectionOf, type SettingsSection } from '../store/settings-dialog-store';
 import { AiSettingsSection } from './AiSettingsSection';
 import { MediaSettingsSection } from './MediaSettingsSection';
 import { ProjectCacheSection } from './ProjectCacheSection';
 import { ToolsSection } from './ToolsSection';
+import { TranscriptionSettingsSection } from './TranscriptionSettingsSection';
 
 /** Props of {@link SettingsDialog}. */
 export interface SettingsDialogProps {
@@ -35,8 +37,8 @@ export interface SettingsDialogProps {
 
 /**
  * « Réglages »: app preferences by section — Médias (derived copies, ffmpeg tools, the open
- * project's cache) and IA (the AI CLI, its login, task defaults). Changes are saved as they are
- * made.
+ * project's cache), IA (the AI CLI, its login, task defaults) and Transcription (whisper.cpp, GPU,
+ * models, options; loaded only while shown). Changes are saved as they are made.
  */
 export function SettingsDialog({
   open,
@@ -49,6 +51,7 @@ export function SettingsDialog({
   const media = useMediaSettings(open);
   const ai = useAiSettings(open);
   const cache = useProjectCache(projectId, open);
+  const transcription = useTranscriptionSettings(open && section === 'transcription');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg" closeLabel={t('common.close')}>
@@ -59,12 +62,13 @@ export function SettingsDialog({
         <Tabs
           value={section}
           onValueChange={(value) => {
-            onSectionChange(value === 'ai' ? 'ai' : 'media');
+            onSectionChange(settingsSectionOf(value));
           }}
         >
           <TabsList variant="underline">
             <TabsTrigger value="media">{t('settings.sections.media')}</TabsTrigger>
             <TabsTrigger value="ai">{t('settings.sections.ai')}</TabsTrigger>
+            <TabsTrigger value="transcription">{t('settings.sections.transcription')}</TabsTrigger>
           </TabsList>
           <TabsContent
             value="media"
@@ -91,6 +95,18 @@ export function SettingsDialog({
               </div>
             ) : (
               <AiSettingsSection settings={ai.settings} onSave={ai.save} />
+            )}
+          </TabsContent>
+          <TabsContent
+            value="transcription"
+            className="flex max-h-[60vh] flex-col gap-4 overflow-auto pt-3"
+          >
+            {transcription.status === null ? (
+              <div className="flex justify-center py-8">
+                <Spinner size="lg" label={t('settings.media.checking')} />
+              </div>
+            ) : (
+              <TranscriptionSettingsSection status={transcription.status} actions={transcription} />
             )}
           </TabsContent>
         </Tabs>

@@ -1,4 +1,4 @@
-import { CoreRequestError, type ErrorCode } from '@se/protocol';
+import { CoreRequestError, type DomainErrorCode, type ErrorCode } from '@se/protocol';
 
 /**
  * Every protocol error code. `ErrorCodesCovered` below fails to compile when a code is added in
@@ -42,11 +42,18 @@ export const ERROR_CODES = [
   'RENDER_REQUEST_NOT_FOUND',
   'OUT_OF_SCOPE',
   'NOTHING_TO_REVERT',
+  'TRANSCRIPTION_UNAVAILABLE',
+  'NO_TRANSCRIPTION_MODEL',
+  'TRANSCRIPTION_TARGET_NOT_FOUND',
+  'INVALID_MODEL_FILE',
+  'DOWNLOAD_FAILED',
+  'NO_SPEECH_STREAM',
 ] as const satisfies readonly ErrorCode[];
 
 /**
- * Domain codes (`details.domainCode` of `EDIT_REJECTED`) common enough in timeline edits to get
- * their own message (`errors.edit.<CODE>`); others use the generic `errors.EDIT_REJECTED`.
+ * Domain codes (`details.domainCode` of `EDIT_REJECTED`) common enough in edits to get their own
+ * message (`errors.edit.<CODE>`); others use the generic `errors.EDIT_REJECTED`. The transcript
+ * panel's language and vocabulary (`setTranscriptionSettings`) are checked by the domain too.
  */
 export const EDIT_DETAIL_CODES = [
   'OVERLAPPING_ITEMS',
@@ -55,7 +62,8 @@ export const EDIT_DETAIL_CODES = [
   'INVALID_EDIT_POINT',
   'FRAME_RATE_LOCKED',
   'LAST_SEQUENCE',
-] as const;
+  'INVALID_TRANSCRIPTION_SETTINGS',
+] as const satisfies readonly DomainErrorCode[];
 
 /** A domain code with its own message. */
 export type EditDetailCode = (typeof EDIT_DETAIL_CODES)[number];
