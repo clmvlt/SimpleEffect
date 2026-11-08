@@ -138,8 +138,8 @@ fn note(nothing: bool, untranscribed: &[AssetRef], unanalysed: &[AssetRef]) -> O
     }
     if !untranscribed.is_empty() {
         parts.push(
-            "some media are not transcribed: ask the user to transcribe them (« Transcrire » in \
-             the media bin)"
+            "some media are not transcribed: transcribe them with transcribe_media, then cut \
+             again"
                 .to_owned(),
         );
     }

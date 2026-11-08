@@ -174,7 +174,7 @@ fn nothing_spoken(range: TimeRange, all_transcribed: bool) -> String {
     } else {
         format!(
             "no transcribed word {place}: the media listed in `untranscribed` must be \
-             transcribed first (ask the user to transcribe them)"
+             transcribed first (transcribe_media)"
         )
     }
 }

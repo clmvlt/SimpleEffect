@@ -1,0 +1,88 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Transcribes media that have no transcript yet (locally, with the user's installed speech model), then waits up to wait_seconds (default 90) for the result. Default media: those played by the sound clips of your task's range, else the whole sequence; or give asset_ids. Already transcribed media cost nothing; failed ones are tried again. Use it when get_transcript lists untranscribed media you need. finished=false: call it again with the same arguments to keep waiting. Changes no item of the timeline.",
+  "inputSchema": {
+    "$defs": {
+      "RangeInput": {
+        "additionalProperties": false,
+        "description": "A range given by an agent; the end is excluded.",
+        "properties": {
+          "end": {
+            "$ref": "#/$defs/Time",
+            "description": "End of the range (excluded), after `start`."
+          },
+          "start": {
+            "$ref": "#/$defs/Time",
+            "description": "First instant of the range."
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "type": "object"
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "asset_ids": {
+        "description": "Ids of the media (assets) to transcribe, as `list_assets` or `get_transcript`'s\n`untranscribed` give them; default: the media played by the sound clips of `range`.",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "range": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/RangeInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "A range of the sequence whose sound clips' media are transcribed (ignored with\n`asset_ids`); default: your task's range, else the whole sequence."
+      },
+      "sequence": {
+        "description": "Sequence id or exact name; default: your task's sequence.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "wait_seconds": {
+        "description": "Seconds to wait for the transcriptions to finish (default 90, at most 110; 0 starts them\nand answers at once).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "name": "transcribe_media"
+}

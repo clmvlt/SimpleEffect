@@ -26,8 +26,12 @@ pub trait McpTool: Send + Sync + 'static {
     /// What it does and when to use it, for the agent.
     const DESCRIPTION: &'static str;
 
-    /// Whether the tool only reads (`false` for write tools: annotated destructive).
+    /// Whether the tool only reads (`false` for write tools).
     const READ_ONLY: bool = true;
+
+    /// Whether the tool may remove or overwrite what is there (write tools); `false` for tools
+    /// that only add facts next to the project, like `transcribe_media`.
+    const DESTRUCTIVE: bool = !Self::READ_ONLY;
 
     /// Runs the tool.
     fn call(
@@ -58,7 +62,7 @@ impl ToolEntry {
         definition.annotations = Some(
             ToolAnnotations::new()
                 .read_only(T::READ_ONLY)
-                .destructive(!T::READ_ONLY)
+                .destructive(T::DESTRUCTIVE)
                 .open_world(false),
         );
         let handler: Handler = Arc::new(|context, arguments| {
