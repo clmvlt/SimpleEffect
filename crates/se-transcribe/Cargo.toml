@@ -10,6 +10,28 @@ repository.workspace = true
 [dependencies]
 se-app = { workspace = true }
 se-domain = { workspace = true }
+# The backend DTO the transcriber reports.
+se-protocol = { workspace = true }
+async-trait = { workspace = true }
+hex = { workspace = true }
+process-wrap = { workspace = true }
+reqwest = { workspace = true }
+rustls = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+tokio = { workspace = true, features = ["fs", "io-util", "macros", "process", "rt", "sync", "time"] }
+tracing = { workspace = true }
+which = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true }
+
+[dev-dependencies]
+se-app = { workspace = true, features = ["test-support"] }
+se-domain = { workspace = true, features = ["test-support"] }
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["fs", "io-util", "macros", "process", "rt", "rt-multi-thread", "sync", "time"] }
 
 [lints]
 workspace = true
