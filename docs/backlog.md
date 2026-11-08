@@ -53,6 +53,7 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Task UX (prompt 20): user edits are flagged from upserted items only (an item the user deletes inside a running task's scope sets no mark); time phrases are French only; drawing a scope directly on the timeline (Alt+drag) and per-run usage in the log would help; a revert's dialog could select the items it keeps.
 
 ## Audio
+- Transcription (prompt 21): speaker identification (diarization); a Linux CUDA build (today the user's own build through « Dossier de whisper.cpp »); a Vulkan build for AMD/Intel GPUs; bundling the Visual C++ runtime next to whisper-cli on Windows; DTW alignment for imported models (alignment heads detected from the model's header); word bounds refined from the waveform when voice detection is off; transcribing only a range of a long file; checking the macOS cmake build and Metal on a Mac and in a release run.
 - Local noise reduction / voice enhancement (e.g. RNNoise or a small ONNX model).
 - Loudness normalisation to platform targets (-14 LUFS YouTube, etc.) on export.
 - Local text-to-speech for voice-overs.

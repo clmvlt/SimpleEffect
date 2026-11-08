@@ -17,7 +17,7 @@ This codebase is developed and maintained by AI agents. Optimise every change fo
 
 ## Golden rules (non-negotiable)
 
-1. **Local only.** No network access at runtime except the AI CLI process itself and explicit, user-approved model downloads. No telemetry, no CDN: fonts, icons and models are bundled or stored locally.
+1. **Local only.** No network access at runtime except the AI CLI process itself and explicit, user-approved downloads of transcription models and of the GPU pack (ADR-0031; size and source shown first, SHA-256 checked, only through se-transcribe). No telemetry, no CDN: fonts, icons and models are bundled or stored locally.
 2. **Agents never touch files.** AI agents act only through MCP tools → se-app use cases → `ProjectActor`. Agents are always launched with no built-in tools (`--tools ""` for Claude Code).
 3. **Provider-agnostic AI.** Only `crates/se-agents/src/providers/<provider>/` may know which AI CLI is used. Everything else uses the `AgentProvider` trait and `AgentEvent`.
 4. **Single writer.** A `Project` is mutated only by `ProjectActor` applying `Operation`s inside `Transaction`s. No other code mutates document state, in Rust or in TypeScript.
@@ -37,7 +37,7 @@ This codebase is developed and maintained by AI agents. Optimise every change fo
 | `crates/se-app` | Use cases, ports (traits), ProjectActor, JobQueue, TaskScheduler | No concrete IO; fakes behind `test-support` feature |
 | `crates/se-store` | Project folder, `project.json`, SQLite | Implements repository ports |
 | `crates/se-media` | ffprobe/ffmpeg jobs and analysis | Sidecar processes only |
-| `crates/se-transcribe` | whisper.cpp adapter | Implements `Transcriber` |
+| `crates/se-transcribe` | whisper.cpp adapter, model files, consented HTTPS downloads | Implements `Transcriber`, `FileDownloader`, `ModelFiles`; the only crate reaching the network |
 | `crates/se-vision` | ONNX face/subject detection | Implements `SubjectDetector` |
 | `crates/se-fonts` | Font catalogue: bundled fonts (embedded) + installed fonts (`fontdb`) | Implements `FontCatalog` |
 | `crates/se-agents` | AI CLI providers, stream parsing | Only place that knows a CLI |
@@ -75,7 +75,7 @@ Adapters depend on `se-app` and `se-domain`, never on each other. `se-core` depe
 | `pnpm generate-test-project` | Write a valid 500-item project with generated media into `target/test-projects/` (`--items`, `--out`, `--name`, `--seed`; needs `pnpm fetch-binaries`) for timeline and performance work |
 | `pnpm exec playwright install chromium` | Once per machine: the headless Chromium of the engine's golden-frame tests (Vitest browser mode, project `engine-browser`, part of `pnpm test`/`pnpm check`) |
 | `node scripts/generate-golden-fixtures.mjs` | Rewrite the engine's committed golden-frame media fixtures with the pinned ffmpeg; `SE_UPDATE_GOLDEN=1 pnpm vitest run --project engine-browser` rewrites the reference PNGs (look at each before committing) |
-| `pnpm fetch-binaries` | Download the pinned ffmpeg/ffprobe builds (`scripts/binaries.manifest.json`, SHA-256 checked) into `resources/bin/<platform>/`; asks first (`--yes` for CI, `--platform <key>`, `--all`). Whisper arrives with prompt 21 |
+| `pnpm fetch-binaries` | Download the pinned ffmpeg/ffprobe builds and whisper.cpp 1.9.5 (`scripts/binaries.manifest.json`, SHA-256 checked) into `resources/bin/<platform>/` (`whisper/` subfolder; macOS compiles whisper.cpp from the pinned sources with cmake); asks first (`--yes` for CI, `--platform <key>`, `--all`). Models and the Windows CUDA pack are downloaded by the app, never by this script |
 
 ## Code conventions
 
@@ -159,6 +159,9 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
 - **Golden frames need Chromium**: `pnpm check` fails with Playwright's « Executable doesn't exist » until `pnpm exec playwright install chromium` ran once (CI installs and caches it). They render with SwiftShader (software WebGL), so they do not depend on the GPU.
 - **AudioWorklet modules** (the level meter) are bundled with Vite's `?worker&url` and loaded from `'self'`: never from a `blob:` URL (the CSP has no `blob:` in `script-src`). They run in the audio thread's scope: import only pure code.
 - **Binaries** (ffmpeg, ffprobe, whisper) are not committed: `pnpm fetch-binaries`. Tests needing ffmpeg skip themselves (with a message) when it is absent; CI fetches it (cached) so they run there.
+- **Whisper models are not in the repository**: the real-transcription test of se-transcribe uses `target/test-models/whisper/ggml-base.bin` (+ `ggml-silero-v6.2.0.bin`) or `SE_WHISPER_TEST_MODELS`, and skips without them (CI has none). Download them from the URLs of `crates/se-app/src/transcription/catalogue.rs` (SHA-256 there).
+- **whisper.cpp on Windows needs the Visual C++ runtime** (MSVCP140, VCOMP140): a missing DLL is reported as « Microsoft Visual C++ Redistributable 2015–2022 (x64) » to install.
+- **reqwest needs a TLS provider in this workspace** (rustls without a built-in provider, ring installed by `se_transcribe::install_crypto_provider()`): se-core calls it at startup; any test building a reqwest client (rmcp's) calls it first, or reqwest panics.
 - **A running app locks `target/debug/se-core.exe` on Windows**: close `pnpm dev` (or the test build) before `cargo test`, or it fails with « Accès refusé ».
 - **Never** log or persist AI CLI credentials or tokens; MCP task tokens are redacted in logs.
 - **TypeScript is pinned to 6.0.x**: TypeScript 7 (native) has no JS API, and `typescript-eslint` (typed lint) supports `<6.1`. Upgrade only when `typescript-eslint` supports 7.
