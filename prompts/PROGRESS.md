@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-08 — Prompt 22: Montage par le texte et coupes intelligentes — Done
 
-**Branch**: `feature/22-montage-texte`, merged into `dev` (merge commit recorded after the merge)
+**Branch**: `feature/22-montage-texte`, merged into `dev` at `568ca31`
 
 **Done**
 - se-domain (ADR-0032): the operation `RippleDeleteRanges { sequence, ranges, tracks, splitIds: {item: [ids]} }` — several sorted, apart ranges removed in one pass, one snapshot per changed item in the inverse (sequential `RippleDeleteRange`s would record ranges × items) — with `remaining_parts` and `DomainError::RangesNotInOrder`; property test: equal to single ripple deletes applied from the last range. `LevelEnvelope` (RMS of 20 ms windows in whole dB below full scale, `silences(settings, source)`) in `AudioAnalysis.levels`; `AnalysisResult::is_outdated`.
