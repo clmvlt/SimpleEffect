@@ -1,5 +1,6 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
+import type { ChangesetId } from "./ChangesetId";
 import type { EffortLevel } from "./EffortLevel";
 import type { ProjectId } from "./ProjectId";
 import type { ProviderId } from "./ProviderId";
@@ -59,4 +60,9 @@ updatedAt: number,
 /**
  * Its runs, oldest first (never empty).
  */
-runs: Array<TaskRun>, };
+runs: Array<TaskRun>, 
+/**
+ * The changeset holding its edits since it started or was last reverted (`null` while it
+ * changed nothing). Created by its first edit (prompt 19).
+ */
+changesetId: ChangesetId | null, };

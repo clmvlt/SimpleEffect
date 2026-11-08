@@ -21,12 +21,15 @@ mod tracks;
 mod transitions;
 mod trims;
 
+pub(crate) use graphics::top_video_index;
 pub use graphics::{animation_preset_infos, graphic_track};
 pub use items::labels as item_labels;
 pub use markers::labels as marker_labels;
 pub use observer::ProjectObserver;
 pub use sequences::sequence_labels;
 pub use tracks::labels as track_labels;
+pub(crate) use tracks::next_track_name;
+pub(crate) use transitions::asset_duration;
 pub use transitions::labels as transition_labels;
 
 use std::{path::PathBuf, sync::Arc, time::Duration};
@@ -89,7 +92,10 @@ impl ProjectService {
     }
 
     /// The actor of an open project.
-    async fn handle(&self, project_id: ProjectId) -> Result<ProjectActorHandle, AppError> {
+    pub(crate) async fn handle(
+        &self,
+        project_id: ProjectId,
+    ) -> Result<ProjectActorHandle, AppError> {
         self.open
             .lock()
             .await

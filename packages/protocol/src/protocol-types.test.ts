@@ -79,6 +79,7 @@ describe('derived protocol types', () => {
       | 'retryTask'
       | 'followUpTask'
       | 'listTasks'
+      | 'revertTask'
       | 'getTaskEvents'
       | 'getAiStatus'
       | 'refreshAiStatus'
@@ -116,6 +117,7 @@ describe('derived protocol types', () => {
       | 'jobCancelled'
       | 'taskUpdated'
       | 'taskEventAppended'
+      | 'taskChangesetUpdated'
       | 'aiStatusChanged'
       | 'renderFramesRequested'
     >();

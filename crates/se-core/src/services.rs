@@ -6,9 +6,9 @@ use std::{path::PathBuf, sync::Arc};
 
 use se_agents::{FsAgentWorkspaces, providers::claude_code::ClaudeCodeProvider};
 use se_app::{
-    DEFAULT_SAVE_DELAY, FrameRenderService, JobQueue, JobQueueConfig, McpAccess, MediaService,
-    MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps, TaskService,
-    TaskServiceDeps, TaskTokenRegistry,
+    AgentEditService, DEFAULT_SAVE_DELAY, FrameRenderService, JobQueue, JobQueueConfig, McpAccess,
+    MediaService, MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps,
+    TaskService, TaskServiceDeps, TaskTokenRegistry,
     media_service::settings::keys::TOOLS_DIR,
     ports::{AppLibraryRepository, FontCatalog, IdGenerator},
 };
@@ -31,6 +31,8 @@ pub struct Services {
     pub media: Arc<MediaService>,
     /// AI tasks, the AI provider's status and the AI settings.
     pub tasks: Arc<TaskService>,
+    /// Edits of AI agents (MCP write tools), committed as AI transactions.
+    pub edits: Arc<AgentEditService>,
     /// Bundled and installed fonts (`listFonts`, `/media/fonts`).
     pub fonts: Arc<dyn FontCatalog>,
     /// Frames of sequences drawn by the renderer for agents (`get_frames`, `/media/renders`).
@@ -75,13 +77,21 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         default_parent_dir: paths.default_projects_dir(),
         save_delay: DEFAULT_SAVE_DELAY,
     };
-    let projects = ProjectService::new(deps, config)
-        .with_observer(media.clone())
-        .with_observer(tasks.clone());
+    let projects = Arc::new(
+        ProjectService::new(deps, config)
+            .with_observer(media.clone())
+            .with_observer(tasks.clone()),
+    );
+    let edits = Arc::new(AgentEditService::new(
+        Arc::clone(&projects),
+        tasks.as_ref().clone(),
+        Arc::new(UuidV7Ids),
+    ));
     Ok(Services {
-        projects: Arc::new(projects),
+        projects,
         media,
         tasks,
+        edits,
         fonts: font_catalog(),
         renders,
         tokens,

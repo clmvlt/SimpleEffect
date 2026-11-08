@@ -3,12 +3,15 @@
 
 use std::sync::Arc;
 
-use se_app::{AgentContext, FrameRenderService, MediaService, ProjectService, TaskTokenRegistry};
+use se_app::{
+    AgentContext, AgentEditService, FrameRenderService, MediaService, ProjectService,
+    TaskTokenRegistry,
+};
 use se_domain::{Asset, Flicks, Item, Project, Sequence, TimeRange, Track};
 
 use crate::output::{ToolError, codes};
 
-/// The se-app services tools call (read-only in prompt 18).
+/// The se-app services tools call.
 #[derive(Clone)]
 pub struct McpDeps {
     /// Open projects (the current document).
@@ -19,6 +22,8 @@ pub struct McpDeps {
     pub renders: Arc<FrameRenderService>,
     /// Tokens of running agents: who is calling.
     pub tokens: Arc<TaskTokenRegistry>,
+    /// Edits of agents: the only way write tools change a project.
+    pub edits: Arc<AgentEditService>,
 }
 
 /// One tool call: the services and the calling run.

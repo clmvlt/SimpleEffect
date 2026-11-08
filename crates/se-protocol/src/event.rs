@@ -1,6 +1,6 @@
 //! Events pushed by `se-core` to its clients.
 
-use se_domain::{ProjectId, TaskId};
+use se_domain::{ChangesetId, ItemId, ProjectId, TaskId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -82,6 +82,18 @@ pub enum CoreEvent {
         task_id: TaskId,
         /// The new entry of its log.
         event: TaskEventRecord,
+    },
+    /// An AI task's changeset changed (an edit of the task was committed, or the task was
+    /// reverted): the UI highlights `touchedItems`.
+    TaskChangesetUpdated {
+        /// The task's project.
+        project_id: ProjectId,
+        /// The task.
+        task_id: TaskId,
+        /// Its open changeset (`null` once reverted).
+        changeset_id: Option<ChangesetId>,
+        /// The items the task added or changed that still exist, in id order.
+        touched_items: Vec<ItemId>,
     },
     /// What is known about the AI provider changed (installed, logged in or out…).
     AiStatusChanged(AiStatus),

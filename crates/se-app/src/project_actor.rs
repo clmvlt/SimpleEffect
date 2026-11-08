@@ -8,7 +8,13 @@
 //! [`se_protocol::CoreEvent::HistoryChanged`]); the snapshot is saved
 //! [`ActorDeps::save_delay`] after the last commit and when the actor stops. Readers get an
 //! `Arc<Project>`, never a lock.
+//!
+//! The actor also owns the open **changesets** of AI tasks (ADR-0005, ADR-0029): an edit of a
+//! task ([`ProjectActorHandle::apply_ai`]) is journaled together with its changeset entry in one
+//! atomic write, and [`ProjectActorHandle::revert_task`] undoes a task's changeset as one user
+//! transaction, reporting what conflicts.
 
+mod ai_edits;
 mod runner;
 
 use std::{
@@ -17,8 +23,8 @@ use std::{
     time::Duration,
 };
 
-use se_domain::{Project, ProjectId, Transaction};
-use se_protocol::HistoryState;
+use se_domain::{Changeset, ChangesetId, ItemId, Project, ProjectId, TaskId, Transaction};
+use se_protocol::{HistoryState, TaskRevertReport};
 use tokio::sync::{mpsc, oneshot};
 use tracing::Instrument;
 
@@ -55,11 +61,41 @@ pub struct ProjectView {
     pub history: HistoryState,
 }
 
+/// An AI task's edit, committed and recorded in the task's changeset.
+#[derive(Debug, Clone)]
+pub struct AiCommit {
+    /// The project's revision after the edit.
+    pub revision: u64,
+    /// The document right after the edit (later commits may already have followed).
+    pub project: Arc<Project>,
+    /// The items the edit added, changed or removed.
+    pub touched_items: Vec<ItemId>,
+    /// The task's open changeset.
+    pub changeset_id: ChangesetId,
+    /// Whether this edit created that changeset (the task's first edit since it started or was
+    /// reverted).
+    pub changeset_created: bool,
+}
+
 /// A message to the actor; every one carries the channel its answer goes to.
 enum Message {
     Apply {
         transaction: Transaction,
         reply: oneshot::Sender<Result<u64, AppError>>,
+    },
+    ApplyAi {
+        transaction: Transaction,
+        base_revision: Option<u64>,
+        reply: oneshot::Sender<Result<Option<AiCommit>, AppError>>,
+    },
+    RevertTask {
+        task_id: TaskId,
+        label: String,
+        reply: oneshot::Sender<Result<TaskRevertReport, AppError>>,
+    },
+    Changeset {
+        task_id: TaskId,
+        reply: oneshot::Sender<Option<Changeset>>,
     },
     Undo {
         reply: oneshot::Sender<Result<u64, AppError>>,
@@ -87,9 +123,15 @@ pub struct ProjectActorHandle {
 }
 
 impl ProjectActorHandle {
-    /// Starts the actor of `project`, persisted through `store` (already locked and loaded).
+    /// Starts the actor of `project` with the open `changesets` of its AI tasks, persisted
+    /// through `store` (already locked and loaded).
     #[must_use]
-    pub fn spawn(project: Project, store: Box<dyn ProjectStore>, deps: ActorDeps) -> Self {
+    pub fn spawn(
+        project: Project,
+        changesets: Vec<Changeset>,
+        store: Box<dyn ProjectStore>,
+        deps: ActorDeps,
+    ) -> Self {
         let (sender, inbox) = mpsc::channel(INBOX_CAPACITY);
         let handle = Self {
             project_id: project.id,
@@ -99,7 +141,7 @@ impl ProjectActorHandle {
             sender,
         };
         let span = tracing::info_span!("project_actor", project = %project.id);
-        tokio::spawn(runner::run(project, store, deps, inbox).instrument(span));
+        tokio::spawn(runner::run(project, changesets, store, deps, inbox).instrument(span));
         handle
     }
 
@@ -137,6 +179,72 @@ impl ProjectActorHandle {
     pub async fn apply(&self, transaction: Transaction) -> Result<u64, AppError> {
         self.ask(|reply| Message::Apply { transaction, reply })
             .await?
+    }
+
+    /// Commits `transaction`, an edit by an AI task (`Actor::AiTask`), and records it in the
+    /// task's open changeset (created by the task's first edit), journal and changeset in one
+    /// atomic write; then publishes `projectPatched` and `taskChangesetUpdated`.
+    ///
+    /// # Errors
+    /// The errors of [`ProjectActorHandle::apply`]; [`AppError::Internal`] for a transaction
+    /// that is not by an AI task.
+    pub async fn apply_ai(&self, transaction: Transaction) -> Result<AiCommit, AppError> {
+        self.ask(|reply| Message::ApplyAi {
+            transaction,
+            base_revision: None,
+            reply,
+        })
+        .await??
+        .ok_or_else(|| AppError::Internal("an unconditional AI edit was not applied".to_owned()))
+    }
+
+    /// Like [`ProjectActorHandle::apply_ai`], but only if the project is still at
+    /// `base_revision` (the state the edit was planned and scope-checked on); `None` when
+    /// another commit came first: plan again.
+    ///
+    /// # Errors
+    /// The errors of [`ProjectActorHandle::apply_ai`].
+    pub async fn apply_ai_on(
+        &self,
+        transaction: Transaction,
+        base_revision: u64,
+    ) -> Result<Option<AiCommit>, AppError> {
+        self.ask(|reply| Message::ApplyAi {
+            transaction,
+            base_revision: Some(base_revision),
+            reply,
+        })
+        .await?
+    }
+
+    /// Reverts the open changeset of `task_id` against the current document: what nobody
+    /// changed since is undone as one user transaction labelled `label` (undoable), the rest is
+    /// reported as conflicts. When something was undone, the changeset is closed.
+    ///
+    /// # Errors
+    /// [`AppError::NothingToRevert`] when the task has no open changeset; the errors of
+    /// [`ProjectActorHandle::apply`].
+    pub async fn revert_task(
+        &self,
+        task_id: TaskId,
+        label: &str,
+    ) -> Result<TaskRevertReport, AppError> {
+        let label = label.to_owned();
+        self.ask(|reply| Message::RevertTask {
+            task_id,
+            label,
+            reply,
+        })
+        .await?
+    }
+
+    /// The open changeset of `task_id`, if it has one.
+    ///
+    /// # Errors
+    /// [`AppError::ActorStopped`].
+    pub async fn changeset(&self, task_id: TaskId) -> Result<Option<Changeset>, AppError> {
+        self.ask(|reply| Message::Changeset { task_id, reply })
+            .await
     }
 
     /// Undoes the latest user transaction and returns the new revision.

@@ -1,7 +1,9 @@
 //! `project.db`: the operation journal, the analyses of assets (`analyses.rs`), the AI tasks and
-//! their event logs (`tasks.rs`), and tables later prompts fill (transcripts).
+//! their event logs (`tasks.rs`), the changesets of AI tasks (`changesets.rs`), and tables later
+//! prompts fill (transcripts).
 
 mod analyses;
+mod changesets;
 mod tasks;
 
 use std::path::{Path, PathBuf};
@@ -16,7 +18,7 @@ use crate::{
 };
 
 /// Schema migrations of `project.db` (see [`open_database`]). Append, never edit.
-const MIGRATIONS: &[&str] = &[SCHEMA_V1, SCHEMA_V2, SCHEMA_V3];
+const MIGRATIONS: &[&str] = &[SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4];
 
 /// Version 1. `op_journal` holds the transactions committed since the last snapshot. The other
 /// tables are created now so the schema has one history; their columns are refined by the
@@ -75,8 +77,30 @@ ALTER TABLE task_events ADD COLUMN run INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE task_events ADD COLUMN format_version INTEGER NOT NULL DEFAULT 1;
 ";
 
+/// Version 4 (prompt 19): the changesets of AI tasks. `changesets` holds one row per changeset
+/// (`reverted_at` set once reverted); `changeset_entries.payload` is a `se_domain::ChangesetEntry`
+/// (the transaction, its inverse and the revisions it left), versioned like the journal.
+const SCHEMA_V4: &str = "
+CREATE TABLE changesets (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    reverted_at INTEGER
+);
+CREATE INDEX changesets_by_task ON changesets (task_id);
+CREATE TABLE changeset_entries (
+    changeset_id TEXT NOT NULL REFERENCES changesets (id) ON DELETE CASCADE,
+    sequence INTEGER NOT NULL,
+    transaction_id TEXT NOT NULL,
+    format_version INTEGER NOT NULL,
+    payload TEXT NOT NULL,
+    PRIMARY KEY (changeset_id, sequence)
+);
+";
+
 /// Version of the JSON stored in `op_journal.payload` (the `Transaction` format, fixed by the
-/// insta snapshots of se-domain). Bump it, and migrate old entries, if that format changes.
+/// insta snapshots of se-domain), and of the transactions inside `changeset_entries.payload`.
+/// Bump it, and migrate old entries, if that format changes.
 const JOURNAL_FORMAT_VERSION: u32 = 1;
 
 /// An open `project.db`.
@@ -102,13 +126,23 @@ impl ProjectDatabase {
     /// # Errors
     /// IO errors, or an entry whose revision is already journaled.
     pub fn append(&self, entry: &JournalEntry) -> Result<(), StorageError> {
+        self.insert_journal_entry(&self.connection, entry)
+    }
+
+    /// Inserts one journal row through `connection` (the database's own, or one of its
+    /// transactions).
+    fn insert_journal_entry(
+        &self,
+        connection: &Connection,
+        entry: &JournalEntry,
+    ) -> Result<(), StorageError> {
         let payload =
             serde_json::to_string(&entry.transaction).map_err(|error| StorageError::Io {
                 action: "serialise a transaction for",
                 path: self.path.clone(),
                 reason: error.to_string(),
             })?;
-        self.connection
+        connection
             .execute(
                 "INSERT INTO op_journal (revision, transaction_id, committed_at, format_version, payload)
                  VALUES (?1, ?2, ?3, ?4, ?5)",

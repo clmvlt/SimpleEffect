@@ -1,7 +1,7 @@
 //! AI task DTOs (`docs/architecture.md` §9.3, ADR-0027): a task is a user request run by an AI
 //! agent in the background, possibly several times (retries, follow-ups), with its event log.
 
-use se_domain::{ProjectId, SequenceId, TaskId, TimeRange, TrackId};
+use se_domain::{ChangesetId, Conflict, ItemId, ProjectId, SequenceId, TaskId, TimeRange, TrackId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -102,6 +102,26 @@ pub struct Task {
     pub updated_at: i64,
     /// Its runs, oldest first (never empty).
     pub runs: Vec<TaskRun>,
+    /// The changeset holding its edits since it started or was last reverted (`null` while it
+    /// changed nothing). Created by its first edit (prompt 19).
+    #[serde(default)]
+    pub changeset_id: Option<ChangesetId>,
+}
+
+/// What reverting an AI task did ([`crate::Command::RevertTask`]).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskRevertReport {
+    /// The task.
+    pub task_id: TaskId,
+    /// Whether anything was undone: the revert is then one user transaction (undoable), and
+    /// the task's changeset is closed.
+    pub reverted: bool,
+    /// Items the revert restored, removed or put back.
+    pub reverted_items: Vec<ItemId>,
+    /// What stays as the task left it, and why (items changed by someone else since, edits that
+    /// no longer apply).
+    pub conflicts: Vec<Conflict>,
 }
 
 /// One entry of a task's event log.

@@ -233,7 +233,7 @@ pub fn graphic_track(sequence: &Sequence, range: TimeRange) -> Option<TrackId> {
 
 /// The index of a new top video track: right after the last video track (video tracks are listed
 /// bottom first).
-fn top_video_index(sequence: &Sequence) -> usize {
+pub(crate) fn top_video_index(sequence: &Sequence) -> usize {
     sequence
         .tracks
         .iter()

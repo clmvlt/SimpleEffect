@@ -24,6 +24,7 @@ fn task() -> Task {
         effort: None,
         status: TaskStatus::Running,
         agent_session_id: Some("6f1c2b8e-0d47-4bb8-9c4e-2a3d5e6f7a8b".to_owned()),
+        changeset_id: None,
         created_at: 1_700_000_000_000,
         updated_at: 1_700_000_000_500,
         runs: vec![TaskRun {

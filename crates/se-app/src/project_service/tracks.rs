@@ -147,7 +147,7 @@ fn track_name(kind: TrackKind, number: usize) -> String {
 
 /// The first `V<n>`/`A<n>` name not used by a track of `sequence`, counting from the number of
 /// tracks of that kind plus one (so a third video track is `V3` unless that name is taken).
-pub(super) fn next_track_name(sequence: &Sequence, kind: TrackKind) -> String {
+pub(crate) fn next_track_name(sequence: &Sequence, kind: TrackKind) -> String {
     let same_kind = sequence
         .tracks
         .iter()

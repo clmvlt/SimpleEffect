@@ -23,7 +23,9 @@
 //!   mezzanines, proxies, analyses, settings and the project cache.
 //! - [`media_policy`]: which mezzanine and proxy an asset needs (pure decisions).
 //! - [`tasks`]: [`TaskService`], AI tasks run in the background by an AI CLI (queue, concurrency
-//!   limit, cancellation, retries, follow-ups, persistence), the AI status and settings.
+//!   limit, cancellation, retries, follow-ups, persistence, reverts), the AI status and settings.
+//! - [`agent_edits`]: [`AgentEditService`], the edits of AI agents (planned, scope-checked,
+//!   committed as one AI transaction recorded in the task's changeset).
 //! - [`new_project`], [`recovery`]: new documents and crash recovery (pure).
 //!
 //! ## Rules
@@ -31,6 +33,7 @@
 //! - Every port gets an in-memory fake in [`test_support`] (feature `test-support`).
 
 pub mod agent_access;
+pub mod agent_edits;
 mod edit_plan;
 mod error;
 pub mod frame_renders;
@@ -49,12 +52,13 @@ pub mod tasks;
 pub mod test_support;
 
 pub use agent_access::{AgentContext, McpAccess, TaskToken, TaskTokenRegistry};
+pub use agent_edits::{AgentEditService, EditFailure};
 pub use edit_plan::DEFAULT_IMAGE_DURATION;
 pub use error::AppError;
 pub use frame_renders::{FrameRenderService, FrameRenderSpec};
 pub use jobs::{JobAttempt, JobPriority, JobQueue, JobQueueConfig, JobRequest, JobWork};
 pub use media_service::{AssetFiles, MediaService, MediaServiceDeps};
-pub use project_actor::{ActorDeps, DEFAULT_SAVE_DELAY, ProjectActorHandle, ProjectView};
+pub use project_actor::{ActorDeps, AiCommit, DEFAULT_SAVE_DELAY, ProjectActorHandle, ProjectView};
 pub use project_service::{
     ProjectObserver, ProjectService, ProjectServiceConfig, ProjectServiceDeps,
     animation_preset_infos, graphic_track, item_labels, marker_labels, sequence_labels,

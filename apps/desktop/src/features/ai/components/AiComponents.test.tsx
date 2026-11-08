@@ -95,6 +95,7 @@ describe('AiView', () => {
     effort: null,
     status: { kind: 'running' },
     agentSessionId: 'session-1',
+    changesetId: null,
     createdAt: 1,
     updatedAt: 1,
     runs: [],

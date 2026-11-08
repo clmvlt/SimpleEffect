@@ -2,27 +2,29 @@
 
 use std::sync::Arc;
 
-use se_domain::{Committed, History, Project, Transaction, commit};
+use se_domain::{Changeset, Committed, History, Project, Transaction, commit};
 use se_protocol::{CoreEvent, ProjectHistory};
 use tokio::{
     sync::mpsc,
     time::{Instant, sleep_until},
 };
 
-use super::{ActorDeps, Message, ProjectView};
+use super::{ActorDeps, Message, ProjectView, ai_edits::OpenChangesets};
 use crate::{
     AppError,
     new_ids::NewIds,
-    ports::{JournalEntry, ProjectStore},
+    ports::{ChangesetWrite, JournalEntry, ProjectStore},
     project_view::{history_state, project_patch},
 };
 
 /// State owned by the actor task.
-struct ProjectActor {
-    project: Arc<Project>,
-    history: History,
+pub(super) struct ProjectActor {
+    pub(super) project: Arc<Project>,
+    pub(super) history: History,
     store: Box<dyn ProjectStore>,
-    deps: ActorDeps,
+    pub(super) deps: ActorDeps,
+    /// The open changesets of AI tasks.
+    pub(super) changesets: OpenChangesets,
     /// Revision of the last snapshot written (or loaded).
     saved_revision: u64,
     /// When the next snapshot is due; `None` when nothing waits to be saved.
@@ -32,6 +34,7 @@ struct ProjectActor {
 /// Runs the actor until it is closed or every handle is dropped.
 pub(super) async fn run(
     project: Project,
+    changesets: Vec<Changeset>,
     store: Box<dyn ProjectStore>,
     deps: ActorDeps,
     mut inbox: mpsc::Receiver<Message>,
@@ -42,6 +45,7 @@ pub(super) async fn run(
         history: History::default(),
         store,
         deps,
+        changesets: OpenChangesets::new(changesets),
         save_due: None,
     };
     loop {
@@ -84,6 +88,28 @@ impl ProjectActor {
             }
             Message::Redo { reply } => {
                 let _ = reply.send(self.step_history(History::redo).await);
+            }
+            Message::ApplyAi {
+                transaction,
+                base_revision,
+                reply,
+            } => {
+                let outcome = if base_revision.is_some_and(|base| base != self.project.revision) {
+                    Ok(None)
+                } else {
+                    self.apply_ai(transaction).await.map(Some)
+                };
+                let _ = reply.send(outcome);
+            }
+            Message::RevertTask {
+                task_id,
+                label,
+                reply,
+            } => {
+                let _ = reply.send(self.revert_task(task_id, label).await);
+            }
+            Message::Changeset { task_id, reply } => {
+                let _ = reply.send(self.changesets.get(task_id).cloned());
             }
             Message::Snapshot { reply } => {
                 let _ = reply.send(ProjectView {
@@ -128,17 +154,36 @@ impl ProjectActor {
         transaction: &Transaction,
         committed: &Committed,
     ) -> Result<(), AppError> {
-        let entry = JournalEntry {
-            revision: committed.project.revision,
-            committed_at: self.deps.clock.now_unix_millis(),
-            transaction: transaction.clone(),
-        };
+        let entry = self.journal_entry(transaction, committed);
         self.store.append_journal(&entry).await?;
         Ok(())
     }
 
+    /// Durably records a commit and its change of an AI changeset, atomically, before the commit
+    /// becomes visible.
+    pub(super) async fn journal_with_changeset(
+        &self,
+        transaction: &Transaction,
+        committed: &Committed,
+        change: &ChangesetWrite,
+    ) -> Result<(), AppError> {
+        let entry = self.journal_entry(transaction, committed);
+        self.store
+            .append_journal_with_changeset(&entry, change)
+            .await?;
+        Ok(())
+    }
+
+    fn journal_entry(&self, transaction: &Transaction, committed: &Committed) -> JournalEntry {
+        JournalEntry {
+            revision: committed.project.revision,
+            committed_at: self.deps.clock.now_unix_millis(),
+            transaction: transaction.clone(),
+        }
+    }
+
     /// Makes a journaled commit the current state, announces it and schedules the snapshot.
-    fn install(&mut self, committed: Committed) -> u64 {
+    pub(super) fn install(&mut self, committed: Committed) -> u64 {
         let before = std::mem::replace(&mut self.project, Arc::new(committed.project));
         let patch = project_patch(&before, &self.project, &committed.touched);
         self.deps.events.publish(CoreEvent::ProjectPatched(patch));

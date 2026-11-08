@@ -132,6 +132,11 @@ pub enum ErrorCode {
     RenderFailed,
     /// No frame render with that id is waiting (it finished, failed or timed out).
     RenderRequestNotFound,
+    /// An AI agent tried to change something outside its task's scope (time range, tracks or
+    /// sequence): the message gives the scope, the faulty range and what to do.
+    OutOfScope,
+    /// The AI task has no edit left to revert (it changed nothing, or was reverted already).
+    NothingToRevert,
 }
 
 #[cfg(test)]

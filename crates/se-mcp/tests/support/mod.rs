@@ -53,6 +53,7 @@ impl Bed {
             media: bed.media.clone(),
             renders: bed.renders.clone(),
             tokens: bed.tokens.clone(),
+            edits: bed.edits.clone(),
         });
         let agent = AgentContext {
             project_id,

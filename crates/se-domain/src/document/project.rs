@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::{Asset, BrandKit, Format, MotionTemplate, Sequence};
+use super::{Asset, BrandKit, Format, Item, MotionTemplate, Sequence};
 use crate::ids::ProjectId;
 
 /// Version of the document format written by this build. Persistence (prompt 07) migrates older
@@ -40,6 +40,16 @@ pub struct Project {
     pub templates: Vec<MotionTemplate>,
     /// The brand identity used by this project, if one was set.
     pub brand_kit: Option<BrandKit>,
+}
+
+impl Project {
+    /// Every item of every sequence, sequence by sequence, track by track.
+    pub fn items(&self) -> impl Iterator<Item = &Item> {
+        self.sequences
+            .iter()
+            .flat_map(|sequence| &sequence.tracks)
+            .flat_map(|track| &track.items)
+    }
 }
 
 /// Project-wide preferences.

@@ -500,7 +500,15 @@ prompt: string, } | { "kind": "listTasks",
 /**
  * The open project.
  */
-projectId: ProjectId, } | { "kind": "getTaskEvents", 
+projectId: ProjectId, } | { "kind": "revertTask", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The task.
+ */
+taskId: TaskId, } | { "kind": "getTaskEvents", 
 /**
  * The open project.
  */

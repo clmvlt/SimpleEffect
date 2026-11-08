@@ -184,7 +184,7 @@ fn find_transition(project: &Project, id: TransitionId) -> Result<(&Track, &Tran
 }
 
 /// The duration of asset `id` in `project`, when known.
-fn asset_duration(project: &Project, id: se_domain::AssetId) -> Option<Flicks> {
+pub(crate) fn asset_duration(project: &Project, id: se_domain::AssetId) -> Option<Flicks> {
     project
         .assets
         .iter()

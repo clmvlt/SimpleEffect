@@ -116,6 +116,7 @@ mod tests {
                 media: bed.media.clone(),
                 renders: bed.renders.clone(),
                 tokens: bed.tokens.clone(),
+                edits: bed.edits.clone(),
             },
             port,
         );

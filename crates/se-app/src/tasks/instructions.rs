@@ -191,6 +191,7 @@ mod tests {
             effort: None,
             status: TaskStatus::Queued,
             agent_session_id: None,
+            changeset_id: None,
             created_at: 0,
             updated_at: 0,
             runs: Vec::new(),

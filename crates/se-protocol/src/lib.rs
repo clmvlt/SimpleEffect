@@ -72,5 +72,6 @@ pub use project_session::{
     ProjectSession, RecentProject,
 };
 pub use tasks::{
-    RunKind, SubmitTaskRequest, Task, TaskEventRecord, TaskRun, TaskScope, TaskStatus,
+    RunKind, SubmitTaskRequest, Task, TaskEventRecord, TaskRevertReport, TaskRun, TaskScope,
+    TaskStatus,
 };

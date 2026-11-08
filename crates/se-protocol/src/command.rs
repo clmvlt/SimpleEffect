@@ -507,6 +507,15 @@ pub enum Command {
         /// The open project.
         project_id: ProjectId,
     },
+    /// Undoes every edit of a finished AI task that nobody changed since (its changeset), as one
+    /// user transaction. Answered by [`crate::CommandResult::RevertTask`] with what was undone
+    /// and what was left (conflicts).
+    RevertTask {
+        /// The open project.
+        project_id: ProjectId,
+        /// The task.
+        task_id: TaskId,
+    },
     /// The event log of a task. Answered by [`crate::CommandResult::GetTaskEvents`].
     GetTaskEvents {
         /// The open project.

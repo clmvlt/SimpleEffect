@@ -6,8 +6,10 @@ use std::{
 };
 
 use async_trait::async_trait;
-use se_app::ports::{AnalysisStore, JournalEntry, ProjectStore, StorageError, TaskStore};
-use se_domain::Project;
+use se_app::ports::{
+    AnalysisStore, ChangesetWrite, JournalEntry, ProjectStore, StorageError, TaskStore,
+};
+use se_domain::{Changeset, Project};
 
 use crate::{
     fs_analysis_store::FsAnalysisStore,
@@ -69,6 +71,20 @@ impl ProjectStore for FsProjectStore {
         let entry = entry.clone();
         self.with_database(move |database| database.append(&entry))
             .await
+    }
+
+    async fn append_journal_with_changeset(
+        &self,
+        entry: &JournalEntry,
+        change: &ChangesetWrite,
+    ) -> Result<(), StorageError> {
+        let (entry, change) = (entry.clone(), change.clone());
+        self.with_database(move |database| database.append_with_changeset(&entry, &change))
+            .await
+    }
+
+    async fn load_changesets(&self) -> Result<Vec<Changeset>, StorageError> {
+        self.with_database(ProjectDatabase::open_changesets).await
     }
 
     async fn save_snapshot(&self, project: &Project) -> Result<(), StorageError> {

@@ -30,6 +30,7 @@ function task(overrides: Partial<Task> = {}): Task {
     effort: null,
     status: { kind: 'queued' },
     agentSessionId: null,
+    changesetId: null,
     createdAt: 1,
     updatedAt: 1,
     runs: [],

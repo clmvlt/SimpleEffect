@@ -40,6 +40,8 @@ export const ERROR_CODES = [
   'RENDERER_UNAVAILABLE',
   'RENDER_FAILED',
   'RENDER_REQUEST_NOT_FOUND',
+  'OUT_OF_SCOPE',
+  'NOTHING_TO_REVERT',
 ] as const satisfies readonly ErrorCode[];
 
 /**

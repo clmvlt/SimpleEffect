@@ -869,7 +869,9 @@
     "AI_UNAVAILABLE": "L’assistant IA n’est pas disponible (non installé ou déconnecté) : voyez Réglages → IA.",
     "RENDERER_UNAVAILABLE": "Aucune fenêtre de SimpleEffect n’a pu dessiner les images demandées : ouvrez le projet dans l’éditeur.",
     "RENDER_FAILED": "L’éditeur n’a pas pu dessiner les images demandées.",
-    "RENDER_REQUEST_NOT_FOUND": "Cette demande d’images n’attend plus de réponse (terminée ou expirée)."
+    "RENDER_REQUEST_NOT_FOUND": "Cette demande d’images n’attend plus de réponse (terminée ou expirée).",
+    "OUT_OF_SCOPE": "Cette modification sort de la portée de la tâche IA (plage de temps, pistes ou séquence).",
+    "NOTHING_TO_REVERT": "Cette tâche IA n’a plus rien à annuler : elle n’a rien modifié, ou a déjà été annulée."
   },
   "format": {
     "ratio": "Format",

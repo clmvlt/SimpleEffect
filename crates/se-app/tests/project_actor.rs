@@ -41,7 +41,7 @@ async fn start() -> Harness {
         save_delay: SAVE_DELAY,
     };
     Harness {
-        actor: ProjectActorHandle::spawn(project, store, deps),
+        actor: ProjectActorHandle::spawn(project, Vec::new(), store, deps),
         repository,
         events,
         start_revision,
