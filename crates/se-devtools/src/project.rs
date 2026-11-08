@@ -2,10 +2,13 @@
 //! picture/sound clips, texts, captions and music, plus markers. Deterministic for a given seed.
 
 use se_domain::{
-    Animatable, Asset, AssetKind, CURRENT_SCHEMA_VERSION, CaptionItem, DesignPixels, Flicks,
-    Format, FormatPreset, FrameRate, Item, ItemId, ItemKind, LinkGroupId, Marker, MarkerColor,
-    MarkerId, MediaClip, Origin, Project, ProjectId, ProjectSettings, Sequence, SequenceId, TaskId,
-    TextItem, TimeRange, Track, TrackId, TrackKind, TranscriptionSettings, validate_project,
+    Animatable, Asset, AssetKind, CURRENT_SCHEMA_VERSION, CaptionItem, CaptionStyleId,
+    DEFAULT_CAPTION_PRESET, DesignPixels, Flicks, Format, FormatPreset, FrameRate, Item, ItemId,
+    ItemKind, LinkGroupId, Marker, MarkerColor, MarkerId, MediaClip, Origin, Project, ProjectId,
+    ProjectSettings, Sequence, SequenceId, TaskId, TextItem, TimeRange, Track, TrackId, TrackKind,
+    TranscriptionSettings, caption_style_from_preset,
+    captions::{Spread, distribute_words},
+    validate_project,
 };
 use uuid::Uuid;
 
@@ -45,6 +48,7 @@ impl Ids {
     new_id!(link, LinkGroupId);
     new_id!(marker, MarkerId);
     new_id!(task, TaskId);
+    new_id!(caption_style, CaptionStyleId);
 }
 
 /// What kind of item to add next, and where.
@@ -91,6 +95,8 @@ struct Builder {
     videos: Vec<Asset>,
     sounds: Vec<Asset>,
     task: TaskId,
+    /// The style of every caption.
+    caption_style: CaptionStyleId,
     count: usize,
 }
 
@@ -184,8 +190,15 @@ impl Builder {
                     text.style.font_size = Animatable::constant(DesignPixels(72.0));
                     ItemKind::Text(text)
                 } else {
+                    let number = self.count.to_string();
                     ItemKind::Caption(CaptionItem {
-                        text: format!("Sous-titre {}", self.count),
+                        words: distribute_words(
+                            &["Sous-titre", number.as_str()],
+                            Flicks::ZERO,
+                            duration,
+                            Spread::Equal,
+                        ),
+                        style_id: self.caption_style,
                     })
                 };
                 self.push(V3, start, duration, kind, None)
@@ -281,6 +294,7 @@ pub fn build_project(
     .map(|(track_name, kind)| empty_track(&ids, track_name, kind))
     .collect::<Result<Vec<_>, _>>()?;
     let task = ids.task()?;
+    let caption_style = ids.caption_style()?;
     let mut builder = Builder {
         ids,
         random: Random(seed),
@@ -290,6 +304,7 @@ pub fn build_project(
         videos,
         sounds,
         task,
+        caption_style,
         count: 0,
     };
     let mut index = 0;
@@ -319,6 +334,10 @@ pub fn build_project(
         }],
         templates: Vec::new(),
         brand_kit: None,
+        caption_styles: vec![
+            caption_style_from_preset(DEFAULT_CAPTION_PRESET, builder.caption_style)
+                .map_err(|error| DevError::Invalid(error.to_string()))?,
+        ],
     };
     let violations = validate_project(&project);
     if let Some(first) = violations.first() {

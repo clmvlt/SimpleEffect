@@ -29,6 +29,7 @@ mod project_lock;
 mod snapshot_file;
 mod sqlite;
 
+pub use document_migrations::MIGRATED_CAPTION_STYLE_ID;
 pub use fs_repository::FsProjectRepository;
 pub use layout::{BACKUP_COUNT, PROJECT_EXTENSION, ProjectLayout};
 pub use library::SqliteAppLibrary;

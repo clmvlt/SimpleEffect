@@ -52,6 +52,7 @@ pub fn new_project(ids: NewIds<'_>, name: &str, format: Format) -> Result<Projec
         sequences: vec![default_sequence(ids, name, format)?],
         templates: Vec::new(),
         brand_kit: None,
+        caption_styles: Vec::new(),
     })
 }
 
