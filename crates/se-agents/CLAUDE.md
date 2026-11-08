@@ -41,6 +41,6 @@ AI CLI providers and their stream parsing (ADR-0003, ADR-0027). Claude Code is t
 
 ## How to test
 - `cargo test -p se-agents`
-- Unit tests in-file: arguments (session flags, no line breaks, MCP config and its redaction), stream parsing (tool call/result pairing, session announced once, error results, malformed and unknown lines, result-less ends from stderr), auth and version parsing, failure classification, executable resolution, workspaces.
+- Unit tests in-file: recorded runs replayed through the parser (`stream.rs`: `success`, `resume`, `long-text`, `lost-session`, `not-logged-in` fixtures), arguments (session flags, no line breaks, MCP config and its redaction), stream parsing (tool call/result pairing, session announced once, error results, malformed and unknown lines, result-less ends from stderr), auth and version parsing, failure classification, executable resolution, workspaces.
 - `tests/claude_code_cli.rs` (Unix): a fake `claude` shell script replaying `tests/fixtures/claude_code/*.jsonl` — detection, prompt on stdin, arguments, instructions file, a CLI ending with stderr only, cancellation killing the script's child process.
 - Fixtures are recorded from the real CLI (recipe and sanitising in `src/providers/claude_code/CLAUDE.md`).

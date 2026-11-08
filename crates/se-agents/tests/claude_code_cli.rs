@@ -148,6 +148,28 @@ async fn a_run_gets_its_prompt_on_stdin_and_streams_the_cli_events() {
 }
 
 #[tokio::test]
+async fn a_recorded_success_completes_through_the_process() {
+    let fake = fake(&fixture("success.jsonl"));
+    let session = "0195f3a2-7c41-7d2e-9a10-3b4c5d6e7f91";
+    let run = fake
+        .provider
+        .start(fake.spec(AgentSession::Start(session.to_owned())))
+        .await
+        .unwrap();
+    let events = collect(run).await;
+    assert!(matches!(
+        events.first(),
+        Some(AgentEvent::SessionStarted { session_id, .. }) if session_id == session
+    ));
+    assert_eq!(
+        events.last(),
+        Some(&AgentEvent::Completed {
+            summary: "Bonjour".to_owned()
+        })
+    );
+}
+
+#[tokio::test]
 async fn a_cli_ending_without_a_result_is_explained_from_its_stderr() {
     let fake = fake("");
     std::fs::write(

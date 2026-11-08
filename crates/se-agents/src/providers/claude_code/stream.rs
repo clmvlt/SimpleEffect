@@ -3,7 +3,8 @@
 //! One JSON object per line, tagged by `type`: `system` (`subtype: "init"` carries the session
 //! id and model), `assistant` (a message whose content blocks are `text`, `tool_use`,
 //! `thinking`…), `user` (tool results), `result` (the final answer, usage, cost, duration and
-//! success or error). Unknown types and blocks are logged at debug level and ignored, so newer
+//! success or error). `rate_limit_event` lines (2.1.319: the account's usage windows) and other
+//! unknown types and blocks are logged at debug level and ignored, so newer
 //! CLI versions keep working; lines that are not JSON are counted (a run that ends without a
 //! result after such lines failed for a protocol reason).
 
@@ -13,6 +14,9 @@ use se_protocol::{AgentEvent, AgentFailureKind};
 use serde_json::Value;
 
 use super::failure;
+
+/// `message.model` of the messages the CLI writes itself instead of the model.
+const SYNTHETIC_MODEL: &str = "<synthetic>";
 
 /// Characters kept of a tool call's input or output.
 const SUMMARY_CHARS: usize = 300;
@@ -74,6 +78,12 @@ impl StreamParser {
     }
 
     fn assistant(&mut self, json: &Value) -> Vec<AgentEvent> {
+        // Messages the CLI writes itself (`Not logged in · Please run /login`, API errors) are
+        // repeated by the `result` line, which reports them as the failure.
+        if json["message"]["model"].as_str() == Some(SYNTHETIC_MODEL) {
+            tracing::debug!("synthetic Claude Code message ignored");
+            return Vec::new();
+        }
         let mut events = Vec::new();
         for block in blocks(&json["message"]["content"]) {
             match block["type"].as_str().unwrap_or_default() {
@@ -139,11 +149,7 @@ fn result(json: &Value) -> Vec<AgentEvent> {
         return events;
     }
     let detail = error_detail(json, subtype, text);
-    let kind = failure::classify(&detail);
-    events.push(AgentEvent::Failed {
-        failure: kind,
-        message: failure::explain(kind, &detail),
-    });
+    events.push(failure::failed(&detail, None));
     events
 }
 
@@ -213,16 +219,7 @@ pub(super) fn missing_result(
 ) -> AgentEvent {
     let stderr = stderr.trim();
     if !stderr.is_empty() {
-        let kind = failure::classify(stderr);
-        let detail = if stderr.contains("No conversation found") {
-            format!("the agent session to resume no longer exists ({stderr}): retry the task")
-        } else {
-            format!("Claude Code stopped ({status}): {stderr}")
-        };
-        return AgentEvent::Failed {
-            failure: kind,
-            message: failure::explain(kind, &detail),
-        };
+        return failure::failed(stderr, Some(&format!("Claude Code stopped ({status})")));
     }
     if parser.malformed_lines() > 0 || exited_ok {
         return AgentEvent::Failed {
@@ -373,5 +370,105 @@ mod tests {
         let summary = summarize(&text);
         assert_eq!(summary.chars().count(), SUMMARY_CHARS + 1);
         assert!(summary.ends_with('…'));
+    }
+
+    /// Events of a recorded run (`tests/fixtures/claude_code/`).
+    fn replay(fixture: &str) -> Vec<AgentEvent> {
+        parse(&fixture.lines().collect::<Vec<_>>()).1
+    }
+
+    fn text(event: &AgentEvent) -> &str {
+        match event {
+            AgentEvent::AssistantText { text } | AgentEvent::Completed { summary: text } => text,
+            AgentEvent::Failed { message, .. } => message,
+            other => panic!("expected a text, got {other:?}"),
+        }
+    }
+
+    const SESSION: &str = "0195f3a2-7c41-7d2e-9a10-3b4c5d6e7f91";
+
+    #[test]
+    fn a_recorded_success_gives_the_session_the_text_the_usage_and_the_answer() {
+        let events = replay(include_str!(
+            "../../../tests/fixtures/claude_code/success.jsonl"
+        ));
+        assert_eq!(events.len(), 4, "{events:?}");
+        assert_eq!(
+            events[0],
+            AgentEvent::SessionStarted {
+                session_id: SESSION.to_owned(),
+                model: Some("claude-haiku-5-5".to_owned())
+            }
+        );
+        assert_eq!(text(&events[1]), "Bonjour");
+        let AgentEvent::Usage {
+            input_tokens,
+            output_tokens,
+            cost_usd,
+            duration_ms,
+        } = events[2]
+        else {
+            panic!("expected usage, got {:?}", events[2]);
+        };
+        assert!(input_tokens > 0 && output_tokens > 0);
+        assert!(cost_usd.is_some() && duration_ms.is_some());
+        assert_eq!(text(&events[3]), "Bonjour");
+    }
+
+    #[test]
+    fn a_recorded_resume_keeps_the_session() {
+        let events = replay(include_str!(
+            "../../../tests/fixtures/claude_code/resume.jsonl"
+        ));
+        assert!(matches!(
+            &events[0],
+            AgentEvent::SessionStarted { session_id, .. } if session_id == SESSION
+        ));
+        assert_eq!(text(events.last().unwrap()), "Bonjour");
+    }
+
+    #[test]
+    fn a_recorded_long_answer_completes_with_every_line() {
+        let events = replay(include_str!(
+            "../../../tests/fixtures/claude_code/long-text.jsonl"
+        ));
+        let summary = text(events.last().unwrap());
+        assert!(summary.lines().count() >= 5, "{summary}");
+        assert!(matches!(events.last(), Some(AgentEvent::Completed { .. })));
+    }
+
+    #[test]
+    fn a_recorded_lost_session_says_to_retry() {
+        let events = replay(include_str!(
+            "../../../tests/fixtures/claude_code/lost-session.jsonl"
+        ));
+        let Some(AgentEvent::Failed { failure, message }) = events.last() else {
+            panic!("expected a failure, got {events:?}");
+        };
+        assert_eq!(*failure, AgentFailureKind::Crashed);
+        assert!(
+            message.starts_with("the agent session to resume no longer exists"),
+            "{message}"
+        );
+    }
+
+    #[test]
+    fn a_recorded_logged_out_run_fails_once_without_the_synthetic_text() {
+        let events = replay(include_str!(
+            "../../../tests/fixtures/claude_code/not-logged-in.jsonl"
+        ));
+        assert!(matches!(events[0], AgentEvent::SessionStarted { .. }));
+        assert!(
+            !events
+                .iter()
+                .any(|event| matches!(event, AgentEvent::AssistantText { .. }))
+        );
+        assert!(matches!(
+            events.last(),
+            Some(AgentEvent::Failed {
+                failure: AgentFailureKind::NotAuthenticated,
+                ..
+            })
+        ));
     }
 }

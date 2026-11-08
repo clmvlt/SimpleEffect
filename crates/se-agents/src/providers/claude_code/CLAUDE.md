@@ -10,13 +10,16 @@ Runs agents with the Claude Code CLI (`claude`) installed and logged in on the u
 | Login | `claude auth status --json` → `{"loggedIn":…,"authMethod":…,"apiProvider":…,"subscriptionType"?…}`; exits 1 when logged out but still prints the JSON. Only `loggedIn`, `subscriptionType` and `authMethod` are read |
 | Run | `claude -p --output-format stream-json --verbose --tools "" --permission-prompts none --setting-sources "" --restricted --disable-slash-commands --strict-mcp-config --append-system-prompt-file <workdir>/.simpleeffect-instructions.md [--mcp-config <json> --allowedTools mcp__simpleeffect__*] [--model m] [--effort e] (--session-id <uuid> \| --resume <uuid>)`, cwd = the task's working folder, prompt on stdin |
 
-## Empirical validation (Claude Code 2.1.317, macOS, 2026-11-07)
-Recorded with the CLI bundled with the Claude desktop app (the same build as the public 2.1.317), in a scratch folder.
+## Empirical validation (Claude Code 2.1.317 and 2.1.319, macOS, 2026-11-07/08)
+Flags and isolation first checked logged out with the CLI bundled with the Claude desktop app (2.1.317), then logged in (Claude Max subscription) with the public native install 2.1.319 (`~/.local/bin/claude`), in a scratch folder, clean environment, model `haiku`.
 
 **Flags**
 - Every flag above is accepted together (unknown flags fail immediately with `error: unknown option`). `--append-system-prompt-file` exists although `--help` only mentions it under `--bare`.
 - `--session-id <uuid>` is honoured: the `init` line and the `result` line carry that id.
 - The prompt is read from stdin when `-p` has no prompt argument.
+- `--model haiku` and `--effort low` are accepted (the `init` line reports `claude-haiku-5-5`).
+- **The subscription login works with every isolation flag kept** (`--setting-sources "" --restricted …`): authentication is not a setting.
+- `--session-id` of an id that already exists fails before any output: stderr `Error: Session ID <id> is already in use.`, exit 1 (a logged-out run creates its session too). The scheduler always chooses fresh UUIDv7 ids.
 
 **Isolation** (observed on the `init` line and with `--debug-file`, in a clean environment (`env -i HOME PATH USER TMPDIR LANG`), using a temporary `CLAUDE_CONFIG_DIR` holding a `settings.json` with a `UserPromptSubmit` hook and `"model":"sonnet"`, and a `CLAUDE.md`)
 | Flags | User settings (model, hooks) | Our `--mcp-config` server | Skills / slash commands | Auto-memory |
@@ -31,7 +34,14 @@ Kept: the last row (+ `--strict-mcp-config`, `--tools ""`). Excluded: `--safe-mo
 
 **Logged out** (`not-logged-in.jsonl`): the CLI still prints `system/init`, then a synthetic `assistant` message (`model: "<synthetic>"`) and a `result` with `subtype: "success"`, `is_error: true`, `result: "Not logged in · Please run /login"`, `terminal_reason: "api_error"`; exit code 1. Classified `notAuthenticated` (the message contains `/login`).
 
-**To validate logged in** (TODO before relying on it — see `prompts/PROGRESS.md`): success and long-text fixtures, a resumed session (`--resume` from the same working folder after it was deleted and recreated), a lost session's error, and whether the global `~/.claude/CLAUDE.md` or an ancestor `CLAUDE.md` of the working folder reaches the agent with the kept flags.
+**Logged in** (2.1.319):
+- `success.jsonl`: `system/init`, `assistant` (text), `rate_limit_event`, `result` (`success`, cost, duration, usage).
+- `resume.jsonl`: `--resume <id>` run from the **same path after the working folder was deleted and recreated** finds the session (sessions live in the CLI's data folder, keyed by the folder's path): the agent answered with the word of the first run. Same session id in `init` and `result`.
+- `long-text.jsonl`: a five-line answer in one text block.
+- `lost-session.jsonl`: `--resume` of an unknown id prints a single `result` line (`subtype: "error_during_execution"`, `is_error: true`, empty `result`, `errors: ["No conversation found with session ID: <id>"]`) and the same message on stderr; exit 1.
+- `rate_limit_event` lines carry the account's usage windows (`rate_limit_info.status`, `unifiedWindows.five_hour.utilization`…): ignored for now (usage limits are reported by the `result` line).
+- **Ancestor `CLAUDE.md`**: with a `CLAUDE.md` saying « always end every answer with the word PAMPLEMOUSSE » in the parent folder of the working folder, the kept flags answered « Hi there! »; the same run without `--setting-sources "" --restricted` answered « Hi there. PAMPLEMOUSSE ». Project and ancestor instructions never reach our agents. The user-level `~/.claude/CLAUDE.md` belongs to the `user` setting source, also excluded (not tested on this machine, which has none).
+- End to end through se-core (started from a Claude Code session, so with its variables removed): the CLI found in `~/.local/bin` although not on se-core's PATH, a task completed, its working folder removed, and a follow-up resumed the same session.
 
 **Environment.** A Claude Code session sets many variables for its children (`CLAUDECODE`, `CLAUDE_CODE_SIMPLE`, `CLAUDE_CODE_SESSION_ID`, `CLAUDE_CODE_ENTRYPOINT`, `CLAUDE_AGENT_SDK_*`, a local `ANTHROPIC_BASE_URL`…). SimpleEffect started from inside one (`pnpm dev` from Claude Code's terminal) would pass them on and make our CLI a nested child of that session. `environment.rs` removes them when `CLAUDECODE` is present, keeping user configuration (`CLAUDE_CODE_OAUTH_TOKEN`, `CLAUDE_CODE_USE_BEDROCK`/`VERTEX`/`FOUNDRY`, `CLAUDE_CODE_MAX_OUTPUT_TOKENS`, `ANTHROPIC_API_KEY`); started normally, the environment passes untouched. Record fixtures and run experiments with `env -i` for the same reason.
 
