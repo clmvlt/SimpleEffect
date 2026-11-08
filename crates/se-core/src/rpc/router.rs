@@ -8,7 +8,7 @@ use super::{
     encode::encode,
     handlers::{
         HandlerContext, ai, editing, frames, graphics, items, media, media_settings, projects,
-        sound, system, tasks, timeline,
+        sound, system, tasks, timeline, transcription,
     },
     request::{Rejection, parse_request},
 };
@@ -337,6 +337,62 @@ impl RpcRouter {
                 request_id,
                 message,
             } => frames::report_failure(context, request_id, message),
+            Command::GetTranscriptionStatus
+            | Command::UpdateTranscriptionPreferences(_)
+            | Command::StartTranscriptionDownload { .. }
+            | Command::CancelTranscriptionDownload { .. }
+            | Command::ImportTranscriptionModel { .. }
+            | Command::RemoveTranscriptionFile { .. }
+            | Command::TranscribeAssets { .. }
+            | Command::GetTranscript { .. }
+            | Command::SearchTranscripts { .. }
+            | Command::SetTranscriptionSettings { .. } => {
+                Self::dispatch_transcription(context, command).await
+            }
+        }
+    }
+
+    /// The transcription commands (prompt 21).
+    async fn dispatch_transcription(
+        context: &HandlerContext,
+        command: &Command,
+    ) -> Result<CommandResult, ProtocolError> {
+        match command {
+            Command::GetTranscriptionStatus => transcription::get_status(context).await,
+            Command::UpdateTranscriptionPreferences(preferences) => {
+                transcription::update_preferences(context, preferences).await
+            }
+            Command::StartTranscriptionDownload { target } => {
+                transcription::start_download(context, target)
+            }
+            Command::CancelTranscriptionDownload { target } => {
+                transcription::cancel_download(context, target)
+            }
+            Command::ImportTranscriptionModel { path } => {
+                transcription::import_model(context, path).await
+            }
+            Command::RemoveTranscriptionFile { target } => {
+                transcription::remove_file(context, target).await
+            }
+            Command::TranscribeAssets {
+                project_id,
+                asset_ids,
+            } => transcription::transcribe_assets(context, *project_id, asset_ids).await,
+            Command::GetTranscript {
+                project_id,
+                asset_id,
+            } => transcription::get_transcript(context, *project_id, *asset_id).await,
+            Command::SearchTranscripts { project_id, query } => {
+                transcription::search(context, *project_id, query).await
+            }
+            Command::SetTranscriptionSettings {
+                project_id,
+                settings,
+            } => transcription::set_settings(context, *project_id, settings).await,
+            other => Err(ProtocolError::new(
+                se_protocol::ErrorCode::Internal,
+                format!("{other:?} is not a transcription command; please report it"),
+            )),
         }
     }
 }
@@ -360,6 +416,7 @@ pub mod testing {
             media,
             tasks,
             renders,
+            transcription,
             ..
         } = MediaTestbed::new(Path::new("/projects"));
         HandlerContext {
@@ -373,6 +430,7 @@ pub mod testing {
             tasks: Arc::new(tasks),
             fonts: Arc::new(FakeFontCatalog),
             renders,
+            transcription,
         }
     }
 }
@@ -576,6 +634,7 @@ mod tests {
             "getAiStatus",
             "refreshAiStatus",
             "getAiSettings",
+            "getTranscriptionStatus",
         ] {
             let request = format!(r#"{{"type":"request","id":1,"command":{{"kind":"{kind}"}}}}"#);
             assert_eq!(reply(&request).await["result"]["kind"], kind);

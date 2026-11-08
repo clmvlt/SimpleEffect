@@ -23,6 +23,10 @@ const LIBRARY_FILE_NAME: &str = "library.db";
 
 /// Folder of the working folders of AI agent runs, inside the app data folder.
 const AGENT_WORKDIRS_DIR_NAME: &str = "agent-workdirs";
+/// Folder of whisper models, under `models/` of the data folder.
+const WHISPER_MODELS_DIR: [&str; 2] = ["models", "whisper"];
+/// Folder of downloaded runtimes (the GPU pack of whisper.cpp).
+const RUNTIMES_DIR_NAME: &str = "runtimes";
 
 /// Folder proposed for new projects, inside the user's documents folder.
 const PROJECTS_DIR_NAME: &str = "SimpleEffect";
@@ -66,6 +70,18 @@ impl AppPaths {
     /// The working folders of AI agent runs: `<data_dir>/agent-workdirs`.
     pub fn agent_workdirs(&self) -> PathBuf {
         self.data_dir.join(AGENT_WORKDIRS_DIR_NAME)
+    }
+
+    /// Transcription models: `<data_dir>/models/whisper`.
+    pub fn whisper_models(&self) -> PathBuf {
+        WHISPER_MODELS_DIR
+            .iter()
+            .fold(self.data_dir.clone(), |dir, name| dir.join(name))
+    }
+
+    /// Downloaded runtimes (the GPU pack of whisper.cpp): `<data_dir>/runtimes`.
+    pub fn runtimes(&self) -> PathBuf {
+        self.data_dir.join(RUNTIMES_DIR_NAME)
     }
 
     /// Folder proposed for new projects: `<Documents>/SimpleEffect`, or `<data_dir>/projects`
