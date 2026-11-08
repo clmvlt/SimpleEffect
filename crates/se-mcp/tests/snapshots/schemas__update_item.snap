@@ -1,0 +1,421 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Changes static properties of one item: text content and style, shape size and colour, image fit, clip speed, fades and reframing, and placement (position, scale, rotation, opacity, blur — static values replacing keyframes). Give only the fields to change. Timing is changed by move_item and trim_item, animations by set_keyframes and apply_animation_preset.",
+  "inputSchema": {
+    "$defs": {
+      "AlignInput": {
+        "description": "Horizontal alignment of the lines.",
+        "oneOf": [
+          {
+            "const": "left",
+            "description": "Lines start at the left.",
+            "type": "string"
+          },
+          {
+            "const": "center",
+            "description": "Lines are centred (default).",
+            "type": "string"
+          },
+          {
+            "const": "right",
+            "description": "Lines end at the right.",
+            "type": "string"
+          }
+        ]
+      },
+      "FitInput": {
+        "description": "How the image is sized in the frame.",
+        "oneOf": [
+          {
+            "const": "fit",
+            "description": "Whole image inside the frame (default).",
+            "type": "string"
+          },
+          {
+            "const": "fill",
+            "description": "Covers the frame, cropping what overflows.",
+            "type": "string"
+          },
+          {
+            "const": "natural",
+            "description": "Its own size (one image pixel per design pixel).",
+            "type": "string"
+          }
+        ]
+      },
+      "NamedPosition": {
+        "description": "A named place of the frame (inside the usual safe areas of vertical and horizontal videos).",
+        "oneOf": [
+          {
+            "const": "center",
+            "description": "The centre (0.5, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "top",
+            "description": "Upper part, centred (0.5, 0.15).",
+            "type": "string"
+          },
+          {
+            "const": "bottom",
+            "description": "Lower part, centred (0.5, 0.8).",
+            "type": "string"
+          },
+          {
+            "const": "left",
+            "description": "Left part, centred vertically (0.2, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "right",
+            "description": "Right part, centred vertically (0.8, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "lower_third",
+            "description": "Lower third, left (0.3, 0.75): names and titles.",
+            "type": "string"
+          }
+        ]
+      },
+      "PointInput": {
+        "additionalProperties": false,
+        "description": "A point of the frame, normalised: `x` from 0 (left) to 1 (right), `y` from 0 (top) to 1\n(bottom).",
+        "properties": {
+          "x": {
+            "description": "From 0 (left edge) to 1 (right edge).",
+            "format": "double",
+            "type": "number"
+          },
+          "y": {
+            "description": "From 0 (top edge) to 1 (bottom edge).",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "type": "object"
+      },
+      "PositionInput": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/NamedPosition",
+            "description": "A named place."
+          },
+          {
+            "$ref": "#/$defs/PointInput",
+            "description": "A normalised point."
+          }
+        ],
+        "description": "Where an item's centre (its anchor) sits."
+      },
+      "ReframeInput": {
+        "description": "How a clip fills the frame.",
+        "oneOf": [
+          {
+            "const": "fit",
+            "description": "Whole picture inside the frame (bars where aspects differ).",
+            "type": "string"
+          },
+          {
+            "const": "fill",
+            "description": "Covers the frame, cropped around the centre (move the kept area with `set_keyframes`\n`reframeFocus`).",
+            "type": "string"
+          },
+          {
+            "const": "custom",
+            "description": "Natural size (one picture pixel per design pixel).",
+            "type": "string"
+          }
+        ]
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      },
+      "ValueInput": {
+        "anyOf": [
+          {
+            "description": "A number.",
+            "format": "double",
+            "type": "number"
+          },
+          {
+            "description": "A pair `[x, y]`.",
+            "items": {
+              "format": "double",
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          {
+            "$ref": "#/$defs/PointInput",
+            "description": "A pair `{\"x\", \"y\"}`."
+          },
+          {
+            "description": "A colour `#rrggbb[aa]`.",
+            "type": "string"
+          }
+        ],
+        "description": "A keyframe value: a number (opacity, rotation, sizes, dB), a pair (position, scale, anchor,\nfocus, shadow offset) or a colour."
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "align": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/AlignInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Texts: line alignment."
+      },
+      "background": {
+        "description": "Texts: box behind the text on or off.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "blur": {
+        "description": "Visual items: blur radius in design pixels (static).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "color": {
+        "description": "Texts: text colour; shapes: fill colour (`#rrggbb[aa]`, static).",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "corner_radius": {
+        "description": "Shapes: corner radius (rectangles).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "expected_revision": {
+        "description": "The revision you read; the change is refused (`REVISION_CONFLICT`) if the item changed since.",
+        "format": "uint64",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "fade_in": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Clips: fade-in length."
+      },
+      "fade_out": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Clips: fade-out length."
+      },
+      "fit": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/FitInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Images: how the image is sized."
+      },
+      "font_family": {
+        "description": "Texts: font family.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "font_size": {
+        "description": "Texts: size in design pixels (static; replaces keyframes).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "font_weight": {
+        "description": "Texts: weight 1–1000.",
+        "format": "uint16",
+        "maximum": 65535,
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "height": {
+        "description": "Shapes: height in design pixels (a line's thickness).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "italic": {
+        "description": "Texts: italic.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "item_id": {
+        "description": "The item (an `item_id`, or `$name` in `apply_batch`).",
+        "type": "string"
+      },
+      "max_width": {
+        "description": "Texts: wrapping width in design pixels (0 removes wrapping).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "opacity": {
+        "description": "Visual items: opacity 0–1 (static).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "position": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/PositionInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Visual items: where the centre sits (static; replaces keyframes)."
+      },
+      "reframe": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/ReframeInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Clips: how the picture fills the frame."
+      },
+      "rotation": {
+        "description": "Visual items: rotation in degrees, clockwise (static).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "scale": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/ValueInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Visual items: scale, a number or `[x, y]` (1 = natural; static)."
+      },
+      "shadow": {
+        "description": "Texts: drop shadow on or off.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "speed": {
+        "description": "Clips: playback speed (0.25–4).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "stroke": {
+        "description": "Texts and shapes: outline on or off.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "text": {
+        "description": "Texts: new content.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "uppercase": {
+        "description": "Texts: show in capitals.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "width": {
+        "description": "Shapes: width in design pixels (a line's length).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "item_id"
+    ],
+    "type": "object"
+  },
+  "name": "update_item"
+}

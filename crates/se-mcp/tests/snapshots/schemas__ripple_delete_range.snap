@@ -1,0 +1,69 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Removes a time range from tracks and closes the gap: items crossing it are cut, everything after it moves left. Because later items move, it works only when nothing outside the task's scope would move (a scope reaching the end of the sequence, or the whole sequence); otherwise use delete_items or trim_item.",
+  "inputSchema": {
+    "$defs": {
+      "RangeInput": {
+        "additionalProperties": false,
+        "description": "A range given by an agent; the end is excluded.",
+        "properties": {
+          "end": {
+            "$ref": "#/$defs/Time",
+            "description": "End of the range (excluded), after `start`."
+          },
+          "start": {
+            "$ref": "#/$defs/Time",
+            "description": "First instant of the range."
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "type": "object"
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "range": {
+        "$ref": "#/$defs/RangeInput",
+        "description": "The time to remove, in sequence time (end excluded)."
+      },
+      "tracks": {
+        "description": "The tracks (ids or names); default: the task's tracks (every unlocked track when it may\nuse them all). Tracks holding linked partners are added so sound and picture stay in sync.",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "range"
+    ],
+    "type": "object"
+  },
+  "name": "ripple_delete_range"
+}

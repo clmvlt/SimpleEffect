@@ -1,0 +1,101 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Animates an item with a preset from list_animation_presets (entrance, exit or emphasis), written as ordinary keyframes the user can edit. Keyframes of the same properties inside the animation's span are replaced.",
+  "inputSchema": {
+    "$defs": {
+      "PhaseInput": {
+        "description": "When the animation plays.",
+        "oneOf": [
+          {
+            "const": "in",
+            "description": "An entrance, at the item's start.",
+            "type": "string"
+          },
+          {
+            "const": "out",
+            "description": "An exit, ending at the item's end.",
+            "type": "string"
+          },
+          {
+            "const": "emphasis",
+            "description": "An emphasis (presets with the `emphasis` phase), at `start`.",
+            "type": "string"
+          }
+        ]
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "duration": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Its length; default: the preset's."
+      },
+      "expected_revision": {
+        "description": "The revision you read; refused (`REVISION_CONFLICT`) if the item changed since.",
+        "format": "uint64",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "item_id": {
+        "description": "The item (an `item_id`, or `$name` in `apply_batch`).",
+        "type": "string"
+      },
+      "phase": {
+        "$ref": "#/$defs/PhaseInput",
+        "description": "Entrance, exit or emphasis."
+      },
+      "preset": {
+        "description": "A preset id from `list_animation_presets` (`fade`, `pop`, `slideFromLeft`, `pulse`…).",
+        "type": "string"
+      },
+      "start": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Where it starts, **relative to the item's start**; default: at the start for `in` and\n`emphasis`, ending at the item's end for `out`."
+      }
+    },
+    "required": [
+      "item_id",
+      "preset",
+      "phase"
+    ],
+    "type": "object"
+  },
+  "name": "apply_animation_preset"
+}

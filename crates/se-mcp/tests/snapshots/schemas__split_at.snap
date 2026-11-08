@@ -1,0 +1,50 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Cuts items in two at an instant (every item crossing it on the task's tracks, or the ones listed); linked partners crossing it are cut too and the right parts stay linked. Answers the right parts' ids in `created`. Prefer cutting in silences (get_audio_analysis).",
+  "inputSchema": {
+    "$defs": {
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "at": {
+        "$ref": "#/$defs/Time",
+        "description": "The instant, in sequence time."
+      },
+      "item_ids": {
+        "description": "The items to cut (`item_ids` or `$name`); default: every item crossing `at` on the task's\nunlocked tracks.",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "at"
+    ],
+    "type": "object"
+  },
+  "name": "split_at"
+}

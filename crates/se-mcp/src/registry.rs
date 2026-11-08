@@ -26,7 +26,7 @@ pub trait McpTool: Send + Sync + 'static {
     /// What it does and when to use it, for the agent.
     const DESCRIPTION: &'static str;
 
-    /// Whether the tool only reads (every tool of prompt 18).
+    /// Whether the tool only reads (`false` for write tools: annotated destructive).
     const READ_ONLY: bool = true;
 
     /// Runs the tool.
@@ -93,7 +93,7 @@ impl ToolEntry {
 }
 
 /// Reads the arguments into `T`, with serde's message naming the faulty field.
-fn parse<T: DeserializeOwned>(arguments: JsonObject) -> Result<T, ToolError> {
+pub(crate) fn parse<T: DeserializeOwned>(arguments: JsonObject) -> Result<T, ToolError> {
     serde_json::from_value(serde_json::Value::Object(arguments)).map_err(|error| {
         ToolError::invalid_arguments(format!(
             "{error}; check the tool's input schema (field names are snake_case)"

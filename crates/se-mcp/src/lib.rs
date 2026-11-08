@@ -6,7 +6,8 @@
 //! change.
 //!
 //! One tool per file in [`tools`]; tools call se-app use cases and never mutate documents
-//! directly. Times cross the boundary as seconds or timecodes ([`time_io`]); outputs are compact
+//! directly: write tools ([`writes`]) hand typed edits to `se_app::AgentEditService`, which checks
+//! the task's scope and commits them as one AI transaction recorded in the task's changeset. Times cross the boundary as seconds or timecodes ([`time_io`]); outputs are compact
 //! JSON (and JPEG images). The catalogue is documented in `docs/ai-tools.md`.
 //!
 //! Allowed workspace dependencies: `se-app`, `se-domain`, `se-protocol` (DTOs read through
@@ -21,6 +22,8 @@ pub mod server;
 pub mod time_io;
 pub mod timing;
 pub mod tools;
+pub mod write_inputs;
+pub mod writes;
 
 pub use context::{McpDeps, ToolContext};
 pub use output::{ToolError, ToolOutput};
