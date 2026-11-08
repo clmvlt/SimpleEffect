@@ -406,7 +406,7 @@
         },
         "ready": {
           "title": "{{name}} est prêt",
-          "description": "Le composeur de tâches arrive bientôt : vous pourrez confier des tâches de montage à {{name}}."
+          "description": "Décrivez une tâche de montage ci-dessous : {{name}} la réalise pendant que vous continuez à monter."
         },
         "loggedOut": {
           "title": "{{name}} est déconnecté",
@@ -439,7 +439,8 @@
         "template": "Modèle animé",
         "text": "Texte",
         "aiBadge": "IA",
-        "aiDescription": "Créé par l’IA"
+        "aiDescription": "Créé par l’IA",
+        "aiOrigin": "Créé par la tâche #{{number}} — cliquer pour voir"
       },
       "track": {
         "label": "Piste {{name}}",
@@ -516,7 +517,8 @@
         "delete": "Supprimer",
         "rippleDelete": "Supprimer avec ripple",
         "closeGap": "Fermer le blanc",
-        "paste": "Coller"
+        "paste": "Coller",
+        "redoWithAi": "Refaire avec l’IA…"
       },
       "gap": {
         "label": "Blanc de {{duration}}",
@@ -567,6 +569,11 @@
           "shadowOffset": "Décalage de l’ombre",
           "backgroundColor": "Couleur du fond"
         }
+      },
+      "ai": {
+        "running": "IA #{{number}} en cours",
+        "queued": "IA #{{number}} en file",
+        "userEdited": "Vous avez modifié cette zone pendant que la tâche travaille : si l’agent touche ces éléments, il devra les relire."
       }
     },
     "loading": "Ouverture du projet…",
@@ -1039,7 +1046,8 @@
       "nudgeRight": "Décaler la sélection d’une image vers la droite",
       "nudgeLeftTen": "Décaler la sélection de dix images vers la gauche",
       "nudgeRightTen": "Décaler la sélection de dix images vers la droite",
-      "addText": "Ajouter un texte à la tête de lecture"
+      "addText": "Ajouter un texte à la tête de lecture",
+      "askAi": "Demander à l’IA (ouvrir le composeur)"
     }
   },
   "ai": {
@@ -1050,24 +1058,105 @@
       "nothing_one": "Rien n’a pu être annulé : {{count}} modification a été changée depuis.",
       "nothing_other": "Rien n’a pu être annulé : {{count}} modifications ont été changées depuis."
     },
-    "devTest": {
-      "title": "Tester une tâche (développement)",
-      "prompt": "Prompt de la tâche",
-      "placeholder": "Décris ce que l’agent doit faire…",
-      "submit": "Envoyer",
-      "tasks": "Tâches du projet",
-      "events": "Événements de la tâche",
-      "cancel": "Annuler",
-      "retry": "Relancer",
-      "followUp": "Suite (avec le prompt)",
-      "revert": "Annuler la tâche",
+    "composer": {
+      "label": "Demande à l’IA",
+      "placeholder": "Décrivez le montage à faire… (ex. « de 51 s à 54 s, mets un titre »)",
+      "submit": "Envoyer la demande",
+      "removeScope": "Retirer « {{scope}} »",
+      "enterKey": "Entrée",
+      "model": "Modèle",
+      "modelDefault": "Modèle par défaut",
+      "effort": "Effort",
+      "effortDefault": "Effort par défaut",
+      "resume": "Reprendre la session de la tâche #{{number}} (l’agent garde le contexte de ce qu’il a fait)",
+      "itemReference": "Élément visé : « {{label}} » (item_id {{id}}).",
+      "unavailable": {
+        "checking": "Envoi possible une fois l’assistant IA trouvé.",
+        "ready": "{{name}} est prêt.",
+        "loggedOut": "{{name}} est déconnecté : ouvre un terminal, lance `{{command}}`, puis tape `{{login}}`.",
+        "notInstalled": "{{name}} n’est pas installé : voir Réglages → IA.",
+        "unknown": "État de {{name}} inconnu : {{reason}}"
+      },
+      "scope": {
+        "textHint": "Plage lue dans votre demande : « {{words}} »",
+        "item": "{{name}} · {{range}}",
+        "selection": "Sélection · {{range}}",
+        "inOut": "Entrée/sortie · {{range}}",
+        "wholeSequence": "Toute la séquence",
+        "tracks": "Pistes : {{names}}",
+        "sequence": "Séquence « {{name}} »",
+        "edit": "Modifier la portée",
+        "sequenceLabel": "Séquence",
+        "wholeSequenceOption": "Toute la séquence (sans tenir compte de la sélection ni de l’entrée/sortie)",
+        "tracksLabel": "Pistes concernées",
+        "allTracks": "Toutes les pistes",
+        "automaticTracks": "Revenir aux pistes automatiques"
+      }
+    },
+    "tasks": {
+      "title": "Tâches IA",
+      "count_one": "{{count}} tâche",
+      "count_other": "{{count}} tâches",
+      "tokens": "{{tokens}} tokens",
+      "usage": "{{tokens}} tokens · {{cost}}",
+      "totalHint": "Tokens et coût de toutes les tâches de ce projet",
+      "emptyTitle": "Aucune tâche IA",
+      "emptyDescription": "Sélectionnez un passage (ou écrivez « de 51 s à 54 s… ») et décrivez ce que l’IA doit faire. Vous pouvez continuer à monter pendant qu’elle travaille.",
       "status": {
         "queued": "En file",
         "running": "En cours",
         "completed": "Terminée",
         "failed": "Échouée",
         "cancelled": "Annulée"
-      }
+      },
+      "log": "Journal de la tâche #{{number}}",
+      "progress": "Avancement de la tâche #{{number}}",
+      "revealScope": "Afficher cette plage sur la timeline",
+      "cancel": "Annuler",
+      "retry": "Relancer",
+      "followUp": "Suite",
+      "revert": "Annuler les modifications",
+      "more": "Plus d’actions",
+      "showChanges": "Voir les modifications",
+      "showLog": "Journal complet",
+      "followUpLabel": "Suite de la tâche #{{number}}",
+      "followUpPlaceholder": "Ce que l’agent doit faire ensuite…",
+      "followUpSubmit": "Envoyer la suite"
+    },
+    "log": {
+      "title": "Journal de la tâche #{{number}}",
+      "empty": "Aucun événement pour l’instant.",
+      "retry": "↻ Relance : {{prompt}}",
+      "followUp": "↪ Suite : {{prompt}}",
+      "selectItems_one": "Sélectionner l’élément",
+      "selectItems_other": "Sélectionner les {{count}} éléments"
+    },
+    "failure": {
+      "notInstalled": "L’assistant IA n’est pas installé (voir Réglages → IA).",
+      "notAuthenticated": "L’assistant IA est déconnecté : reconnectez-le depuis un terminal.",
+      "rateLimited": "Limite d’utilisation atteinte : réessayez plus tard.",
+      "crashed": "L’assistant IA s’est arrêté de façon inattendue : relancez la tâche.",
+      "cancelled": "Tâche annulée.",
+      "protocolError": "Réponse de l’assistant IA illisible : mettez-le à jour ou relancez la tâche.",
+      "interrupted": "SimpleEffect s’est arrêté pendant la tâche : relancez-la."
+    },
+    "notice": {
+      "completed": "Tâche IA #{{number}} terminée",
+      "failed": "Tâche IA #{{number}} échouée",
+      "show": "Voir"
+    },
+    "revertDialog": {
+      "title": "Annuler les modifications de la tâche #{{number}} ?",
+      "description_one": "{{count}} élément sera restauré ou retiré (une seule étape, annulable). Ceci a été retouché depuis et restera tel quel :",
+      "description_other": "{{count}} éléments seront restaurés ou retirés (une seule étape, annulable). Ceci a été retouché depuis et restera tel quel :",
+      "nothing": "Rien ne peut être annulé : les modifications de la tâche ont toutes été retouchées depuis.",
+      "changed": "« {{name}} » a été modifié depuis",
+      "removed": "Un élément a été supprimé depuis",
+      "foreign_one": "{{count}} autre élément serait touché",
+      "foreign_other": "{{count}} autres éléments seraient touchés",
+      "cannotApply": "Une modification ne peut plus être défaite",
+      "keep": "Tout garder",
+      "confirm": "Annuler le reste"
     }
   }
 }

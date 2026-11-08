@@ -135,7 +135,7 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Task** | One user request to an AI, with a prompt, a scope and one or more runs; its status is its latest run's (`queued → running → completed / failed / cancelled`) | `Task`, `TaskStatus` |
 | **Run** | One execution of an AI CLI process for a task: the initial run, a retry or a follow-up | `TaskRun`, `RunKind`, `AgentRun` |
 | **Task service** | The scheduler of AI tasks: one FIFO queue for every open project, a limit of runs at once (1–8, default 3), cancellation, retries, follow-ups, persistence (ADR-0027) | `TaskService` |
-| **Follow-up** | A new prompt sent to a finished task's agent, resuming its session | `followUpTask`, `RunKind::FollowUp` |
+| **Follow-up** | A new prompt sent to a finished task's agent, resuming its session; it may change the task's scope (same sequence) | `followUpTask`, `RunKind::FollowUp` |
 | **Retry** | The last prompt of a failed or cancelled task run again (resuming its session once an earlier run completed) | `retryTask`, `RunKind::Retry` |
 | **Interrupted task** | A task a stopped core left queued or running, failed with `interrupted` when its project reopens | `AgentFailureKind::Interrupted` |
 | **Task event log** | The events of a task's runs, numbered and stored in `project.db`, published as `taskEventAppended` | `TaskEventRecord`, `TaskStore` |
@@ -149,6 +149,16 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Write tool** | An MCP tool that changes the project through `AgentEditService` (annotated destructive) | `WriteTool`, `writes::run` |
 | **Batch** | Several write actions applied as one transaction, all or nothing, with `"as"` names referred to as `"$name"` | `apply_batch`, `ItemRef::Created` |
 | **Revert (task)** | Undoing an AI task's changeset against the current document as one undoable user transaction, reporting conflicts | `revertTask`, `TaskRevertReport`, `REVERT_TASK_LABEL` |
+| **Revert preview** | What reverting a task would undo and keep now, planned and committed on a copy (nothing changes); the panel lists its conflicts before the user confirms | `previewTaskRevert`, `ProjectActorHandle::preview_revert` |
+| **Task usage** | Tokens and cost of a task's runs, added up from their `usage` events | `TaskUsage`, `Task.usage` |
+| **Patch actor** | Who made the commit a `projectPatched` reports: the user (edits, undo, redo, reverts), an AI task, or the app | `ProjectPatch.actor`, `Actor` |
+| **Composer** | The prompt box at the bottom of the « IA » panel: scope chips, the prompt (Ctrl/⌘+Entrée sends, ↑ recalls earlier prompts), model and effort | `TaskComposer`, `PromptComposer`, `composerStore` |
+| **Scope chip** | A chip of the composer saying one part of the prompt's scope and where it comes from (text, item, selection, in/out, whole sequence; tracks; sequence) | `useScopeChips`, `PromptScope` |
+| **Time phrase** | A time range written in French in a prompt (« de 51 s à 54 s », « les 10 premières secondes »), read into the composer's scope | `findTimePhrase`, `TimePhrase` |
+| **Task number** | « #3 »: a task's rank in its project, oldest first (tasks are never deleted, so it never changes) | `taskNumbers`, `useTaskNumber` |
+| **Redo with AI** | « Refaire avec l'IA »: a prompt about one timeline item, with its range and track as scope, resuming (by default) the session of the task that made it, the scope widened to the item if it moved | `openComposer`, `RedoTarget`, `widenedScope` |
+| **AI task mirror** | The renderer's read-only copy of the open project's tasks with their numbers, pulses and user-edit flags, fed by the AI feature and read by the timeline | `shared/ai-tasks`, `connectTaskSync` |
+| **AI pulse** | The brief glow of a timeline item an AI patch just created or changed | `pulseItems`, `animate-ai-pulse` |
 | **Agent session** | The AI CLI's conversation id, chosen by the app for a new run (`--session-id`) and resumed by follow-ups | `Task.agentSessionId`, `AgentSession` |
 | **Tool** | An MCP function exposed to agents (read or write) | `tools::*` |
 | **Agent instructions** | Provider-agnostic markdown guidance (role, time and scope, reading the project, editing rules, motion basics, audio editing) composed with the task's scope and a project summary into the agent's system prompt | `agent-instructions/`, `tasks::instructions` |

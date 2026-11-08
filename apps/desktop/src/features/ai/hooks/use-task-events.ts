@@ -1,58 +1,28 @@
-import type { Task, TaskEventRecord } from '@se/protocol';
+import type { TaskEventRecord } from '@se/protocol';
 import { useEffect, useState } from 'react';
 
 import { useCoreClient, useCoreEvent } from '../../../shared/core';
-import { getTaskEvents, listTasks } from '../api';
-import { appendEvent, upsertTask } from '../services/task-log';
+import { getTaskEvents } from '../api';
+import { appendEvent } from '../services/task-log';
 
-/** Items loaded for one key (a project, a task): items of another key are not shown. */
-interface Keyed<T> {
+/** Events loaded for one task: events of another task are not shown. */
+interface Keyed {
   readonly key: string | null;
-  readonly items: readonly T[];
+  readonly items: readonly TaskEventRecord[];
 }
 
 const NOTHING: readonly never[] = [];
 
-/** The tasks of `projectId`, kept up to date by `taskUpdated` events. */
-export function useProjectTasks(projectId: string | null): readonly Task[] {
-  const client = useCoreClient();
-  const [state, setState] = useState<Keyed<Task>>({ key: null, items: NOTHING });
-  useEffect(() => {
-    if (projectId === null) return;
-    let current = true;
-    listTasks(client, projectId).then(
-      (list) => {
-        if (!current) return;
-        setState((known) => ({
-          key: projectId,
-          items: list.reduce(upsertTask, known.key === projectId ? [...known.items] : []),
-        }));
-      },
-      (error: unknown) => {
-        console.warn('[ai] listing tasks failed', error);
-      },
-    );
-    return () => {
-      current = false;
-    };
-  }, [client, projectId]);
-  useCoreEvent('taskUpdated', ({ task }) => {
-    if (task.projectId !== projectId) return;
-    setState((known) => ({
-      key: projectId,
-      items: upsertTask(known.key === projectId ? known.items : NOTHING, task),
-    }));
-  });
-  return state.key === projectId ? state.items : NOTHING;
-}
-
-/** The event log of a task, kept up to date by `taskEventAppended` events. */
+/**
+ * The event log of a task, kept up to date by `taskEventAppended` events (`null` loads nothing:
+ * a collapsed card).
+ */
 export function useTaskEvents(
   projectId: string | null,
   taskId: string | null,
 ): readonly TaskEventRecord[] {
   const client = useCoreClient();
-  const [state, setState] = useState<Keyed<TaskEventRecord>>({ key: null, items: NOTHING });
+  const [state, setState] = useState<Keyed>({ key: null, items: NOTHING });
   useEffect(() => {
     if (projectId === null || taskId === null) return;
     let current = true;

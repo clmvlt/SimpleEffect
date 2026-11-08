@@ -2,6 +2,7 @@ import type { Flicks, ItemEntity, TransitionAlignment, TransitionId } from '@se/
 import { ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from '@se/ui';
 import { useTranslation } from 'react-i18next';
 
+import { openComposer } from '../../../shared/ai-tasks';
 import type { EditActions } from '../hooks/use-edit-actions';
 import type { TransitionActions } from '../hooks/use-transition-actions';
 import type { Gap } from '../services/gaps';
@@ -100,6 +101,13 @@ export function LaneMenu({ target, actions, transitionActions, canPaste }: LaneM
       )}
       <ContextMenuItem onSelect={actions.showProperties}>
         {t('editor.timeline.menu.properties')}
+      </ContextMenuItem>
+      <ContextMenuItem
+        onSelect={() => {
+          openComposer(item.id);
+        }}
+      >
+        {t('editor.timeline.menu.redoWithAi')}
       </ContextMenuItem>
       {assetId !== null && (
         <ContextMenuItem

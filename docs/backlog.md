@@ -50,6 +50,7 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Sequence tools for agents (`set_sequence_format`, `create_sequence_version`, reframe in another format): they reach outside a task's scope (the whole sequence or a new one), so they need a scope kind of their own.
 - Media placement for agents (`place_media` from the bin into the scope) and template/caption writes (prompts 23–24 add theirs).
 - Reverting one run of a task (follow-ups append to the task's single changeset today) and re-reverting after an undone revert (revisions then differ, so everything conflicts).
+- Task UX (prompt 20): user edits are flagged from upserted items only (an item the user deletes inside a running task's scope sets no mark); time phrases are French only; drawing a scope directly on the timeline (Alt+drag) and per-run usage in the log would help; a revert's dialog could select the items it keeps.
 
 ## Audio
 - Local noise reduction / voice enhancement (e.g. RNNoise or a small ONNX model).
