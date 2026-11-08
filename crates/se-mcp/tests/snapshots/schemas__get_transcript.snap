@@ -8,7 +8,7 @@ expression: definition
     "openWorldHint": false,
     "readOnlyHint": true
   },
-  "description": "The words spoken in a range of the sequence, with their times. Not available yet in this version of SimpleEffect: it answers available=false.",
+  "description": "The words spoken in a range of the sequence (default: your task's range, else the whole sequence), in sequence time: segments (phrases) with their text, and each word's start and end in seconds (words=false for segments only). Only what the sound clips play counts: cut passages have no words. Paginated by words (offset/limit, next_offset). untranscribed lists media the user has not transcribed yet.",
   "inputSchema": {
     "$defs": {
       "RangeInput": {
@@ -45,6 +45,24 @@ expression: definition
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
     "properties": {
+      "limit": {
+        "description": "Words per page (default 400, at most 2000).",
+        "format": "uint",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "offset": {
+        "description": "Index of the first word of the page (from a previous answer's next_offset); default 0.",
+        "format": "uint",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
       "range": {
         "anyOf": [
           {
@@ -60,6 +78,13 @@ expression: definition
         "description": "Sequence id or exact name; default: your task's sequence.",
         "type": [
           "string",
+          "null"
+        ]
+      },
+      "words": {
+        "description": "Whether to list each word with its times (default true); false gives segments only,\nshorter for long ranges.",
+        "type": [
+          "boolean",
           "null"
         ]
       }

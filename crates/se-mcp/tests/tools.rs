@@ -323,8 +323,6 @@ async fn frame_requests_are_checked_before_reaching_the_renderer() {
 #[tokio::test]
 async fn stubs_and_presets_answer_plainly() {
     let bed = Bed::open().await;
-    let transcript = bed.json("get_transcript", json!({})).await;
-    assert_eq!(transcript["available"], false);
     assert_eq!(
         bed.json("get_brand_kit", json!({})).await["available"],
         false
@@ -364,5 +362,97 @@ async fn a_closed_project_and_an_unknown_tool_are_refused() {
     assert_eq!(
         bed.error_code("get_project_overview", json!({})).await,
         "PROJECT_NOT_OPEN"
+    );
+}
+
+/// The interview's words in source time: its sound clip (A1) plays source 5–15 s at 0–10 s.
+const INTERVIEW_WORDS: [(&str, i64, i64, u32); 8] = [
+    ("Bonjour", 5_500, 5_900, 0),
+    ("à", 5_900, 6_000, 0),
+    ("tous.", 6_000, 6_400, 0),
+    ("Abonnez-vous", 8_000, 8_800, 1),
+    ("à", 8_800, 8_900, 1),
+    ("la", 8_900, 9_000, 1),
+    ("chaîne !", 9_000, 9_600, 1),
+    ("Coupé", 16_000, 16_500, 2),
+];
+
+#[tokio::test]
+async fn get_transcript_gives_the_sequences_words_in_sequence_time() {
+    let bed = Bed::open().await;
+    let empty = bed.json("get_transcript", json!({})).await;
+    assert_eq!(empty["available"], false);
+    assert_eq!(
+        empty["untranscribed"].as_array().unwrap().len(),
+        2,
+        "interview and music"
+    );
+
+    bed.set_transcript(example_ids::VIDEO_ASSET, &INTERVIEW_WORDS);
+    let answer = bed.json("get_transcript", json!({})).await;
+    assert_eq!(answer["available"], true);
+    assert_eq!(
+        answer["total_words"], 7,
+        "the word beyond the clip is not played"
+    );
+    let segments = answer["segments"].as_array().unwrap();
+    assert_eq!(segments[0]["text"], "Bonjour à tous.");
+    assert_eq!(segments[0]["start"]["seconds"], 0.5);
+    assert_eq!(segments[1]["words"][3]["text"], "chaîne !");
+    assert_eq!(segments[1]["words"][3]["unsure"], true);
+    assert_eq!(segments[1]["words"][0]["start_seconds"], 3.0);
+    assert!(segments[0]["words"][0].get("unsure").is_none());
+    assert_eq!(answer["untranscribed"][0]["name"], "music.wav");
+
+    let page = bed
+        .json(
+            "get_transcript",
+            json!({ "range": { "start": 0, "end": 10 }, "limit": 2, "words": false }),
+        )
+        .await;
+    assert_eq!(page["next_offset"], 2);
+    assert!(page["segments"][0].get("words").is_none());
+    let late = bed
+        .json(
+            "get_transcript",
+            json!({ "range": { "start": 2.5, "end": 4 } }),
+        )
+        .await;
+    assert_eq!(
+        late["total_words"], 3,
+        "« chaîne ! » has its middle at 4.3 s"
+    );
+}
+
+#[tokio::test]
+async fn search_transcript_finds_where_words_are_said() {
+    let bed = Bed::open().await;
+    bed.set_transcript(example_ids::VIDEO_ASSET, &INTERVIEW_WORDS);
+    let answer = bed
+        .json("search_transcript", json!({ "query": "chaine abonn" }))
+        .await;
+    let results = answer["results"].as_array().unwrap();
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0]["text"], "Abonnez-vous à la chaîne !");
+    assert_eq!(results[0]["start"]["seconds"], 3.0);
+    let matches: Vec<&str> = results[0]["matches"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|word| word["text"].as_str().unwrap())
+        .collect();
+    assert_eq!(matches, ["Abonnez-vous", "chaîne !"]);
+    let cut = bed
+        .json("search_transcript", json!({ "query": "coupé" }))
+        .await;
+    assert_eq!(cut["results"], json!([]));
+    assert_eq!(
+        cut["elsewhere"], 1,
+        "said in the media, not in the sequence"
+    );
+    assert_eq!(
+        bed.error_code("search_transcript", json!({ "query": " ! " }))
+            .await,
+        "INVALID_ARGUMENTS"
     );
 }

@@ -1,0 +1,86 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "Finds where words are said in the sequence: phrases of the transcripts holding every word of `query` (accents and case ignored), each with its sequence times and the times of the matching words, sorted by time. Use it to locate a passage before cutting or titling it; then read around it with get_transcript.",
+  "inputSchema": {
+    "$defs": {
+      "RangeInput": {
+        "additionalProperties": false,
+        "description": "A range given by an agent; the end is excluded.",
+        "properties": {
+          "end": {
+            "$ref": "#/$defs/Time",
+            "description": "End of the range (excluded), after `start`."
+          },
+          "start": {
+            "$ref": "#/$defs/Time",
+            "description": "First instant of the range."
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "type": "object"
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "limit": {
+        "description": "Most results (default 20, at most 50).",
+        "format": "uint",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "query": {
+        "description": "Words to find, e.g. \"abonnez-vous\" or \"prix euros\" (every word must appear in the phrase;\naccents and case are ignored; the last word may be the start of a word).",
+        "type": "string"
+      },
+      "range": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/RangeInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Only phrases intersecting this range of the sequence; default: the whole sequence."
+      },
+      "sequence": {
+        "description": "Sequence id or exact name; default: your task's sequence.",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "query"
+    ],
+    "type": "object"
+  },
+  "name": "search_transcript"
+}
