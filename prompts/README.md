@@ -56,7 +56,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | [x] | 17 | [Runtime des agents IA (générique + Claude Code)](17-agents-runtime.md) ⚠️ | 07 | 08 → 16 |
 | [x] | 18 | [Serveur MCP : outils de lecture](18-mcp-lecture.md) | 16, 17 | 21 |
 | [x] | 19 | [Serveur MCP : outils d'écriture, portée, changesets](19-mcp-ecriture.md) ⚠️ | 18 | 21 |
-| [ ] | 20 | [UX IA : composeur, tâches parallèles, annulation](20-ux-ia.md) | 19 | 21 |
+| [x] | 20 | [UX IA : composeur, tâches parallèles, annulation](20-ux-ia.md) | 19 | 21 |
 | **Phase 5 — Transcription et audio intelligent** |||||
 | [ ] | 21 | [Transcription locale (whisper.cpp)](21-transcription.md) | 09, 18 | 19, 20 |
 | [ ] | 22 | [Montage par le texte et coupes intelligentes](22-montage-texte.md) | 14, 19, 21 | — |
