@@ -17,10 +17,13 @@ use se_app::ports::{FontCatalog, FontData};
 use tower::ServiceExt;
 use tower_http::services::ServeFile;
 
+use crate::media_cors::read_only_cors;
+
 /// The `/media/fonts` router over the font catalogue.
 pub fn routes(fonts: Arc<dyn FontCatalog>) -> Router {
     Router::new()
         .route("/media/fonts/{id}", get(font_face))
+        .layer(read_only_cors())
         .with_state(fonts)
 }
 

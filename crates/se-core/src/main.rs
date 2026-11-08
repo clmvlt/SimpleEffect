@@ -21,6 +21,7 @@ mod font_routes;
 mod handshake;
 mod logging;
 mod mcp_routes;
+mod media_cors;
 mod media_routes;
 mod platform;
 mod render_routes;
