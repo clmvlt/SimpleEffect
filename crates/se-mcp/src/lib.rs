@@ -15,6 +15,7 @@
 
 mod analyses;
 pub mod context;
+pub mod cuts;
 pub mod describe;
 pub mod output;
 pub mod registry;

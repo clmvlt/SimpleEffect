@@ -2,8 +2,8 @@
 
 use se_domain::{
     AnimationPhase, AssetId, Flicks, Format, FormatAdaptation, ItemId, JobId, MarkerColor,
-    MarkerId, MarkerPatch, ProjectId, PropertyAnimation, SequenceId, TaskId, TrackId, TrackKind,
-    TrackPatch, TranscriptionSettings, TransitionId, TransitionPatch,
+    MarkerId, MarkerPatch, ProjectId, PropertyAnimation, SequenceId, TaskId, TimeRange, TrackId,
+    TrackKind, TrackPatch, TranscriptionSettings, TransitionId, TransitionPatch,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -12,7 +12,8 @@ use crate::{
     AddGraphicRequest, AiSettings, CreateProjectRequest, DecodabilityReport, DecoderCapabilities,
     DownloadTarget, GenerateDerivedRequest, ImportMediaRequest, ItemAnimation, ItemPlacement,
     ItemTrim, ItemUpdate, MediaSettings, NewTransition, PastedItem, PlaceMediaRequest,
-    PlacementMode, RelinkAssetRequest, SubmitTaskRequest, TaskScope, TranscriptionPreferences,
+    PlacementMode, RelinkAssetRequest, SilenceCutParams, SmartCutSettings, SubmitTaskRequest,
+    TaskScope, TranscriptionPreferences, WordCutPurpose,
 };
 
 /// A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -626,6 +627,72 @@ pub enum Command {
         project_id: ProjectId,
         /// The new settings.
         settings: TranscriptionSettings,
+    },
+    /// The smart-cut settings (filler lists, silence defaults). Answered by
+    /// [`crate::CommandResult::GetSmartCutSettings`].
+    GetSmartCutSettings,
+    /// Saves the smart-cut settings. Answered by
+    /// [`crate::CommandResult::UpdateSmartCutSettings`] (the settings as stored).
+    UpdateSmartCutSettings(SmartCutSettings),
+    /// Cuts the words whose middle lies in `ranges` (sequence time), with natural margins, as one
+    /// ripple transaction on their tracks and linked partners. Answered by
+    /// [`crate::CommandResult::RemoveWords`].
+    RemoveWords {
+        /// The open project.
+        project_id: ProjectId,
+        /// The sequence edited.
+        sequence_id: SequenceId,
+        /// Ranges holding the words to remove (usually from the start of the first word to the
+        /// end of the last one).
+        ranges: Vec<TimeRange>,
+        /// Words or fillers (the undo label).
+        purpose: WordCutPurpose,
+        /// Cut every unlocked track (graphics included) instead of the speech's tracks and their
+        /// linked partners.
+        all_tracks: bool,
+    },
+    /// The filler words of a sequence range. Answered by [`crate::CommandResult::FindFillers`].
+    FindFillers {
+        /// The open project.
+        project_id: ProjectId,
+        /// The sequence read.
+        sequence_id: SequenceId,
+        /// Where to look; `null` for the whole sequence.
+        range: Option<TimeRange>,
+    },
+    /// The cuts « remove silences » would make, without changing anything. Answered by
+    /// [`crate::CommandResult::PreviewSilenceCuts`].
+    PreviewSilenceCuts {
+        /// The open project.
+        project_id: ProjectId,
+        /// The sequence read.
+        sequence_id: SequenceId,
+        /// Where to look; `null` for the whole sequence.
+        range: Option<TimeRange>,
+        /// Threshold, minimum silence and padding.
+        params: SilenceCutParams,
+        /// Sound tracks whose silences count (all of them must be silent); `null` for every
+        /// unmuted sound track holding media.
+        track_ids: Option<Vec<TrackId>>,
+        /// Cut every unlocked track.
+        all_tracks: bool,
+    },
+    /// Cuts the silences of a range as one ripple transaction. Answered by
+    /// [`crate::CommandResult::RemoveSilences`].
+    RemoveSilences {
+        /// The open project.
+        project_id: ProjectId,
+        /// The sequence edited.
+        sequence_id: SequenceId,
+        /// Where to cut; `null` for the whole sequence.
+        range: Option<TimeRange>,
+        /// Threshold, minimum silence and padding.
+        params: SilenceCutParams,
+        /// Sound tracks whose silences count; `null` for every unmuted sound track holding
+        /// media.
+        track_ids: Option<Vec<TrackId>>,
+        /// Cut every unlocked track.
+        all_tracks: bool,
     },
 }
 

@@ -1,0 +1,104 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Cuts the pauses of a range (default: your task's range) where every listened sound track is quieter than threshold_db for at least min_silence, keeping padding of silence on each side, and closes the gaps on those tracks and their linked picture (one undoable transaction; later items move left). Pauses come from the audio analysis (see get_audio_analysis). Leave music tracks out with tracks. Returns the cuts made and the time gained.",
+  "inputSchema": {
+    "$defs": {
+      "RangeInput": {
+        "additionalProperties": false,
+        "description": "A range given by an agent; the end is excluded.",
+        "properties": {
+          "end": {
+            "$ref": "#/$defs/Time",
+            "description": "End of the range (excluded), after `start`."
+          },
+          "start": {
+            "$ref": "#/$defs/Time",
+            "description": "First instant of the range."
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "type": "object"
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "all_tracks": {
+        "description": "Cut every unlocked track instead of the listened tracks and their linked picture;\ndefault false.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "min_silence": {
+        "description": "Shortest pause cut, in seconds (0.1 to 10); default: the user's setting (0.5).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "padding": {
+        "description": "Silence kept before and after each cut, in seconds (0 to 1); default: the user's setting\n(0.12). Keep at least 0.08 so speech breathes.",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "range": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/RangeInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "A range of the sequence; default: your task's range, else the whole sequence."
+      },
+      "threshold_db": {
+        "description": "Level under which sound is silence, in dBFS (-80 to -10); default: the user's setting\n(-40 unless changed). Raise it (-35) for noisy rooms, lower it (-50) for quiet ones.",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "tracks": {
+        "description": "Sound tracks whose silences count (ids or names; all of them must be quiet); default:\nevery unmuted sound track holding media (your task's sound tracks when it has tracks).\nLeave music tracks out: music is never silent.",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "name": "remove_silences"
+}

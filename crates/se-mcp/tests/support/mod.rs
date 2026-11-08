@@ -57,6 +57,7 @@ impl Bed {
             tokens: bed.tokens.clone(),
             edits: bed.edits.clone(),
             transcription: bed.transcription.clone(),
+            smart_cuts: bed.smart_cuts.clone(),
         });
         let agent = AgentContext {
             project_id,
@@ -179,6 +180,7 @@ impl Bed {
                 .iter()
                 .map(|(start, end)| ms_range(*start, *end))
                 .collect(),
+            levels: Some(se_app::test_support::levels_with_silences(60_000, silences)),
         };
         self.store(asset, AnalysisResult::AudioAnalysis(analysis));
     }

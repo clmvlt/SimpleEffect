@@ -29,6 +29,7 @@ mod media;
 mod media_settings;
 mod project_entities;
 mod project_session;
+mod smart_cuts;
 mod tasks;
 mod transcription;
 
@@ -71,6 +72,9 @@ pub use project_entities::{
 pub use project_session::{
     CreateProjectRequest, FormatPresetDimensions, HistoryState, NewProjectDefaults, ProjectHistory,
     ProjectSession, RecentProject,
+};
+pub use smart_cuts::{
+    CutSummary, FillerList, FillerOccurrence, SilenceCutParams, SmartCutSettings, WordCutPurpose,
 };
 pub use tasks::{
     RunKind, SubmitTaskRequest, Task, TaskEventRecord, TaskRevertReport, TaskRun, TaskScope,

@@ -31,9 +31,12 @@ import type { ProjectId } from "./ProjectId";
 import type { PropertyAnimation } from "./PropertyAnimation";
 import type { RelinkAssetRequest } from "./RelinkAssetRequest";
 import type { SequenceId } from "./SequenceId";
+import type { SilenceCutParams } from "./SilenceCutParams";
+import type { SmartCutSettings } from "./SmartCutSettings";
 import type { SubmitTaskRequest } from "./SubmitTaskRequest";
 import type { TaskId } from "./TaskId";
 import type { TaskScope } from "./TaskScope";
+import type { TimeRange } from "./TimeRange";
 import type { TrackId } from "./TrackId";
 import type { TrackKind } from "./TrackKind";
 import type { TrackPatch } from "./TrackPatch";
@@ -41,6 +44,7 @@ import type { TranscriptionPreferences } from "./TranscriptionPreferences";
 import type { TranscriptionSettings } from "./TranscriptionSettings";
 import type { TransitionId } from "./TransitionId";
 import type { TransitionPatch } from "./TransitionPatch";
+import type { WordCutPurpose } from "./WordCutPurpose";
 
 /**
  * A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -597,4 +601,88 @@ projectId: ProjectId,
 /**
  * The new settings.
  */
-settings: TranscriptionSettings, };
+settings: TranscriptionSettings, } | { "kind": "getSmartCutSettings" } | { "kind": "updateSmartCutSettings" } & SmartCutSettings | { "kind": "removeWords", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The sequence edited.
+ */
+sequenceId: SequenceId, 
+/**
+ * Ranges holding the words to remove (usually from the start of the first word to the
+ * end of the last one).
+ */
+ranges: Array<TimeRange>, 
+/**
+ * Words or fillers (the undo label).
+ */
+purpose: WordCutPurpose, 
+/**
+ * Cut every unlocked track (graphics included) instead of the speech's tracks and their
+ * linked partners.
+ */
+allTracks: boolean, } | { "kind": "findFillers", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The sequence read.
+ */
+sequenceId: SequenceId, 
+/**
+ * Where to look; `null` for the whole sequence.
+ */
+range: TimeRange | null, } | { "kind": "previewSilenceCuts", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The sequence read.
+ */
+sequenceId: SequenceId, 
+/**
+ * Where to look; `null` for the whole sequence.
+ */
+range: TimeRange | null, 
+/**
+ * Threshold, minimum silence and padding.
+ */
+params: SilenceCutParams, 
+/**
+ * Sound tracks whose silences count (all of them must be silent); `null` for every
+ * unmuted sound track holding media.
+ */
+trackIds: Array<TrackId> | null, 
+/**
+ * Cut every unlocked track.
+ */
+allTracks: boolean, } | { "kind": "removeSilences", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The sequence edited.
+ */
+sequenceId: SequenceId, 
+/**
+ * Where to cut; `null` for the whole sequence.
+ */
+range: TimeRange | null, 
+/**
+ * Threshold, minimum silence and padding.
+ */
+params: SilenceCutParams, 
+/**
+ * Sound tracks whose silences count; `null` for every unmuted sound track holding
+ * media.
+ */
+trackIds: Array<TrackId> | null, 
+/**
+ * Cut every unlocked track.
+ */
+allTracks: boolean, };

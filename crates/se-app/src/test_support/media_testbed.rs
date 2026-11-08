@@ -20,8 +20,8 @@ use super::{
 use crate::{
     AgentEditService, AppError, FrameRenderService, JobQueue, JobQueueConfig, McpAccess,
     MediaService, MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps,
-    TaskService, TaskServiceDeps, TaskTokenRegistry, TranscriptionService,
-    TranscriptionServiceDeps,
+    SmartCutService, SmartCutServiceDeps, TaskService, TaskServiceDeps, TaskTokenRegistry,
+    TranscriptionService, TranscriptionServiceDeps,
 };
 
 /// The MCP URL runs of the testbed's task service are given.
@@ -68,6 +68,8 @@ pub struct MediaTestbed {
     pub renderer: Arc<FakeRendererLink>,
     /// Transcription use cases (observing projects, told about imports); not started.
     pub transcription: TranscriptionService,
+    /// Smart cuts over `projects`, `media` and `transcription` (prompt 22).
+    pub smart_cuts: SmartCutService,
     /// whisper.cpp of `transcription`.
     pub transcriber: FakeTranscriber,
     /// Speech audio extractions.
@@ -151,7 +153,14 @@ impl MediaTestbed {
                 .with_observer(Arc::new(transcription.clone())),
         );
         let edits = Arc::new(AgentEditService::new(projects.clone(), tasks.clone(), ids));
+        let smart_cuts = SmartCutService::new(SmartCutServiceDeps {
+            projects: projects.clone(),
+            media: media.clone(),
+            transcription: transcription.clone(),
+            library: library.clone(),
+        });
         Self {
+            smart_cuts,
             projects,
             media,
             tasks,

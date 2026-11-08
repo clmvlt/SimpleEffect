@@ -1,0 +1,80 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Cuts the filler words of a range (default: your task's range): « euh », « hum », « um », « uh »… from the user's lists for each transcript's language, or your own words. Same margins and sync as remove_words (one undoable transaction). Only transcribed fillers can be found: if none come back, the transcript may not contain them. Returns the cuts made and the time gained.",
+  "inputSchema": {
+    "$defs": {
+      "RangeInput": {
+        "additionalProperties": false,
+        "description": "A range given by an agent; the end is excluded.",
+        "properties": {
+          "end": {
+            "$ref": "#/$defs/Time",
+            "description": "End of the range (excluded), after `start`."
+          },
+          "start": {
+            "$ref": "#/$defs/Time",
+            "description": "First instant of the range."
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "type": "object"
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "all_tracks": {
+        "description": "Cut every unlocked track instead of the speech's tracks and their linked picture;\ndefault false.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "range": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/RangeInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "A range of the sequence; default: your task's range, else the whole sequence."
+      },
+      "words": {
+        "description": "Fillers to remove instead of the user's lists (words or short phrases such as « you\nknow »; case, accents and punctuation ignored, « euuuh » matches « euh »). Default: the\nuser's lists for each transcript's language.",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "name": "remove_fillers"
+}

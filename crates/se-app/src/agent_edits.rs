@@ -10,7 +10,10 @@
 //! - `graphics`, `timing`, `transitions`: the planners of each kind of edit. Moves, trims,
 //!   splits and deletes keep linked items together, as in the timeline.
 //! - `scope`: the scope check and its messages.
+//! - `cuts`, `cut_scope`: smart cuts of agents (prompt 22) and their « cut » scope rule.
 
+mod cut_scope;
+mod cuts;
 mod graphics;
 mod planner;
 mod request;
@@ -18,6 +21,7 @@ mod scope;
 mod timing;
 mod transitions;
 
+pub use cuts::CutOutcome;
 pub use planner::EditFailure;
 pub use request::{AgentEdit, AgentEditReport, ItemRef, NewAgentItem, PresetSpec, TaskChanges};
 

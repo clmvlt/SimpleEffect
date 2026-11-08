@@ -99,6 +99,9 @@
 | `add_transition` | A cross-fade on a cut |
 | `add_marker` | A labelled marker |
 | `apply_batch` | Several write actions as one change (all or nothing) |
+| `remove_words` | Cuts transcript words (text-based editing), keeping natural pauses |
+| `remove_fillers` | Cuts filler words (« euh », « um »…) of a range |
+| `remove_silences` | Cuts the pauses of a range, from the sound's level |
 
 Ids below are shortened (`…0001…`); real ones are UUIDs.
 
@@ -455,7 +458,8 @@ Examples of requests and the calls an agent makes:
 |---|---|
 | « De 51 s à 54 s, affiche “Abonne-toi” au centre avec un pop » | `add_text {"text":"Abonne-toi","start":51,"end":54,"position":"center","font_size":140,"font_weight":800,"stroke":{},"animation_in":{"preset":"pop"}}`, then `get_frames {"times":[51.2,52.5]}` |
 | « Un bandeau noir derrière le titre » | `apply_batch` with `add_shape` (`"as":"bar"`) then `add_text` over it, both animated |
-| « Coupe les silences entre 10 s et 20 s » | `get_audio_analysis {"range":{"start":10,"end":20}}`, then `apply_batch` of `split_at` + `delete_items` (or `ripple_delete_range` when the scope reaches the end) |
+| « Coupe les silences entre 10 s et 20 s » | `remove_silences {"range":{"start":10,"end":20},"tracks":["A1"]}` (smart cuts, below) |
+| « Enlève les euh » | `remove_fillers {}` |
 | « Baisse la musique sous la voix » | `get_audio_analysis`, then `set_volume` with an `automation` |
 | « Fondu enchaîné à la coupe de 10 s » | `add_transition {"track":"V1","at":10,"duration":0.5}` |
 
@@ -636,6 +640,66 @@ Read-only.
 `edits`: write calls committed. `created`: items the task added that still exist; `changed`: items
 that existed before, changed by the task; `removed`: items it removed. `changeset_id` is `null`
 while the task changed nothing (or after a revert).
+
+## Smart cuts (prompt 22)
+
+`remove_words`, `remove_fillers` and `remove_silences` cut time out of the sequence the way the
+user's text-based editing does (`se_app::smart_cuts`, ADR-0032): the cuts are resolved on the
+current document, made frame-exact, and removed as **one** ripple transaction
+(`RippleDeleteRanges`) on the speech's sound tracks **and the tracks of their linked picture**
+(`all_tracks: true`: every unlocked track, graphics and music included). Linked parts stay linked
+between the same two cuts, so picture and sound never drift. The result is ordinary items: the user
+can undo it, or lengthen a pause with a ripple trim. These tools are not batchable.
+
+**Cut scope rule.** A cut removes time, so everything after it moves left and a clip crossing the
+scope's edge is cut inside it only. Instead of the strict rule above, a cut is accepted when **the
+time it removes lies in the scope's range** and **every track it edits is one of the task's
+tracks**. Cuts are clipped to the scope's range automatically; a linked partner on a track outside
+the scope makes the call fail with `OUT_OF_SCOPE` (« the cut would also edit track V1… »).
+
+**Margins.** Words are removed with natural margins: the longer pause around them is kept, the
+shorter one is cut to a breath (60 ms) before the next kept word, a removed word is cut 30 ms
+before its start, never more than half a pause, never inside a kept word. Less than 80 ms left
+between two cuts or at a clip edge is removed too. Silences keep `padding` on each side.
+
+**Output** (all three):
+```json
+{"cuts":3,"removed":{"timecode":"00:00:02.336","seconds":2.336},"words_removed":3,
+ "ranges":[{"start":{"timecode":"00:00:01.968","seconds":1.968},"end":{"timecode":"00:00:02.336","seconds":2.336}}],
+ "tracks":["V1","A1"],"revision":52}
+```
+`ranges`: the cuts in sequence time **before** the call (first 50), so later cuts' times shift by
+the time removed before them: read the transcript or the timeline again before cutting more.
+`revision` is absent and `note` says why when nothing was cut. `untranscribed` / `unanalysed` list
+media whose words or sound could not be read (`[{asset_id, name}]`).
+
+**Errors**: `OUT_OF_SCOPE`, `VALIDATION_ERROR` (a locked speech track), `INVALID_ARGUMENTS`,
+`INVALID_TIME`, `TRACK_NOT_FOUND`, `PROJECT_NOT_OPEN`, `ACCESS_REVOKED`.
+
+### `remove_words`
+
+`ranges` (required, 1–500, `[{start, end}]` in sequence time, as `get_transcript` gives words:
+first word's start → last word's end; a word goes when its middle lies in a range), `all_tracks`
+(default false). To keep the best take of a repeated sentence, compare the repetitions in
+`get_transcript` and remove the others with one call.
+
+### `remove_fillers`
+
+`range` (default: the task's range, else the whole sequence), `words` (fillers to remove instead
+of the user's lists: words or short phrases, case, accents and punctuation ignored, repeated
+letters once — « euuuh » is « euh »), `all_tracks`. The user's lists are per language (French:
+euh, heu, hum, hmm, mmh, bah, ben, beh, euhm; English: um, uh, uhm, erm, er, hmm, mm, you know);
+occurrences longer than the user's maximum (1.5 s) are skipped. Only transcribed fillers can be
+found.
+
+### `remove_silences`
+
+`range` (default: the task's range), `threshold_db` (-80 to -10 dBFS, default the user's -40),
+`min_silence` (seconds, 0.1–10, default 0.5), `padding` (seconds kept on each side, 0–1, default
+0.12), `tracks` (sound tracks listened to, ids or names; every one must be quiet; default: every
+unmuted, unlocked sound track holding media, or the task's sound tracks), `all_tracks`. Silences
+come from the assets' level envelopes (20 ms RMS, `get_audio_analysis`); time where no listened
+track has a clip is never cut. **Leave music tracks out**: music is never silent.
 
 ## Changesets and reverts
 
