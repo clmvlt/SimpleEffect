@@ -508,4 +508,12 @@ projectId: ProjectId,
 /**
  * The task.
  */
-taskId: TaskId, } | { "kind": "getAiStatus" } | { "kind": "refreshAiStatus" } | { "kind": "getAiSettings" } | { "kind": "updateAiSettings" } & AiSettings;
+taskId: TaskId, } | { "kind": "getAiStatus" } | { "kind": "refreshAiStatus" } | { "kind": "getAiSettings" } | { "kind": "updateAiSettings" } & AiSettings | { "kind": "reportFrameRenderFailure", 
+/**
+ * The request.
+ */
+requestId: string, 
+/**
+ * Why, for the agent (English, actionable).
+ */
+message: string, };

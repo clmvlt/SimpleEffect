@@ -249,6 +249,8 @@ pub enum CommandResult {
         /// The settings as saved.
         settings: AiSettings,
     },
+    /// Answer to [`crate::Command::ReportFrameRenderFailure`]: the agent was told.
+    ReportFrameRenderFailure,
 }
 
 /// Facts about the running core, shown in the UI and useful in bug reports.

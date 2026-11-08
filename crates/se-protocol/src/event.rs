@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    AiStatus, JobProgress, JobSnapshot, ProjectHistory, ProjectPatch, ProjectSession, Task,
-    TaskEventRecord,
+    AiStatus, FrameRenderRequest, JobProgress, JobSnapshot, ProjectHistory, ProjectPatch,
+    ProjectSession, Task, TaskEventRecord,
 };
 
 /// An event pushed inside a [`crate::EventEnvelope`], tagged by `kind` (camelCase).
@@ -85,6 +85,10 @@ pub enum CoreEvent {
     },
     /// What is known about the AI provider changed (installed, logged in or out…).
     AiStatusChanged(AiStatus),
+    /// An AI agent asked for frames of a sequence: the renderer showing that project draws them
+    /// and uploads one JPEG per time to `/media/renders/{requestId}/{index}`, or answers
+    /// [`crate::Command::ReportFrameRenderFailure`] (ADR-0028).
+    RenderFramesRequested(FrameRenderRequest),
 }
 
 #[cfg(test)]

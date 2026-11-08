@@ -1,0 +1,57 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "Pictures of a media file itself (not the edit) at source times, e.g. to see what a clip could show beyond its edges or to pick a moment before placing it. Returns a JSON header then one image per time (images: one picture).",
+  "inputSchema": {
+    "$defs": {
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "asset": {
+        "description": "The asset's id (from `list_assets` or `get_timeline`).",
+        "type": "string"
+      },
+      "max_width": {
+        "description": "Largest picture width in pixels (16–3840, never enlarged); default 768.",
+        "format": "uint32",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "times": {
+        "description": "Source times (from the media file's first frame), at most 8.",
+        "items": {
+          "$ref": "#/$defs/Time"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "asset",
+      "times"
+    ],
+    "type": "object"
+  },
+  "name": "get_source_frames"
+}

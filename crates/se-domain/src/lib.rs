@@ -92,7 +92,7 @@ pub use reformat::{
 pub use spatial::{DESIGN_REFERENCE_SIDE, DesignPixels, Vec2};
 pub use time::{
     Flicks, FrameRate, RoundingMode, TimeError, TimeRange, TimecodeError, TimecodeErrorReason,
-    format_timecode, parse_timecode,
+    format_clock, format_timecode, parse_timecode,
 };
 pub use transaction::{Actor, Committed, Transaction, commit};
 pub use validation::{Violation, ViolationCode, validate_project};

@@ -1,12 +1,14 @@
 //! Wiring of the use cases to their adapters: projects over se-store, media over se-media, AI
-//! tasks over se-agents, all publishing to the event bus.
+//! tasks over se-agents (acting through `/mcp` with per-run tokens), frames for agents through
+//! the renderer, all publishing to the event bus.
 
 use std::{path::PathBuf, sync::Arc};
 
 use se_agents::{FsAgentWorkspaces, providers::claude_code::ClaudeCodeProvider};
 use se_app::{
-    DEFAULT_SAVE_DELAY, JobQueue, JobQueueConfig, MediaService, MediaServiceDeps, ProjectService,
-    ProjectServiceConfig, ProjectServiceDeps, TaskService, TaskServiceDeps,
+    DEFAULT_SAVE_DELAY, FrameRenderService, JobQueue, JobQueueConfig, McpAccess, MediaService,
+    MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps, TaskService,
+    TaskServiceDeps, TaskTokenRegistry,
     media_service::settings::keys::TOOLS_DIR,
     ports::{AppLibraryRepository, FontCatalog, IdGenerator},
 };
@@ -18,7 +20,7 @@ use crate::{
     app_paths::AppPaths,
     error::CoreError,
     rpc::EventBus,
-    system_ports::{SystemClock, UuidV7Ids},
+    system_ports::{RandomTokens, SystemClock, UuidV7Ids},
 };
 
 /// The use cases served by the core.
@@ -31,13 +33,17 @@ pub struct Services {
     pub tasks: Arc<TaskService>,
     /// Bundled and installed fonts (`listFonts`, `/media/fonts`).
     pub fonts: Arc<dyn FontCatalog>,
+    /// Frames of sequences drawn by the renderer for agents (`get_frames`, `/media/renders`).
+    pub renders: Arc<FrameRenderService>,
+    /// MCP tokens of running agents (minted by `tasks`, checked by `/mcp`).
+    pub tokens: Arc<TaskTokenRegistry>,
 }
 
-/// Builds the services over the real adapters.
+/// Builds the services over the real adapters, for a core listening on `port`.
 ///
 /// # Errors
 /// [`CoreError::Library`] when `library.db` cannot be opened.
-pub async fn build(paths: &AppPaths, events: &EventBus) -> Result<Services, CoreError> {
+pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Services, CoreError> {
     let library =
         Arc::new(SqliteAppLibrary::open(&paths.library_db()).map_err(CoreError::Library)?);
     let tools_dir = match library.setting(TOOLS_DIR).await {
@@ -48,7 +54,16 @@ pub async fn build(paths: &AppPaths, events: &EventBus) -> Result<Services, Core
         }
     };
     let media = Arc::new(media_service(tools_dir, events, library.clone()));
-    let tasks = Arc::new(task_service(paths, events, library.clone()).await);
+    let tokens = Arc::new(TaskTokenRegistry::new(Arc::new(RandomTokens)));
+    let mcp = McpAccess {
+        url: format!("http://127.0.0.1:{port}/mcp"),
+        tokens: Arc::clone(&tokens),
+    };
+    let tasks = Arc::new(task_service(paths, events, library.clone(), mcp).await);
+    let renders = Arc::new(FrameRenderService::new(
+        Arc::new(events.clone()),
+        Arc::new(UuidV7Ids),
+    ));
     let deps = ProjectServiceDeps {
         repository: Arc::new(FsProjectRepository),
         library,
@@ -68,6 +83,8 @@ pub async fn build(paths: &AppPaths, events: &EventBus) -> Result<Services, Core
         media,
         tasks,
         fonts: font_catalog(),
+        renders,
+        tokens,
     })
 }
 
@@ -77,6 +94,7 @@ async fn task_service(
     paths: &AppPaths,
     events: &EventBus,
     library: Arc<dyn AppLibraryRepository>,
+    mcp: McpAccess,
 ) -> TaskService {
     let workspaces = FsAgentWorkspaces::new(paths.agent_workdirs());
     workspaces.remove_leftovers().await;
@@ -87,6 +105,7 @@ async fn task_service(
         events: Arc::new(events.clone()),
         clock: Arc::new(SystemClock),
         ids: Arc::new(UuidV7Ids),
+        mcp,
     });
     if let Err(error) = tasks.start().await {
         tracing::warn!(%error, "reading the AI settings failed; defaults apply");

@@ -8,6 +8,7 @@ mod app_library;
 mod fonts;
 mod media;
 mod project_repository;
+mod renderer;
 mod runtime;
 mod storage_error;
 mod task_store;
@@ -25,7 +26,8 @@ pub use media::{
     MediaJobSpec, MediaProber, MediaTask, MediaTools, ProbedMedia, ProgressSink,
 };
 pub use project_repository::{JournalEntry, ProjectRepository, ProjectStore};
-pub use runtime::{Clock, EventSink, IdGenerator};
+pub use renderer::RendererLink;
+pub use runtime::{Clock, EventSink, IdGenerator, TokenSource};
 pub use storage_error::StorageError;
 pub use task_store::TaskStore;
 pub use transcode::{

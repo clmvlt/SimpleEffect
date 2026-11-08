@@ -1,0 +1,86 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "Silences, loudness (EBU R128) and peaks. With `asset`: the file's analysis in source time (silences, loudness curve, loudest moments). Otherwise for a range of the sequence (default: your task's range, else the whole sequence), in sequence time: where nothing is heard, and each sound clip's silences and loudness. Analyses run in the background after import: NOT_ANALYSED until done.",
+  "inputSchema": {
+    "$defs": {
+      "RangeInput": {
+        "additionalProperties": false,
+        "description": "A range given by an agent; the end is excluded.",
+        "properties": {
+          "end": {
+            "$ref": "#/$defs/Time",
+            "description": "End of the range (excluded), after `start`."
+          },
+          "start": {
+            "$ref": "#/$defs/Time",
+            "description": "First instant of the range."
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "type": "object"
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "asset": {
+        "description": "An asset's id: its whole analysis, in source time.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "max_points": {
+        "description": "Points of the loudness curve of an asset; default 40, at most 200.",
+        "format": "uint",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "range": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/RangeInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "A range of the sequence: silences of the mix and of each sound clip, in sequence time."
+      },
+      "sequence": {
+        "description": "Sequence id or exact name (with `range`); default: your task's sequence.",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "name": "get_audio_analysis"
+}

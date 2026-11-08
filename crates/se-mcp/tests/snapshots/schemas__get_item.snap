@@ -1,0 +1,27 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "Everything about one item: its summary (as in get_timeline) and its full properties — text and style, shape, transform (position, scale, rotation, anchor, opacity, blur), keyframes with their easing, clip source, speed, volume, fades, reframing, origin.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "item_id": {
+        "description": "The item's id (from `get_timeline`).",
+        "type": "string"
+      }
+    },
+    "required": [
+      "item_id"
+    ],
+    "type": "object"
+  },
+  "name": "get_item"
+}

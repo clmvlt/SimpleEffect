@@ -93,6 +93,12 @@ pub trait MediaFiles: Send + Sync {
     /// # Errors
     /// [`MediaError::Io`] naming the first entry that could not be deleted (the others were).
     async fn remove_directory(&self, dir: &Path) -> Result<(), MediaError>;
+
+    /// The bytes of a small derived file (an extracted frame), read whole.
+    ///
+    /// # Errors
+    /// [`MediaError::NotFound`], [`MediaError::Io`].
+    async fn read_file(&self, path: &Path) -> Result<Vec<u8>, MediaError>;
 }
 
 /// Receives the progress of a running job.

@@ -1,0 +1,18 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "The motion templates available (animated titles, lower thirds…). Not available yet in this version of SimpleEffect: it answers available=false with no templates.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "type": "object"
+  },
+  "name": "list_templates"
+}

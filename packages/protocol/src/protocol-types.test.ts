@@ -84,6 +84,7 @@ describe('derived protocol types', () => {
       | 'refreshAiStatus'
       | 'getAiSettings'
       | 'updateAiSettings'
+      | 'reportFrameRenderFailure'
     >();
   });
 
@@ -116,6 +117,7 @@ describe('derived protocol types', () => {
       | 'taskUpdated'
       | 'taskEventAppended'
       | 'aiStatusChanged'
+      | 'renderFramesRequested'
     >();
     expectTypeOf<CoreEventOf<'jobCompleted'>['job']>().toEqualTypeOf<JobSnapshot>();
     expectTypeOf<CoreEventOf<'projectPatched'>>().toExtend<ProjectPatch>();

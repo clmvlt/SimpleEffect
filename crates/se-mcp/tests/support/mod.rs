@@ -1,0 +1,213 @@
+//! A testbed with the example project open and an MCP server over it, plus readers of results.
+
+use std::path::{Path, PathBuf};
+
+use rmcp::model::{CallToolResult, ContentBlock};
+use se_app::{
+    AgentContext,
+    ports::StoredAnalysis,
+    test_support::{MediaTestbed, settle},
+};
+use se_domain::{
+    AnalysisResult, AssetId, AudioAnalysis, Flicks, LoudnessCurve, Project, ProjectId,
+    SceneDetection, SilenceSettings, TaskId, TimeRange, test_support::example_project,
+};
+use se_mcp::{McpDeps, McpServer};
+use se_protocol::TaskScope;
+use serde_json::Value;
+
+/// Where the example project lives in the fake repository.
+pub const PROJECT_PATH: &str = "/films/Example.seproj";
+
+/// The example project open over in-memory ports, and a server calling tools as one task.
+pub struct Bed {
+    pub services: MediaTestbed,
+    pub server: McpServer,
+    pub agent: AgentContext,
+    pub project: Project,
+}
+
+impl Bed {
+    /// The example project, open, with its media files present and its jobs settled.
+    pub async fn open() -> Self {
+        let bed = MediaTestbed::new(Path::new("/films"));
+        let project = example_project();
+        for (content, asset) in (1..).zip(&project.assets) {
+            bed.files.add(
+                asset.original_path.clone(),
+                content,
+                se_app::test_support::probed_video(),
+            );
+        }
+        bed.repository
+            .insert(PathBuf::from(PROJECT_PATH), project.clone(), Vec::new());
+        let session = bed
+            .projects
+            .open_project(Path::new(PROJECT_PATH))
+            .await
+            .expect("the example project opens");
+        settle().await;
+        let project_id = session.snapshot.project.id;
+        let server = McpServer::new(McpDeps {
+            projects: bed.projects.clone(),
+            media: bed.media.clone(),
+            renders: bed.renders.clone(),
+            tokens: bed.tokens.clone(),
+        });
+        let agent = AgentContext {
+            project_id,
+            task_id: TaskId::from_test_index(77),
+            run: 0,
+            scope: TaskScope {
+                sequence_id: project.sequences[0].id,
+                range: None,
+                tracks: None,
+            },
+        };
+        Self {
+            services: bed,
+            server,
+            agent,
+            project,
+        }
+    }
+
+    /// The project's id.
+    pub fn project_id(&self) -> ProjectId {
+        self.agent.project_id
+    }
+
+    /// Calls `name` with `arguments` as the bed's task.
+    pub async fn call(&self, name: &str, arguments: Value) -> CallToolResult {
+        let Value::Object(arguments) = arguments else {
+            panic!("arguments must be an object");
+        };
+        self.server
+            .call(self.agent.clone(), name, arguments)
+            .await
+            .expect("the tool exists")
+    }
+
+    /// Calls `name` and returns its first text block as JSON, asserting success.
+    pub async fn json(&self, name: &str, arguments: Value) -> Value {
+        let result = self.call(name, arguments).await;
+        assert_ne!(
+            result.is_error,
+            Some(true),
+            "{name} failed: {:?}",
+            texts(&result)
+        );
+        first_json(&result)
+    }
+
+    /// Calls `name` and returns the error code, asserting failure.
+    pub async fn error_code(&self, name: &str, arguments: Value) -> String {
+        let result = self.call(name, arguments).await;
+        assert_eq!(
+            result.is_error,
+            Some(true),
+            "{name} succeeded: {:?}",
+            texts(&result)
+        );
+        first_json(&result)["error"]["code"]
+            .as_str()
+            .expect("errors carry a code")
+            .to_owned()
+    }
+
+    /// Stores an audio analysis of `asset` with `silences` (source milliseconds).
+    pub fn set_audio_analysis(&self, asset: AssetId, silences: &[(i64, i64)]) {
+        let analysis = AudioAnalysis {
+            sample_rate: 48_000,
+            channels: 2,
+            integrated_lufs: Some(-15.94),
+            loudness_range_lu: Some(6.0),
+            true_peak_dbtp: Some(-1.04),
+            sample_peak_dbfs: Some(-1.2),
+            short_term: LoudnessCurve {
+                step: Flicks::from_millis(500),
+                values: (0..40)
+                    .map(|index| Some(-30.0 + f64::from(index % 10)))
+                    .collect(),
+            },
+            silence_settings: SilenceSettings::SPEECH,
+            silences: silences
+                .iter()
+                .map(|(start, end)| ms_range(*start, *end))
+                .collect(),
+        };
+        self.store(asset, AnalysisResult::AudioAnalysis(analysis));
+    }
+
+    /// Stores a scene detection of `asset` with changes at `changes` (source milliseconds).
+    pub fn set_scenes(&self, asset: AssetId, changes: &[i64]) {
+        let detection = SceneDetection {
+            threshold: 0.3,
+            changes: changes.iter().map(|ms| ms_time(*ms)).collect(),
+        };
+        self.store(asset, AnalysisResult::SceneDetection(detection));
+    }
+
+    fn store(&self, asset: AssetId, result: AnalysisResult) {
+        let content_key = self
+            .project
+            .assets
+            .iter()
+            .find(|candidate| candidate.id == asset)
+            .and_then(|candidate| candidate.fingerprint.as_ref())
+            .map(se_domain::ContentFingerprint::cache_key)
+            .expect("example assets have fingerprints");
+        self.services.repository.set_analysis(
+            PROJECT_PATH,
+            StoredAnalysis {
+                asset_id: asset,
+                content_key,
+                created_at: 0,
+                result,
+            },
+        );
+    }
+}
+
+/// `ms` milliseconds.
+pub fn ms_time(ms: i64) -> Flicks {
+    Flicks::new(ms * (Flicks::PER_SECOND / 1000)).unwrap()
+}
+
+/// `[start, end)` in milliseconds.
+pub fn ms_range(start: i64, end: i64) -> TimeRange {
+    TimeRange::from_start_end(ms_time(start), ms_time(end)).unwrap()
+}
+
+/// The text blocks of a result.
+pub fn texts(result: &CallToolResult) -> Vec<String> {
+    result
+        .content
+        .iter()
+        .filter_map(|block| match block {
+            ContentBlock::Text(text) => Some(text.text.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The first text block of a result, parsed as JSON.
+pub fn first_json(result: &CallToolResult) -> Value {
+    let text = texts(result).into_iter().next().expect("a text block");
+    serde_json::from_str(&text).expect("the text is JSON")
+}
+
+/// The timecodes of a list of ranges (`[["00:00:01.000", "00:00:02.000"], …]`).
+pub fn range_codes(ranges: &Value) -> Vec<(String, String)> {
+    ranges
+        .as_array()
+        .expect("a list of ranges")
+        .iter()
+        .map(|range| {
+            (
+                range["start"]["timecode"].as_str().unwrap().to_owned(),
+                range["end"]["timecode"].as_str().unwrap().to_owned(),
+            )
+        })
+        .collect()
+}

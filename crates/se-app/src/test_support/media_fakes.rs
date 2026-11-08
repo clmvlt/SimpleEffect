@@ -102,6 +102,19 @@ impl MediaFiles for FakeMedia {
         lock(&self.written).retain(|path| !path.starts_with(dir));
         Ok(())
     }
+
+    /// Files written by jobs read as `fake:<path>`; added media files as `media:<path>`.
+    async fn read_file(&self, path: &Path) -> Result<Vec<u8>, MediaError> {
+        if lock(&self.written).contains(path) {
+            return Ok(format!("fake:{}", path.display()).into_bytes());
+        }
+        match self.entry(path) {
+            Some(_) => Ok(format!("media:{}", path.display()).into_bytes()),
+            None => Err(MediaError::NotFound {
+                path: path.to_path_buf(),
+            }),
+        }
+    }
 }
 
 #[async_trait]

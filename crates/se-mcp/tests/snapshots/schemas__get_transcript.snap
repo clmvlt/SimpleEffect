@@ -1,0 +1,70 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "The words spoken in a range of the sequence, with their times. Not available yet in this version of SimpleEffect: it answers available=false.",
+  "inputSchema": {
+    "$defs": {
+      "RangeInput": {
+        "additionalProperties": false,
+        "description": "A range given by an agent; the end is excluded.",
+        "properties": {
+          "end": {
+            "$ref": "#/$defs/Time",
+            "description": "End of the range (excluded), after `start`."
+          },
+          "start": {
+            "$ref": "#/$defs/Time",
+            "description": "First instant of the range."
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "type": "object"
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "range": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/RangeInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "A range of the sequence; default: your task's range, else the whole sequence."
+      },
+      "sequence": {
+        "description": "Sequence id or exact name; default: your task's sequence.",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "name": "get_transcript"
+}

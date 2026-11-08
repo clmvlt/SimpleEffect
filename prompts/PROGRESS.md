@@ -26,6 +26,43 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-08 — Prompt 18: Serveur MCP : outils de lecture — Done
+
+**Branch**: `feature/18-mcp-lecture`, merged into `dev` at `<merge>`
+
+**Done**
+- se-app (ADR-0028): `agent_access` (`AgentContext { project_id, task_id, run, scope }`, `TaskTokenRegistry` minting 256-bit tokens through the new `TokenSource` port, `resolve`, `revoke`; `McpAccess { url, tokens }`); the task runner mints a token per run and revokes it on every exit path (`RevokeOnDrop`); `AgentRunSpec.mcp` is now required. `frame_renders::FrameRenderService` (new `RendererLink` port): checks, publishes `renderFramesRequested`, waits ≤ 30 s, `deliver`/`fail`, forgets abandoned requests, `frame_size`. Read use cases `ProjectService::project`, `MediaService::analysis` and `frame_jpeg` (`MediaFiles::read_file`). Agent instructions split into `00-role.md`, `01-time-and-scope.md`, `02-reading-the-project.md`, composed with the scope (timecodes, track names) and a project summary. New `AppError`s and protocol codes `RENDERER_UNAVAILABLE`, `RENDER_FAILED`, `RENDER_REQUEST_NOT_FOUND`. Test support: `SequentialTokens`, `FakeRendererLink`, `set_analysis`, `MediaTestbed` with tokens and renders (`projects` is now an `Arc`).
+- se-domain: `format_clock` (`HH:MM:SS.mmm`, public), `Sequence::content_end`.
+- se-mcp (new): `McpServer` (`ServerHandler` by hand over our registry), `mcp_service` (rmcp 3.9 streamable HTTP, sessions), `McpTool`/`ToolEntry`, `ToolOutput`/`ToolError` (stable codes), `time_io` (seconds or timecodes in, `{timecode, seconds}` out), lookups with actionable errors, summaries, clip windows and range sets; 12 tools, one file each: `get_project_overview`, `get_timeline` (paginated, transitions, markers), `get_item` (document form with readable times), `list_assets`, `get_frames`, `get_source_frames`, `get_audio_analysis` and `get_scene_changes` (asset in source time, or a sequence range brought back through each clip's window and speed; silences of the mix), `list_animation_presets`, stubs `get_transcript`, `get_brand_kit`, `list_templates` (`available: false`).
+- se-core: `/mcp` behind its own guard (loopback `Host` 403, bearer of a running run 401 + `WWW-Authenticate`), `PUT /media/renders/{id}/{index}` (session token, CORS for that route, ≤ 8 MiB), command `reportFrameRenderFailure`, `RandomTokens`, `RendererLink` over the event bus (`connection_count`), wiring (`services::build(…, port)`).
+- se-agents: the MCP config, `--strict-mcp-config` and `--allowedTools "mcp__simpleeffect__*"` always passed; fixture `mcp-get-timeline.jsonl` replayed through the parser and the fake CLI.
+- @se/engine: `StillRenderer` (`createStillRenderer`/`createStillRendererWith`: the viewer's `FrameRenderer` + Pixi compositor on an `OffscreenCanvas` with its own decoder pool, JPEG 0.85, one still at a time).
+- Desktop: `useAgentFrameRequests` (mounted by `AppLayout`) → `answerFrameRequest` (mirror scene, catalogue fonts, proxies ≤ 960 px, uploads, failure reports for another project, unknown sequence or decoding errors); error codes in `ERROR_CODES` and `fr.json`.
+- Docs: `docs/ai-tools.md` (the contract: endpoint and access, conventions, error codes, catalogue, every tool's input/output/errors, recipe), ADR-0028, architecture §1/§3/§6/§8/§9/§13, glossary (10 terms), backlog, CLAUDE.md of root, se-mcp (recipe « add a tool »), se-app, se-core, se-agents (+ provider), se-protocol, se-media, @se/engine, desktop.
+- Tests: se-mcp 19 unit + 13 tool tests over the example project + schema snapshots of the 12 tools + a doc-coverage check; se-app `frame_renders.rs` (5) and 2 token tests in `task_service.rs`; se-core real rmcp client against `/mcp` (valid, unknown and revoked tokens, overview, frame image), foreign `Host`/missing token, uploads and CORS preflight, late failure report; engine Node (2) and browser (`still-renderer.browser.test.ts`: real WebGL → JPEG, colours checked); desktop `agent-frames.test.ts` (4). `pnpm check` green.
+- Verified in the built app (macOS, isolated profile, CDP): a project with a 12 s three-shot video (red, blue, test pattern) and a fading title « Bonjour SimpleEffect » at 2–6 s; a real Claude Code task (sonnet, effort low) « Décris ce qu'il se passe entre 0 et 10 s » called `get_timeline` then `get_frames` (6 frames, 768 × 432, drawn by the renderer and uploaded in 532 ms) and answered correctly (red then blue background, the title with its fade, the test pattern from about 8–9 s). A second task read the timeline (« 3 éléments … ») and gave the fixture. The init line listed only the 12 `mcp__simpleeffect__*` tools, server `connected`; no token in se-core's log.
+
+**Deviations from the prompt**
+- `AgentContext` also carries the project id; `run` is the run's index (as in the event log).
+- Read tools read the domain document through `ProjectService::project` and shape it in se-mcp (pure functions tested there) instead of a dedicated se-app read model; analyses come through a new `MediaService::analysis`.
+- `list_animation_presets` is real (presets exist since prompt 15); only `get_brand_kit` and `list_templates` are stubs, plus `get_transcript`.
+- The renderer reports failures with a protocol command (`reportFrameRenderFailure`); frames still go through the `/media/renders/…` route. The listener lives in `AppLayout` (not only the editor) so requests for a project that is not shown are refused at once rather than timing out.
+- Tool I/O is `snake_case`, except `get_item`'s `properties` (the item's document form).
+- MCP sessions are kept (rmcp's default) rather than a stateless server: the real CLI negotiates the session-based protocol.
+
+**Follow-ups**
+- Prompt 19: write tools on the same registry (`READ_ONLY = false`), scope checks with `AgentContext.scope`, revisions for optimistic concurrency, changesets; extend `docs/ai-tools.md` and the instructions (editing rules).
+- Prompt 20: show tool calls (including frames) in the task UI; the development panel still drives tasks.
+- Prompt 21: `get_transcript`; prompts 24/25: `list_templates`, `get_brand_kit`.
+- Backlog: `get_frames` without an editor window, sequence-level loudness (mix), contact sheets for agents.
+- The CORS answer of `PUT /media/renders` was exercised by the real renderer (file:// origin) on macOS only; check on Windows.
+
+**Notes for the next agent**
+- rmcp 3.9 (MCP 2026-07-28 aware): `ServerHandler` methods are `async fn` (or return `impl Future + Send`), `CallToolResult.into()` → `CallToolResponse`, request headers reach handlers as `http::request::Parts` in `RequestContext::extensions`; the reqwest client works without any TLS feature for `http://` (`client`, `transport-streamable-http-client-reqwest`).
+- `schema_for_input` (rmcp) strips the root title/description; multi-line doc comments of input fields keep their line breaks in the schema.
+- To record a CLI stream that needs `/mcp`, point the AI executable setting at a `claude "$@" | tee` wrapper (recipe in the provider's `CLAUDE.md`), then restore it.
+- The scratch `drive.mjs` recipe (CDP for `getCoreConnection`, then Node's `WebSocket` to `/rpc`: `createProject`, `importMedia`, `placeMedia` with `{ kind: 'new' }`, `addGraphicItem`, `applyAnimationPreset`, `location.hash`, `submitTask` with `model`) drives a full agent check in a minute.
+
 ## 2026-11-08 — Prompt 17: Runtime des agents IA (générique + Claude Code) — Done
 
 **Branch**: `feature/17-agents-runtime`, merged into `dev` at `179f658`

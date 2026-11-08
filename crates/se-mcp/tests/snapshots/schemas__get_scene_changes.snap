@@ -1,0 +1,77 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "Shot changes found by analysis. With `asset`: the file's changes in source time. Otherwise for a range of the sequence (default: your task's range, else the whole sequence), in sequence time: changes inside the visible picture clips, plus the edit's own cuts. NOT_ANALYSED until the background analysis is done.",
+  "inputSchema": {
+    "$defs": {
+      "RangeInput": {
+        "additionalProperties": false,
+        "description": "A range given by an agent; the end is excluded.",
+        "properties": {
+          "end": {
+            "$ref": "#/$defs/Time",
+            "description": "End of the range (excluded), after `start`."
+          },
+          "start": {
+            "$ref": "#/$defs/Time",
+            "description": "First instant of the range."
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "type": "object"
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "asset": {
+        "description": "An asset's id: its shot changes, in source time.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "range": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/RangeInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "A range of the sequence: shot changes inside its picture clips and the edit's cuts, in\nsequence time."
+      },
+      "sequence": {
+        "description": "Sequence id or exact name (with `range`); default: your task's sequence.",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "name": "get_scene_changes"
+}

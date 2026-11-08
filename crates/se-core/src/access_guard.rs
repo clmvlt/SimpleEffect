@@ -119,7 +119,7 @@ pub async fn require_local_access(
 }
 
 /// Accepts exactly `127.0.0.1:<port>` or `localhost:<port>`.
-fn is_loopback_host(host: &str, port: u16) -> bool {
+pub fn is_loopback_host(host: &str, port: u16) -> bool {
     let Some((name, host_port)) = host.rsplit_once(':') else {
         return false;
     };

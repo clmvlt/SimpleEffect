@@ -416,6 +416,42 @@ mod tests {
     }
 
     #[test]
+    fn a_recorded_mcp_run_reports_its_tool_call_and_result() {
+        // Recorded through se-core (prompt 18): Claude Code 2.1.319, sonnet, asked to read the
+        // timeline with the `simpleeffect` MCP server.
+        let events = replay(include_str!(
+            "../../../tests/fixtures/claude_code/mcp-get-timeline.jsonl"
+        ));
+        assert!(matches!(
+            &events[0],
+            AgentEvent::SessionStarted { session_id, .. } if session_id == SESSION
+        ));
+        let AgentEvent::ToolCallStarted {
+            call_id,
+            tool,
+            input_summary,
+        } = &events[1]
+        else {
+            panic!("expected the tool call, got {:?}", events[1]);
+        };
+        assert_eq!(tool, "mcp__simpleeffect__get_timeline");
+        assert!(input_summary.contains("range"), "{input_summary}");
+        let AgentEvent::ToolCallFinished {
+            call_id: finished,
+            tool: finished_tool,
+            ok,
+            output_summary,
+        } = &events[2]
+        else {
+            panic!("expected the tool result, got {:?}", events[2]);
+        };
+        assert_eq!((finished, finished_tool, *ok), (call_id, tool, true));
+        assert!(output_summary.contains("sequence_id"), "{output_summary}");
+        assert!(text(&events[3]).contains("3 éléments"));
+        assert!(matches!(events.last(), Some(AgentEvent::Completed { .. })));
+    }
+
+    #[test]
     fn a_recorded_resume_keeps_the_session() {
         let events = replay(include_str!(
             "../../../tests/fixtures/claude_code/resume.jsonl"

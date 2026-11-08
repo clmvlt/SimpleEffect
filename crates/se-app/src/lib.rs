@@ -30,8 +30,10 @@
 //! - No concrete IO: no `std::fs`, `std::process` or network access. IO lives behind ports.
 //! - Every port gets an in-memory fake in [`test_support`] (feature `test-support`).
 
+pub mod agent_access;
 mod edit_plan;
 mod error;
+pub mod frame_renders;
 pub mod jobs;
 pub mod media_policy;
 pub mod media_service;
@@ -46,8 +48,10 @@ pub mod tasks;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
 
+pub use agent_access::{AgentContext, McpAccess, TaskToken, TaskTokenRegistry};
 pub use edit_plan::DEFAULT_IMAGE_DURATION;
 pub use error::AppError;
+pub use frame_renders::{FrameRenderService, FrameRenderSpec};
 pub use jobs::{JobAttempt, JobPriority, JobQueue, JobQueueConfig, JobRequest, JobWork};
 pub use media_service::{AssetFiles, MediaService, MediaServiceDeps};
 pub use project_actor::{ActorDeps, DEFAULT_SAVE_DELAY, ProjectActorHandle, ProjectView};

@@ -64,8 +64,8 @@ pub struct AgentRunSpec {
     pub prompt: String,
     /// Instructions added to the CLI's system prompt (provider-agnostic markdown).
     pub system_instructions: String,
-    /// The MCP endpoint the agent acts through. TODO(prompt-18): required once `/mcp` exists.
-    pub mcp: Option<McpEndpoint>,
+    /// The MCP endpoint the agent acts through (its only way to read or change the project).
+    pub mcp: McpEndpoint,
     /// The model (`None`: the CLI decides).
     pub model: Option<String>,
     /// The effort (`None`: the CLI decides).

@@ -1,25 +1,29 @@
-//! [`MediaTestbed`]: a `ProjectService`, a `MediaService` and a `TaskService` wired to the
-//! in-memory fakes, for tests of the media and task use cases (se-app) and of what serves them
-//! (se-core).
+//! [`MediaTestbed`]: a `ProjectService`, a `MediaService`, a `TaskService` and a
+//! `FrameRenderService` wired to the in-memory fakes, for tests of the media, task and agent use
+//! cases (se-app) and of what serves them (se-mcp, se-core).
 
 use std::{path::Path, sync::Arc, time::Duration};
 
 use se_domain::{Asset, Format, FormatPreset, FrameRate, ProjectId};
 
 use super::{
-    FakeAgentWorkspaces, FakeFrameExtractor, FakeJobRunner, FakeMedia, FakeMediaTools, FixedClock,
-    InMemoryAppLibrary, InMemoryProjectRepository, RecordingEventSink, ReplayProvider,
-    SequentialIds,
+    FakeAgentWorkspaces, FakeFrameExtractor, FakeJobRunner, FakeMedia, FakeMediaTools,
+    FakeRendererLink, FixedClock, InMemoryAppLibrary, InMemoryProjectRepository,
+    RecordingEventSink, ReplayProvider, SequentialIds, SequentialTokens,
 };
 use crate::{
-    AppError, JobQueue, JobQueueConfig, MediaService, MediaServiceDeps, ProjectService,
-    ProjectServiceConfig, ProjectServiceDeps, TaskService, TaskServiceDeps,
+    AppError, FrameRenderService, JobQueue, JobQueueConfig, McpAccess, MediaService,
+    MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps, TaskService,
+    TaskServiceDeps, TaskTokenRegistry,
 };
+
+/// The MCP URL runs of the testbed's task service are given.
+pub const TESTBED_MCP_URL: &str = "http://127.0.0.1:4100/mcp";
 
 /// The services and every fake behind them (clones share state with the services).
 pub struct MediaTestbed {
-    /// Project use cases, observed by `media`.
-    pub projects: ProjectService,
+    /// Project use cases, observed by `media` and `tasks`.
+    pub projects: Arc<ProjectService>,
     /// Media use cases.
     pub media: Arc<MediaService>,
     /// AI task use cases (also observing projects).
@@ -44,6 +48,12 @@ pub struct MediaTestbed {
     pub repository: InMemoryProjectRepository,
     /// Every event published.
     pub events: Arc<RecordingEventSink>,
+    /// MCP tokens of running agents (shared with `tasks`).
+    pub tokens: Arc<TaskTokenRegistry>,
+    /// Composited frames for agents, over `renderer`.
+    pub renders: Arc<FrameRenderService>,
+    /// The renderer connection of `renders`.
+    pub renderer: Arc<FakeRendererLink>,
 }
 
 impl MediaTestbed {
@@ -73,6 +83,9 @@ impl MediaTestbed {
         }));
         let agent = ReplayProvider::default();
         let workspaces = Arc::new(FakeAgentWorkspaces::default());
+        let tokens = Arc::new(TaskTokenRegistry::new(
+            Arc::new(SequentialTokens::default()),
+        ));
         let tasks = TaskService::new(TaskServiceDeps {
             providers: vec![Arc::new(agent.clone())],
             workspaces: workspaces.clone(),
@@ -80,7 +93,13 @@ impl MediaTestbed {
             events: events.clone(),
             clock: clock.clone(),
             ids: ids.clone(),
+            mcp: McpAccess {
+                url: TESTBED_MCP_URL.to_owned(),
+                tokens: tokens.clone(),
+            },
         });
+        let renderer = Arc::new(FakeRendererLink::default());
+        let renders = Arc::new(FrameRenderService::new(renderer.clone(), ids.clone()));
         let deps = ProjectServiceDeps {
             repository: Arc::new(repository.clone()),
             library: library.clone(),
@@ -93,9 +112,11 @@ impl MediaTestbed {
             save_delay: Duration::from_secs(2),
         };
         Self {
-            projects: ProjectService::new(deps, config)
-                .with_observer(media.clone())
-                .with_observer(Arc::new(tasks.clone())),
+            projects: Arc::new(
+                ProjectService::new(deps, config)
+                    .with_observer(media.clone())
+                    .with_observer(Arc::new(tasks.clone())),
+            ),
             media,
             tasks,
             agent,
@@ -108,6 +129,9 @@ impl MediaTestbed {
             library,
             repository,
             events,
+            tokens,
+            renders,
+            renderer,
         }
     }
 

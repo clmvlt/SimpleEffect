@@ -57,6 +57,7 @@ export type * from './FormatAdaptation';
 export type * from './FormatPreset';
 export type * from './FormatPresetDimensions';
 export type * from './FrameRate';
+export type * from './FrameRenderRequest';
 export type * from './GenerateDerivedRequest';
 export type * from './HistoryState';
 export type * from './ImageFit';

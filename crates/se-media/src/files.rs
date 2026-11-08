@@ -50,6 +50,21 @@ impl MediaFiles for FsMediaFiles {
             }),
         }
     }
+
+    async fn read_file(&self, path: &Path) -> Result<Vec<u8>, MediaError> {
+        tokio::fs::read(path).await.map_err(|error| {
+            if error.kind() == io::ErrorKind::NotFound {
+                MediaError::NotFound {
+                    path: path.to_path_buf(),
+                }
+            } else {
+                MediaError::Io {
+                    path: path.to_path_buf(),
+                    message: error.to_string(),
+                }
+            }
+        })
+    }
 }
 
 /// Bytes of the files under `path` (symbolic links are not followed); 0 when it does not exist.
@@ -115,5 +130,17 @@ mod tests {
         assert!(!cache.exists());
         assert_eq!(files.directory_size(&cache).await, 0);
         files.remove_directory(&cache).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn small_files_are_read_whole() {
+        let dir = tempfile::tempdir().unwrap();
+        let frame = dir.path().join("frame.jpg");
+        std::fs::write(&frame, [1_u8, 2, 3]).unwrap();
+        assert_eq!(FsMediaFiles.read_file(&frame).await.unwrap(), vec![1, 2, 3]);
+        assert!(matches!(
+            FsMediaFiles.read_file(&dir.path().join("none.jpg")).await,
+            Err(MediaError::NotFound { .. })
+        ));
     }
 }
