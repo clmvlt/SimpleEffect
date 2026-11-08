@@ -659,7 +659,9 @@ the scope makes the call fail with `OUT_OF_SCOPE` (« the cut would also edit tr
 
 **Margins.** Words are removed with natural margins: the longer pause around them is kept, the
 shorter one is cut to a breath (60 ms) before the next kept word, a removed word is cut 30 ms
-before its start, never more than half a pause, never inside a kept word. Less than 80 ms left
+before its start, never more than half a pause, never inside a kept word; when the sound's level
+is known, an edge falling in sound moves back to where that sound began if it began within 150 ms
+(whisper's word starts can be late), so a removed word's onset goes with it. Less than 80 ms left
 between two cuts or at a clip edge is removed too. Silences keep `padding` on each side.
 
 **Output** (all three):

@@ -33,7 +33,10 @@ existing code did not provide:
 - **Word margins**: removing a run of words keeps the longer of the two pauses around it and cuts
   the shorter one down to a 60 ms breath before the next kept word; a removed word is cut 30 ms
   before its start (DTW word starts are within ±30 ms, ends are late, ADR-0031); margins never take
-  more than half a pause; clip edges bound everything.
+  more than half a pause; clip edges bound everything. With the asset's level envelope, an edge
+  falling in sound moves back to the onset of that sound when it began within 150 ms (whisper's
+  starts are late with small models: the removed word's onset goes with it, the next word's stays);
+  connected speech, with no quiet instant within reach, is left as it is.
 - **A new domain operation `RippleDeleteRanges`** removes several sorted, apart ranges in one pass:
   each item is reshaped once (first part keeps its id, one new part per range strictly inside it),
   later items move left by the time removed before them, transitions are restored as in

@@ -327,7 +327,8 @@ the user (`SmartCutService`, one user transaction per action) and for agents
   fillers { range, lists, maxDuration } | silences { range, params, tracks }, allTracks, limit }`
   with `CutMedia` (transcripts and level envelopes of the sound clips' assets, read beforehand).
   Words go through `sequence_transcript` and get natural margins (`words.rs`: keep the longer pause,
-  a 60 ms breath before the next kept word, 30 ms before a removed word); fillers are matched case-,
+  a 60 ms breath before the next kept word, 30 ms before a removed word; edges in sound snapped back
+  to its onset within 150 ms from the level envelope); fillers are matched case-,
   accent- and punctuation-insensitively per transcript language (`fillers.rs`); silences are the
   windows where every listened sound track is quiet, measured over the whole sequence then clipped
   (`silences.rs`). `plan_cuts` turns candidates into frame-exact, apart ranges (padding, clips and
