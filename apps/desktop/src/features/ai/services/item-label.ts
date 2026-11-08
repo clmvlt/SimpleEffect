@@ -17,7 +17,8 @@ function short(text: string): string | null {
   return flat.length > MAX_LABEL ? flat.slice(0, MAX_LABEL - 1) + '…' : flat;
 }
 
-function fileName(path: string): string {
+/** The last part of a path (the file name), whatever the OS's separator. */
+export function fileName(path: string): string {
   return path.split(/[\\/]/u).at(-1) ?? path;
 }
 
