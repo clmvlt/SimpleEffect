@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-08 — Prompt 23: Sous-titres automatiques animés — Done
 
-**Branch**: `feature/23-sous-titres`, merged into `dev` at `MERGE_SHA`
+**Branch**: `feature/23-sous-titres`, merged into `dev` at `108efd1`
 
 **Done**
 - se-domain (ADR-0033): `CaptionItem { words: [CaptionWord { text, start, end, emphasis }], style_id }` (item-relative), `CaptionStyle` in `Project.caption_styles` (font, case, three colours, outline, shadow, plate, position = bottom centre, `CaptionAnimation` none/wordHighlight/popPerWord/boxPerLine/revealPerWord, `highlight_spoken`, line limits; `problems()`), `CaptionStyleId`, schema 8; operations `AddCaptionStyle`/`UpdateCaptionStyle`/`RemoveCaptionStyle` (refused while used), `CaptionPatch { words, style_id }`; validation `INVALID_CAPTION_WORDS` (+ unknown style, style ranges); words follow trims, splits, ripples and gaps by their middle (`reshape::retime_words`); `caption_preset` (the engine's four JSON presets embedded); `captions` (pure): `caption_lines` (shared vectors `docs/test-vectors/caption-lines.json`), `segment_words` (pauses, line room with a cut after a clause, max duration, sentence/clause ends, punctuation never first; 0.7–6 s, short gaps closed, frame snapping), `retimed_words` (unchanged words keep their timing, equal-count runs keep timings one for one, others by length), `distribute_words`, `tidy_words`, `merged_words`, `split_point`.
