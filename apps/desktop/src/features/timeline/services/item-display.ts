@@ -1,3 +1,4 @@
+import { captionText } from '@se/engine';
 import type { Asset, ItemEntity, MotionTemplate, TrackKind } from '@se/protocol';
 
 /** Colour family of a clip (`ClipShell` tone). */
@@ -55,7 +56,7 @@ export function itemDisplay(
     case 'text':
       return graphic(kind.content.trim() || null, 'text', 'graphic');
     case 'caption':
-      return graphic(kind.text.trim() || null, 'text', 'caption');
+      return graphic(captionText(kind).trim() || null, 'text', 'caption');
     case 'shape':
       return graphic(null, 'shape', 'graphic');
     case 'motionTemplate': {

@@ -40,11 +40,11 @@ export function frameLayout(graph: FrameGraph, boxes: LayerBoxes): FrameLayout {
   return { time: graph.time, frame: graph.frame, layers };
 }
 
-/** The fonts the text layers of `graph` ask for, each once. */
+/** The fonts the text and caption layers of `graph` ask for, each once. */
 export function frameFonts(graph: FrameGraph): FontRequest[] {
   const fonts = new Map<string, FontRequest>();
   for (const layer of graph.layers) {
-    if (layer.kind !== 'text') continue;
+    if (layer.kind !== 'text' && layer.kind !== 'caption') continue;
     const { family, weight, italic } = layer.font;
     fonts.set(`${family}|${String(weight)}|${String(italic)}`, layer.font);
   }

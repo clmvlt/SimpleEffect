@@ -1,5 +1,6 @@
 import type { ItemId } from '@se/protocol';
 
+import { estimatedCaptionBox } from '../composite/caption-layout';
 import type { Compositor, LayerBoxes, Picture, PictureSet } from '../composite/compositor';
 import type { FrameGraph, Size } from '../evaluate/frame-graph';
 
@@ -16,6 +17,10 @@ export class RecordingCompositor implements Compositor {
     this.draws.push({ graph, pictures: new Map(pictures) });
     const boxes = new Map<ItemId, Size>();
     for (const layer of graph.layers) {
+      if (layer.kind === 'caption') {
+        boxes.set(layer.itemId, estimatedCaptionBox(layer));
+        continue;
+      }
       if (layer.kind !== 'text') {
         boxes.set(layer.itemId, layer.box);
         continue;

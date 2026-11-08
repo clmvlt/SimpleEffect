@@ -1,4 +1,5 @@
 import type { Flicks, ItemId } from '@se/protocol';
+import { estimatedCaptionBox } from '@se/engine';
 import {
   evaluate,
   type AssetTable,
@@ -21,9 +22,11 @@ export interface FrameChange {
   readonly measureText: TextMeasurer;
 }
 
-/** The box of a drawn layer: its natural box, or the text's measured one. */
+/** The box of a drawn layer: its natural box, the text's measured one, a caption's estimate. */
 function boxOf(layer: Layer, measureText: TextMeasurer): Size {
-  return layer.kind === 'text' ? measureText(layer) : layer.box;
+  if (layer.kind === 'text') return measureText(layer);
+  if (layer.kind === 'caption') return estimatedCaptionBox(layer);
+  return layer.box;
 }
 
 /** Whether the layer of `itemId` in `graph` lies inside the frame; `null` when not drawn. */

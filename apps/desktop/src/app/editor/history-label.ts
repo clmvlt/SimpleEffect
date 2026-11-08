@@ -70,6 +70,15 @@ const CORE_LABEL_KEYS = {
   'Remove words': 'editor.history.removeWords',
   'Remove fillers': 'editor.history.removeFillers',
   'Remove silences': 'editor.history.removeSilences',
+  'Generate captions': 'editor.history.generateCaptions',
+  'Import subtitles': 'editor.history.importSubtitles',
+  'Edit caption text': 'editor.history.editCaptionText',
+  'Merge captions': 'editor.history.mergeCaptions',
+  'Split caption': 'editor.history.splitCaption',
+  'Shift captions': 'editor.history.shiftCaptions',
+  'Emphasize caption words': 'editor.history.emphasizeCaptionWords',
+  'Change caption style': 'editor.history.changeCaptionStyle',
+  'Apply caption style': 'editor.history.applyCaptionPreset',
 } as const;
 
 /** The undo/redo label to show for a transaction label received from the core. */

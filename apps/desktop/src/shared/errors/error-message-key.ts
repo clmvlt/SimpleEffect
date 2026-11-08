@@ -48,6 +48,8 @@ export const ERROR_CODES = [
   'INVALID_MODEL_FILE',
   'DOWNLOAD_FAILED',
   'NO_SPEECH_STREAM',
+  'SUBTITLE_FILE_FAILED',
+  'INVALID_SUBTITLE_FILE',
 ] as const satisfies readonly ErrorCode[];
 
 /**

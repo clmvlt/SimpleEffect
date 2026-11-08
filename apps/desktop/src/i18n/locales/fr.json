@@ -662,7 +662,16 @@
       "setTranscriptionSettings": "Réglages de transcription",
       "removeWords": "Coupe de mots",
       "removeFillers": "Suppression des hésitations",
-      "removeSilences": "Suppression des silences"
+      "removeSilences": "Suppression des silences",
+      "generateCaptions": "Génération des sous-titres",
+      "importSubtitles": "Import de sous-titres",
+      "editCaptionText": "Texte du sous-titre",
+      "mergeCaptions": "Fusion de sous-titres",
+      "splitCaption": "Scission du sous-titre",
+      "shiftCaptions": "Décalage des sous-titres",
+      "emphasizeCaptionWords": "Mots mis en avant",
+      "changeCaptionStyle": "Style des sous-titres",
+      "applyCaptionPreset": "Style prédéfini des sous-titres"
     },
     "transcript": {
       "title": "Transcription",
@@ -1012,7 +1021,9 @@
     "TRANSCRIPTION_TARGET_NOT_FOUND": "Ce modèle, ce téléchargement ou ce pack GPU n’existe pas (ou plus) : voyez Réglages → Transcription.",
     "INVALID_MODEL_FILE": "Ce fichier n’est pas un modèle whisper.cpp : choisissez un fichier ggml .bin (par exemple ggml-base.bin).",
     "DOWNLOAD_FAILED": "Le téléchargement a échoué ou le fichier reçu ne correspond pas : vérifiez la connexion et réessayez.",
-    "NO_SPEECH_STREAM": "Ce média n’a pas de son à transcrire."
+    "NO_SPEECH_STREAM": "Ce média n’a pas de son à transcrire.",
+    "SUBTITLE_FILE_FAILED": "Le fichier de sous-titres n’a pas pu être lu ou écrit : vérifiez son emplacement et vos droits.",
+    "INVALID_SUBTITLE_FILE": "Ce fichier n’est pas un fichier de sous-titres SRT valide."
   },
   "format": {
     "ratio": "Format",

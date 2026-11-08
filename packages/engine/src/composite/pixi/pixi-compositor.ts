@@ -13,6 +13,7 @@ import type {
   RenderCanvas,
 } from '../compositor';
 import { outputScale } from '../layout';
+import { CaptionNode } from './caption-node';
 import type { LayerNode } from './layer-node';
 import { PictureNode } from './picture-node';
 import { ShapeNode } from './shape-node';
@@ -127,6 +128,8 @@ class PixiCompositor implements Compositor {
         return new ShapeNode();
       case 'text':
         return new TextNode();
+      case 'caption':
+        return new CaptionNode();
     }
   }
 
@@ -145,6 +148,9 @@ class PixiCompositor implements Compositor {
       return node.update(layer, graph.frame, scale);
     }
     if (node instanceof TextNode && layer.kind === 'text') {
+      return node.update(layer, graph.frame, scale);
+    }
+    if (node instanceof CaptionNode && layer.kind === 'caption') {
       return node.update(layer, graph.frame, scale);
     }
     return null;

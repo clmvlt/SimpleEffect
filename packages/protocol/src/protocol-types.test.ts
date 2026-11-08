@@ -104,6 +104,16 @@ describe('derived protocol types', () => {
       | 'findFillers'
       | 'previewSilenceCuts'
       | 'removeSilences'
+      | 'generateCaptions'
+      | 'importSubtitles'
+      | 'exportSubtitles'
+      | 'editCaptionText'
+      | 'mergeCaptions'
+      | 'splitCaption'
+      | 'shiftCaptions'
+      | 'setCaptionEmphasis'
+      | 'updateCaptionStyle'
+      | 'applyCaptionPreset'
     >();
   });
 

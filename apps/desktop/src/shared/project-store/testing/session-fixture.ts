@@ -1,11 +1,21 @@
 import type {
   Flicks,
   ItemEntity,
+  ItemKind,
   ProjectPatch,
   ProjectSession,
   SequenceEntity,
   TrackEntity,
 } from '@se/protocol';
+
+/** A caption showing `text` as one word over its whole item, in the style `style-1`. */
+export function captionKind(text: string): ItemKind {
+  return {
+    kind: 'caption',
+    words: [{ text, start: 0 as Flicks, end: 0 as Flicks, emphasis: false }],
+    styleId: 'style-1',
+  };
+}
 
 /** Ids used by the fixtures. */
 export const IDS = {
@@ -33,7 +43,7 @@ export function captionItem(id: string, trackId: string, start: number): ItemEnt
     // Test values: plain numbers are valid flicks.
     timelineRange: { start: start as Flicks, duration: 1000 as Flicks },
     linkGroup: null,
-    kind: { kind: 'caption', text: id },
+    kind: captionKind(id),
   };
 }
 
@@ -72,6 +82,7 @@ export function session(revision = 3): ProjectSession {
         settings: { defaultFormat: HD, transcription: { language: 'fr', vocabulary: '' } },
         templates: [],
         brandKit: null,
+        captionStyles: [],
       },
       sequences: [sequence([IDS.v1, IDS.v2])],
       tracks: [videoTrack(IDS.v1, [IDS.item]), videoTrack(IDS.v2, [])],

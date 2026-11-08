@@ -22,6 +22,7 @@ import {
   withoutKeyframes,
 } from '.';
 import { documentColor } from '../project-store/testing/graphics-fixture';
+import { captionKind } from '../project-store/testing/session-fixture';
 
 const S = 705_600_000;
 const at = (seconds: number) => Math.round(seconds * S) as Flicks;
@@ -59,7 +60,7 @@ describe('property access', () => {
     expect(propertyOf(shape, 'strokeWidth')).toEqual(still(4));
     expect(propertyOf(shape, 'fontSize')).toBeNull();
     expect(hasProperty(shape, 'reveal')).toBe(false);
-    expect(hasProperty({ kind: 'caption', text: 'x' }, 'opacity')).toBe(false);
+    expect(hasProperty(captionKind('x'), 'opacity')).toBe(false);
   });
 
   it('applies an animation to a copy of the item kind', () => {

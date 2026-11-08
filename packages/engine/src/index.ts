@@ -8,3 +8,11 @@
 export * from './animation';
 export * from './evaluate';
 export { FLICKS_PER_SECOND } from './time/flicks';
+export {
+  LINE_PLATE_GAP,
+  captionLayout,
+  estimatedCaptionBox,
+  type CaptionLayout,
+  type CaptionPlate,
+  type CaptionWordPlace,
+} from './composite/caption-layout';

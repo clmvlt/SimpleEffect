@@ -2,7 +2,7 @@ import type { Flicks, Format, Item, TrackKind } from '@se/protocol';
 
 import type { FrameGraph, Layer, Size } from './frame-graph';
 import { designScale } from './geometry';
-import { itemLayer, type AssetTable } from './item-layer';
+import { itemLayer, type AssetTable, type CaptionStyleList } from './item-layer';
 import {
   transitionProgress,
   transitionSpan,
@@ -29,6 +29,8 @@ export interface EvaluableTrack {
 export interface EvaluableSequence {
   readonly format: Pick<Format, 'width' | 'height'>;
   readonly tracks: readonly EvaluableTrack[];
+  /** The project's caption styles (prompt 23); captions use the default preset without them. */
+  readonly captionStyles?: CaptionStyleList | undefined;
 }
 
 /** Index of the item of a sorted, non-overlapping list covering `time` (binary search), or −1. */
@@ -90,6 +92,7 @@ interface FrameContext {
   readonly frame: Size;
   readonly designScale: number;
   readonly assets: AssetTable;
+  readonly captionStyles: CaptionStyleList | undefined;
 }
 
 /** The two layers of a dissolve, weighted `1 − p` and `p`, tagged as one group. */
@@ -125,7 +128,13 @@ export function evaluate(
 ): FrameGraph {
   const frame = { width: sequence.format.width, height: sequence.format.height };
   const scale = designScale(frame);
-  const context: FrameContext = { time, frame, designScale: scale, assets };
+  const context: FrameContext = {
+    time,
+    frame,
+    designScale: scale,
+    assets,
+    captionStyles: sequence.captionStyles,
+  };
   const layers: Layer[] = [];
   for (const track of sequence.tracks) {
     if (track.kind !== 'video' || track.hidden) continue;

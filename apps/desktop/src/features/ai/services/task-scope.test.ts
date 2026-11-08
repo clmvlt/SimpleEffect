@@ -9,6 +9,7 @@ import {
   type RedoTarget,
   type ScopeInputs,
 } from './task-scope';
+import { captionKind } from '../../../shared/project-store/testing/session-fixture';
 
 const SECOND = 705_600_000;
 const range = (start: number, end: number): TimeRange => ({
@@ -24,7 +25,7 @@ function item(id: string, trackId: string, start: number, end: number): ItemEnti
     origin: { kind: 'user' },
     timelineRange: range(start, end),
     linkGroup: null,
-    kind: { kind: 'caption', text: id },
+    kind: captionKind(id),
   };
 }
 
