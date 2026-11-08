@@ -31,6 +31,7 @@ mod shape;
 mod stroke;
 mod text;
 mod track;
+mod transcription_settings;
 mod transform;
 mod transition;
 mod transition_fit;
@@ -58,6 +59,7 @@ pub use shape::{ShapeGeometry, ShapeItem, ShapeKind};
 pub use stroke::Stroke;
 pub use text::{TextAlign, TextBackground, TextCase, TextItem, TextShadow, TextStyle};
 pub use track::{Track, TrackKind};
+pub use transcription_settings::TranscriptionSettings;
 pub use transform::Transform2D;
 pub use transition::{Transition, TransitionAlignment, TransitionKind};
 pub use transition_fit::{

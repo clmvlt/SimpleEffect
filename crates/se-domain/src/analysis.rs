@@ -12,6 +12,8 @@ mod scenes;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use crate::TranscriptSummary;
+
 pub use self::{
     audio::{AudioAnalysis, AudioSummary, LoudnessCurve, SilenceSettings},
     scenes::{SceneDetection, SceneSummary},
@@ -68,6 +70,9 @@ pub struct AssetAnalysis {
     pub audio: Option<AudioSummary>,
     /// Shot changes of the picture.
     pub scenes: Option<SceneSummary>,
+    /// The words spoken (prompt 21; schema version 7).
+    #[serde(default)]
+    pub transcript: Option<TranscriptSummary>,
 }
 
 /// `value` when it is a finite number: measurements of silence are `-∞` and JSON has no

@@ -1,10 +1,10 @@
-//! Project operations: [`RenameProject`].
+//! Project operations: [`RenameProject`], [`SetTranscriptionSettings`].
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use super::{Edit, Effect, checks::ensure_name};
-use crate::{DomainError, Project};
+use crate::{DomainError, Project, TranscriptionSettings};
 
 /// Renames the project (its folder is renamed by persistence, prompt 07).
 /// Inverse: [`RenameProject`] with the previous name.
@@ -21,6 +21,26 @@ impl Edit for RenameProject {
         let previous = std::mem::replace(&mut project.name, self.name.clone());
         effect.touched.project = true;
         effect.undo_with(Self { name: previous });
+        Ok(())
+    }
+}
+
+/// Sets how the project's media are transcribed (language, vocabulary).
+/// Inverse: [`SetTranscriptionSettings`] with the previous settings.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct SetTranscriptionSettings {
+    /// The new settings (checked by [`TranscriptionSettings::check`]).
+    pub settings: TranscriptionSettings,
+}
+
+impl Edit for SetTranscriptionSettings {
+    fn apply_to(&self, project: &mut Project, effect: &mut Effect) -> Result<(), DomainError> {
+        self.settings.check()?;
+        let previous =
+            std::mem::replace(&mut project.settings.transcription, self.settings.clone());
+        effect.touched.project = true;
+        effect.undo_with(Self { settings: previous });
         Ok(())
     }
 }
@@ -49,5 +69,34 @@ mod tests {
             ),
             DomainError::EmptyName { entity: "project" }
         );
+    }
+
+    #[test]
+    fn sets_checked_transcription_settings() {
+        let settings = TranscriptionSettings {
+            language: None,
+            vocabulary: "SimpleEffect".to_owned(),
+        };
+        let applied = apply_ok(
+            &example(),
+            SetTranscriptionSettings {
+                settings: settings.clone(),
+            },
+        );
+        assert_eq!(applied.project.settings.transcription, settings);
+        assert!(applied.touched.project);
+        let refused = apply_err(
+            &example(),
+            SetTranscriptionSettings {
+                settings: TranscriptionSettings {
+                    language: Some("French".to_owned()),
+                    vocabulary: String::new(),
+                },
+            },
+        );
+        assert!(matches!(
+            refused,
+            DomainError::InvalidTranscriptionSettings { .. }
+        ));
     }
 }

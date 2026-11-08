@@ -10,7 +10,7 @@ use super::{
 };
 use crate::{
     Asset, AssetId, AudioSummary, ContentFingerprint, Decodability, DerivedFile, DomainError,
-    ItemKind, MediaInfo, Project, SceneSummary,
+    ItemKind, MediaInfo, Project, SceneSummary, TranscriptSummary,
 };
 
 /// Adds an asset. Inverse: [`RemoveAsset`].
@@ -68,6 +68,9 @@ pub struct AssetPatch {
     pub audio_analysis: Option<Assign<Option<AudioSummary>>>,
     /// Another scene detection summary, or none.
     pub scene_detection: Option<Assign<Option<SceneSummary>>>,
+    /// Another transcript summary, or none.
+    #[serde(default)]
+    pub transcript: Option<Assign<Option<TranscriptSummary>>>,
     /// Another decodability.
     pub decodability: Option<Decodability>,
     /// Whether the original is missing.
@@ -86,6 +89,7 @@ impl AssetPatch {
             proxy: assign(&mut asset.derived.proxy, self.proxy.as_ref()),
             audio_analysis: assign(&mut asset.analysis.audio, self.audio_analysis.as_ref()),
             scene_detection: assign(&mut asset.analysis.scenes, self.scene_detection.as_ref()),
+            transcript: assign(&mut asset.analysis.transcript, self.transcript.as_ref()),
             decodability: swap_field(&mut asset.decodability, self.decodability.as_ref()),
             missing: swap_field(&mut asset.missing, self.missing.as_ref()),
         }

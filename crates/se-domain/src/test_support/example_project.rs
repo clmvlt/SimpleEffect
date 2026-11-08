@@ -16,8 +16,8 @@ use crate::{
     Marker, MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin, Project,
     ProjectId, ProjectSettings, Reframe, SceneSummary, Sequence, SequenceId, ShapeGeometry,
     ShapeItem, StreamDecodability, Stroke, TaskId, TemplateItem, TemplateParamValue, TextItem,
-    TextStyle, Track, TrackKind, Transform2D, Transition, TransitionAlignment, TransitionId,
-    TransitionKind, Vec2, VideoStreamInfo,
+    TextStyle, Track, TrackKind, TranscriptSummary, TranscriptionSettings, Transform2D, Transition,
+    TransitionAlignment, TransitionId, TransitionKind, Vec2, VideoStreamInfo,
 };
 
 /// Ids of [`example_project`] that tests refer to: its three assets and its template.
@@ -55,6 +55,7 @@ pub fn example_project() -> Project {
         revision: 42,
         settings: ProjectSettings {
             default_format: format,
+            transcription: TranscriptionSettings::default(),
         },
         assets: example_assets(),
         sequences: vec![Sequence {
@@ -140,6 +141,12 @@ fn example_assets() -> Vec<Asset> {
             silence_duration: millis(2_250),
         }),
         scenes: Some(SceneSummary { change_count: 4 }),
+        transcript: Some(TranscriptSummary {
+            language: "fr".to_owned(),
+            model: "large-v3-turbo".to_owned(),
+            word_count: 1_234,
+            transcribed_at: 1_789_000_000_000,
+        }),
     };
     let music = asset(
         example_ids::AUDIO_ASSET,

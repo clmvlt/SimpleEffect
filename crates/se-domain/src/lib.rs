@@ -22,6 +22,8 @@
 //!   [`Actor`].
 //! - [`history`]: [`History`], the user's undo/redo stacks.
 //! - [`changeset`]: [`Changeset`] of an AI task and [`plan_revert`] with its [`Conflict`]s.
+//! - [`transcript`]: words spoken in media ([`Transcript`]) and in a sequence
+//!   ([`sequence_transcript`]).
 //! - [`error`]: [`DomainError`], why a change was refused.
 //!
 //! Every public type is re-exported at the crate root.
@@ -45,6 +47,7 @@ pub mod spatial;
 pub mod test_support;
 pub mod time;
 pub mod transaction;
+pub mod transcript;
 pub mod validation;
 
 pub use analysis::{
@@ -65,9 +68,9 @@ pub use document::{
     MarkerColor, MediaClip, MediaInfo, MotionTemplate, Origin, Project, ProjectSettings,
     PropertyMut, PropertyRef, Reframe, Sequence, ShapeGeometry, ShapeItem, ShapeKind,
     StreamDecodability, Stroke, TemplateItem, TemplateParamValue, TextAlign, TextBackground,
-    TextCase, TextItem, TextShadow, TextStyle, Track, TrackKind, Transform2D, Transition,
-    TransitionAlignment, TransitionKind, TransitionProblem, VideoStreamInfo, fitted_transition,
-    item_handles, transition_problem, transition_room,
+    TextCase, TextItem, TextShadow, TextStyle, Track, TrackKind, TranscriptionSettings,
+    Transform2D, Transition, TransitionAlignment, TransitionKind, TransitionProblem,
+    VideoStreamInfo, fitted_transition, item_handles, transition_problem, transition_room,
 };
 pub use error::{DomainError, DomainErrorCode};
 pub use history::{History, HistoryStep};
@@ -81,9 +84,9 @@ pub use operation::{
     ItemPatch, LinkItems, MarkerPatch, MediaClipPatch, MoveItem, Operation, PropertyAnimation,
     RemoveAsset, RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack, RemoveTransition,
     RenameProject, ReorderTracks, RestoreItem, RippleDeleteRange, SequencePatch, SetKeyframes,
-    ShapePatch, SplitItem, TemplatePatch, TextPatch, TouchedEntities, TrackPatch, TransitionPatch,
-    TransitionSnapshot, TrimItem, UnlinkItems, UpdateAsset, UpdateItem, UpdateMarker,
-    UpdateSequence, UpdateTrack, UpdateTransition, apply, apply_all,
+    SetTranscriptionSettings, ShapePatch, SplitItem, TemplatePatch, TextPatch, TouchedEntities,
+    TrackPatch, TransitionPatch, TransitionSnapshot, TrimItem, UnlinkItems, UpdateAsset,
+    UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack, UpdateTransition, apply, apply_all,
 };
 pub use reformat::{
     ClipReframePolicy, FormatAdaptation, SequenceIds, TEXT_WIDTH_SHARE, adapted_patch,
@@ -95,4 +98,8 @@ pub use time::{
     format_clock, format_timecode, parse_timecode,
 };
 pub use transaction::{Actor, Committed, Transaction, commit};
+pub use transcript::{
+    ClipWindow, SequenceSegment, SequenceTranscript, SequenceWord, Transcript, TranscriptSegment,
+    TranscriptSummary, TranscriptWord, join_words, sequence_transcript, words_in,
+};
 pub use validation::{Violation, ViolationCode, validate_project};
