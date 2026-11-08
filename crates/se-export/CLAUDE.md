@@ -1,20 +1,25 @@
 # se-export
 
 ## Purpose
-Export adapter: FCP7 XML and OTIO timelines (Premiere Pro), SRT subtitles, and orchestration of final renders (`docs/adr/0008-premiere-export.md`). It implements the `Exporter` port; pixel rendering itself happens in `@se/engine` (WYSIWYG).
-
-Currently an empty skeleton, implemented by prompts 27 and 28.
+Export adapter: SRT subtitles (prompt 23), later FCP7 XML and OTIO timelines (Premiere Pro) and the orchestration of final renders (`docs/adr/0008-premiere-export.md`, ADR-0033). Pixel rendering happens in `@se/engine` (WYSIWYG).
 
 ## Public API
-None yet. Planned: `Exporter` implementations and pure writer functions.
+| Item | Role |
+|---|---|
+| `write_srt(&[SubtitleCue]) -> String` | Pure writer: UTF-8 with a byte-order mark, CRLF, cues numbered from 1, `HH:MM:SS,mmm` to the nearest millisecond (an end at least 1 ms after its start) |
+| `parse_srt(&str) -> Result<Vec<SubtitleCue>, SrtError>` | Tolerant reader: BOM, LF/CRLF/CR, `.` or `,` before milliseconds (1–3 digits), missing or wrong cue numbers, cue settings after the timing, extra blank lines; markup dropped (`<i>`, `<font …>`, `{\an8}`). `SrtError { line, message }` |
+| `FsSubtitleFiles` | se-app's `SubtitleFiles` port on the file system: blocking IO on tokio's blocking pool, atomic writes (temporary file then rename), UTF-8 read with a Latin-1 fallback |
+
+TODO(prompt-28): FCP7 XML and OTIO writers (the Premiere package reuses `write_srt` with `se_app::captions::subtitles::cues_of`).
 
 ## Rules and invariants
-- Writers are pure functions from the document model to bytes.
-- `Flicks` are converted to frame counts/timecodes only here, with the dedicated helpers.
+- Writers are pure functions from data to text.
+- `Flicks` are converted to milliseconds, frame counts or timecodes only here, with the dedicated helpers.
+- Error messages name the file or the line and what was expected.
 
 ## Allowed dependencies
-`se-app`, `se-domain`, serialisation libraries. Never another adapter crate. See `docs/architecture.md` §3.
+`se-app`, `se-domain`, `async-trait`, `thiserror`, `tokio` (rt, for `spawn_blocking`). Never another adapter crate. See `docs/architecture.md` §3.
 
 ## How to test
 - `cargo test -p se-export`
-- `insta` snapshot tests for every writer.
+- `srt.rs`: exact written text, write/read round trip, loose files, rounding, errors with line numbers; `subtitle_files.rs`: real temporary files (write then read, missing file, Latin-1, invalid content).

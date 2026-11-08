@@ -42,7 +42,7 @@ This codebase is developed and maintained by AI agents. Optimise every change fo
 | `crates/se-fonts` | Font catalogue: bundled fonts (embedded) + installed fonts (`fontdb`) | Implements `FontCatalog` |
 | `crates/se-agents` | AI CLI providers, stream parsing | Only place that knows a CLI |
 | `crates/se-mcp` | MCP server and tools for agents (`/mcp`, per-run tokens) | One tool per file; writes go through use cases; contract in `docs/ai-tools.md` |
-| `crates/se-export` | FCP7 XML, OTIO, SRT, render orchestration | Writers are pure functions |
+| `crates/se-export` | SRT (prompt 23), FCP7 XML, OTIO, render orchestration | Writers are pure functions |
 | `crates/se-core` | Binary: composition root, axum (`/rpc`, `/media`, `/mcp`) | Wiring only |
 | `crates/se-codegen` | Dev tool behind `pnpm codegen` (ts-rs export) | Never shipped, never depended on |
 | `crates/se-devtools` | Dev tools: `pnpm generate-test-project` (large test projects) | Never shipped, never depended on |

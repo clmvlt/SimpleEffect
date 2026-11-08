@@ -917,13 +917,8 @@
     }
   ],
   "brandKit": {
-    "colors": [
-      "#ffcc00",
-      "#1a1a1a"
-    ],
-    "fonts": [
-      "Inter"
-    ]
+    "colors": ["#ffcc00", "#1a1a1a"],
+    "fonts": ["Inter"]
   },
   "captionStyles": [
     {

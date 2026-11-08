@@ -60,7 +60,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | **Phase 5 — Transcription et audio intelligent** |||||
 | [x] | 21 | [Transcription locale (whisper.cpp)](21-transcription.md) | 09, 18 | 19, 20 |
 | [x] | 22 | [Montage par le texte et coupes intelligentes](22-montage-texte.md) | 14, 19, 21 | — |
-| [ ] | 23 | [Sous-titres automatiques animés](23-sous-titres.md) | 15, 22 | 24 |
+| [x] | 23 | [Sous-titres automatiques animés](23-sous-titres.md) | 15, 22 | 24 |
 | **Phase 6 — Motion design avancé** |||||
 | [ ] | 24 | [Modèles de motion générés par l'IA](24-templates-motion.md) ⚠️ | 19 | 23 |
 | [ ] | 25 | [Bibliothèque de templates et brand kit](25-bibliotheque-brand-kit.md) | 23, 24 | 26 |

@@ -48,7 +48,7 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Contact sheets for agents: many small frames tiled into one image (fewer tokens than separate images).
 - `list_fonts` for agents (and a check of `font_family` in `add_text`/`update_item`): agents can only guess installed families today; an unknown family falls back in the engine.
 - Sequence tools for agents (`set_sequence_format`, `create_sequence_version`, reframe in another format): they reach outside a task's scope (the whole sequence or a new one), so they need a scope kind of their own.
-- Media placement for agents (`place_media` from the bin into the scope) and template/caption writes (prompts 23–24 add theirs).
+- Media placement for agents (`place_media` from the bin into the scope) and template writes (prompt 24 adds them; caption tools came with prompt 23).
 - Reverting one run of a task (follow-ups append to the task's single changeset today) and re-reverting after an undone revert (revisions then differ, so everything conflicts).
 - Task UX (prompt 20): user edits are flagged from upserted items only (an item the user deletes inside a running task's scope sets no mark); time phrases are French only; drawing a scope directly on the timeline (Alt+drag) and per-run usage in the log would help; a revert's dialog could select the items it keeps.
 
@@ -59,6 +59,8 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Loudness normalisation to platform targets (-14 LUFS YouTube, etc.) on export.
 - Local text-to-speech for voice-overs.
 - Sound at 2×/4× and in reverse with the volume curves applied (scrub snippets already use the clip gain at their instant).
+
+- Captions (prompt 23): line breaking measured with the font (today by characters: a wide font can overflow; the style's character limit is the lever); a caption crossing a smart cut becomes two captions (merge them back automatically when both parts stay short); per-word timing nudges in the list (drag a word's edges on a mini timeline); emoji and keyword suggestions by the AI; a style per sequence format (portrait/landscape positions); karaoke fill progressing inside a word (today a word changes colour when it starts); animated entrances of whole captions (fade, slide); SRT export of one track only and of styled formats (WebVTT, ASS); automatic re-generation of the captions of a range after words are rewritten elsewhere.
 
 ## Interop
 - MOGRT generation for editable text in Premiere (research: proprietary, undocumented format).
