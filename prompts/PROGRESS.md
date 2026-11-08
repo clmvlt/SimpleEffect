@@ -26,6 +26,46 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-08 — Prompt 17: Runtime des agents IA (générique + Claude Code) — Done
+
+**Branch**: `feature/17-agents-runtime`, merged into `dev` at `<merge>`
+
+**Done**
+- se-protocol (ADR-0027): `ai.rs` (`ProviderId`, `ProviderInfo { name, command, loginCommand, helpUrl }`, `InstallationStatus`, `AuthStatus`, `ModelOption`, `EffortLevel`, `ProviderCapabilities`, `AiStatus`, `AiSettings`, `AgentFailureKind`, `AgentEvent`), `tasks.rs` (`TaskScope`, `TaskStatus`, `RunKind`, `TaskRun`, `Task`, `TaskEventRecord`, `SubmitTaskRequest`); commands `submitTask`, `cancelTask`, `retryTask`, `followUpTask`, `listTasks`, `getTaskEvents`, `getAiStatus`, `refreshAiStatus`, `getAiSettings`, `updateAiSettings`; events `taskUpdated`, `taskEventAppended`, `aiStatusChanged`; codes `TASK_NOT_FOUND`, `TASK_NOT_ACTIVE`, `TASK_STILL_ACTIVE`, `TASK_NOT_RESUMABLE`, `AI_UNAVAILABLE`. `command.rs` tests moved to `command/tests.rs`.
+- se-app: ports `AgentProvider`, `AgentRunSpec`/`AgentSession`/`McpEndpoint` (optional until prompt 18), `AgentRun` + `CancelHandle`, `AgentError`, `AgentWorkspaces`, `TaskStore` (`ProjectStore::tasks()`, `ProjectActorHandle::tasks()`); `TaskService` (the `TaskScheduler`): one FIFO queue for every open project, limit from the settings (1–8, default 3), cancellation of queued and running runs, retries (fresh session after a failed first run), follow-ups resuming the session, tasks and event logs persisted and published, tasks left running by a stopped core failed as `interrupted` at reopening, tasks cancelled at closing, AI status cache (refused submissions while missing or logged out), AI settings (`ai.*`), provider-agnostic agent instructions (`assets/agent-instructions/role.md` + scope). Test support: `ReplayProvider` (scripted runs, holds, failures, kills), `FakeAgentWorkspaces`, in-memory task store, `MediaTestbed` with a task service.
+- se-store: `project.db` schema v3 (`format_version` on tasks and events, `run` on events), `FsTaskStore`.
+- se-agents: `ClaudeCodeProvider` (setting → PATH → usual install folders; `--version`; `auth status --json` read for `loggedIn` and the account kind only; headless run with the prompt on stdin and the instructions in a file; isolation flags; stream-json parser; failure classification; process-tree cancellation; a parent Claude Code session's variables removed), `process::CliProcess`, `FsAgentWorkspaces` (`<app data>/agent-workdirs/<task id>/`, leftovers removed at startup).
+- se-core: task service wired (Claude Code provider, workspaces, settings applied, provider checked in the background at startup), handlers `tasks.rs` and `ai.rs`, `AppPaths::agent_workdirs`.
+- Desktop: status bar AI dot (green logged in, orange logged out with « Ouvre un terminal, lance `claude`, puis tape `/login` », grey not installed) opening « Réglages → IA » (CLI path and version, login with « Actualiser », custom path through the new bridge `chooseFile`, installation guide through the new bridge `openExternal` — `https:` only —, default model and effort, tasks at once); the « IA » tab explains the provider's state and, in development builds, offers « Tester une tâche » (submit, list, cancel, retry, follow-up, live events). Settings dialog driven by a store (`openSettings(section)`).
+- Empirical validation (provider `CLAUDE.md`): flags and isolation on 2.1.317 (logged out) and 2.1.319 (logged in, Max); fixtures `success`, `resume` (after deleting and recreating the working folder), `long-text`, `lost-session`, `not-logged-in`; an ancestor `CLAUDE.md` is read without our flags and ignored with them; `--safe-mode` drops our MCP server, `--bare` needs an API key.
+- Verified on the real se-core: with a fake `claude`, 5 tasks with a limit of 3 → 3 running and 2 queued, cancelling a running one killed its process (`kill -0` fails) and started the next, a follow-up resumed the same session id; with the real CLI, a task completed (haiku, low effort), its folder was removed and a follow-up remembered the first answer. In the built app: grey « non installé » with the searched folders, orange « déconnecté » with the login tooltip (bundled copy), green « connecté » with 2.1.319 and « Connecté (compte max) ».
+- Tests: se-protocol 45, se-app `tests/task_service.rs` (14) + unit tests, se-store `project_tasks.rs` + unit tests, se-agents 27 unit + 5 fake-CLI tests, se-core handlers, desktop AI services/components and the settings IA tab (430 tests).
+- Docs: ADR-0027, architecture §3/§4.2/§4.3/§6/§9/§11/§13/§14/§15, glossary (11 terms), CLAUDE.md of root, se-app, se-store, se-protocol, se-core, se-agents (+ `providers/claude_code/CLAUDE.md`), desktop.
+
+**Deviations from the prompt**
+- `AgentRun.events` is a tokio `mpsc::Receiver` (no `futures` dependency in se-app); `AgentProvider` gained `info()` (instead of `id()`) and `set_executable()` (the custom path setting).
+- Extra commands `getTaskEvents`, `getAiSettings`, `updateAiSettings`; `SubmitTask` carries the `projectId`; `Task` has `runs` (per-run prompt and status) and no `changesetId` yet (prompt 19).
+- Queued tasks left by a stopped core fail as `interrupted` too (nothing reruns without the user).
+- The prompt goes to stdin and the instructions to `--append-system-prompt-file` (Windows `.cmd` shims cannot take arguments with line breaks); isolation adds `--setting-sources "" --restricted --disable-slash-commands --strict-mcp-config` to the architecture's flags.
+- The « non installé » help link opens « Réglages → IA », which links to the installation guide in the browser (bridge `openExternal`).
+- The variables of a parent Claude Code session are removed from the CLI's environment (found because this dev machine runs `pnpm dev` from Claude Code).
+- The development panel lives in the « IA » tab (shown in development builds only) rather than a separate hidden screen.
+
+**Follow-ups**
+- Prompt 18: make `AgentRunSpec.mcp` required, mint per-task tokens, check that `--restricted` keeps MCP tool calls working and that `--allowedTools "mcp__simpleeffect__*"` is enough with `--permission-prompts none`.
+- Prompt 19: `changesetId` on tasks; agent instructions for tools, time formats and scope.
+- Prompt 20: the real task UX (composer, task panel, review) replacing the development panel.
+- `rate_limit_event` lines (usage windows) could feed a usage indicator; ignored for now.
+- The Windows `.cmd` path is covered by design and by the argument rules but not by an automated test (the fake-CLI test is Unix only); check on the Windows machine.
+- The user-level `~/.claude/CLAUDE.md` exclusion was not tested (this machine has none): check on a machine that has one.
+
+**Notes for the next agent**
+- On this Mac the official CLI is `~/.local/bin/claude` (2.1.319, native installer); the Claude desktop app also carries an internal, logged-out copy under `~/Library/Application Support/Claude/claude-code/<version>/…/claude.app/Contents/MacOS/claude`.
+- Shells started by Claude Code (this agent's, and `pnpm dev` from its terminal) carry `CLAUDECODE`, `CLAUDE_CODE_*` and `ANTHROPIC_BASE_URL`: run CLI experiments with `env -i HOME="$HOME" PATH=/usr/bin:/bin USER="$USER" TMPDIR="$TMPDIR" LANG=en_US.UTF-8 …`.
+- A `--session-id` already used (even by a logged-out run) fails with `Session ID … is already in use`: use fresh ids when re-recording fixtures.
+- Driving se-core without the renderer: spawn `target/debug/se-core` with `SE_DATA_DIR`, read the handshake line, open `ws://127.0.0.1:<port>/rpc?t=<token>` with Node 24's global `WebSocket`. A fake `claude` (shell script answering `--version`, `auth status --json`, then echoing a stream with the `--session-id`/`--resume` value) tests scheduling and cancellation without quota.
+- The shell safety check refuses heredocs holding JavaScript template literals (`${…}`): write such scripts with the file tool.
+
 ## 2026-11-07 — Prompt 16: Formats, séquences multiples, safe areas — Done
 
 **Branch**: `feature/16-formats-sequences`, merged into `dev` at `94148f7`

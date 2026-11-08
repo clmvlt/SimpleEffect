@@ -439,7 +439,7 @@ pub enum AgentEvent {
 `se_agents::providers::claude_code::ClaudeCodeProvider`; validated flags and observations in its `CLAUDE.md`.
 - Binary resolution: user override (« Réglages → IA ») → `which` (honours PATHEXT on Windows, where `claude` is usually a `.cmd` shim) → the usual install folders of the OS (desktop apps do not inherit the shell's PATH).
 - Detection: `claude --version`. Auth: `claude auth status --json` → `loggedIn` and the account kind (`subscriptionType`, else `authMethod`); e-mail and organisation are never read.
-- Invocation (validated against Claude Code 2.1.317):
+- Invocation (validated against Claude Code 2.1.317 and 2.1.319, logged in with a subscription):
   `claude -p --output-format stream-json --verbose --tools "" --permission-prompts none --setting-sources "" --restricted --disable-slash-commands --strict-mcp-config --append-system-prompt-file <workdir>/.simpleeffect-instructions.md [--mcp-config <json> --allowedTools "mcp__simpleeffect__*"] [--model m] [--effort e] (--session-id <uuid> | --resume <uuid>)`, in the task's working folder, the **prompt on stdin** (arguments with line breaks cannot reach a Windows `.cmd` shim).
 - MCP config passed inline (prompt 18): `{"mcpServers":{"simpleeffect":{"type":"http","url":"http://127.0.0.1:<port>/mcp","headers":{"Authorization":"Bearer <task token>"}}}}`, redacted from logs.
 - stream-json lines are parsed into `AgentEvent` (`system`/`init` → session, `assistant` → text and tool calls, `user` → tool results, `result` → usage then completed or failed); unknown line types are logged and ignored (forward compatible). Failures are classified from the result text or stderr (usage limit, login, lost session, crash, unreadable output).
