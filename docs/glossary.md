@@ -265,3 +265,11 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **GPU pack** | The CUDA build of whisper.cpp for Windows, downloaded with consent into `<app data>/runtimes/` instead of shipping in the installer | `GpuRuntimeOffer`, `gpu_runtime` |
 | **Transcription vocabulary** | Names and terms of a project given to whisper as context so it spells them right | `TranscriptionSettings.vocabulary` |
 | **Unsure word** | A word whose confidence is under 0.5, underlined in the panel and flagged `unsure` for agents | `Transcript::LOW_CONFIDENCE` |
+| **Smart cut** | A cut decided from content — chosen words, filler words or silences — made frame-exact as one ripple transaction on the speech's tracks and their linked picture, the same for the user and agents (prompt 22) | `se_app::smart_cuts`, `CutRequest`, `SmartCutService` |
+| **Text-based editing** | Cutting the video by removing words in the transcript (select, then Suppr) | `removeWords`, `remove_words` |
+| **Filler word (hesitation)** | « euh », « hum », « um »… from per-language lists, matched without case, accents or punctuation | `FillerList`, `findFillers`, `remove_fillers` |
+| **Level envelope** | An asset's RMS level every 20 ms in whole dB below full scale, stored with its audio analysis; silences for any threshold come from it | `LevelEnvelope` |
+| **Cut passage** | What a cut removed between two touching clips of one asset (a forward jump in the source), shown struck through in the transcript and restorable | `cutPassages`, `CutPassageMark` |
+| **Cut preview** | Cuts a silence removal would make, drawn as temporary bands on the timeline before anything changes | `showCutPreview`, `previewSilenceCuts` |
+| **Cut scope rule** | The scope check of agents' smart cuts: the removed time lies in the task's range and the edited tracks are its tracks; what follows may move | `check_cut_scope` |
+| **Multi-range ripple delete** | One operation removing several sorted ranges, each item reshaped once | `RippleDeleteRanges`, `remaining_parts` |
