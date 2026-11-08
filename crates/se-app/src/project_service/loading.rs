@@ -2,7 +2,7 @@
 
 use std::{path::Path, sync::Arc};
 
-use se_domain::{Project, validate_project};
+use se_domain::{Changeset, Project, validate_project};
 use se_protocol::{CoreEvent, ProjectSession};
 
 use super::{ProjectService, display_path};
@@ -32,7 +32,7 @@ impl ProjectService {
     ) -> Result<ProjectActorHandle, AppError> {
         let store = self.deps.repository.open(path).await?;
         match load(store.as_ref()).await {
-            Ok(project) => {
+            Ok((project, changesets)) => {
                 let events: Arc<dyn EventSink> = if announce {
                     Arc::clone(&self.deps.events)
                 } else {
@@ -44,7 +44,7 @@ impl ProjectService {
                     ids: Arc::clone(&self.deps.ids),
                     save_delay: self.config.save_delay,
                 };
-                Ok(ProjectActorHandle::spawn(project, store, deps))
+                Ok(ProjectActorHandle::spawn(project, changesets, store, deps))
             }
             Err(error) => {
                 if let Err(close_error) = store.close().await {
@@ -56,9 +56,10 @@ impl ProjectService {
     }
 }
 
-/// The document of an open store: its snapshot plus the journal written after it (crash
-/// recovery). A recovered state is saved as the new snapshot right away.
-async fn load(store: &dyn ProjectStore) -> Result<Project, AppError> {
+/// The document of an open store — its snapshot plus the journal written after it (crash
+/// recovery) — and the open changesets of its AI tasks. A recovered state is saved as the new
+/// snapshot right away.
+async fn load(store: &dyn ProjectStore) -> Result<(Project, Vec<Changeset>), AppError> {
     let snapshot = store.load_snapshot().await?;
     let violations = validate_project(&snapshot);
     if !violations.is_empty() {
@@ -88,7 +89,8 @@ async fn load(store: &dyn ProjectStore) -> Result<Project, AppError> {
             tracing::warn!(%error, "saving the recovered snapshot failed");
         }
     }
-    Ok(project)
+    let changesets = store.load_changesets().await?;
+    Ok((project, changesets))
 }
 
 /// The session clients receive for an open project.

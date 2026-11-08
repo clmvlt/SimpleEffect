@@ -1,4 +1,11 @@
-import type { AiStatus, CoreClient, SubmitTaskRequest, Task, TaskEventRecord } from '@se/protocol';
+import type {
+  AiStatus,
+  CoreClient,
+  SubmitTaskRequest,
+  Task,
+  TaskEventRecord,
+  TaskRevertReport,
+} from '@se/protocol';
 
 /** What the AI feature needs from the core client. */
 export type AiClient = Pick<CoreClient, 'send'>;
@@ -36,6 +43,15 @@ export async function followUpTask(
   prompt: string,
 ): Promise<Task> {
   return (await client.send({ kind: 'followUpTask', projectId, taskId, prompt })).task;
+}
+
+/** Undoes a finished task's edits that nobody changed since; resolves with what was left. */
+export async function revertTask(
+  client: AiClient,
+  projectId: string,
+  taskId: string,
+): Promise<TaskRevertReport> {
+  return (await client.send({ kind: 'revertTask', projectId, taskId })).report;
 }
 
 /** The tasks of an open project, oldest first. */

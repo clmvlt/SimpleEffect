@@ -1,0 +1,107 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Adds a cross-fade on the cut between two adjacent items of one track (picture dissolve on video tracks, sound cross-fade on audio tracks), given by the two items or by the track and the cut's time. The length is shortened to the media both items have beyond the cut.",
+  "inputSchema": {
+    "$defs": {
+      "AlignmentInput": {
+        "description": "Where the transition sits on the cut.",
+        "oneOf": [
+          {
+            "const": "center",
+            "description": "Centred on the cut (default).",
+            "type": "string"
+          },
+          {
+            "const": "start",
+            "description": "Starts at the cut (inside the right item).",
+            "type": "string"
+          },
+          {
+            "const": "end",
+            "description": "Ends at the cut (inside the left item).",
+            "type": "string"
+          }
+        ]
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "alignment": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/AlignmentInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Where it sits on the cut; default center."
+      },
+      "at": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The time of the cut (within half a frame), with `track`."
+      },
+      "duration": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The wanted length (shortened to the media both items have beyond the cut); default 0.5 s."
+      },
+      "left_item_id": {
+        "description": "The item ending at the cut.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "right_item_id": {
+        "description": "The item starting at the cut.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "track": {
+        "description": "The track of the cut (id or name), with `at`.",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "name": "add_transition"
+}

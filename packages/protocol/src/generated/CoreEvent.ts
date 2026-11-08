@@ -1,7 +1,9 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { AiStatus } from "./AiStatus";
+import type { ChangesetId } from "./ChangesetId";
 import type { FrameRenderRequest } from "./FrameRenderRequest";
+import type { ItemId } from "./ItemId";
 import type { JobProgress } from "./JobProgress";
 import type { JobSnapshot } from "./JobSnapshot";
 import type { ProjectHistory } from "./ProjectHistory";
@@ -62,4 +64,20 @@ taskId: TaskId,
 /**
  * The new entry of its log.
  */
-event: TaskEventRecord, } | { "kind": "aiStatusChanged" } & AiStatus | { "kind": "renderFramesRequested" } & FrameRenderRequest;
+event: TaskEventRecord, } | { "kind": "taskChangesetUpdated", 
+/**
+ * The task's project.
+ */
+projectId: ProjectId, 
+/**
+ * The task.
+ */
+taskId: TaskId, 
+/**
+ * Its open changeset (`null` once reverted).
+ */
+changesetId: ChangesetId | null, 
+/**
+ * The items the task added or changed that still exist, in id order.
+ */
+touchedItems: Array<ItemId>, } | { "kind": "aiStatusChanged" } & AiStatus | { "kind": "renderFramesRequested" } & FrameRenderRequest;

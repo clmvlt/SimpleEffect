@@ -1,8 +1,8 @@
 //! [`NewIds`]: typed ids from the [`IdGenerator`] port.
 
 use se_domain::{
-    AssetId, ItemId, JobId, LinkGroupId, MarkerId, ProjectId, SequenceId, TaskId, TrackId,
-    TransactionId, TransitionId,
+    AssetId, ChangesetId, ItemId, JobId, LinkGroupId, MarkerId, ProjectId, SequenceId, TaskId,
+    TrackId, TransactionId, TransitionId,
 };
 
 use crate::{AppError, ports::IdGenerator};
@@ -52,4 +52,6 @@ id_methods! {
     transition -> TransitionId;
     /// A new AI task id.
     task -> TaskId;
+    /// A new changeset id (an AI task's first edit).
+    changeset -> ChangesetId;
 }

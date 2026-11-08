@@ -33,9 +33,10 @@ pub const SERVER_NAME: &str = "simpleeffect";
 
 /// Instructions sent at initialisation; the full guides come with the task's instructions.
 const SERVER_INSTRUCTIONS: &str = "Tools of the SimpleEffect video editor for the project of \
-    your task. Read the project before answering: get_project_overview, then get_timeline, and \
-    get_frames to see the sequence. Times are seconds or timecodes; outputs give \
-    {\"timecode\",\"seconds\"}.";
+    your task. Read the project before acting: get_project_overview, then get_timeline, and \
+    get_frames to see the sequence. Change it with the write tools (add_text, update_item, \
+    move_item, apply_batch…), inside your task's scope only, and check visual changes with \
+    get_frames. Times are seconds or timecodes; outputs give {\"timecode\",\"seconds\"}.";
 
 /// The MCP server: the tool catalogue over the se-app services.
 #[derive(Clone)]

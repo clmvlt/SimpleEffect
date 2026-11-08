@@ -1,0 +1,248 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Places an image asset of the project (logo, sticker, picture) over a time range of the task's sequence, with its place, fit, scale, opacity and optional entrance/exit animations. Answers the new item_id.",
+  "inputSchema": {
+    "$defs": {
+      "AnimationInput": {
+        "additionalProperties": false,
+        "description": "An animation applied to a new item.",
+        "properties": {
+          "duration": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its length (seconds or timecode); default: the preset's."
+          },
+          "preset": {
+            "description": "A preset id from `list_animation_presets` (`fade`, `pop`, `slideFromLeft`…).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "preset"
+        ],
+        "type": "object"
+      },
+      "FitInput": {
+        "description": "How the image is sized in the frame.",
+        "oneOf": [
+          {
+            "const": "fit",
+            "description": "Whole image inside the frame (default).",
+            "type": "string"
+          },
+          {
+            "const": "fill",
+            "description": "Covers the frame, cropping what overflows.",
+            "type": "string"
+          },
+          {
+            "const": "natural",
+            "description": "Its own size (one image pixel per design pixel).",
+            "type": "string"
+          }
+        ]
+      },
+      "NamedPosition": {
+        "description": "A named place of the frame (inside the usual safe areas of vertical and horizontal videos).",
+        "oneOf": [
+          {
+            "const": "center",
+            "description": "The centre (0.5, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "top",
+            "description": "Upper part, centred (0.5, 0.15).",
+            "type": "string"
+          },
+          {
+            "const": "bottom",
+            "description": "Lower part, centred (0.5, 0.8).",
+            "type": "string"
+          },
+          {
+            "const": "left",
+            "description": "Left part, centred vertically (0.2, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "right",
+            "description": "Right part, centred vertically (0.8, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "lower_third",
+            "description": "Lower third, left (0.3, 0.75): names and titles.",
+            "type": "string"
+          }
+        ]
+      },
+      "PointInput": {
+        "additionalProperties": false,
+        "description": "A point of the frame, normalised: `x` from 0 (left) to 1 (right), `y` from 0 (top) to 1\n(bottom).",
+        "properties": {
+          "x": {
+            "description": "From 0 (left edge) to 1 (right edge).",
+            "format": "double",
+            "type": "number"
+          },
+          "y": {
+            "description": "From 0 (top edge) to 1 (bottom edge).",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "type": "object"
+      },
+      "PositionInput": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/NamedPosition",
+            "description": "A named place."
+          },
+          {
+            "$ref": "#/$defs/PointInput",
+            "description": "A normalised point."
+          }
+        ],
+        "description": "Where an item's centre (its anchor) sits."
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "animation_in": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/AnimationInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Entrance animation (preset `in` phase)."
+      },
+      "animation_out": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/AnimationInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Exit animation (preset `out` phase)."
+      },
+      "asset": {
+        "description": "The image asset (an `asset_id` of kind `image` from `list_assets`).",
+        "type": "string"
+      },
+      "duration": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "How long it stays. Give `end` or `duration`."
+      },
+      "end": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "When it disappears (excluded). Give `end` or `duration`."
+      },
+      "fit": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/FitInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "How it is sized; default fit."
+      },
+      "opacity": {
+        "description": "Opacity from 0 to 1; default 1.",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "position": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/PositionInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Where its centre sits; default \"center\"."
+      },
+      "scale": {
+        "description": "Scale factor (1 = as fitted); e.g. 0.3 for a corner logo.",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "start": {
+        "$ref": "#/$defs/Time",
+        "description": "When it appears, in sequence time."
+      },
+      "track": {
+        "description": "A video track (id or name); default: the highest free track of the task.",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "asset",
+      "start"
+    ],
+    "type": "object"
+  },
+  "name": "add_image"
+}

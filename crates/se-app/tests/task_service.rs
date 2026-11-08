@@ -548,9 +548,11 @@ async fn start_failures_and_silent_agents_fail_their_task_with_a_reason() {
 async fn settings_choose_defaults_the_limit_and_the_executable() {
     let harness = harness().await;
     let detections = harness.agent.detections();
+    // Absolute on every OS (`/opt/…` is not absolute on Windows).
+    let executable = std::env::temp_dir().join("replay").join("replay");
     let settings = AiSettings {
         provider: ProviderId(REPLAY_PROVIDER_ID.to_owned()),
-        executable_path: Some("/opt/replay/bin/replay".to_owned()),
+        executable_path: Some(executable.to_string_lossy().into_owned()),
         default_model: Some("small".to_owned()),
         default_effort: Some(se_protocol::EffortLevel::High),
         max_concurrent_tasks: 2,
@@ -561,10 +563,7 @@ async fn settings_choose_defaults_the_limit_and_the_executable() {
         .await
         .unwrap();
     assert_eq!(saved, settings);
-    assert_eq!(
-        harness.agent.executable(),
-        Some(PathBuf::from("/opt/replay/bin/replay"))
-    );
+    assert_eq!(harness.agent.executable(), Some(executable));
     assert!(
         harness.agent.detections() > detections,
         "the CLI is checked again"

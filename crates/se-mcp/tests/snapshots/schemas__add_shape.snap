@@ -1,0 +1,305 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Adds an editable shape (rectangle, rounded rectangle, ellipse, line) over a time range of the task's sequence, with its size, colour, outline, opacity and optional entrance/exit animations. Answers the new item_id.",
+  "inputSchema": {
+    "$defs": {
+      "AnimationInput": {
+        "additionalProperties": false,
+        "description": "An animation applied to a new item.",
+        "properties": {
+          "duration": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its length (seconds or timecode); default: the preset's."
+          },
+          "preset": {
+            "description": "A preset id from `list_animation_presets` (`fade`, `pop`, `slideFromLeft`…).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "preset"
+        ],
+        "type": "object"
+      },
+      "NamedPosition": {
+        "description": "A named place of the frame (inside the usual safe areas of vertical and horizontal videos).",
+        "oneOf": [
+          {
+            "const": "center",
+            "description": "The centre (0.5, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "top",
+            "description": "Upper part, centred (0.5, 0.15).",
+            "type": "string"
+          },
+          {
+            "const": "bottom",
+            "description": "Lower part, centred (0.5, 0.8).",
+            "type": "string"
+          },
+          {
+            "const": "left",
+            "description": "Left part, centred vertically (0.2, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "right",
+            "description": "Right part, centred vertically (0.8, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "lower_third",
+            "description": "Lower third, left (0.3, 0.75): names and titles.",
+            "type": "string"
+          }
+        ]
+      },
+      "PointInput": {
+        "additionalProperties": false,
+        "description": "A point of the frame, normalised: `x` from 0 (left) to 1 (right), `y` from 0 (top) to 1\n(bottom).",
+        "properties": {
+          "x": {
+            "description": "From 0 (left edge) to 1 (right edge).",
+            "format": "double",
+            "type": "number"
+          },
+          "y": {
+            "description": "From 0 (top edge) to 1 (bottom edge).",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "type": "object"
+      },
+      "PositionInput": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/NamedPosition",
+            "description": "A named place."
+          },
+          {
+            "$ref": "#/$defs/PointInput",
+            "description": "A normalised point."
+          }
+        ],
+        "description": "Where an item's centre (its anchor) sits."
+      },
+      "ShapeInput": {
+        "description": "The kind of shape.",
+        "oneOf": [
+          {
+            "const": "rectangle",
+            "description": "Sharp corners (600 × 338 px by default).",
+            "type": "string"
+          },
+          {
+            "const": "rounded_rectangle",
+            "description": "Rounded corners (radius 32 px by default).",
+            "type": "string"
+          },
+          {
+            "const": "ellipse",
+            "description": "An ellipse (400 × 400 px by default).",
+            "type": "string"
+          },
+          {
+            "const": "line",
+            "description": "A straight line (600 px long, 8 px thick by default).",
+            "type": "string"
+          }
+        ]
+      },
+      "StrokeInput": {
+        "additionalProperties": false,
+        "description": "An outline around text glyphs or a shape.",
+        "properties": {
+          "color": {
+            "description": "`#rrggbb` or `#rrggbbaa`; default black.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "width": {
+            "description": "Width in design pixels (1080 px = the frame's shorter side); default 4.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "animation_in": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/AnimationInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Entrance animation (preset `in` phase)."
+      },
+      "animation_out": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/AnimationInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Exit animation (preset `out` phase)."
+      },
+      "color": {
+        "description": "Fill colour `#rrggbb[aa]`; default white.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "corner_radius": {
+        "description": "Corner radius in design pixels (rectangles).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "cover_frame": {
+        "description": "Stretch it over the whole frame (backgrounds, colour washes); default false.",
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "duration": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "How long it stays. Give `end` or `duration`."
+      },
+      "end": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "When it disappears (excluded). Give `end` or `duration`."
+      },
+      "height": {
+        "description": "Height in design pixels (a line's thickness).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "opacity": {
+        "description": "Opacity from 0 to 1; default 1.",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "position": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/PositionInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Where its centre sits; default \"center\"."
+      },
+      "shape": {
+        "$ref": "#/$defs/ShapeInput",
+        "description": "The shape."
+      },
+      "start": {
+        "$ref": "#/$defs/Time",
+        "description": "When it appears, in sequence time."
+      },
+      "stroke": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/StrokeInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "An outline."
+      },
+      "track": {
+        "description": "A video track (id or name); default: the highest free track of the task.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "width": {
+        "description": "Width in design pixels (a line's length).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "shape",
+      "start"
+    ],
+    "type": "object"
+  },
+  "name": "add_shape"
+}

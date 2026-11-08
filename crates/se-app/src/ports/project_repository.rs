@@ -10,7 +10,7 @@ use std::{
 };
 
 use async_trait::async_trait;
-use se_domain::{Project, Transaction};
+use se_domain::{Changeset, ChangesetEntry, ChangesetId, Project, TaskId, Transaction};
 
 use super::{AnalysisStore, StorageError, TaskStore};
 
@@ -79,6 +79,24 @@ pub trait ProjectStore: Send + Sync {
     /// IO errors: the transaction must then be considered not committed.
     async fn append_journal(&self, entry: &JournalEntry) -> Result<(), StorageError>;
 
+    /// Durably appends one committed transaction to the journal **and** its change of an AI
+    /// task's changeset, in one atomic write: after a crash both are there, or neither.
+    ///
+    /// # Errors
+    /// IO errors: the transaction must then be considered not committed.
+    async fn append_journal_with_changeset(
+        &self,
+        entry: &JournalEntry,
+        change: &ChangesetWrite,
+    ) -> Result<(), StorageError>;
+
+    /// The open changesets of AI tasks (those not reverted), each with its entries in order.
+    ///
+    /// # Errors
+    /// [`StorageError::SchemaTooNew`] for an entry of a newer format, [`StorageError::Corrupted`]
+    /// for an unreadable one; IO errors.
+    async fn load_changesets(&self) -> Result<Vec<Changeset>, StorageError>;
+
     /// Atomically replaces `project.json` with `project` (keeping the previous versions as
     /// backups), then drops the journal entries it includes (revision ≤ `project.revision`).
     ///
@@ -108,4 +126,28 @@ pub struct JournalEntry {
     pub committed_at: i64,
     /// The transaction, replayed with `se_domain::commit` after a crash.
     pub transaction: Transaction,
+}
+
+/// How a commit changes an AI task's changeset (`changesets` and `changeset_entries` tables).
+#[derive(Debug, Clone, PartialEq)]
+pub enum ChangesetWrite {
+    /// The commit is an edit of the task: `entry` is appended to its changeset, created (at
+    /// `created_at`, milliseconds since the Unix epoch) if it does not exist yet.
+    Record {
+        /// The task's open changeset.
+        changeset_id: ChangesetId,
+        /// The task.
+        task_id: TaskId,
+        /// When the changeset was created (used only when it is new).
+        created_at: i64,
+        /// The committed transaction, its inverse and the revisions it left.
+        entry: Box<ChangesetEntry>,
+    },
+    /// The commit reverts the changeset, which is closed (kept, marked reverted at `at`).
+    Revert {
+        /// The changeset reverted.
+        changeset_id: ChangesetId,
+        /// When (milliseconds since the Unix epoch).
+        at: i64,
+    },
 }

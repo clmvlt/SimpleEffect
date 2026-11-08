@@ -7,13 +7,17 @@ use std::{
 };
 
 use async_trait::async_trait;
-use se_domain::{AnalysisKind, AssetId, Project, TaskId};
+use se_domain::{AnalysisKind, AssetId, Changeset, Project, TaskId};
 use se_protocol::{Task, TaskEventRecord};
 
-use super::{lock, memory_tasks::InMemoryTaskStore};
+use super::{
+    lock,
+    memory_changesets::{StoredChangeset, apply_write, open_changesets},
+    memory_tasks::InMemoryTaskStore,
+};
 use crate::ports::{
-    AnalysisStore, JournalEntry, ProjectRepository, ProjectStore, StorageError, StoredAnalysis,
-    TaskStore,
+    AnalysisStore, ChangesetWrite, JournalEntry, ProjectRepository, ProjectStore, StorageError,
+    StoredAnalysis, TaskStore,
 };
 
 /// One fake project folder.
@@ -33,6 +37,8 @@ pub struct StoredFolder {
     pub tasks: Vec<Task>,
     /// Their event logs.
     pub task_events: BTreeMap<TaskId, Vec<TaskEventRecord>>,
+    /// AI changesets saved in its database, open or reverted, in creation order.
+    pub changesets: Vec<StoredChangeset>,
 }
 
 #[derive(Debug, Default)]
@@ -63,6 +69,7 @@ impl InMemoryProjectRepository {
                 analyses: BTreeMap::new(),
                 tasks: Vec::new(),
                 task_events: BTreeMap::new(),
+                changesets: Vec::new(),
             },
         );
     }
@@ -231,6 +238,27 @@ impl ProjectStore for InMemoryProjectStore {
             folder.journal.push(entry.clone());
             Ok(())
         })
+    }
+
+    async fn append_journal_with_changeset(
+        &self,
+        entry: &JournalEntry,
+        change: &ChangesetWrite,
+    ) -> Result<(), StorageError> {
+        let fail = lock(&self.repository.state).fail_journal;
+        self.repository.with_folder(&self.path, |folder| {
+            if fail {
+                return Err(io_error(&self.path));
+            }
+            apply_write(&mut folder.changesets, change)?;
+            folder.journal.push(entry.clone());
+            Ok(())
+        })
+    }
+
+    async fn load_changesets(&self) -> Result<Vec<Changeset>, StorageError> {
+        self.repository
+            .with_folder(&self.path, |folder| Ok(open_changesets(&folder.changesets)))
     }
 
     async fn save_snapshot(&self, project: &Project) -> Result<(), StorageError> {

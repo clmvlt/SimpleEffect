@@ -1,0 +1,40 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Removes items from the timeline (a clip's linked partner goes with it). The time they took stays empty: nothing moves. To close the gap, use ripple_delete_range instead (only when the task's scope reaches the end of the sequence).",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "expected_revisions": {
+        "additionalProperties": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "default": {},
+        "description": "The revision you read of some of them (`{\"<item_id>\": 3}`): refused with\n`REVISION_CONFLICT` if one changed since.",
+        "type": "object"
+      },
+      "item_ids": {
+        "description": "The items to remove (`item_ids`, or `$name` in `apply_batch`). A clip's linked sound or\npicture goes with it.",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "item_ids"
+    ],
+    "type": "object"
+  },
+  "name": "delete_items"
+}

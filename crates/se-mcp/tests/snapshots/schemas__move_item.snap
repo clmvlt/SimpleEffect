@@ -1,0 +1,67 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Moves an item to a new start and/or another track of the same kind; a clip's linked sound or picture moves by the same amount. Refused if it would overlap another item (trim or move that one first).",
+  "inputSchema": {
+    "$defs": {
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "expected_revision": {
+        "description": "The revision you read; refused (`REVISION_CONFLICT`) if the item changed since.",
+        "format": "uint64",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "item_id": {
+        "description": "The item (an `item_id`, or `$name` in `apply_batch`).",
+        "type": "string"
+      },
+      "start": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Its new start, in sequence time; default: unchanged."
+      },
+      "track": {
+        "description": "Its new track (id or name, same kind); default: unchanged.",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "item_id"
+    ],
+    "type": "object"
+  },
+  "name": "move_item"
+}

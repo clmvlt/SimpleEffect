@@ -7,7 +7,7 @@ use ts_rs::TS;
 use crate::{
     AiSettings, AiStatus, AnimationPresetInfo, FontFamily, ImportReport, JobSnapshot,
     MediaSettings, MediaToolsStatus, NewProjectDefaults, PlacedGraphic, ProjectCacheInfo,
-    ProjectSession, RecentProject, RelinkOutcome, Task, TaskEventRecord,
+    ProjectSession, RecentProject, RelinkOutcome, Task, TaskEventRecord, TaskRevertReport,
 };
 
 /// The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
@@ -223,6 +223,12 @@ pub enum CommandResult {
     ListTasks {
         /// Oldest first.
         tasks: Vec<Task>,
+    },
+    /// Answer to [`crate::Command::RevertTask`] (`projectPatched`, `taskChangesetUpdated` and
+    /// `taskUpdated` follow when something was undone).
+    RevertTask {
+        /// What was undone and what was left.
+        report: TaskRevertReport,
     },
     /// Answer to [`crate::Command::GetTaskEvents`].
     GetTaskEvents {

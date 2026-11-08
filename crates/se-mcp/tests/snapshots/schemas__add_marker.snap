@@ -1,0 +1,101 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Adds a labelled marker at an instant of the task's sequence (beats, chapters, notes for the user).",
+  "inputSchema": {
+    "$defs": {
+      "ColorInput": {
+        "description": "Marker colours.",
+        "oneOf": [
+          {
+            "const": "green",
+            "description": "Default.",
+            "type": "string"
+          },
+          {
+            "const": "red",
+            "description": "Red.",
+            "type": "string"
+          },
+          {
+            "const": "purple",
+            "description": "Purple.",
+            "type": "string"
+          },
+          {
+            "const": "orange",
+            "description": "Orange.",
+            "type": "string"
+          },
+          {
+            "const": "yellow",
+            "description": "Yellow.",
+            "type": "string"
+          },
+          {
+            "const": "white",
+            "description": "White.",
+            "type": "string"
+          },
+          {
+            "const": "blue",
+            "description": "Blue.",
+            "type": "string"
+          },
+          {
+            "const": "cyan",
+            "description": "Cyan.",
+            "type": "string"
+          }
+        ]
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "color": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/ColorInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Its colour; default green."
+      },
+      "label": {
+        "default": "",
+        "description": "Its label; default empty.",
+        "type": "string"
+      },
+      "time": {
+        "$ref": "#/$defs/Time",
+        "description": "Where, in sequence time."
+      }
+    },
+    "required": [
+      "time"
+    ],
+    "type": "object"
+  },
+  "name": "add_marker"
+}

@@ -29,6 +29,12 @@ pub mod codes {
     pub const TOO_MANY_FRAMES: &str = "TOO_MANY_FRAMES";
     /// The caller's run is over: its token no longer gives access.
     pub const ACCESS_REVOKED: &str = "ACCESS_REVOKED";
+    /// A write breaks a document rule (overlap, trim beyond the media…); the message says which.
+    pub const VALIDATION_ERROR: &str = "VALIDATION_ERROR";
+    /// The item changed since the agent read it (`expected_revision`): read it again.
+    pub const REVISION_CONFLICT: &str = "REVISION_CONFLICT";
+    /// The item is on a track the user locked.
+    pub const LOCKED_TRACK: &str = "LOCKED_TRACK";
     /// A bug in the tool.
     pub const INTERNAL: &str = "INTERNAL";
 }

@@ -116,6 +116,7 @@ mod tests {
                 media: bed.media.clone(),
                 renders: bed.renders.clone(),
                 tokens: bed.tokens.clone(),
+                edits: bed.edits.clone(),
             },
             port,
         );
@@ -155,7 +156,25 @@ mod tests {
             .expect("a running task's token connects");
         let tools = client.list_all_tools().await.unwrap();
         assert!(tools.iter().any(|tool| tool.name == "get_frames"));
-        assert_eq!(tools.len(), 12);
+        assert_eq!(tools.len(), 29);
+
+        let mut arguments = rmcp::model::JsonObject::new();
+        arguments.insert("text".to_owned(), "Abonne-toi".into());
+        arguments.insert("start".to_owned(), 1.into());
+        arguments.insert("end".to_owned(), 2.into());
+        let added = client
+            .call_tool(CallToolRequestParams::new("add_text").with_arguments(arguments))
+            .await
+            .unwrap();
+        assert_ne!(added.is_error, Some(true), "{:?}", added.content);
+        let ContentBlock::Text(text) = &added.content[0] else {
+            panic!("the write output is text");
+        };
+        assert!(
+            text.text.contains("\"origin\":\"ai_task\""),
+            "{}",
+            text.text
+        );
 
         let overview = client
             .call_tool(CallToolRequestParams::new("get_project_overview"))

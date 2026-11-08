@@ -1,5 +1,7 @@
 //! A testbed with the example project open and an MCP server over it, plus readers of results.
 
+#![allow(dead_code, reason = "each test file uses part of the shared bed")]
+
 use std::path::{Path, PathBuf};
 
 use rmcp::model::{CallToolResult, ContentBlock};
@@ -53,6 +55,7 @@ impl Bed {
             media: bed.media.clone(),
             renders: bed.renders.clone(),
             tokens: bed.tokens.clone(),
+            edits: bed.edits.clone(),
         });
         let agent = AgentContext {
             project_id,
@@ -75,6 +78,46 @@ impl Bed {
     /// The project's id.
     pub fn project_id(&self) -> ProjectId {
         self.agent.project_id
+    }
+
+    /// Makes the bed's agent a real task of the task service (submitted with the bed's scope,
+    /// its replayed run finished), so its edits open a changeset the task can revert.
+    pub async fn run_task(&mut self) {
+        let task = self
+            .services
+            .tasks
+            .submit(se_protocol::SubmitTaskRequest {
+                project_id: self.project_id(),
+                prompt: "Edit the sequence".to_owned(),
+                scope: self.agent.scope.clone(),
+                provider: None,
+                model: None,
+                effort: None,
+            })
+            .await
+            .expect("the task is accepted");
+        for _ in 0..100 {
+            let tasks = self.services.tasks.list(self.project_id()).await.unwrap();
+            if tasks
+                .iter()
+                .any(|t| t.id == task.id && t.status == se_protocol::TaskStatus::Completed)
+            {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+        self.agent.task_id = task.id;
+    }
+
+    /// The current document.
+    pub async fn document(&self) -> Project {
+        self.services
+            .projects
+            .project(self.project_id())
+            .await
+            .expect("the project is open")
+            .as_ref()
+            .clone()
     }
 
     /// Calls `name` with `arguments` as the bed's task.

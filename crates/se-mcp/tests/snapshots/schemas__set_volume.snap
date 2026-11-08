@@ -1,0 +1,169 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Sets the volume of a clip with sound: a static gain in dB or an automation curve (times relative to the clip's start), and its fade-in and fade-out lengths, in one step.",
+  "inputSchema": {
+    "$defs": {
+      "EasingInput": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/EasingName",
+            "description": "A named easing."
+          },
+          {
+            "description": "A cubic Bézier `[x1, y1, x2, y2]` (CSS-like).",
+            "items": {
+              "format": "double",
+              "type": "number"
+            },
+            "maxItems": 4,
+            "minItems": 4,
+            "type": "array"
+          }
+        ],
+        "description": "How a value travels to the next keyframe."
+      },
+      "EasingName": {
+        "description": "A named easing.",
+        "oneOf": [
+          {
+            "const": "linear",
+            "description": "Constant speed.",
+            "type": "string"
+          },
+          {
+            "const": "hold",
+            "description": "Jumps to the next value at the next keyframe.",
+            "type": "string"
+          },
+          {
+            "const": "ease_in",
+            "description": "Starts slowly.",
+            "type": "string"
+          },
+          {
+            "const": "ease_out",
+            "description": "Ends slowly (natural for entrances).",
+            "type": "string"
+          },
+          {
+            "const": "ease_in_out",
+            "description": "Starts and ends slowly.",
+            "type": "string"
+          }
+        ]
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      },
+      "VolumePoint": {
+        "additionalProperties": false,
+        "description": "A point of a volume automation.",
+        "properties": {
+          "easing": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EasingInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How the gain travels to the next point; default linear."
+          },
+          "gain_db": {
+            "description": "Gain in dB (−96 to 24; 0 = unchanged, −6 ≈ half as loud).",
+            "format": "double",
+            "type": "number"
+          },
+          "time": {
+            "$ref": "#/$defs/Time",
+            "description": "Time **relative to the clip's start**."
+          }
+        },
+        "required": [
+          "time",
+          "gain_db"
+        ],
+        "type": "object"
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "automation": {
+        "description": "An automation curve (ducking under a voice, swells), replacing the gain.",
+        "items": {
+          "$ref": "#/$defs/VolumePoint"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "expected_revision": {
+        "description": "The revision you read; refused (`REVISION_CONFLICT`) if the item changed since.",
+        "format": "uint64",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "fade_in": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Fade-in length (0 removes it). Short fades (0.01–0.05 s) avoid clicks at cuts."
+      },
+      "fade_out": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Fade-out length (0 removes it)."
+      },
+      "gain_db": {
+        "description": "A static gain in dB (−96 to 24), replacing any automation.",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "item_id": {
+        "description": "The clip (an `item_id`, or `$name` in `apply_batch`).",
+        "type": "string"
+      }
+    },
+    "required": [
+      "item_id"
+    ],
+    "type": "object"
+  },
+  "name": "set_volume"
+}

@@ -40,6 +40,7 @@ pub(super) fn new_task(new: NewTask, now: i64) -> Task {
         effort: new.effort,
         status: TaskStatus::Queued,
         agent_session_id: None,
+        changeset_id: None,
         created_at: now,
         updated_at: now,
         runs: vec![run],

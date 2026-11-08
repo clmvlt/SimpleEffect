@@ -21,6 +21,7 @@ import type { RelinkOutcome } from "./RelinkOutcome";
 import type { SequenceId } from "./SequenceId";
 import type { Task } from "./Task";
 import type { TaskEventRecord } from "./TaskEventRecord";
+import type { TaskRevertReport } from "./TaskRevertReport";
 import type { TimeRange } from "./TimeRange";
 import type { TrackId } from "./TrackId";
 import type { TransitionId } from "./TransitionId";
@@ -129,7 +130,11 @@ task: Task, } | { "kind": "listTasks",
 /**
  * Oldest first.
  */
-tasks: Array<Task>, } | { "kind": "getTaskEvents", 
+tasks: Array<Task>, } | { "kind": "revertTask", 
+/**
+ * What was undone and what was left.
+ */
+report: TaskRevertReport, } | { "kind": "getTaskEvents", 
 /**
  * The task's log, in order.
  */

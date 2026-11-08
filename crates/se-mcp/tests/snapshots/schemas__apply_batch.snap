@@ -1,0 +1,59 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Applies several write actions as one change: all of them or none (if one is refused, nothing changes and the error names it). Use it for a coherent set of edits (a title with its background bar and animations, several cuts). An action can name the item it creates (\"as\": \"title\") and later actions refer to it as \"$title\".",
+  "inputSchema": {
+    "$defs": {
+      "ActionInput": {
+        "additionalProperties": false,
+        "description": "One action of the batch.",
+        "properties": {
+          "arguments": {
+            "additionalProperties": true,
+            "description": "Its arguments, exactly as for the tool itself.",
+            "type": "object"
+          },
+          "as": {
+            "description": "A name for the item this action creates (add_*, `split_at`), so later actions can refer to\nit as `\"$name\"` in their item fields.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tool": {
+            "description": "A write tool: `add_text`, `add_shape`, `add_image`, `update_item`, `delete_items`, `move_item`,\n`trim_item`, `split_at`, `ripple_delete_range`, `insert_gap`, `set_keyframes`,\n`apply_animation_preset`, `set_volume`, `add_transition`, `add_marker`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool",
+          "arguments"
+        ],
+        "type": "object"
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "actions": {
+        "description": "The actions, applied in order (1–50).",
+        "items": {
+          "$ref": "#/$defs/ActionInput"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "actions"
+    ],
+    "type": "object"
+  },
+  "name": "apply_batch"
+}

@@ -1,6 +1,6 @@
-//! [`MediaTestbed`]: a `ProjectService`, a `MediaService`, a `TaskService` and a
-//! `FrameRenderService` wired to the in-memory fakes, for tests of the media, task and agent use
-//! cases (se-app) and of what serves them (se-mcp, se-core).
+//! [`MediaTestbed`]: a `ProjectService`, a `MediaService`, a `TaskService`, an
+//! `AgentEditService` and a `FrameRenderService` wired to the in-memory fakes, for tests of the
+//! media, task and agent use cases (se-app) and of what serves them (se-mcp, se-core).
 
 use std::{path::Path, sync::Arc, time::Duration};
 
@@ -12,9 +12,9 @@ use super::{
     RecordingEventSink, ReplayProvider, SequentialIds, SequentialTokens,
 };
 use crate::{
-    AppError, FrameRenderService, JobQueue, JobQueueConfig, McpAccess, MediaService,
-    MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps, TaskService,
-    TaskServiceDeps, TaskTokenRegistry,
+    AgentEditService, AppError, FrameRenderService, JobQueue, JobQueueConfig, McpAccess,
+    MediaService, MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps,
+    TaskService, TaskServiceDeps, TaskTokenRegistry,
 };
 
 /// The MCP URL runs of the testbed's task service are given.
@@ -28,6 +28,8 @@ pub struct MediaTestbed {
     pub media: Arc<MediaService>,
     /// AI task use cases (also observing projects).
     pub tasks: TaskService,
+    /// Edits of AI agents (over `projects`, recording changesets on `tasks`).
+    pub edits: Arc<AgentEditService>,
     /// The AI provider of `tasks`.
     pub agent: ReplayProvider,
     /// Working folders of agent runs.
@@ -105,20 +107,23 @@ impl MediaTestbed {
             library: library.clone(),
             events: events.clone(),
             clock: clock.clone(),
-            ids,
+            ids: ids.clone(),
         };
         let config = ProjectServiceConfig {
             default_parent_dir: parent_dir.to_path_buf(),
             save_delay: Duration::from_secs(2),
         };
+        let projects = Arc::new(
+            ProjectService::new(deps, config)
+                .with_observer(media.clone())
+                .with_observer(Arc::new(tasks.clone())),
+        );
+        let edits = Arc::new(AgentEditService::new(projects.clone(), tasks.clone(), ids));
         Self {
-            projects: Arc::new(
-                ProjectService::new(deps, config)
-                    .with_observer(media.clone())
-                    .with_observer(Arc::new(tasks.clone())),
-            ),
+            projects,
             media,
             tasks,
+            edits,
             agent,
             workspaces,
             clock,

@@ -91,6 +91,7 @@ fn routes(guard: Arc<AccessGuard>, state: RpcState, services: &Services, port: u
             media: Arc::clone(&services.media),
             renders: Arc::clone(&services.renders),
             tokens: Arc::clone(&services.tokens),
+            edits: Arc::clone(&services.edits),
         },
         port,
     );

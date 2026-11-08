@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { aiAvailability, aiIndicator, canSubmitTasks } from './ai-indicator';
 import { aiTextValues } from './ai-texts';
-import { appendEvent, describeEvent, taskActions, upsertTask } from './task-log';
+import { appendEvent, describeEvent, revertOutcome, taskActions, upsertTask } from './task-log';
 import { watchAiStatus, type AiStatusSource } from './watch-ai-status';
 
 export const READY: AiStatus = {
@@ -30,6 +30,7 @@ function task(overrides: Partial<Task> = {}): Task {
     effort: null,
     status: { kind: 'queued' },
     agentSessionId: null,
+    changesetId: null,
     createdAt: 1,
     updatedAt: 1,
     runs: [],
@@ -96,13 +97,45 @@ describe('task log', () => {
   });
 
   it('offers cancel while active, retry after a failure, follow-up once a session exists', () => {
-    expect(taskActions(task())).toEqual({ cancel: true, retry: false, followUp: false });
+    expect(taskActions(task())).toEqual({
+      cancel: true,
+      retry: false,
+      followUp: false,
+      revert: false,
+    });
     const failed = task({
       status: { kind: 'failed', failure: 'rateLimited', message: 'later' },
       agentSessionId: 'session',
     });
-    expect(taskActions(failed)).toEqual({ cancel: false, retry: true, followUp: true });
+    expect(taskActions(failed)).toEqual({
+      cancel: false,
+      retry: true,
+      followUp: true,
+      revert: false,
+    });
     expect(taskActions(task({ status: { kind: 'completed' } })).followUp).toBe(false);
+    const edited = task({ status: { kind: 'completed' }, changesetId: 'changeset-1' });
+    expect(taskActions(edited).revert).toBe(true);
+    expect(taskActions({ ...edited, status: { kind: 'running' } }).revert).toBe(false);
+  });
+
+  it('sums up what a revert undid and kept', () => {
+    const conflict = {
+      kind: 'itemChanged',
+      item: 'item-1',
+      taskRevision: 2,
+      currentRevision: 3,
+    } as const;
+    const report = { taskId: 'task-1', reverted: true, revertedItems: ['item-2'], conflicts: [] };
+    expect(revertOutcome(report)).toEqual({ kind: 'reverted' });
+    expect(revertOutcome({ ...report, conflicts: [conflict] })).toEqual({
+      kind: 'partial',
+      kept: 1,
+    });
+    expect(revertOutcome({ ...report, reverted: false, conflicts: [conflict] })).toEqual({
+      kind: 'nothing',
+      kept: 1,
+    });
   });
 
   it('describes events in one line', () => {

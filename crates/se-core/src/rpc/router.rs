@@ -312,6 +312,10 @@ impl RpcRouter {
                 prompt,
             } => tasks::follow_up_task(context, *project_id, *task_id, prompt).await,
             Command::ListTasks { project_id } => tasks::list_tasks(context, *project_id).await,
+            Command::RevertTask {
+                project_id,
+                task_id,
+            } => tasks::revert_task(context, *project_id, *task_id).await,
             Command::GetTaskEvents {
                 project_id,
                 task_id,

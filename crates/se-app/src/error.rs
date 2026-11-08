@@ -237,6 +237,21 @@ pub enum AppError {
         /// The request.
         request_id: String,
     },
+    /// An AI agent's edit reaches outside its task's scope (sequence, time range or tracks).
+    #[error("{reason}")]
+    OutOfScope {
+        /// What lies outside the scope, the scope itself and what to do instead.
+        reason: String,
+    },
+    /// Reverting an AI task that has no open changeset.
+    #[error(
+        "AI task {task_id} has nothing to revert: it changed nothing since it started or was \
+         last reverted"
+    )]
+    NothingToRevert {
+        /// The task.
+        task_id: TaskId,
+    },
     /// A bug: an invariant of the application itself was broken.
     #[error("internal error: {0}; please report it")]
     Internal(String),
@@ -280,6 +295,8 @@ impl AppError {
             Self::RendererUnavailable { .. } => ErrorCode::RendererUnavailable,
             Self::RenderFailed { .. } => ErrorCode::RenderFailed,
             Self::RenderRequestNotFound { .. } => ErrorCode::RenderRequestNotFound,
+            Self::OutOfScope { .. } => ErrorCode::OutOfScope,
+            Self::NothingToRevert { .. } => ErrorCode::NothingToRevert,
             Self::Internal(_) => ErrorCode::Internal,
         }
     }

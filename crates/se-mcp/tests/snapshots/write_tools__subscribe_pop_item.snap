@@ -1,0 +1,199 @@
+---
+source: crates/se-mcp/tests/write_tools.rs
+expression: detail
+---
+{
+  "item": {
+    "animated": [
+      "scale",
+      "opacity"
+    ],
+    "end": {
+      "seconds": 54.0,
+      "timecode": "00:00:54.000"
+    },
+    "item_id": "[item_id]",
+    "kind": "text",
+    "label": "Abonne-toi",
+    "origin": "ai_task",
+    "revision": 2,
+    "start": {
+      "seconds": 51.0,
+      "timecode": "00:00:51.000"
+    },
+    "task_id": "[task_id]",
+    "track_id": "[track_id]"
+  },
+  "properties": {
+    "content": "Abonne-toi",
+    "kind": "text",
+    "reveal": {
+      "kind": "static",
+      "value": 1.0
+    },
+    "style": {
+      "align": "center",
+      "background": {
+        "color": {
+          "kind": "static",
+          "value": "#000000b3"
+        },
+        "cornerRadius": 8.0,
+        "enabled": false,
+        "padding": {
+          "x": 24.0,
+          "y": 12.0
+        }
+      },
+      "color": {
+        "kind": "static",
+        "value": "#ffffff"
+      },
+      "fontFamily": "Inter",
+      "fontSize": {
+        "kind": "static",
+        "value": 140.0
+      },
+      "fontWeight": 800,
+      "italic": false,
+      "letterSpacing": {
+        "kind": "static",
+        "value": 0.0
+      },
+      "lineHeight": 1.2,
+      "maxWidth": null,
+      "shadow": {
+        "blur": {
+          "kind": "static",
+          "value": 8.0
+        },
+        "color": {
+          "kind": "static",
+          "value": "#000000b3"
+        },
+        "enabled": false,
+        "offset": {
+          "kind": "static",
+          "value": {
+            "x": 0.0,
+            "y": 4.0
+          }
+        }
+      },
+      "stroke": {
+        "color": {
+          "kind": "static",
+          "value": "#000000"
+        },
+        "enabled": true,
+        "width": {
+          "kind": "static",
+          "value": 6.0
+        }
+      },
+      "textCase": "normal"
+    },
+    "transform": {
+      "anchor": {
+        "kind": "static",
+        "value": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "blur": {
+        "kind": "static",
+        "value": 0.0
+      },
+      "opacity": {
+        "keyframes": [
+          {
+            "easing": {
+              "kind": "linear"
+            },
+            "time": {
+              "seconds": 0.0,
+              "sequence_time": {
+                "seconds": 51.0,
+                "timecode": "00:00:51.000"
+              },
+              "timecode": "00:00:00.000"
+            },
+            "value": 0.0
+          },
+          {
+            "easing": {
+              "kind": "linear"
+            },
+            "time": {
+              "seconds": 0.15,
+              "sequence_time": {
+                "seconds": 51.15,
+                "timecode": "00:00:51.150"
+              },
+              "timecode": "00:00:00.150"
+            },
+            "value": 1.0
+          }
+        ],
+        "kind": "keyframed"
+      },
+      "position": {
+        "kind": "static",
+        "value": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      },
+      "rotation": {
+        "kind": "static",
+        "value": 0.0
+      },
+      "scale": {
+        "keyframes": [
+          {
+            "easing": {
+              "kind": "cubicBezier",
+              "x1": 0.34,
+              "x2": 0.64,
+              "y1": 1.56,
+              "y2": 1.0
+            },
+            "time": {
+              "seconds": 0.0,
+              "sequence_time": {
+                "seconds": 51.0,
+                "timecode": "00:00:51.000"
+              },
+              "timecode": "00:00:00.000"
+            },
+            "value": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          {
+            "easing": {
+              "kind": "linear"
+            },
+            "time": {
+              "seconds": 0.5,
+              "sequence_time": {
+                "seconds": 51.5,
+                "timecode": "00:00:51.500"
+              },
+              "timecode": "00:00:00.500"
+            },
+            "value": {
+              "x": 1.0,
+              "y": 1.0
+            }
+          }
+        ],
+        "kind": "keyframed"
+      }
+    }
+  },
+  "sequence_id": "00000000-0001-7000-8000-000000000000",
+  "track_name": "V3"
+}

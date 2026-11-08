@@ -26,6 +26,43 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-08 — Prompt 19: Serveur MCP : outils d'écriture, portée, changesets — Done
+
+**Branch**: `feature/19-mcp-ecriture`, merged into `dev` at `<sha>`
+
+**Done**
+- se-app (ADR-0029): `AgentEditService` (`agent_edits/`): typed `AgentEdit`s (add item with presets, update, set property, apply preset, delete, move, trim, split, ripple delete, insert gap, add transition, add marker; `ItemRef::{Id, Created { edit }}`) planned edit by edit on an `EditPlan` draft (`AgentPlanner`; failures name their edit), graphics on the given track or the task's highest free track (a new top track only when every track is allowed), link-aware moves/trims/splits/deletes, ripple edits on the concerned tracks with split ids, transitions shortened to the cut's room; `scope::check_scope` on the whole planned transaction (items before and after, markers, transitions, tracks, sequences, assets) with actionable `OUT_OF_SCOPE` messages; commit through `ProjectActorHandle::apply_ai_on(transaction, base_revision)` (replanned up to 4 times when the project moved); `changes(agent)` (`TaskChanges`). Actor: open changesets per task loaded at opening, `apply_ai`/`apply_ai_on` (records the entry, one atomic store write, `taskChangesetUpdated`), `revert_task` (`plan_revert` committed as one user transaction « Revert AI task », changeset closed), `changeset`. Port `ProjectStore::append_journal_with_changeset(entry, ChangesetWrite::{Record, Revert})` + `load_changesets`; `TaskService::attach_changeset`, `revert` (`TASK_STILL_ACTIVE` while active); `AppError::OutOfScope`, `NothingToRevert`; `NewIds::changeset`; agent instructions `03-editing-rules.md`, `04-motion-basics.md`, `05-audio-editing.md` (+ role and scope updated); test support: fake folders keep changesets (`StoredChangeset`), `MediaTestbed::edits`.
+- se-domain: `Project::items()`.
+- se-store: `project.db` schema v4 (`changesets`, `changeset_entries`), `append_with_changeset` (one `unchecked_transaction`), `open_changesets`.
+- se-protocol: `Task.changesetId`, `revertTask` → `TaskRevertReport { taskId, reverted, revertedItems, conflicts }`, event `taskChangesetUpdated { projectId, taskId, changesetId, touchedItems }`, codes `OUT_OF_SCOPE`, `NOTHING_TO_REVERT`; `Conflict`/`DomainErrorCode` now exported to TypeScript.
+- se-mcp: `writes.rs` (`WriteTool::plan` → `AgentEdit`s against a `WriteScene`, `run`, refusals mapped to `REVISION_CONFLICT`, `LOCKED_TRACK`, `*_NOT_FOUND`, `VALIDATION_ERROR`), `write_inputs.rs`; 16 write tools (`add_text`, `add_shape`, `add_image`, `update_item`, `set_keyframes`, `apply_animation_preset`, `set_volume`, `move_item`, `trim_item`, `split_at`, `delete_items`, `ripple_delete_range`, `insert_gap`, `add_transition`, `add_marker`, `apply_batch` with `"as"`/`"$name"`) and `get_task_changes`; 29 tools in all.
+- se-core: `AgentEditService` wired (`McpDeps.edits`), `revertTask` handler.
+- Desktop: `revertTask` API, revert command with a toast saying what was kept, « Annuler la tâche » in the development panel, « Revert AI task » in the undo menu, error codes translated.
+- Docs: `docs/ai-tools.md` (write tools, scope rule, examples, changesets and reverts), ADR-0029, architecture §5.4/§5.5/§6/§9.3/§9.4/§11, glossary (6 terms), backlog, CLAUDE.md of se-mcp, se-app, se-store, se-domain, se-protocol, se-core, desktop.
+- Tests: se-app `tests/agent_edits.rs` (8: scope matrix, tracks, linked partners, atomicity, stale revisions, reverts with and without conflicts, active tasks, changesets after reopening); se-store `tests/project_changesets.rs` (2); se-mcp `tests/write_tools.rs` (8, incl. the replays of `tests/fixtures/subscribe-pop.json` and of the real run's `subscribe-pop-recorded.json`, then `RevertTask`) + 17 new schema snapshots; se-core real rmcp client calling `add_text` over HTTP; desktop task actions and revert outcomes. Fixed a Windows-only failure of the AI settings test (absolute path). `pnpm check` green on Windows.
+- Verified with real Claude Code runs (Windows, 2.1.319, sonnet, effort low) in the built app (isolated profile, CDP + `/rpc`), on a 60 s project with the scope 51–54 s: « De 51 s à 54 s affiche le texte “Abonne-toi” en gros au centre avec une animation pop » → one `add_text` (centre, 140 px, weight 900, outline, shadow, `animation_in: pop`), then `get_frames` at 51.15 s and 52.5 s, answered in French; the item is a text 51–54 s on V3, origin `aiTask`, `scale`/`opacity` keyframes. Asked for a text 50–53 s, or to shift the text by 0.5 s « sans changer sa durée », the agent refused from its instructions without trying; asked to try first, `move_item` was refused (`OUT_OF_SCOPE`, logged with its code) and the agent corrected itself with `trim_item` (start 51.5 s, end kept at 54 s). A task adding a marker « CTA » and a text « Lien en bio » (on a new track V4) was reverted cleanly; redone by a follow-up (new changeset), then the text was changed by the user: `revertTask` reported `itemChanged` for it and removed the marker. Write calls took 3–6 ms; no token in the logs; ~$0.30 of quota in all.
+
+**Deviations from the prompt**
+- Changesets are owned by the project's actor (as the architecture planned for prompt 19) rather than by the `TaskScheduler`: an AI commit and its changeset entry are written in one SQLite transaction (ADR-0029). One changeset per task across its runs (not per run); after a revert, a follow-up opens a new one.
+- `RevertTask` takes the `projectId` too (like every task command) and answers a `TaskRevertReport`; a revert that can undo nothing changes nothing (`reverted: false`), a task without an open changeset gets `NOTHING_TO_REVERT`, an active task `TASK_STILL_ACTIVE`.
+- Error codes: the tools keep `ITEM_NOT_FOUND`/`TRACK_NOT_FOUND`/`ASSET_NOT_FOUND` (as the read tools) instead of a generic `NOT_FOUND`; `TRANSITION_NO_ROOM` and `RIPPLE_BLOCKED` keep their own codes.
+- User choices (asked before coding): strict scope rule for ripple edits (refused when they would shift anything outside a time-limited scope), linked partners follow moves/trims/splits/deletes; extras accepted: animations in `add_text`/`add_shape`/`add_image` (`animation_in`/`animation_out`), `"as"`/`"$name"` references in `apply_batch`, the read tool `get_task_changes`, « Annuler la tâche » in the development panel.
+- `set_keyframes` takes the document's property names (camelCase: `volumeDb`, `fontSize`…, as `get_timeline`'s `animated` and `get_item` show them); keyframe times are relative to the item's start.
+- The real check needed an explicit « try first » prompt to show a refused attempt: in natural requests the agent anticipates the scope from its instructions.
+
+**Follow-ups**
+- Prompt 20: the task UX (composer with scope selection, task panel, highlights from `taskChangesetUpdated`, revert with its conflicts shown, tool calls in the log); the development panel still drives tasks.
+- Prompts 21–24: `get_transcript`, `create_captions`, templates (`create_motion_template`, `instantiate_template`) on the same `WriteTool`/`AgentEdit` path.
+- Backlog: `list_fonts` for agents, sequence-level tools (another scope kind), media placement by agents, reverting one run of a task.
+- The fixture `subscribe-pop-recorded.json` holds the real run's write call; record more from task logs when tools change.
+
+**Notes for the next agent**
+- The built app for CDP checks needs an `out/package.json` with `"main": "main/index.js"` (and `"type": "module"`), not only the type; start `node_modules/electron/dist/electron.exe <out> --user-data-dir=<profile> --remote-debugging-port=9223` with `SE_CORE_PATH`. Close it with `taskkill /PID <main pid>` (graceful: se-core stops).
+- On this machine `claude` on the PATH is a user shim (`~/.claude-shim/claude.cmd`, adds `--allow-dangerously-skip-permissions`); point the isolated profile's AI executable at `%USERPROFILE%\.local\bin\claude.exe` (`updateAiSettings`).
+- Long Python edit scripts in Bash heredocs lose `\` line continuations (the shell's `\\` handling): write them with the file tool and run them, or use the Edit tool for Rust string literals.
+- `cargo test` stops at the first failing test binary: after fixing one, rerun everything (`pnpm check`) to see the crates after it.
+- Results of se-core commands are flattened (`addGraphicItem` → `{ itemId, trackId }`, `createProject`/`getProjectSnapshot` → the session, entities without a wrapper).
+
 ## 2026-11-08 — Prompt 18: Serveur MCP : outils de lecture — Done
 
 **Branch**: `feature/18-mcp-lecture`, merged into `dev` at `1dc1fa7`

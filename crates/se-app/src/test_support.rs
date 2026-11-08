@@ -6,6 +6,7 @@ mod font_fakes;
 mod job_fakes;
 mod media_fakes;
 mod media_testbed;
+mod memory_changesets;
 mod memory_library;
 mod memory_repository;
 mod memory_tasks;
@@ -22,6 +23,7 @@ pub use media_fakes::{
     FAKE_FILE_BYTES, FakeMedia, fingerprint, probed_audio, probed_prores, probed_video,
 };
 pub use media_testbed::{MediaTestbed, TESTBED_MCP_URL, settle};
+pub use memory_changesets::StoredChangeset;
 pub use memory_library::InMemoryAppLibrary;
 pub use memory_repository::{InMemoryProjectRepository, StoredFolder};
 pub use runtime_fakes::{

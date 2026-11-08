@@ -1,0 +1,26 @@
+{
+  "prompt": "De 51 s à 54 s affiche le texte « Abonne-toi » en gros au centre avec une animation pop",
+  "note": "Tool calls of an agent, replayed in order on the example project with the task's range moved to 51–54 s (the example sequence is extended for it). `{created.N}` is the first item created by call N.",
+  "calls": [
+    {
+      "tool": "add_text",
+      "arguments": {
+        "text": "Abonne-toi",
+        "start": 51,
+        "end": "00:00:54.000",
+        "position": "center",
+        "font_size": 140,
+        "font_weight": 800,
+        "stroke": { "color": "#000000", "width": 6 }
+      }
+    },
+    {
+      "tool": "apply_animation_preset",
+      "arguments": {
+        "item_id": "{created.0}",
+        "preset": "pop",
+        "phase": "in"
+      }
+    }
+  ]
+}

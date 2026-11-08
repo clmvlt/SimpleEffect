@@ -1,0 +1,74 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Moves the start or end edge of an item, in sequence time (a clip plays less or more of its media; nothing else moves). A clip's linked partner whose edge sits at the same instant follows. Refused beyond the media or onto a neighbour.",
+  "inputSchema": {
+    "$defs": {
+      "EdgeInput": {
+        "description": "Which edge of an item.",
+        "oneOf": [
+          {
+            "const": "start",
+            "description": "Its first instant.",
+            "type": "string"
+          },
+          {
+            "const": "end",
+            "description": "Its end.",
+            "type": "string"
+          }
+        ]
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "edge": {
+        "$ref": "#/$defs/EdgeInput",
+        "description": "The edge to move."
+      },
+      "expected_revision": {
+        "description": "The revision you read; refused (`REVISION_CONFLICT`) if the item changed since.",
+        "format": "uint64",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "item_id": {
+        "description": "The item (an `item_id`, or `$name` in `apply_batch`).",
+        "type": "string"
+      },
+      "to": {
+        "$ref": "#/$defs/Time",
+        "description": "Where the edge goes, in sequence time."
+      }
+    },
+    "required": [
+      "item_id",
+      "edge",
+      "to"
+    ],
+    "type": "object"
+  },
+  "name": "trim_item"
+}

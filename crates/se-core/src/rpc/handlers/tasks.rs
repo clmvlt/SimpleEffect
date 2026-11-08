@@ -1,4 +1,4 @@
-//! AI task commands (prompt 17): submit, cancel, retry, follow up, list, event logs.
+//! AI task commands (prompts 17, 19): submit, cancel, retry, follow up, list, revert, event logs.
 
 use se_domain::{ProjectId, TaskId};
 use se_protocol::{CommandResult, ProtocolError, SubmitTaskRequest};
@@ -52,6 +52,16 @@ pub async fn list_tasks(
 ) -> Result<CommandResult, ProtocolError> {
     let tasks = context.tasks.list(project_id).await?;
     Ok(CommandResult::ListTasks { tasks })
+}
+
+/// `revertTask`.
+pub async fn revert_task(
+    context: &HandlerContext,
+    project_id: ProjectId,
+    task_id: TaskId,
+) -> Result<CommandResult, ProtocolError> {
+    let report = context.tasks.revert(project_id, task_id).await?;
+    Ok(CommandResult::RevertTask { report })
 }
 
 /// `getTaskEvents`.

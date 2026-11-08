@@ -166,7 +166,7 @@ impl ProjectDatabase {
             .unwrap_or(0))
     }
 
-    fn json_of<T: serde::Serialize>(
+    pub(super) fn json_of<T: serde::Serialize>(
         &self,
         action: &'static str,
         value: &T,
@@ -178,7 +178,7 @@ impl ProjectDatabase {
         })
     }
 
-    fn parse_json<T: serde::de::DeserializeOwned>(
+    pub(super) fn parse_json<T: serde::de::DeserializeOwned>(
         &self,
         payload: &str,
         what: impl FnOnce() -> String,
@@ -212,6 +212,7 @@ mod tests {
             effort: None,
             status: TaskStatus::Queued,
             agent_session_id: None,
+            changeset_id: None,
             created_at,
             updated_at: created_at,
             runs: vec![TaskRun {

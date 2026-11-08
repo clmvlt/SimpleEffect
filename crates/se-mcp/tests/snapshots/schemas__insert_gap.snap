@@ -1,0 +1,55 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Opens empty time at an instant: items crossing it are cut, everything after it moves right. Works only when nothing outside the task's scope would move (a scope reaching the end of the sequence, or the whole sequence).",
+  "inputSchema": {
+    "$defs": {
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "at": {
+        "$ref": "#/$defs/Time",
+        "description": "Where the empty time opens, in sequence time (an item crossing it is cut there)."
+      },
+      "duration": {
+        "$ref": "#/$defs/Time",
+        "description": "How long it is."
+      },
+      "tracks": {
+        "description": "The tracks (ids or names); default: the task's tracks (every unlocked track when it may\nuse them all). Tracks holding linked partners are added so sound and picture stay in sync.",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "at",
+      "duration"
+    ],
+    "type": "object"
+  },
+  "name": "insert_gap"
+}

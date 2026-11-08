@@ -1,0 +1,20 @@
+{
+  "prompt": "De 51 s à 54 s affiche le texte « Abonne-toi » en gros au centre avec une animation pop",
+  "note": "Write calls recorded from a real run (Claude Code 2.1.319, sonnet, effort low, scope 51–54 s) on 2026-11-08; the agent then checked two frames with get_frames. `{created.N}` is the first item created by call N.",
+  "calls": [
+    {
+      "tool": "add_text",
+      "arguments": {
+        "animation_in": { "preset": "pop" },
+        "end": 54,
+        "font_size": 140,
+        "font_weight": 900,
+        "position": "center",
+        "shadow": true,
+        "start": 51,
+        "stroke": { "color": "#000000", "width": 6 },
+        "text": "Abonne-toi"
+      }
+    }
+  ]
+}

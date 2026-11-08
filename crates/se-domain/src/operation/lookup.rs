@@ -100,11 +100,7 @@ pub(crate) fn find_asset(project: &Project, id: AssetId) -> Result<usize, Domain
 
 /// Every item of the project.
 pub(crate) fn all_items(project: &Project) -> impl Iterator<Item = &Item> {
-    project
-        .sequences
-        .iter()
-        .flat_map(|sequence| &sequence.tracks)
-        .flat_map(|track| &track.items)
+    project.items()
 }
 
 /// The tracks of `sequence` a sequence-wide edit (ripple delete, insert gap) works on, in

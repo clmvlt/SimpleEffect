@@ -1,0 +1,18 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "What this task changed so far: items it created, changed and removed (all its write calls, which the user can revert at once). Use it to check your work before summarising it.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "type": "object"
+  },
+  "name": "get_task_changes"
+}
