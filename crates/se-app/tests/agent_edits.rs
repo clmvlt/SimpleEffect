@@ -452,10 +452,7 @@ async fn items_the_user_changed_since_are_reported_and_the_rest_is_reverted() {
         [Conflict::ItemChanged { item, .. }] if *item == id(SHAPE)
     ));
     let project = bed.project().await;
-    assert!(
-        find(&project, created).is_none(),
-        "the task's text is gone"
-    );
+    assert!(find(&project, created).is_none(), "the task's text is gone");
     assert_eq!(
         find(&project, id(SHAPE)).unwrap().timeline_range.start(),
         millis(5200),
