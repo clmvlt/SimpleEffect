@@ -2,7 +2,9 @@
 //! ([`SubjectDetection`]) to the focus keyframes of a tracked clip ([`crate::Reframe::Tracked`]).
 //!
 //! Pure and independent of the detector. The steps, one module each:
-//! 1. `shots` — the clip's source span cut at shot changes; samples next to a cut left out.
+//! 1. `subject_cuts`, `shots` — shot changes of scene detection, plus those read from the faces
+//!    (every lasting face stops and new ones start: a cut scene detection missed); the clip's
+//!    source span cut at them, samples next to a cut left out.
 //! 2. `subjects` — faces linked across a shot's samples into tracks; the main subject
 //!    (persistence × size × centrality); group framing when the significant faces fit together.
 //! 3. `window` — the part of the picture the frame keeps; the focus that puts the subject's eyes
@@ -22,6 +24,7 @@ mod path;
 mod shots;
 mod simplify;
 mod smoothing;
+mod subject_cuts;
 mod subjects;
 mod window;
 
@@ -33,6 +36,7 @@ use self::{
     shots::split_into_shots,
     simplify::{KeptPoint, TOLERANCE, simplified},
     smoothing::{OneEuroParams, smoothed},
+    subject_cuts::subject_cuts,
     subjects::shot_targets,
 };
 use crate::{
@@ -95,12 +99,12 @@ pub fn track_subject(request: &TrackingRequest<'_>) -> TrackedFocus {
         .checked_mul_f64(clip.speed)
         .and_then(|span| clip.source_start.checked_add(span))
         .unwrap_or(clip.source_start);
-    let shots = split_into_shots(
-        request.detection,
-        request.scene_changes,
-        clip.source_start,
-        source_end,
-    );
+    let span = request
+        .detection
+        .frames_between(clip.source_start, source_end);
+    let mut changes = request.scene_changes.to_vec();
+    changes.extend(subject_cuts(span, request.scene_changes));
+    let shots = split_into_shots(request.detection, &changes, clip.source_start, source_end);
     let params = OneEuroParams::for_smoothing(request.settings.smoothing);
     let centre = window.clamp(Reframe::CENTRE);
     let mut paths: Vec<ShotPath> = Vec::with_capacity(shots.len());

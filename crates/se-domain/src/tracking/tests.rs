@@ -163,6 +163,24 @@ fn the_frame_jumps_to_the_next_subject_on_the_cut() {
 }
 
 #[test]
+fn a_cut_missed_by_scene_detection_is_read_from_the_faces() {
+    // The picture changes between the samples at 3.0 s and 3.2 s; scene detection saw nothing.
+    let detection = detection(6, |t| Some(if t < 3.1 { 0.25 } else { 0.75 }));
+    let result = track(&detection, &[], timing(0, 6000, 1.0));
+    assert_eq!(result.shots, 2);
+    let frames = keyframes(&result.focus);
+    // Halfway between the samples (3.1 s), on the next frame at 25 fps.
+    let cut = Flicks::from_millis(3120);
+    let at_cut = frames
+        .iter()
+        .position(|keyframe| keyframe.time == cut)
+        .expect("a keyframe on the inferred cut");
+    assert_eq!(frames[at_cut - 1].easing, Easing::Hold);
+    assert!((x_at(&result.focus, 3.0) - 0.25).abs() < 0.02);
+    assert!((x_at(&result.focus, 3.2) - 0.75).abs() < 0.02);
+}
+
+#[test]
 fn a_face_at_the_edge_keeps_the_window_inside_the_picture() {
     let detection = detection(4, |_| Some(0.04));
     let result = track(&detection, &[], timing(0, 4000, 1.0));

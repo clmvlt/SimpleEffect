@@ -31,9 +31,9 @@ const GROUP_AGREEMENT: f64 = 0.8;
 
 /// One face followed across the samples of a shot.
 #[derive(Debug, Clone)]
-struct FaceTrack {
+pub(super) struct FaceTrack {
     /// `(sample index, face)` in time order, at most one per sample.
-    faces: Vec<(usize, FaceBox)>,
+    pub faces: Vec<(usize, FaceBox)>,
 }
 
 impl FaceTrack {
@@ -84,7 +84,7 @@ fn affinity(previous: &FaceBox, next: &FaceBox) -> f64 {
 }
 
 /// Links the faces of `frames` into tracks, greedily in time order (most confident faces first).
-fn link_faces(frames: &[SubjectFrame]) -> Vec<FaceTrack> {
+pub(super) fn link_faces(frames: &[SubjectFrame]) -> Vec<FaceTrack> {
     let mut tracks: Vec<FaceTrack> = Vec::new();
     for (sample, frame) in frames.iter().enumerate() {
         let mut taken = vec![false; tracks.len()];
