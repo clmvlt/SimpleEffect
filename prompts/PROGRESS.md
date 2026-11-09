@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-09 — Prompt 25: Bibliothèque de templates et brand kit — Done
 
-**Branch**: `feature/25-bibliotheque-brand-kit`, merged into `dev` at `MERGE_SHA`
+**Branch**: `feature/25-bibliotheque-brand-kit`, merged into `dev` at `ae988f7`
 
 **Done**
 - se-domain (ADR-0036, schema 10): `BrandKit` completed (`source: BrandKitSource { kitId, version }`, name, `BrandFonts { heading, body }`, `BrandPalette { primary, secondary, accent, text, background }`, logos as assets, default text style, default caption style, favourite intro/outro library templates; `value_for(role)`, `problems()`, limits), `BrandRole` (palette roles and fonts, one parameter kind each), `TemplateCategory` (title, lowerThird, callToAction, transition, other; declared by a module's `meta.category`), `LibraryLink { templateId, version }` on `MotionTemplate.library`, `TemplateParam.brand` (parsed from `brand: 'accent'`…, checked against the parameter kind), `templates::brand_values` (brand roles resolved at instance creation, never live); `SetBrandKit` → `INVALID_BRAND_KIT`, logos refused for removal while in the kit (`AssetIsBrandLogo`); validation `INVALID_BRAND_KIT`; example project with a kit and a library-linked lower third.
