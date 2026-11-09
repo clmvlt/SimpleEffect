@@ -12,7 +12,7 @@ TypeScript side of the se-core protocol: the types generated from the Rust crate
   - `on(kind, handler)` → unsubscribe; `state` and `onStateChange(listener)` → unsubscribe; `endpoint` (the endpoint of the latest attempt, for media URLs); `close()`.
   - Requests sent while not `open` are queued; requests in flight when the connection drops fail with `CONNECTION_LOST`; `close()` fails everything with `CLIENT_CLOSED`.
 - `rpcSocketUrl(endpoint)`, `CoreRequestError`, `WebSocketLike` / `WebSocketFactory`.
-- **Media** (`media-url.ts`, `waveform-peaks.ts`): `assetMediaPath(assetId, file)` (`original`, `mezzanine`, `proxy`, `thumbnails` JSON, `thumbnailSheet`, `poster`, `{ peaks: level }`), `fontMediaPath(faceId)` (`/media/fonts/<id>`), `mediaUrl(endpoint, path, version?)` (adds `?t=`), `PEAK_LEVELS` (256, 1024, 4096 — mirror of `se_media::peaks::PEAK_LEVELS`), `decodeWaveformPeaks(buffer)` → `WaveformPeaks` (the `SEPK` format of `crates/se-media/CLAUDE.md`).
+- **Media** (`media-url.ts`, `waveform-peaks.ts`): `assetMediaPath(assetId, file)` (`original`, `mezzanine`, `proxy`, `thumbnails` JSON, `thumbnailSheet`, `poster`, `{ peaks: level }`), `fontMediaPath(faceId)` (`/media/fonts/<id>`), `brandKitLogoPath(kitId, file)` (`/media/brand-kits/<kit>/logos/<name>`, prompt 25), `mediaUrl(endpoint, path, version?)` (adds `?t=`), `PEAK_LEVELS` (256, 1024, 4096 — mirror of `se_media::peaks::PEAK_LEVELS`), `decodeWaveformPeaks(buffer)` → `WaveformPeaks` (the `SEPK` format of `crates/se-media/CLAUDE.md`).
 
 ## Layout
 | File | Role |

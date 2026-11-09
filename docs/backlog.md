@@ -104,12 +104,21 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 
 ## Motion templates
 - Hit-testing on drawn pixels: a template layer's box is the whole frame, so a click in the viewer over a template selects it even where it draws nothing (prompt 24).
-- A global template library and brand-kit colours and fonts as parameter defaults (prompt 25).
 - Render template frames ahead during playback (the runtime renders on demand, one frame at a time per Worker); a heavy template may drop frames in preview while export waits for every frame.
 - Check determinism on more instants, and on the values an instance actually uses (the check renders the defaults at five instants).
 - Template parameters of kinds `point` (a draggable position in the viewer), `gradient` and `video asset`; a `multipleOf` step shown as ticks.
 - Let the user duplicate a template to fork it, and rename templates and parameters in the UI.
 - Open the code dialog at the failing line from the inspector's failure message.
+
+## Template library and brand kits
+
+- Version history of library entries (today an entry keeps its latest content only) and a « revenir à la version précédente ».
+- Shared libraries between machines (a folder the user syncs) — the library is local only.
+- Brand kit previews drawn by the engine (the settings preview is drawn by the page; fonts show only once the editor registered them).
+- A finer caption look in the kit editor (outline, plate, animation): today set on captions, then saved to the library.
+- Applying a library caption style from the « Sous-titres » panel (today: the template browser's « Appliquer aux sous-titres sélectionnés »).
+- Live brand binding as an option (instances following later kit changes).
+- Template thumbnails cached on disk for large libraries (previews are rendered live).
 
 ## Platform
 - Light theme.

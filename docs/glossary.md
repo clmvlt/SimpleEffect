@@ -67,7 +67,11 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Motion template** | An AI-authored TypeScript module (`meta`, `params`, `render`) drawing frames in a sandbox, with typed parameters the user edits in a generated inspector; stored in the project with a version (prompt 24, ADR-0035) | `MotionTemplate`, `Project.templates` |
 | **Template item (instance)** | An item instantiating a motion template: the values set (others at the defaults) and a transform of the whole frame the template draws | `ItemKind::MotionTemplate`, `TemplateItem` |
 | **Caption** | Subtitle item built from transcript words, styled by a caption style | `ItemKind::Caption` |
-| **Brand kit** | Fonts, colours, logo and default caption style reused by the user and agents | `BrandKit` |
+| **Brand kit** | Fonts (heading, body), a named palette, logos and the default looks of new texts and captions, kept in the app's library and copied into the projects that use them (prompt 25, ADR-0036) | `BrandKit`, `LibraryBrandKit` |
+| **Brand role** | A value of a brand kit a template parameter is bound to (`brand: 'accent'`): new instances start with the kit's value | `BrandRole`, `brand_values` |
+| **Template library** | Motion templates and caption styles saved once in the app data folder and reused in every project; exchanged as `.setemplate` files | `LibraryTemplate`, `TemplateLibraryService` |
+| **Library link** | Which library entry and version a project template is a copy of; a newer library version is offered as an update, never applied by itself | `LibraryLink` |
+| **Template category** | Where the browser files a motion template (`title`, `lowerThird`, `callToAction`, `transition`, `other`), declared by `meta.category` | `TemplateCategory` |
 | **Gap** | Empty time on a track before an item: from the previous item's end (or 0) to its start; computed, never stored. Selected by a click, resized with its handle, closed with `Suppr` | `Gap`, `gapAt`, `resizeGap` |
 | **Source range** | The part of an asset used by a media clip (`source_start` + duration) | `source_start` |
 | **Timeline range** | Where an item sits in its sequence (`start` + `duration`) | `timeline_range` |

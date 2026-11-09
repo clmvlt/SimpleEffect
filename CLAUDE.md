@@ -35,7 +35,7 @@ This codebase is developed and maintained by AI agents. Optimise every change fo
 | `crates/se-domain` | Document model, time, operations, validation | Pure: no IO, no async, no clock |
 | `crates/se-protocol` | RPC commands/results/events (ts-rs export) | DTOs only, no logic |
 | `crates/se-app` | Use cases, ports (traits), ProjectActor, JobQueue, TaskScheduler | No concrete IO; fakes behind `test-support` feature |
-| `crates/se-store` | Project folder, `project.json`, SQLite | Implements repository ports |
+| `crates/se-store` | Project folder, `project.json`, SQLite, the app's template library and brand kits | Implements repository and library ports |
 | `crates/se-media` | ffprobe/ffmpeg jobs and analysis | Sidecar processes only |
 | `crates/se-transcribe` | whisper.cpp adapter, model files, consented HTTPS downloads | Implements `Transcriber`, `FileDownloader`, `ModelFiles`; the only crate reaching the network |
 | `crates/se-vision` | ONNX face/subject detection | Implements `SubjectDetector` |
