@@ -3,7 +3,7 @@
 > The tools AI agents use to read and change a SimpleEffect project. This file is the
 > **contract**: agents' behaviour, `crates/se-app/assets/agent-instructions/` and the tool
 > definitions in `crates/se-mcp/src/tools/` must agree with it. Decisions: ADR-0003, ADR-0028,
-> ADR-0029.
+> ADR-0029, ADR-0035 (motion templates).
 > Schema snapshots: `crates/se-mcp/tests/snapshots/` (a test fails when a tool has no section here).
 
 ## Endpoint and access
@@ -51,7 +51,7 @@
 | `NOT_ANALYSED` | The asset's sound or pictures are not analysed (yet, or it has none) |
 | `TOO_MANY_FRAMES` | More frames asked than one call returns |
 | `ACCESS_REVOKED` | The task's run is over |
-| `RENDERER_UNAVAILABLE` | No editor window is open, or it did not draw the frames within 30 s |
+| `RENDERER_UNAVAILABLE` | No editor window is open, or it did not draw the frames within 30 s (check a motion template within 45 s) |
 | `RENDER_FAILED` | The editor window could not draw the frames (its message says why) |
 | `PROJECT_NOT_OPEN` | The user closed the project |
 | `MEDIA_NOT_FOUND`, `MEDIA_TIME_OUT_OF_RANGE`, `MEDIA_TOOLS_MISSING`, `DERIVED_NOT_APPLICABLE` | Source frame extraction failed (missing file, time outside the media, no ffmpeg) |
@@ -61,11 +61,14 @@
 | `VALIDATION_ERROR` | A write breaks a document rule; the message names it (`rule OVERLAPPING_ITEMS`) |
 | `TRANSITION_NO_ROOM`, `RIPPLE_BLOCKED` | No media to cross-fade at that cut; a ripple edit would cut other content |
 | `NO_TRANSCRIPTION_MODEL`, `TRANSCRIPTION_UNAVAILABLE` | No speech model is installed (the user downloads one in « Réglages → Transcription »), or whisper.cpp cannot run (the message says why) |
+| `TEMPLATE_INVALID` | A motion template module cannot be used: every problem with its stage, line and instant; nothing was added |
+| `TEMPLATE_NOT_FOUND` | No such motion template; the message lists the project's templates |
 | `INTERNAL` | A bug: report it |
 
 - **Read tools change nothing** (annotation `readOnlyHint: true`); write tools are annotated
   `readOnlyHint: false`, `destructiveHint: true`. `transcribe_media` adds transcripts next to the
-  project without touching the timeline: `readOnlyHint: false`, `destructiveHint: false`.
+  project without touching the timeline, and `create_motion_template` adds a template without
+  placing it: `readOnlyHint: false`, `destructiveHint: false`.
 
 ## Catalogue
 
@@ -84,7 +87,7 @@
 | `transcribe_media` | Transcribes untranscribed media locally, then waits for the result |
 | `list_animation_presets` | Animation presets (fade, slides, pop…) |
 | `get_brand_kit` | Brand kit (not available until prompt 25) |
-| `list_templates` | Motion templates (not available until prompt 24) |
+| `list_templates` | Motion templates of the project (parameters, instances), or one with its source |
 | `get_task_changes` | What the calling task changed so far |
 | `add_text` | A styled text, with entrance/exit animations |
 | `add_shape` | A rectangle, rounded rectangle, ellipse or line |
@@ -109,6 +112,10 @@
 | `update_caption_style` | How captions look and animate (preset, fonts, colours, position…) |
 | `edit_caption_text` | Corrects a caption's text, keeping word timings |
 | `emphasize_caption_words` | Puts words of a caption forward (emphasis colour) |
+| `create_motion_template` | A motion template from a TypeScript module, checked by the editor (pictures or every problem) |
+| `update_motion_template` | A new version of a template's module (copied when instances lie outside the scope) |
+| `instantiate_template` | Places a motion template over a time range with parameter values |
+| `update_template_params` | Changes the parameter values of a template instance (keyframes for numbers and colours) |
 
 Ids below are shortened (`…0001…`); real ones are UUIDs.
 
@@ -446,9 +453,24 @@ The project's brand kit. **Not available yet** (prompt 25).
 
 ### `list_templates`
 
-Motion templates. **Not available yet** (prompt 24).
+The project's motion templates (prompt 24, below).
 
-**Input**: none. **Output**: `{"available":false,"templates":[],"message":"Motion templates are not available yet …"}`
+**Input**: `template_id` (optional): one template, with its full source (to write a new version).
+
+**Output**:
+```json
+{"templates":[{"template_id":"…","name":"Lower third","description":"Name and role with a sliding bar","version":2,
+   "default_duration":{"timecode":"00:00:05.000","seconds":5.0},
+   "params":[{"name":"name","label":"Nom","type":"string","default":"Jane Doe"},
+     {"name":"size","label":"Taille","type":"number","default":72.0,"minimum":40.0,"maximum":140.0,"animatable":true},
+     {"name":"accent","label":"Accent","type":"color","default":"#ffcc00","animatable":true},
+     {"name":"side","label":"Côté","type":"enum","default":"left","options":["left","right"]},
+     {"name":"logo","label":"Logo","type":"asset","default":null}],
+   "instances":1}]}
+```
+With `template_id`: `{"template":{…},"source":"export const meta = …"}`. Types: `string` (with
+`multiline`), `number`, `color`, `boolean`, `enum` (`options`), `font`, `asset`. **Errors**:
+`TEMPLATE_NOT_FOUND`.
 
 ## Write tools (prompt 19)
 
@@ -821,6 +843,104 @@ not a caption), `ITEM_NOT_FOUND`, `OUT_OF_SCOPE`.
 (default true; false puts them back). Emphasised words are drawn in the style's emphasis colour
 (the active colour wins while spoken). Batchable. **Errors**: `INVALID_ARGUMENTS`,
 `VALIDATION_ERROR` (an index beyond the caption's words), `OUT_OF_SCOPE`.
+
+## Motion templates (prompt 24)
+
+ADR-0035. A **motion template** is a small TypeScript module an agent writes: `meta` (name,
+description, default length), `params` (the values the user may change, declared as a JSON Schema
+subset) and `render(ctx, time, params)`, which draws one frame on a restricted Canvas 2D in design
+pixels. The editor runs it in a sandboxed Worker at every frame, in preview, `get_frames` and
+export alike; the user changes its values in an inspector generated from `params` (texts,
+numbers and colours with keyframes, switches, options, fonts, images) without touching the code.
+The module's contract, drawing API, rules and four complete examples are in the agent
+instructions `08-motion-templates.md`.
+
+A **template instance** is an item of kind `motion_template` (`get_timeline`, `get_item`): the
+template's id, the values set (unset ones read the defaults) and a transform applied to the whole
+frame the template draws. It is an ordinary graphic: `move_item`, `trim_item`, `split_at`,
+`delete_items`, `set_keyframes` (transform properties) and `apply_animation_preset` work on it.
+
+**Checks.** `create_motion_template` and `update_motion_template` send the module to the editor
+window, which compiles it (TypeScript types removed, `import`/`require` refused), loads it (the
+three exports present), renders the instants 0, entrance, middle, exit and end with the default
+values twice (each frame under **50 ms**; a frame still running after 1 s is stopped), compares
+both renders (determinism) and draws three pictures. The core then reads `meta` and `params`
+strictly. Any problem refuses the module with `TEMPLATE_INVALID`, listing every problem as
+`- [stage] line L, column C (at T s): message` (stages `compile`, `exports`, `render`, `budget`,
+`determinism`, `definition`):
+
+```json
+{"error":{"code":"TEMPLATE_INVALID","message":"the motion template cannot be used; fix these problems and send the whole module again:\n- [render] line 9, column 3, at 0.000 s: ReferenceError: fetch is not available in motion templates: …\n- [budget] at 1.500 s: the frame took longer than 1000 ms (an endless loop?): the template was stopped"}}
+```
+
+A refused module never enters the project. Without an editor window: `RENDERER_UNAVAILABLE`.
+
+**Versions and scope.** Creating a template needs no particular scope. A template may change in
+place only when every instance (before and after) lies in the task's scope; otherwise
+`update_motion_template` copies it (new id) for the instances in scope and the others keep the
+old version. Instance values are kept by parameter name; a value whose parameter is gone, changed
+type or is outside the new range falls back to the new default (`reset`).
+
+**Parameter values** (`instantiate_template`, `update_template_params`), by name: a string for
+`string`, `enum` (one of the options), `font` (a family) and `color` (`#rrggbb[aa]`); a number for
+`number` (inside its range); `true`/`false` for `boolean`; an image `asset_id` (or `null`) for
+`asset`. Numbers and colours also take keyframes:
+`{"keyframes":[{"time":0,"value":0},{"time":0.6,"value":1,"easing":"ease_out"}]}` (times relative
+to the item's start, as `set_keyframes`). Unknown names or wrong types: `INVALID_ARGUMENTS`
+naming the parameter; values outside a range: `VALIDATION_ERROR`.
+
+### `create_motion_template`
+
+**Input**: `source` (required): the whole module.
+
+**Output**, then the three pictures (entrance, middle, exit, default values; each preceded by a
+caption line such as `Frame 1 (entrance) at 00:00:00.400`):
+```json
+{"revision":61,
+ "template":{"template_id":"…","name":"Lower third","version":1,"default_duration":{"timecode":"00:00:05.000","seconds":5.0},"params":[…],"instances":0},
+ "slowest_frame_ms":3.2,
+ "frames":[{"timecode":"00:00:00.400","seconds":0.4},{"timecode":"00:00:02.500","seconds":2.5},{"timecode":"00:00:04.600","seconds":4.6}],
+ "next":"Look at the pictures; then place it with instantiate_template and check the result with get_frames."}
+```
+Frame times are relative to an instance's start. Not batchable. **Errors**: `TEMPLATE_INVALID`,
+`RENDERER_UNAVAILABLE`, `VALIDATION_ERROR`.
+
+### `update_motion_template`
+
+**Input**: `template_id` (required), `source` (required: the whole new module; read the current
+one with `list_templates {"template_id"}`).
+
+**Output**: as `create_motion_template` (with the new `version`), plus `instances` (items now
+rendering the new version), `copied_from` (the old template's id, when instances outside the
+scope kept it; absent when changed in place) and `reset` (`[{"item_id","params":["size"]}]`,
+values that fell back to the new defaults; absent when none), then the three pictures. Not
+batchable. **Errors**: `TEMPLATE_NOT_FOUND`, `TEMPLATE_INVALID`, `RENDERER_UNAVAILABLE`,
+`OUT_OF_SCOPE`, `VALIDATION_ERROR`.
+
+### `instantiate_template`
+
+| Argument | Type | Default |
+|---|---|---|
+| `template_id` | string | required |
+| `start` | time | required |
+| `end` / `duration` | time | the template's default length (give one at most) |
+| `params` | object | defaults for the values not given |
+| `track` | id or name of a video track | the highest free track of the task |
+| `position` | `{x, y}` or a named place | `center` (the template draws over the whole frame: keep it unless the whole graphic moves) |
+| `scale`, `opacity` | number | 1 |
+| `animation_in`, `animation_out` | `{preset, duration?}` | none (templates usually animate themselves) |
+
+Batchable (`"as"` names the instance for later actions). **Output**: as other write tools.
+**Errors**: `TEMPLATE_NOT_FOUND`, `INVALID_ARGUMENTS`, `VALIDATION_ERROR`, `OUT_OF_SCOPE`,
+`INVALID_TIME`.
+
+### `update_template_params`
+
+`item_id` (required; `$name` in a batch), `params` (required: values by name, `null` resets one
+to its default; others unchanged), `expected_revision`. The template's code is unchanged. Batchable.
+**Output**: as other write tools. **Errors**: `INVALID_ARGUMENTS` (not a template instance,
+unknown parameter, wrong type), `VALIDATION_ERROR`, `REVISION_CONFLICT`, `ITEM_NOT_FOUND`,
+`OUT_OF_SCOPE`.
 
 ## Changesets and reverts
 

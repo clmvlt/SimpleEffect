@@ -102,6 +102,15 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Several sound streams per file, and more than stereo output (the master is stereo).
 - The first chunk decoded after a seek in a Matroska/WebM file is placed from a millisecond-rounded timestamp (±0.5 ms for the whole run until the next seek): inaudible, but exact only when the previous chunk was decoded first.
 
+## Motion templates
+- Hit-testing on drawn pixels: a template layer's box is the whole frame, so a click in the viewer over a template selects it even where it draws nothing (prompt 24).
+- A global template library and brand-kit colours and fonts as parameter defaults (prompt 25).
+- Render template frames ahead during playback (the runtime renders on demand, one frame at a time per Worker); a heavy template may drop frames in preview while export waits for every frame.
+- Check determinism on more instants, and on the values an instance actually uses (the check renders the defaults at five instants).
+- Template parameters of kinds `point` (a draggable position in the viewer), `gradient` and `video asset`; a `multipleOf` step shown as ticks.
+- Let the user duplicate a template to fork it, and rename templates and parameters in the UI.
+- Open the code dialog at the failing line from the inspector's failure message.
+
 ## Platform
 - Light theme.
 - Additional UI languages (English first).
