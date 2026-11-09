@@ -171,17 +171,21 @@ describe('the template browser', () => {
         name: 'Enregistrer une nouvelle version dans la bibliothèque…',
       }),
     );
-    const dialog = await screen.findByRole('dialog');
-    await user.type(within(dialog).getByLabelText('Mots-clés'), 'Interview, Shorts');
+    // A copy of « Bandeau » v2: the new version starts from the library entry's information.
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Enregistrer la version 3 dans la bibliothèque',
+    });
+    expect(within(dialog).getByLabelText('Nom')).toHaveValue('Bandeau');
+    await user.type(within(dialog).getByLabelText('Mots-clés'), ', Shorts');
     await user.click(within(dialog).getByRole('button', { name: 'Enregistrer' }));
     expect(send).toHaveBeenCalledWith({
       kind: 'saveTemplateToLibrary',
       projectId: 'project-1',
       templateId: 'badge',
       info: {
-        name: 'Badge',
-        description: 'A corner badge',
-        tags: ['Interview', 'Shorts'],
+        name: 'Bandeau',
+        description: 'Nom et fonction',
+        tags: ['interview', 'Shorts'],
         category: 'other',
       },
     });

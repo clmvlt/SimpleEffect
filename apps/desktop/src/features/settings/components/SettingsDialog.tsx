@@ -56,7 +56,7 @@ export function SettingsDialog({
   const transcription = useTranscriptionSettings(open && section === 'transcription');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="lg" closeLabel={t('common.close')}>
+      <DialogContent size={section === 'brandKits' ? 'xl' : 'lg'} closeLabel={t('common.close')}>
         <DialogHeader>
           <DialogTitle>{t('settings.title')}</DialogTitle>
           <DialogDescription>{t('settings.description')}</DialogDescription>

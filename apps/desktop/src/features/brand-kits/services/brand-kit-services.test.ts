@@ -8,10 +8,12 @@ import {
   withCaptionPreset,
   withColor,
   withFavorite,
+  withFont,
   withLogoName,
   withoutFavorite,
   withoutLogo,
   withTextSize,
+  withTextStyle,
 } from './kit-draft';
 import { projectKitStatus } from './kit-status';
 
@@ -52,6 +54,19 @@ describe('kit drafts', () => {
     expect(karaoke.captionStyle.preset).toBe('karaoke');
     expect(karaoke.captionStyle.fontFamily).toBe('Inter');
     expect(karaoke.captionStyle.id).toBe(kit.captionStyle.id);
+  });
+
+  it('changes fonts, the looks using the old font following', () => {
+    const kit = withTextStyle(libraryKit(), { fontFamily: 'Montserrat' });
+    const heading = withFont(kit, 'heading', 'Playfair Display');
+    expect(heading.fonts).toEqual({ heading: 'Playfair Display', body: 'Inter' });
+    expect(heading.textStyle.fontFamily).toBe('Playfair Display');
+    expect(heading.captionStyle.fontFamily).toBe('Inter');
+    const body = withFont(heading, 'body', 'Oswald');
+    expect(body.captionStyle.fontFamily).toBe('Oswald');
+    expect(body.textStyle.fontFamily).toBe('Playfair Display');
+    const custom = withTextStyle(kit, { fontFamily: 'Bebas Neue' });
+    expect(withFont(custom, 'heading', 'Oswald').textStyle.fontFamily).toBe('Bebas Neue');
   });
 
   it('keeps the draft’s edits when logos are added on the server', () => {

@@ -36,6 +36,25 @@ export function withTextSize(kit: LibraryBrandKit, size: number): LibraryBrandKi
   return withTextStyle(kit, { fontSize: constant(size) });
 }
 
+/** Which kit font. */
+export type KitFontRole = 'heading' | 'body';
+
+/**
+ * The kit with its `role` font changed. The looks of new texts and captions follow when they
+ * used the old font (they start from the kit's fonts), so the font chosen shows at once; a look
+ * given another font keeps it.
+ */
+export function withFont(kit: LibraryBrandKit, role: KitFontRole, family: string): LibraryBrandKit {
+  const previous = kit.fonts[role];
+  const follow = (current: string) => (current === previous ? family : current);
+  return {
+    ...kit,
+    fonts: { ...kit.fonts, [role]: family },
+    textStyle: { ...kit.textStyle, fontFamily: follow(kit.textStyle.fontFamily) },
+    captionStyle: { ...kit.captionStyle, fontFamily: follow(kit.captionStyle.fontFamily) },
+  };
+}
+
 /** The kit with one palette colour changed. */
 export function withColor(kit: LibraryBrandKit, role: PaletteRole, color: string): LibraryBrandKit {
   return { ...kit, colors: { ...kit.colors, [role]: color } };

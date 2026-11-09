@@ -28,7 +28,7 @@ export interface BrowserActions {
   readonly ready: boolean;
   readonly insertProject: (template: MotionTemplate) => void;
   readonly insertLibrary: (entry: LibraryTemplate) => void;
-  readonly saveTemplate: (template: MotionTemplate) => void;
+  readonly saveTemplate: (template: MotionTemplate, linked: LibraryTemplate | null) => void;
   readonly update: (template: MotionTemplate, entry: LibraryTemplate) => void;
   readonly viewCode: (template: MotionTemplate) => void;
   readonly removeProject: (template: MotionTemplate) => void;

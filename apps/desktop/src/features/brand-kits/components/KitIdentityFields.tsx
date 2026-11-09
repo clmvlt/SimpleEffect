@@ -9,7 +9,7 @@ import {
   brandSwatches,
 } from '../../../shared/brand-kit';
 import { FontFamilySelect } from '../../../shared/fonts';
-import { withColor } from '../services/kit-draft';
+import { withColor, withFont } from '../services/kit-draft';
 
 /** Props of the kit editor's field groups. */
 export interface KitFieldsProps {
@@ -36,7 +36,7 @@ export function KitIdentityFields({ kit, onChange }: KitFieldsProps) {
             value={kit.fonts.heading}
             brandFonts={[]}
             onChange={(heading) => {
-              onChange({ ...kit, fonts: { ...kit.fonts, heading } });
+              onChange(withFont(kit, 'heading', heading));
             }}
           />
         </PropertyRow>
@@ -46,7 +46,7 @@ export function KitIdentityFields({ kit, onChange }: KitFieldsProps) {
             value={kit.fonts.body}
             brandFonts={brandFonts({ ...kit, fonts: { ...kit.fonts, body: kit.fonts.heading } })}
             onChange={(body) => {
-              onChange({ ...kit, fonts: { ...kit.fonts, body } });
+              onChange(withFont(kit, 'body', body));
             }}
           />
         </PropertyRow>

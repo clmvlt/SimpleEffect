@@ -62,7 +62,8 @@ describe('template browser entries', () => {
     expect(keys({ source: 'library', category: 'captions', search: '' })).toEqual([
       'library:style-1',
     ]);
-    expect(keys({ source: 'all', category: null, search: 'INTERVIEW' })).toEqual([]);
+    // A copy is found by its library entry's tags.
+    expect(keys({ source: 'all', category: null, search: 'INTERVIEW' })).toEqual(['project:badge']);
     expect(keys({ source: 'library', category: null, search: 'intérview' })).toEqual([
       'library:entry-1',
     ]);

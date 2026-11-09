@@ -12,3 +12,4 @@ export {
 } from './font-catalog-store';
 export { useFontFamilies } from './use-font-families';
 export { FontFamilySelect, useKnownFamily } from './FontFamilySelect';
+export { useDocumentFonts } from './use-document-fonts';

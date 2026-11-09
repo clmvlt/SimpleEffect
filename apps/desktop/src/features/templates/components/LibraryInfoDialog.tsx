@@ -41,9 +41,9 @@ function initialInfo(request: LibraryDialogRequest): LibraryTemplateInfo {
   switch (request.kind) {
     case 'saveTemplate':
       return {
-        name: request.template.name,
-        description: request.template.description,
-        tags: [],
+        name: request.linked?.name ?? request.template.name,
+        description: request.linked?.description ?? request.template.description,
+        tags: request.linked?.tags ?? [],
         category: request.template.category,
       };
     case 'saveCaptionStyle':
@@ -71,7 +71,9 @@ export function LibraryInfoDialog() {
   const title =
     request?.kind === 'rename'
       ? t('editor.templates.library.renameTitle')
-      : t('editor.templates.library.saveTitle');
+      : request?.kind === 'saveTemplate' && request.linked !== null
+        ? t('editor.templates.library.saveVersionTitle', { version: request.linked.version + 1 })
+        : t('editor.templates.library.saveTitle');
   return (
     <Dialog
       open={request !== null}

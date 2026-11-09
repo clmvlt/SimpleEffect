@@ -186,7 +186,7 @@ function ProjectItems({
   readonly actions: BrowserActions;
 }) {
   const { t } = useTranslation();
-  const { template, update } = entry;
+  const { template, update, linked } = entry;
   return (
     <>
       {update !== null && (
@@ -201,7 +201,7 @@ function ProjectItems({
       <DropdownMenuItem
         disabled={!actions.ready}
         onSelect={() => {
-          actions.saveTemplate(template);
+          actions.saveTemplate(template, linked);
         }}
       >
         {template.library === null

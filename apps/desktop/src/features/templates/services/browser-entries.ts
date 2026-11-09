@@ -37,6 +37,8 @@ export interface ProjectEntry {
   readonly used: boolean;
   /** The newer library version offered as an update, if any. */
   readonly update: LibraryTemplate | null;
+  /** The library entry it is a copy of (any version), if the library still holds it. */
+  readonly linked: LibraryTemplate | null;
 }
 
 /** An entry of the template library. */
@@ -84,15 +86,24 @@ export function previewTemplate(entry: LibraryTemplate): MotionTemplate | null {
   };
 }
 
-/** The library entry newer than `template`'s copy, if any (an update to propose). */
-export function updateFor(
+/** The library entry `template` is a copy of (any version), if the library holds it. */
+export function linkedEntry(
   template: MotionTemplate,
   library: readonly LibraryTemplate[],
 ): LibraryTemplate | null {
   const link = template.library;
   if (link === null) return null;
-  const entry = library.find((candidate) => candidate.id === link.templateId);
-  return entry !== undefined && entry.version > link.version ? entry : null;
+  return library.find((candidate) => candidate.id === link.templateId) ?? null;
+}
+
+/** The library entry newer than `template`'s copy, if any (an update to propose). */
+export function updateFor(
+  template: MotionTemplate,
+  library: readonly LibraryTemplate[],
+): LibraryTemplate | null {
+  const entry = linkedEntry(template, library);
+  const version = template.library?.version ?? Number.POSITIVE_INFINITY;
+  return entry !== null && entry.version > version ? entry : null;
 }
 
 /** Whether `templates` hold a copy of `entry`'s version. */
@@ -111,17 +122,21 @@ export function browserEntries(
 ): readonly BrowserEntry[] {
   const byName = <T extends { readonly name: string }>(left: T, right: T) =>
     left.name.localeCompare(right.name, 'fr');
-  const project: ProjectEntry[] = templates.map((template) => ({
-    kind: 'project',
-    key: `project:${template.id}`,
-    template,
-    category: template.category,
-    name: template.name,
-    description: template.description,
-    tags: [],
-    used: usedTemplateIds.has(template.id),
-    update: updateFor(template, library),
-  }));
+  const project: ProjectEntry[] = templates.map((template) => {
+    const linked = linkedEntry(template, library);
+    return {
+      kind: 'project',
+      key: `project:${template.id}`,
+      template,
+      category: template.category,
+      name: template.name,
+      description: template.description,
+      tags: linked?.tags ?? [],
+      used: usedTemplateIds.has(template.id),
+      update: updateFor(template, library),
+      linked,
+    };
+  });
   const saved: LibraryEntry[] = library.map((entry) => ({
     kind: 'library',
     key: `library:${entry.id}`,

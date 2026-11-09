@@ -975,6 +975,7 @@
       },
       "library": {
         "saveTitle": "Enregistrer dans la bibliothèque",
+        "saveVersionTitle": "Enregistrer la version {{version}} dans la bibliothèque",
         "renameTitle": "Modifier le modèle de la bibliothèque",
         "name": "Nom",
         "nameRequired": "Donnez un nom au modèle.",

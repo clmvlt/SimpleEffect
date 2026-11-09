@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { brandSwatches } from '../../../shared/brand-kit';
 import { useCoreEndpoint } from '../../../shared/core';
+import { useDocumentFonts } from '../../../shared/fonts';
 import { staticValue } from '../services/kit-draft';
 
 /**
@@ -16,6 +17,7 @@ export function BrandKitPreview({ kit }: { readonly kit: LibraryBrandKit }) {
   const text = kit.textStyle;
   const caption = kit.captionStyle;
   const [logo] = kit.logos;
+  useDocumentFonts([text.fontFamily, kit.fonts.body, caption.fontFamily]);
   const plate = text.background.enabled ? staticValue(text.background.color) : null;
   const outline = text.stroke.enabled ? staticValue(text.stroke.color) : null;
   const [spoken = '', ...rest] = t('brandKit.settings.previewCaption').split(' ');

@@ -4,7 +4,12 @@ import { createStore } from 'zustand/vanilla';
 
 /** What the library information dialog is doing. */
 export type LibraryDialogRequest =
-  | { readonly kind: 'saveTemplate'; readonly template: MotionTemplate }
+  | {
+      readonly kind: 'saveTemplate';
+      readonly template: MotionTemplate;
+      /** The library entry it is a copy of: the save is a new version of it. */
+      readonly linked: LibraryTemplate | null;
+    }
   | { readonly kind: 'saveCaptionStyle'; readonly styleId: CaptionStyleId; readonly name: string }
   | { readonly kind: 'rename'; readonly entry: LibraryTemplate };
 
@@ -13,9 +18,15 @@ export const libraryDialogStore = createStore<{ readonly request: LibraryDialogR
   () => ({ request: null }),
 );
 
-/** Opens « Enregistrer dans la bibliothèque » for a project template. */
-export function openSaveTemplate(template: MotionTemplate): void {
-  libraryDialogStore.setState({ request: { kind: 'saveTemplate', template } });
+/**
+ * Opens « Enregistrer dans la bibliothèque » for a project template, or « Enregistrer une
+ * nouvelle version » when it is a copy of library entry `linked` (its information prefilled).
+ */
+export function openSaveTemplate(
+  template: MotionTemplate,
+  linked: LibraryTemplate | null = null,
+): void {
+  libraryDialogStore.setState({ request: { kind: 'saveTemplate', template, linked } });
 }
 
 /** Opens « Enregistrer dans la bibliothèque » for a caption style (`name`: a suggestion). */
