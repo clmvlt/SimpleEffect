@@ -9,14 +9,16 @@ use std::collections::BTreeMap;
 
 use super::{item, millis, range_ms, track};
 use crate::{
-    Animatable, Asset, AssetAnalysis, AssetKind, AudioStreamInfo, AudioSummary, BrandKit,
-    CURRENT_SCHEMA_VERSION, CaptionItem, CaptionWord, Color, ContentFingerprint, Decodability,
-    DerivedFile, DerivedMedia, DerivedStatus, DesignPixels, Easing, EasingPreset, FadeShape,
-    Format, FormatPreset, FrameRate, ImageFit, ImageItem, Item, ItemId, ItemKind, Keyframe,
-    LinkGroupId, Marker, MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin,
-    Project, ProjectId, ProjectSettings, Reframe, SceneSummary, Sequence, SequenceId,
-    ShapeGeometry, ShapeItem, StreamDecodability, Stroke, TaskId, TemplateChoice, TemplateItem,
-    TemplateParam, TemplateParamSpec, TemplateParamValue, TextItem, TextStyle, Track, TrackKind,
+    Animatable, Asset, AssetAnalysis, AssetKind, AudioStreamInfo, AudioSummary, BrandFonts,
+    BrandKit, BrandKitId, BrandKitSource, BrandLogo, BrandPalette, BrandRole,
+    CURRENT_SCHEMA_VERSION, CaptionItem, CaptionStyleId, CaptionWord, Color, ContentFingerprint,
+    Decodability, DerivedFile, DerivedMedia, DerivedStatus, DesignPixels, Easing, EasingPreset,
+    FadeShape, Format, FormatPreset, FrameRate, ImageFit, ImageItem, Item, ItemId, ItemKind,
+    Keyframe, LibraryLink, LibraryTemplateId, LibraryTemplateRef, LinkGroupId, Marker, MarkerColor,
+    MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin, Project, ProjectId, ProjectSettings,
+    Reframe, SceneSummary, Sequence, SequenceId, ShapeGeometry, ShapeItem, StreamDecodability,
+    Stroke, TaskId, TemplateCategory, TemplateChoice, TemplateItem, TemplateParam,
+    TemplateParamSpec, TemplateParamValue, TextItem, TextStyle, Track, TrackKind,
     TranscriptSummary, TranscriptionSettings, Transform2D, Transition, TransitionAlignment,
     TransitionId, TransitionKind, Vec2, VideoStreamInfo,
 };
@@ -38,7 +40,8 @@ pub mod example_ids {
 }
 
 /// A valid project (`validate_project` finds nothing) with every item kind, keyframes, a link
-/// group, an AI-created item, a marker, a template, a caption style and a brand kit.
+/// group, an AI-created item, a marker, a template (copied from the library, its accent bound to
+/// the kit), a caption style and a brand kit whose logo is `logo.png`.
 ///
 /// Sequence `Main edit`, 1080p at 29.97 fps. Tracks, bottom to top: V1 (two interview clips, the
 /// second at 2× speed, filling the frame around a moving focus), V2 (a keyframed text and the logo), V3 (a template, a shape and a
@@ -74,17 +77,56 @@ pub fn example_project() -> Project {
             }],
         }],
         templates: vec![lower_third_template()],
-        brand_kit: Some(BrandKit {
-            colors: vec![
-                Color::opaque(0xff, 0xcc, 0x00),
-                Color::opaque(0x1a, 0x1a, 0x1a),
-            ],
-            fonts: vec!["Inter".to_owned()],
-        }),
+        brand_kit: Some(brand_kit()),
         caption_styles: vec![
             crate::caption_style_from_preset("minimal", example_ids::CAPTION_STYLE)
                 .expect("the minimal preset exists"),
         ],
+    }
+}
+
+/// The library entry the example's lower third was copied from.
+pub const LIBRARY_LOWER_THIRD: LibraryTemplateId = LibraryTemplateId::from_test_index(1);
+
+/// A kit copied from the library (version 2): Montserrat titles, Inter text, a yellow and dark
+/// palette, the logo, bold white texts and a karaoke caption look.
+fn brand_kit() -> BrandKit {
+    let mut caption_style =
+        crate::caption_style_from_preset("karaoke", CaptionStyleId::from_test_index(2))
+            .expect("the karaoke preset exists");
+    "Inter".clone_into(&mut caption_style.font_family);
+    BrandKit {
+        source: Some(BrandKitSource {
+            kit_id: BrandKitId::from_test_index(1),
+            version: 2,
+        }),
+        name: "Example brand".to_owned(),
+        fonts: BrandFonts {
+            heading: "Montserrat".to_owned(),
+            body: "Inter".to_owned(),
+        },
+        colors: BrandPalette {
+            primary: Color::opaque(0xff, 0xcc, 0x00),
+            secondary: Color::opaque(0x1a, 0x1a, 0x1a),
+            accent: Color::opaque(0xff, 0x33, 0x66),
+            text: Color::WHITE,
+            background: Color::opaque(0x1a, 0x1a, 0x1a),
+        },
+        logos: vec![BrandLogo {
+            name: "Logo".to_owned(),
+            asset_id: example_ids::IMAGE_ASSET,
+        }],
+        text_style: TextStyle {
+            font_family: "Montserrat".to_owned(),
+            font_weight: 700,
+            ..TextStyle::default()
+        },
+        caption_style,
+        intro_templates: vec![LibraryTemplateRef {
+            id: LIBRARY_LOWER_THIRD,
+            name: "Lower third".to_owned(),
+        }],
+        outro_templates: Vec::new(),
     }
 }
 
@@ -332,12 +374,12 @@ fn logo_image() -> Item {
 }
 
 /// Source of the example's lower third (`meta`, `params`, `render`).
-pub const LOWER_THIRD_SOURCE: &str = r"export const meta = { name: 'Lower third', description: 'A name and a role sliding in', defaultDuration: 5 };
+pub const LOWER_THIRD_SOURCE: &str = r"export const meta = { name: 'Lower third', description: 'A name and a role sliding in', defaultDuration: 5, category: 'lowerThird' };
 
 export const params = {
   name: { type: 'string', title: 'Nom', default: 'Jane Doe' },
   role: { type: 'string', title: 'Titre', default: 'Director', multiline: true },
-  accent: { type: 'string', format: 'color', title: 'Accent', default: '#ffcc00' },
+  accent: { type: 'string', format: 'color', title: 'Accent', default: '#ffcc00', brand: 'accent' },
   slide: { type: 'number', title: 'Glissement', default: 120, minimum: 0, maximum: 400 },
   showLine: { type: 'boolean', title: 'Ligne', default: true },
   align: { type: 'string', title: 'Alignement', enum: ['left', 'right'], enumLabels: ['Gauche', 'Droite'], default: 'left' },
@@ -367,6 +409,7 @@ fn lower_third_template() -> MotionTemplate {
         label: label.to_owned(),
         description: None,
         spec,
+        brand: None,
     };
     let choice = |value: &str, label: &str| TemplateChoice {
         value: value.to_owned(),
@@ -397,13 +440,16 @@ fn lower_third_template() -> MotionTemplate {
                     max_length: crate::DEFAULT_TEXT_MAX_LENGTH,
                 },
             ),
-            param(
-                "accent",
-                "Accent",
-                TemplateParamSpec::Color {
-                    default: Color::opaque(0xff, 0xcc, 0x00),
-                },
-            ),
+            TemplateParam {
+                brand: Some(BrandRole::Accent),
+                ..param(
+                    "accent",
+                    "Accent",
+                    TemplateParamSpec::Color {
+                        default: Color::opaque(0xff, 0xcc, 0x00),
+                    },
+                )
+            },
             param(
                 "slide",
                 "Glissement",
@@ -440,6 +486,11 @@ fn lower_third_template() -> MotionTemplate {
         origin: Origin::AiTask {
             task_id: TaskId::from_test_index(1),
         },
+        category: TemplateCategory::LowerThird,
+        library: Some(LibraryLink {
+            template_id: LIBRARY_LOWER_THIRD,
+            version: 1,
+        }),
     }
 }
 

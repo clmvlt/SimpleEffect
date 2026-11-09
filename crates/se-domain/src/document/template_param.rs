@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::{Animatable, TemplateParamValue};
+use super::{Animatable, BrandRole, TemplateParamValue};
 use crate::color::Color;
 
 /// Most parameters a template may declare.
@@ -29,6 +29,10 @@ pub struct TemplateParam {
     pub description: Option<String>,
     /// The kind of values and their constraints.
     pub spec: TemplateParamSpec,
+    /// The brand kit value new instances start with instead of the default (`brand` in the
+    /// schema; colours, fonts and the logo only; prompt 25).
+    #[serde(default)]
+    pub brand: Option<BrandRole>,
 }
 
 /// The values a parameter takes, with its default.
@@ -147,6 +151,21 @@ impl TemplateParam {
         }
         if let Some(problem) = self.value_problem(&self.default_value()) {
             problems.push(("spec.default", problem));
+        }
+        if let Some(role) = self
+            .brand
+            .filter(|role| role.param_kind() != self.spec.kind_name())
+        {
+            problems.push((
+                "brand",
+                format!(
+                    "'{}' fits {} parameters; a {} parameter takes none{}",
+                    role.name(),
+                    role.param_kind(),
+                    self.spec.kind_name(),
+                    brand_roles_hint(self.spec.kind_name())
+                ),
+            ));
         }
         problems
     }
@@ -299,6 +318,16 @@ fn bounds_text(minimum: Option<f64>, maximum: Option<f64>) -> String {
     }
 }
 
+/// « (use one of: …) » for kinds that take brand roles, empty otherwise.
+fn brand_roles_hint(kind: &str) -> String {
+    let roles = BrandRole::names_for_kind(kind);
+    if roles.is_empty() {
+        String::new()
+    } else {
+        format!(" (use one of: {roles})")
+    }
+}
+
 fn option_list(options: &[TemplateChoice]) -> String {
     options
         .iter()
@@ -323,6 +352,7 @@ mod tests {
                 maximum,
                 step: Some(0.1),
             },
+            brand: None,
         }
     }
 
@@ -341,6 +371,7 @@ mod tests {
                     })
                     .collect(),
             },
+            brand: None,
         }
     }
 
@@ -376,6 +407,38 @@ mod tests {
             choice(&[]).problems().len(),
             2,
             "no option and an unknown default"
+        );
+    }
+
+    #[test]
+    fn brand_roles_must_fit_the_parameter_kind() {
+        let mut accent = TemplateParam {
+            name: "accent".to_owned(),
+            label: "Accent".to_owned(),
+            description: None,
+            spec: TemplateParamSpec::Color {
+                default: crate::Color::WHITE,
+            },
+            brand: Some(BrandRole::Accent),
+        };
+        assert_eq!(accent.problems(), []);
+        accent.brand = Some(BrandRole::Heading);
+        let problems = accent.problems();
+        assert_eq!(problems.len(), 1);
+        assert_eq!(problems[0].0, "brand");
+        assert!(
+            problems[0]
+                .1
+                .contains("use one of: primary, secondary, accent, text, background"),
+            "{}",
+            problems[0].1
+        );
+        let mut speed = number(None, None);
+        speed.brand = Some(BrandRole::Logo);
+        assert!(
+            speed.problems()[0]
+                .1
+                .contains("a number parameter takes none")
         );
     }
 

@@ -78,11 +78,13 @@ pub enum ViolationCode {
     /// A template item value its template's parameter refuses (unknown name, wrong kind, out of
     /// range, not an option).
     InvalidTemplateParams,
+    /// A brand kit whose own values are unusable (empty name or font, keyframed defaults…).
+    InvalidBrandKit,
 }
 
 impl ViolationCode {
     /// Every code, in declaration order.
-    pub const ALL: [Self; 22] = [
+    pub const ALL: [Self; 23] = [
         Self::DuplicateId,
         Self::UnknownReference,
         Self::AssetKindMismatch,
@@ -105,6 +107,7 @@ impl ViolationCode {
         Self::InvalidCaptionWords,
         Self::InvalidTemplate,
         Self::InvalidTemplateParams,
+        Self::InvalidBrandKit,
     ];
 
     /// The serialized form (`OVERLAPPING_ITEMS`).
@@ -133,6 +136,7 @@ impl ViolationCode {
             Self::InvalidCaptionWords => "INVALID_CAPTION_WORDS",
             Self::InvalidTemplate => "INVALID_TEMPLATE",
             Self::InvalidTemplateParams => "INVALID_TEMPLATE_PARAMS",
+            Self::InvalidBrandKit => "INVALID_BRAND_KIT",
         }
     }
 }

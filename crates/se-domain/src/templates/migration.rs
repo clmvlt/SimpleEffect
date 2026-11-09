@@ -63,6 +63,8 @@ mod tests {
             params,
             default_duration: Flicks::one_second(),
             origin: Origin::User,
+            category: crate::TemplateCategory::Other,
+            library: None,
         }
     }
 
@@ -72,6 +74,7 @@ mod tests {
             label: name.to_owned(),
             description: None,
             spec,
+            brand: None,
         }
     }
 

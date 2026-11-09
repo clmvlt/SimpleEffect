@@ -188,6 +188,18 @@ uuid_id!(
     "caption style"
 );
 uuid_id!(
+    /// Identifies a brand kit of the app's library (prompt 25): projects keep a copy of the kit
+    /// they use, with this id as its source.
+    BrandKitId,
+    "brand kit"
+);
+uuid_id!(
+    /// Identifies an entry of the app's template library (a motion template or a caption style,
+    /// prompt 25): project templates copied from it keep this id as their link.
+    LibraryTemplateId,
+    "library template"
+);
+uuid_id!(
     /// Identifies a [`crate::Transaction`]: one atomic group of operations by one actor.
     TransactionId,
     "transaction"

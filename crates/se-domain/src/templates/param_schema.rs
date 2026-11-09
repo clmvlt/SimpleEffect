@@ -4,7 +4,9 @@
 use serde_json::{Map, Value};
 
 use super::DefinitionProblem;
-use crate::{Color, DEFAULT_TEXT_MAX_LENGTH, TemplateChoice, TemplateParam, TemplateParamSpec};
+use crate::{
+    BrandRole, Color, DEFAULT_TEXT_MAX_LENGTH, TemplateChoice, TemplateParam, TemplateParamSpec,
+};
 
 /// Keys every parameter may carry.
 const COMMON_KEYS: [&str; 6] = [
@@ -34,12 +36,41 @@ pub(super) fn parse_param(
         optional_string(schema, "title", &path, problems).unwrap_or_else(|| name.to_owned());
     let description = optional_string(schema, "description", &path, problems);
     let spec = parse_spec(schema, &path, problems)?;
+    let brand = parse_brand(schema.get("brand"), &spec, &path, problems);
     (problems.len() == before).then(|| TemplateParam {
         name: name.to_owned(),
         label,
         description,
         spec,
+        brand,
     })
+}
+
+/// The `brand` role of a colour, font or asset parameter (checked against its kind; other kinds
+/// already refused the key as unknown).
+fn parse_brand(
+    value: Option<&Value>,
+    spec: &TemplateParamSpec,
+    path: &str,
+    problems: &mut Vec<DefinitionProblem>,
+) -> Option<BrandRole> {
+    let value = value.filter(|value| !value.is_null())?;
+    let kind = spec.kind_name();
+    let roles = BrandRole::names_for_kind(kind);
+    if roles.is_empty() {
+        return None;
+    }
+    let role = value
+        .as_str()
+        .and_then(BrandRole::from_name)
+        .filter(|role| role.param_kind() == kind);
+    if role.is_none() {
+        problems.push(DefinitionProblem::new(
+            format!("{path}.brand"),
+            format!("use one of: {roles} (a brand kit role for a {kind} parameter)"),
+        ));
+    }
+    role
 }
 
 fn parse_spec(
@@ -111,7 +142,7 @@ fn font_spec(
     path: &str,
     problems: &mut Vec<DefinitionProblem>,
 ) -> Option<TemplateParamSpec> {
-    refuse_unknown_keys(schema, path, &with_common(&["format"]), problems);
+    refuse_unknown_keys(schema, path, &with_common(&["format", "brand"]), problems);
     let default = schema
         .get("default")
         .and_then(Value::as_str)
@@ -132,7 +163,7 @@ fn asset_spec(
     path: &str,
     problems: &mut Vec<DefinitionProblem>,
 ) -> TemplateParamSpec {
-    refuse_unknown_keys(schema, path, &with_common(&["format"]), problems);
+    refuse_unknown_keys(schema, path, &with_common(&["format", "brand"]), problems);
     if !matches!(schema.get("default"), None | Some(Value::Null)) {
         problems.push(DefinitionProblem::new(
             format!("{path}.default"),
@@ -185,7 +216,7 @@ fn color_spec(
     path: &str,
     problems: &mut Vec<DefinitionProblem>,
 ) -> Option<TemplateParamSpec> {
-    refuse_unknown_keys(schema, path, &with_common(&["format"]), problems);
+    refuse_unknown_keys(schema, path, &with_common(&["format", "brand"]), problems);
     let default = schema
         .get("default")
         .and_then(Value::as_str)

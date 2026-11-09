@@ -306,6 +306,25 @@ pub enum DomainError {
         /// What is wrong and how to fix it.
         reason: String,
     },
+    /// A brand kit with unusable values.
+    #[error("invalid brand kit « {name} »: {problems}")]
+    InvalidBrandKit {
+        /// The kit's name.
+        name: String,
+        /// Each faulty field and its rule, `; `-separated.
+        problems: String,
+    },
+    /// An asset that is a logo of the project's brand kit cannot be removed.
+    #[error(
+        "asset {asset} is a logo of the project's brand kit « {kit} »; remove it from the kit \
+         (or choose another kit) first"
+    )]
+    AssetIsBrandLogo {
+        /// The asset.
+        asset: AssetId,
+        /// The kit's name.
+        kit: String,
+    },
     /// A name that is empty or only spaces.
     #[error("a {entity} name cannot be empty")]
     EmptyName {
@@ -448,7 +467,7 @@ impl DomainError {
             Self::RangesNotInOrder { .. } => DomainErrorCode::InvalidEditPoint,
             Self::MissingSplitId { .. } => DomainErrorCode::MissingSplitId,
             Self::TimeOutOfRange { .. } => DomainErrorCode::TimeOutOfRange,
-            Self::AssetInUse { .. } => DomainErrorCode::AssetInUse,
+            Self::AssetInUse { .. } | Self::AssetIsBrandLogo { .. } => DomainErrorCode::AssetInUse,
             Self::CaptionStyleNotFound { .. } => DomainErrorCode::CaptionStyleNotFound,
             Self::CaptionStyleInUse { .. } => DomainErrorCode::CaptionStyleInUse,
             Self::TemplateNotFound { .. } => DomainErrorCode::TemplateNotFound,
@@ -457,6 +476,7 @@ impl DomainError {
             Self::InvalidTranscriptionSettings { .. } => {
                 DomainErrorCode::InvalidTranscriptionSettings
             }
+            Self::InvalidBrandKit { .. } => DomainErrorCode::InvalidBrandKit,
             Self::EmptyName { .. } => DomainErrorCode::EmptyName,
             Self::IndexOutOfBounds { .. } => DomainErrorCode::IndexOutOfBounds,
             Self::InvalidDocument { .. } => DomainErrorCode::InvalidDocument,

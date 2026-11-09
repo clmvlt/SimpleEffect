@@ -17,15 +17,20 @@
 //! fill the frame a `focus`; version 7 (prompt 21) gave projects their transcription settings and
 //! assets a `transcript` summary; version 8 (prompt 23) made captions timed words with a project
 //! caption style; version 9 (prompt 24) gave motion templates their source, parameters and
-//! versions and template items a transform (`templates_v9.rs`). Journals need no migration: no transaction touched assets before version 2,
-//! every field added since has a serde default (empty, linear, off, centred), `Animatable` reads
-//! the bare values of properties that became animatable, and no command created or edited
-//! captions before version 8, nor templates before version 9.
+//! versions and template items a transform (`templates_v9.rs`); version 10 (prompt 25) completed
+//! brand kits and gave templates a category and a library link (`brand_kit_v10.rs`). Journals
+//! need no migration: no transaction touched assets before version 2, every field added since has
+//! a serde default (empty, linear, off, centred, `other`, no link), `Animatable` reads the bare
+//! values of properties that became animatable, and no command created or edited captions before
+//! version 8, templates before version 9, nor brand kits before version 10.
 
+mod brand_kit_v10;
 mod templates_v9;
 
+pub use brand_kit_v10::{MIGRATED_BRAND_CAPTION_STYLE_ID, MIGRATED_BRAND_KIT_NAME};
 pub use templates_v9::MIGRATED_TEMPLATE_SOURCE;
 
+use brand_kit_v10::migrate_v9_to_v10;
 use serde_json::{Map, Value, json};
 use templates_v9::migrate_v8_to_v9;
 
@@ -43,6 +48,7 @@ pub const MIGRATIONS: &[DocumentMigration] = &[
     migrate_v6_to_v7,
     migrate_v7_to_v8,
     migrate_v8_to_v9,
+    migrate_v9_to_v10,
 ];
 
 /// Id of the caption style given to the captions of a version-7 document. Ids only need to be

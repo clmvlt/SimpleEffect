@@ -178,10 +178,53 @@ fn example_project_v5() -> se_domain::Project {
     project
 }
 
+/// The example project as the version-9 fixture holds it, once migrated: a skeleton kit
+/// completed (yellow and dark palette, Inter, no logo, no source), its template under `other`
+/// without library link nor brand role.
+fn example_project_v9() -> se_domain::Project {
+    let mut project = example_project();
+    let style =
+        se_domain::CaptionStyleId::parse(se_store::MIGRATED_BRAND_CAPTION_STYLE_ID).unwrap();
+    let mut caption_style = se_domain::caption_style_from_preset("minimal", style).unwrap();
+    "Inter".clone_into(&mut caption_style.font_family);
+    project.brand_kit = Some(se_domain::BrandKit {
+        source: None,
+        name: se_store::MIGRATED_BRAND_KIT_NAME.to_owned(),
+        fonts: se_domain::BrandFonts {
+            heading: "Inter".to_owned(),
+            body: "Inter".to_owned(),
+        },
+        colors: se_domain::BrandPalette {
+            primary: se_domain::Color::opaque(0xff, 0xcc, 0x00),
+            secondary: se_domain::Color::opaque(0x1a, 0x1a, 0x1a),
+            accent: se_domain::Color::opaque(0xff, 0xcc, 0x00),
+            text: se_domain::Color::WHITE,
+            background: se_domain::Color::BLACK,
+        },
+        logos: Vec::new(),
+        text_style: se_domain::TextStyle::default(),
+        caption_style,
+        intro_templates: Vec::new(),
+        outro_templates: Vec::new(),
+    });
+    for template in &mut project.templates {
+        template.category = se_domain::TemplateCategory::Other;
+        template.library = None;
+        template.source = template
+            .source
+            .replace(", category: 'lowerThird'", "")
+            .replace(", brand: 'accent'", "");
+        for param in &mut template.params {
+            param.brand = None;
+        }
+    }
+    project
+}
+
 /// The example project as the version-8 fixture holds it, once migrated: its template a skeleton
 /// that draws nothing, its instance without values, centred and opaque.
 fn example_project_v8() -> se_domain::Project {
-    let mut project = example_project();
+    let mut project = example_project_v9();
     for template in &mut project.templates {
         *template = se_domain::MotionTemplate {
             id: template.id,
@@ -192,6 +235,8 @@ fn example_project_v8() -> se_domain::Project {
             params: Vec::new(),
             default_duration: se_domain::Flicks::from_millis(5000),
             origin: se_domain::Origin::User,
+            category: se_domain::TemplateCategory::Other,
+            library: None,
         };
     }
     for item in project
@@ -356,8 +401,13 @@ async fn version_8_templates_get_an_empty_definition() {
 }
 
 #[tokio::test]
-async fn version_9_documents_load_as_they_are() {
-    assert_eq!(load_fixture("project-v9.json").await, example_project());
+async fn version_9_brand_kits_are_completed() {
+    assert_eq!(load_fixture("project-v9.json").await, example_project_v9());
+}
+
+#[tokio::test]
+async fn version_10_documents_load_as_they_are() {
+    assert_eq!(load_fixture("project-v10.json").await, example_project());
 }
 
 #[tokio::test]

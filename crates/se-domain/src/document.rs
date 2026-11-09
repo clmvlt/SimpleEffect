@@ -12,6 +12,7 @@ mod animatable;
 mod animatable_property;
 mod asset;
 mod brand_kit;
+mod brand_role;
 mod caption;
 mod caption_style;
 mod content_fingerprint;
@@ -22,6 +23,7 @@ mod format;
 mod image;
 mod item;
 mod item_kind;
+mod library_link;
 mod marker;
 mod media_clip;
 mod media_info;
@@ -30,6 +32,7 @@ mod project;
 mod sequence;
 mod shape;
 mod stroke;
+mod template_category;
 mod template_param;
 mod text;
 mod track;
@@ -41,7 +44,11 @@ mod transition_fit;
 pub use animatable::{Animatable, Keyframe};
 pub use animatable_property::{AnimatableProperty, PropertyMut, PropertyRef};
 pub use asset::{Asset, AssetKind, Decodability, StreamDecodability};
-pub use brand_kit::BrandKit;
+pub use brand_kit::{
+    BrandFonts, BrandKit, BrandKitSource, BrandLogo, BrandPalette, LibraryTemplateRef,
+    MAX_BRAND_FAVORITES, MAX_BRAND_KIT_NAME_CHARS, MAX_BRAND_LOGOS,
+};
+pub use brand_role::BrandRole;
 pub use caption::{CaptionItem, CaptionWord};
 pub use caption_style::{
     CAPTION_LINE_CHARS, CAPTION_LINES, CaptionAnimation, CaptionBox, CaptionOutline, CaptionShadow,
@@ -55,6 +62,7 @@ pub use format::{DEFAULT_SAMPLE_RATE, Format, FormatPreset};
 pub use image::{ImageFit, ImageItem};
 pub use item::{Item, Origin};
 pub use item_kind::ItemKind;
+pub use library_link::LibraryLink;
 pub use marker::{Marker, MarkerColor};
 pub use media_clip::{MediaClip, Reframe};
 pub use media_info::{AudioStreamInfo, MediaInfo, VideoStreamInfo};
@@ -66,6 +74,7 @@ pub use project::{CURRENT_SCHEMA_VERSION, Project, ProjectSettings};
 pub use sequence::Sequence;
 pub use shape::{ShapeGeometry, ShapeItem, ShapeKind};
 pub use stroke::Stroke;
+pub use template_category::TemplateCategory;
 pub use template_param::{
     DEFAULT_TEXT_MAX_LENGTH, MAX_ENUM_OPTIONS, MAX_PARAM_NAME_CHARS, MAX_TEMPLATE_PARAMS,
     TemplateChoice, TemplateParam, TemplateParamSpec, is_param_name,

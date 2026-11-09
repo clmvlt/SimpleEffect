@@ -6,6 +6,7 @@
 //! document order, each with a stable [`ViolationCode`], a path and an actionable message.
 
 mod animation_rules;
+mod brand_kit_rules;
 mod caption_rules;
 mod graphic_rules;
 mod identity_rules;
@@ -32,8 +33,9 @@ use report::{Path, ProjectIndex, Report};
 /// start, items allowed on their track kind, positive speeds, source ranges inside their media,
 /// keyframes present, sorted and inside their item, value ranges (opacity, volume, pan, fades,
 /// sizes and styles of texts, shapes and caption styles, Bézier control points), caption words,
-/// motion template definitions and the values of template items, link groups within one sequence and transitions on the cut between
-/// adjacent items with enough media beyond their edges.
+/// motion template definitions and the values of template items, the brand kit (its values and
+/// logos), link groups within one sequence and transitions on the cut between adjacent items with
+/// enough media beyond their edges.
 #[must_use]
 pub fn validate_project(project: &Project) -> Vec<Violation> {
     let mut report = Report::default();
@@ -41,6 +43,7 @@ pub fn validate_project(project: &Project) -> Vec<Violation> {
     caption_rules::check_styles(project, &mut report);
     template_rules::check_templates(project, &mut report);
     let index = ProjectIndex::new(project);
+    brand_kit_rules::check(project, &index, &mut report);
     let sequences = Path::default().field("sequences");
     for sequence in &project.sequences {
         let sequence_path = sequences.key(sequence.id);

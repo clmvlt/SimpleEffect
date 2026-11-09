@@ -16,8 +16,8 @@ use se_domain::{
     MotionTemplate, MoveItem, Operation, Project, PropertyAnimation, Reframe, RemoveAsset,
     RemoveCaptionStyle, RemoveItem, RemoveMarker, RemoveSequence, RemoveTemplate, RemoveTrack,
     RemoveTransition, RenameProject, ReorderTracks, ReplaceTemplate, RippleDeleteRange,
-    RippleDeleteRanges, SceneSummary, Sequence, SequenceId, SequencePatch, SetKeyframes,
-    SetTranscriptionSettings, ShapePatch, SplitItem, StreamDecodability, TemplateId,
+    RippleDeleteRanges, SceneSummary, Sequence, SequenceId, SequencePatch, SetBrandKit,
+    SetKeyframes, SetTranscriptionSettings, ShapePatch, SplitItem, StreamDecodability, TemplateId,
     TemplateParamValue, TemplatePatch, TextPatch, TimeRange, TrackId, TrackKind, TrackPatch,
     TranscriptionSettings, Transition, TransitionAlignment, TransitionId, TransitionKind,
     TransitionPatch, TrimItem, UnlinkItems, UpdateAsset, UpdateCaptionStyle, UpdateItem,
@@ -32,7 +32,7 @@ use crate::picking::{
 
 /// Number of operation kinds the generator produces (every operation but `RestoreItem`, which
 /// the inverses exercise).
-pub const KINDS: u8 = 33;
+pub const KINDS: u8 = 34;
 
 /// Random numbers from which one operation is built.
 #[derive(Debug, Clone, Copy)]
@@ -86,6 +86,7 @@ impl Generator {
             29 => Some(transcription_settings(seed)),
             30 => self.ranges_operation(project, seed),
             31 => self.caption_operation(project, seed),
+            32 => Some(brand_kit(project, seed)),
             _ => self.template_operation(project, seed),
         }
     }
@@ -808,6 +809,29 @@ fn sequence_patch(seed: Seed) -> SequencePatch {
 
 /// New transcription settings: detection or a language (now and then a malformed one, refused),
 /// with or without a vocabulary.
+/// The brand kit removed, renamed, given an asset of the project as its logo (refused unless it
+/// is an image) or broken (refused).
+fn brand_kit(project: &Project, seed: Seed) -> Operation {
+    let template = se_domain::test_support::example_project().brand_kit;
+    let mut kit = project.brand_kit.clone().or(template);
+    if let Some(kit) = kit.as_mut() {
+        match seed.choice % 4 {
+            0 => kit.name = format!("Kit {}", seed.pick % 10),
+            1 => {
+                if let Some(asset) = pick(&project.assets, seed.pick) {
+                    kit.logos = vec![se_domain::BrandLogo {
+                        name: "Logo".to_owned(),
+                        asset_id: asset.id,
+                    }];
+                }
+            }
+            2 => kit.fonts.heading = String::new(),
+            _ => return SetBrandKit { brand_kit: None }.into(),
+        }
+    }
+    SetBrandKit { brand_kit: kit }.into()
+}
+
 fn transcription_settings(seed: Seed) -> Operation {
     let language = match seed.choice % 4 {
         0 => None,
