@@ -64,6 +64,7 @@
 | `TEMPLATE_INVALID` | A motion template module cannot be used: every problem with its stage, line and instant; nothing was added |
 | `TEMPLATE_NOT_FOUND` | No such motion template; the message lists the project's templates |
 | `LIBRARY_TEMPLATE_NOT_FOUND` | No such entry in the user's template library (removed meanwhile): list it again with `list_templates` and `source: "library"` |
+| `VISION_UNAVAILABLE` | Faces cannot be detected on this machine (the message says why: missing ONNX Runtime library, Intel Mac): reframe by hand with `update_item` / `set_keyframes` |
 | `INTERNAL` | A bug: report it |
 
 - **Read tools change nothing** (annotation `readOnlyHint: true`); write tools are annotated
@@ -118,6 +119,7 @@
 | `instantiate_template` | Places a motion template over a time range with parameter values |
 | `update_template_params` | Changes the parameter values of a template instance (keyframes for numbers and colours) |
 | `insert_library_template` | Places a motion template of the user's library (copied into the project) with parameter values |
+| `auto_reframe` | Makes media clips follow their subject (faces), or adds a version of the sequence in another format (9:16…) whose clips do |
 
 Ids below are shortened (`…0001…`); real ones are UUIDs.
 
@@ -525,7 +527,11 @@ task's scope **before and after** the edit: on the task's sequence, entirely ins
 edges cannot be changed; new items must lie inside it. The check runs on the whole transaction, so
 it also covers what an edit drags along: linked partners, items shifted by a ripple edit,
 transitions dropped by a move. AI tasks never change track headers, sequences (name, format),
-assets or the project; they add tracks only when they may use every track.
+assets or the project; they add tracks only when they may use every track. One exception
+(prompt 26): `auto_reframe` with `target_format` adds a **new** sequence — a version of the
+task's sequence — after it; everything inside a sequence the call creates is new content, so
+the scope allows it, and reverting the task removes it. No other sequence can be added, changed
+or removed.
 
 ```json
 {"error":{"code":"OUT_OF_SCOPE","message":"the edit would leave text « Late » 0193… on V3 of « Main edit », 00:00:08.000–00:00:10.000 outside this task's scope (00:00:01.000–00:00:09.000 of « Main edit », every track): keep every change between 00:00:01.000 and 00:00:09.000"}}
@@ -1009,6 +1015,48 @@ Not batchable (the library is read first). **Output**: as other write tools (`cr
 instance; `get_item` shows its project `template_id`). **Errors**: `LIBRARY_TEMPLATE_NOT_FOUND`,
 `INVALID_ARGUMENTS` (malformed id, a caption style entry, unknown parameter), `VALIDATION_ERROR`,
 `OUT_OF_SCOPE`, `INVALID_TIME`.
+
+## Automatic reframing (prompt 26)
+
+A media clip that fills the frame (`reframe` `fill` or `tracked`) keeps the part of its picture
+around a **focus** (`reframeFocus`, a point of the picture normalised in it, animatable). Automatic
+reframing writes that focus for you: the faces of the clip's media are found locally (a face
+detector run once per media, at 5 pictures per second; the result is kept), then the window
+follows the main subject — the largest, steadiest, most central face, or the group when the
+significant faces fit in the frame together — keeping the eyes on the upper third line, holding
+still while the subject moves a little (a camera operator's dead zone), moving smoothly, and
+jumping to the next shot's subject exactly on each shot change. The result is `reframe:
+{kind: "tracked", focus: keyframes, tracking: settings}`: ordinary keyframes (eased curves, a
+hold before each cut) that `set_keyframes` (property `reframeFocus`) and the user can edit. A
+media without faces stays centred.
+
+### `auto_reframe`
+
+| Argument | Type | Default |
+|---|---|---|
+| `item_ids` | ids of media clips on video tracks | every media clip of a video track lying in the task's scope (ignored with `target_format`) |
+| `target_format` | `"9:16"`, `"16:9"`, `"1:1"`, `"4:5"` or `{width, height}` | none: reframe clips of the task's sequence |
+| `name` | string | the sequence's name and the format (`Interview 9:16`) |
+| `smoothing` | number 0–1 | 0.5 (0 follows closely, 1 slow and steady) |
+| `wait_seconds` | number | 90 (at most 110; 0 starts the analyses and answers at once) |
+
+With `target_format`, a version of the task's sequence is added after it in that format, at the
+sequence's frame rate (texts wider than the new frame are narrowed, every clip fills the frame and
+follows its subject): the scope's one exception (see **Scope rule**). Not batchable.
+
+**Output**:
+```json
+{"finished":true,"version_sequence_id":"…",
+ "edit":{"revision":64,"created":["…"],"items":[{"item_id":"…","kind":"media_clip","track":"V1","start":{"timecode":"00:00:00.000","seconds":0.0},"end":{"timecode":"00:00:10.000","seconds":10.0},"revision":1}]},
+ "note":"the version was created; its clips follow their subject (reframe tracked, editable reframeFocus keyframes): check with get_frames"}
+```
+While faces are still being analysed: `{"finished":false,"analysing":["interview.mp4"],"note":"…"}`
+— nothing changed; call again with the same arguments. Media whose analysis failed are listed in
+`failed` (`asset_id`, `name`, `reason`); their clips stay as they are (centred in a version).
+
+**Errors**: `VISION_UNAVAILABLE`, `INVALID_ARGUMENTS` (unknown format, odd size, smoothing out of
+range, empty `item_ids`), `VALIDATION_ERROR` (a clip that cannot follow a subject: not a media clip
+of a video track, no picture, locked track), `OUT_OF_SCOPE`, `ITEM_NOT_FOUND`.
 
 ## Changesets and reverts
 

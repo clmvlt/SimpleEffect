@@ -1,6 +1,6 @@
 //! Commands on an open project: snapshot, sequences, undo and redo.
 
-use se_domain::{Format, FormatAdaptation, ProjectId, SequenceId};
+use se_domain::{Format, FormatAdaptation, ProjectId, SequenceId, TrackingSettings};
 use se_protocol::{CommandResult, ProtocolError};
 
 use super::HandlerContext;
@@ -67,6 +67,8 @@ pub struct SequenceCopy<'a> {
     pub format: Option<Format>,
     /// How its items adapt.
     pub adaptation: FormatAdaptation,
+    /// Make its clips follow their subject with these settings (prompt 26).
+    pub auto_reframe: Option<TrackingSettings>,
 }
 
 /// `duplicateSequence`.
@@ -75,6 +77,23 @@ pub async fn duplicate_sequence(
     project_id: ProjectId,
     copy: SequenceCopy<'_>,
 ) -> Result<CommandResult, ProtocolError> {
+    if let Some(settings) = copy.auto_reframe {
+        let (sequence_id, report) = context
+            .reframing
+            .create_version(
+                project_id,
+                copy.sequence_id,
+                copy.name,
+                copy.format,
+                copy.adaptation,
+                settings,
+            )
+            .await?;
+        return Ok(CommandResult::DuplicateSequence {
+            sequence_id,
+            reframe: Some(report),
+        });
+    }
     let sequence_id = context
         .projects
         .duplicate_sequence(
@@ -85,7 +104,10 @@ pub async fn duplicate_sequence(
             copy.adaptation,
         )
         .await?;
-    Ok(CommandResult::DuplicateSequence { sequence_id })
+    Ok(CommandResult::DuplicateSequence {
+        sequence_id,
+        reframe: None,
+    })
 }
 
 /// `removeSequence`.

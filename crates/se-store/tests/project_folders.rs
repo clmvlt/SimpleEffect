@@ -406,8 +406,14 @@ async fn version_9_brand_kits_are_completed() {
 }
 
 #[tokio::test]
-async fn version_10_documents_load_as_they_are() {
+async fn version_10_documents_load_through_the_migrations() {
+    // The example holds no tracked reframe: only the version number changes.
     assert_eq!(load_fixture("project-v10.json").await, example_project());
+}
+
+#[tokio::test]
+async fn version_11_documents_load_as_they_are() {
+    assert_eq!(load_fixture("project-v11.json").await, example_project());
 }
 
 #[tokio::test]

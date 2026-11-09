@@ -61,6 +61,38 @@ fn sequence_versions_carry_their_format_and_adaptation() {
             fit_text_widths: true,
         }
     );
+    // Prompt 26: automatic reframing is optional.
+    let reframed = json.replace(
+        r#""fitTextWidths":true}}"#,
+        r#""fitTextWidths":true},"autoReframe":{"smoothing":0.5,"eyeLine":0.33,"groupFraming":true,"deadZone":0.15}}"#,
+    );
+    let Command::DuplicateSequence { auto_reframe, .. } = serde_json::from_str(&reframed).unwrap()
+    else {
+        panic!("duplicateSequence must parse as Command::DuplicateSequence");
+    };
+    assert_eq!(auto_reframe, Some(se_domain::TrackingSettings::default()));
+}
+
+#[test]
+fn reframing_commands_carry_items_and_settings() {
+    let json = r#"{"kind":"autoReframeItems","projectId":"00000000-0001-7000-8000-000000000000","itemIds":["00000000-0003-7000-8000-000000000000"],"settings":{"smoothing":0.8,"eyeLine":0.33,"groupFraming":false,"deadZone":0.0}}"#;
+    let Command::AutoReframeItems {
+        item_ids, settings, ..
+    } = serde_json::from_str(json).unwrap()
+    else {
+        panic!("autoReframeItems must parse as Command::AutoReframeItems");
+    };
+    assert_eq!(item_ids.len(), 1);
+    assert!(!settings.group_framing);
+    assert_eq!(
+        serde_json::to_string(&Command::GetVisionStatus).unwrap(),
+        r#"{"kind":"getVisionStatus"}"#
+    );
+    let result = crate::CommandResult::AutoReframeItems(crate::AutoReframeReport::default());
+    assert_eq!(
+        serde_json::to_string(&result).unwrap(),
+        r#"{"kind":"autoReframeItems","appliedItemIds":[],"waitingAssetIds":[],"skipped":[]}"#
+    );
 }
 
 #[test]

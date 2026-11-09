@@ -3,7 +3,7 @@
 use se_domain::{
     AnimationPhase, AssetId, BrandKitId, CaptionStyleId, Flicks, Format, FormatAdaptation, ItemId,
     JobId, LibraryTemplateId, MarkerColor, MarkerId, MarkerPatch, ProjectId, PropertyAnimation,
-    SequenceId, TaskId, TemplateId, TimeRange, TrackId, TrackKind, TrackPatch,
+    SequenceId, TaskId, TemplateId, TimeRange, TrackId, TrackKind, TrackPatch, TrackingSettings,
     TranscriptionSettings, TransitionId, TransitionPatch,
 };
 use serde::{Deserialize, Serialize};
@@ -134,6 +134,12 @@ pub enum Command {
         format: Option<Format>,
         /// How the copied items adapt to the copy's format.
         adaptation: FormatAdaptation,
+        /// Make every clip of the copy's video tracks follow its subject with these settings
+        /// (prompt 26): the copy is one step, the reframing one more (at once for media already
+        /// analysed, else when `autoReframeFinished` arrives).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        auto_reframe: Option<TrackingSettings>,
     },
     /// Removes a sequence and everything in it (one undo step); refused for the project's only
     /// sequence (`LAST_SEQUENCE`) or with a locked track. Answered by
@@ -888,6 +894,28 @@ pub enum Command {
         item_ids: Vec<ItemId>,
         /// The preset's id (`tiktokBold`, `minimal`, `karaoke`, `box`).
         preset: String,
+    },
+    /// Whether faces can be detected on this machine (prompt 26). Answered by
+    /// [`crate::CommandResult::GetVisionStatus`].
+    GetVisionStatus,
+    /// Makes clips follow their subject (prompt 26): reframed at once (one undo step) for media
+    /// whose faces are analysed, after their analyses otherwise (`autoReframeFinished`).
+    /// Answered by [`crate::CommandResult::AutoReframeItems`].
+    AutoReframeItems {
+        /// The open project.
+        project_id: ProjectId,
+        /// The clips (others are reported as skipped).
+        item_ids: Vec<ItemId>,
+        /// How to follow the subject.
+        settings: TrackingSettings,
+    },
+    /// The faces found in a media (current content), for the viewer. Answered by
+    /// [`crate::CommandResult::GetSubjectDetection`].
+    GetSubjectDetection {
+        /// The open project.
+        project_id: ProjectId,
+        /// The media.
+        asset_id: AssetId,
     },
 }
 

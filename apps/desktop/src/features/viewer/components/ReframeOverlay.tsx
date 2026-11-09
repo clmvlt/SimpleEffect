@@ -16,6 +16,7 @@ import {
   type CroppedLayer,
 } from '../services/reframe-view';
 import { nearestTile, tileBackground } from '../services/sheet-tile';
+import { ReframeTrajectory } from './ReframeTrajectory';
 import type { ViewerEngineController } from '../services/viewer-engine-controller';
 
 /** The drawn layer of `itemId` when it crops its picture (a fill mode), else `null`. */
@@ -106,8 +107,10 @@ function BackdropTile({
 
 /**
  * Over the picture while reframing a clip that fills the frame: the outline of its whole
- * picture; dragging moves the picture under the frame to choose the part kept (the focus).
- * Enter, Escape or « Terminer » leave the mode.
+ * picture, the path its focus takes and the faces detected now (prompt 26,
+ * `ReframeTrajectory`); dragging moves the picture under the frame to choose the part kept (the
+ * focus, a keyframe at the playhead when it is keyframed). Enter, Escape or « Terminer » leave
+ * the mode.
  */
 export function ReframeOverlay({ controller, sequence, itemId, displayScale }: ReframeProps) {
   const { t } = useTranslation();
@@ -132,6 +135,12 @@ export function ReframeOverlay({ controller, sequence, itemId, displayScale }: R
             className="fill-none stroke-accent"
             strokeWidth={1.5}
             strokeDasharray="6 4"
+          />
+          <ReframeTrajectory
+            layer={layer}
+            sequence={sequence}
+            itemId={itemId}
+            displayScale={displayScale}
           />
         </svg>
       )}

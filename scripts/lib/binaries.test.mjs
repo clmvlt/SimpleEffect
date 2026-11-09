@@ -53,6 +53,15 @@ describe('the committed manifest', () => {
     expect(installedNames('linux-x64')).toContain('whisper/libwhisper.so.1');
   });
 
+  it('installs the ONNX Runtime library in onnxruntime/ except on Intel Macs', () => {
+    expect(installedNames('win32-x64')).toContain('onnxruntime/onnxruntime.dll');
+    expect(installedNames('darwin-arm64')).toContain('onnxruntime/libonnxruntime.dylib');
+    expect(installedNames('linux-x64')).toContain('onnxruntime/libonnxruntime.so');
+    expect(installedNames('darwin-x64').some((name) => name.startsWith('onnxruntime/'))).toBe(
+      false,
+    );
+  });
+
   it('compiles whisper.cpp from source on macOS only, for the matching architecture', () => {
     expect(whisperDownload('win32-x64').build).toBeUndefined();
     expect(whisperDownload('linux-x64').build).toBeUndefined();
@@ -188,7 +197,7 @@ describe('platforms and stamps', () => {
     expect(pendingDownloads(stampFor(entry), entry)).toEqual([]);
     expect(pendingDownloads(null, entry)).toEqual(entry.downloads);
     const ffmpegOnly = { sha256: [entry.downloads[0].sha256, entry.downloads[1].sha256] };
-    expect(pendingDownloads(ffmpegOnly, entry)).toEqual([entry.downloads[2]]);
+    expect(pendingDownloads(ffmpegOnly, entry)).toEqual(entry.downloads.slice(2));
   });
 
   it('re-fetches a download whose hash changed', () => {
@@ -200,8 +209,8 @@ describe('platforms and stamps', () => {
 
   it('stamps the installed downloads in manifest order', () => {
     const entry = manifest.platforms['win32-x64'];
-    const [ffmpeg, whisper] = entry.downloads.map((download) => download.sha256);
-    expect(stampFor(entry)).toEqual({ sha256: [ffmpeg, whisper] });
+    const [ffmpeg, whisper, onnxRuntime] = entry.downloads.map((download) => download.sha256);
+    expect(stampFor(entry)).toEqual({ sha256: [ffmpeg, whisper, onnxRuntime] });
     expect(stampFor(entry, new Set([whisper, 'gone']))).toEqual({ sha256: [whisper] });
   });
 
@@ -209,9 +218,11 @@ describe('platforms and stamps', () => {
     const lines = describePlan(manifest, 'win32-x64');
     expect(lines.join('\n')).toContain('FFmpeg 9.0.2: GPL-3.0-or-later');
     expect(lines.join('\n')).toContain('whisper.cpp 1.9.5: MIT');
+    expect(lines.join('\n')).toContain('ONNX Runtime 1.31.0: MIT');
     expect(lines.find((line) => line.includes('codexffmpeg'))).toContain('114.8 MB');
     expect(lines.find((line) => line.includes('whisper-bin-x64.zip'))).toContain('8.9 MB');
-    expect(lines.at(-1)).toContain('total 123.7 MB');
+    expect(lines.find((line) => line.includes('onnxruntime-win-x64'))).toContain('82.9 MB');
+    expect(lines.at(-1)).toContain('total 206.6 MB');
   });
 
   it('describes only the given downloads and marks source builds', () => {

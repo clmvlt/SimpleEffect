@@ -22,12 +22,13 @@ pub mod tasks;
 pub mod templates;
 pub mod timeline;
 pub mod transcription;
+pub mod vision;
 
 use std::{path::Path, sync::Arc};
 
 use se_app::{
     BrandKitService, CaptionService, FrameRenderService, MediaService, ProjectService,
-    SmartCutService, TaskService, TemplateCheckService, TemplateLibraryService,
+    ReframeService, SmartCutService, TaskService, TemplateCheckService, TemplateLibraryService,
     TranscriptionService, ports::FontCatalog,
 };
 use se_protocol::{ErrorCode, ProtocolError};
@@ -63,6 +64,8 @@ pub struct HandlerContext {
     pub library_templates: TemplateLibraryService,
     /// Brand kits (prompt 25).
     pub brand_kits: BrandKitService,
+    /// Automatic reframing (prompt 26).
+    pub reframing: ReframeService,
 }
 
 /// A path sent by a client, refused unless absolute (a relative path would depend on the

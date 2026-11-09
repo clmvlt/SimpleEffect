@@ -168,6 +168,9 @@ pub enum ErrorCode {
     /// A brand kit with unusable values (empty name or font, too many logos…; the message names
     /// each field).
     InvalidBrandKit,
+    /// Faces cannot be detected on this machine (the ONNX Runtime library is missing, or the
+    /// system has no build of it; the message says why): reframe by hand.
+    VisionUnavailable,
 }
 
 #[cfg(test)]

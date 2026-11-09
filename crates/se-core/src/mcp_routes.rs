@@ -122,6 +122,7 @@ mod tests {
                 smart_cuts: bed.smart_cuts.clone(),
                 captions: bed.captions.clone(),
                 library_templates: bed.library_templates.clone(),
+                reframing: bed.reframing.clone(),
             },
             port,
         );
@@ -163,7 +164,7 @@ mod tests {
             .expect("a running task's token connects");
         let tools = client.list_all_tools().await.unwrap();
         assert!(tools.iter().any(|tool| tool.name == "get_frames"));
-        assert_eq!(tools.len(), 43);
+        assert_eq!(tools.len(), 44);
 
         let mut arguments = rmcp::model::JsonObject::new();
         arguments.insert("text".to_owned(), "Abonne-toi".into());

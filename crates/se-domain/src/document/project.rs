@@ -23,7 +23,8 @@ use crate::ids::ProjectId;
 /// Version 10 (prompt 25): complete brand kits (copied from the library: fonts, named palette,
 /// logos, default text and caption looks, favourite templates); templates carry a category and
 /// their library link, parameters an optional brand role.
-pub const CURRENT_SCHEMA_VERSION: u32 = 10;
+/// Version 11 (prompt 26): tracked reframes carry their tracking settings (`reframe.tracking`).
+pub const CURRENT_SCHEMA_VERSION: u32 = 11;
 
 /// The whole editable state of a project, serialized as `project.json` (ADR-0006).
 ///

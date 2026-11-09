@@ -19,6 +19,7 @@ import { CaptionsView } from '../../features/captions';
 import { AnimationsPanel, useCreateGraphic } from '../../features/graphics';
 import { InspectorView } from '../../features/inspector';
 import { MediaBinPanel } from '../../features/media-bin';
+import { useAutoReframeEvents } from '../../features/reframing';
 import { TimelinePanel } from '../../features/timeline';
 import { TranscriptView } from '../../features/transcript';
 import { ViewerPanel } from '../../features/viewer';
@@ -39,6 +40,7 @@ export function EditorLayout({ layoutStorage }: EditorLayoutProps) {
   const { t } = useTranslation();
   const creator = useCreateGraphic();
   useAiTaskSync();
+  useAutoReframeEvents();
   return (
     <div className="min-h-0 flex-1">
       <Dock layoutId="editor.rows" orientation="vertical" storage={layoutStorage}>

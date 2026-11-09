@@ -1,7 +1,9 @@
 //! Wiring of the use cases to their adapters: projects over se-store, media over se-media, AI
 //! tasks over se-agents (acting through `/mcp` with per-run tokens), frames for agents through
 //! the renderer, transcription over se-transcribe (whisper.cpp) sharing the media job queue, smart
-//! cuts over projects, media and transcription, all publishing to the event bus.
+//! cuts over projects, media and transcription, automatic reframing over se-media's frame
+//! sampling and se-vision's face detector (sharing the job queue too), all publishing to the
+//! event bus.
 
 use std::{path::PathBuf, sync::Arc};
 
@@ -9,9 +11,10 @@ use se_agents::{FsAgentWorkspaces, providers::claude_code::ClaudeCodeProvider};
 use se_app::{
     AgentEditService, BrandKitService, BrandKitServiceDeps, CaptionService, CaptionServiceDeps,
     DEFAULT_SAVE_DELAY, FrameRenderService, JobQueue, JobQueueConfig, McpAccess, MediaService,
-    MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps, SmartCutService,
-    SmartCutServiceDeps, TaskService, TaskServiceDeps, TaskTokenRegistry, TemplateCheckService,
-    TemplateLibraryDeps, TemplateLibraryService, TranscriptionService, TranscriptionServiceDeps,
+    MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps, ReframeService,
+    ReframeServiceDeps, SmartCutService, SmartCutServiceDeps, TaskService, TaskServiceDeps,
+    TaskTokenRegistry, TemplateCheckService, TemplateLibraryDeps, TemplateLibraryService,
+    TranscriptionService, TranscriptionServiceDeps,
     media_service::settings::keys::TOOLS_DIR,
     ports::{AppLibraryRepository, BrandKitLibrary, FontCatalog, IdGenerator, MediaProber},
 };
@@ -19,6 +22,7 @@ use se_fonts::LocalFontCatalog;
 use se_media::{FfmpegJobRunner, FfmpegTools, FfprobeProber, FsMediaFiles, ToolLocator};
 use se_store::{FsBrandKitLibrary, FsProjectRepository, FsTemplateLibrary, SqliteAppLibrary};
 use se_transcribe::{FsModelFiles, HttpDownloader, WhisperLocator, WhisperTranscriber};
+use se_vision::{RuntimeLocator, YuNetDetector};
 
 use crate::{
     app_paths::AppPaths,
@@ -57,6 +61,7 @@ pub struct Services {
     pub brand_kits: BrandKitService,
     /// The brand kits on disk (logo files served at `/media/brand-kits`).
     pub brand_kit_files: Arc<dyn BrandKitLibrary>,
+    pub reframing: ReframeService,
 }
 
 /// Builds the services over the real adapters, for a core listening on `port`.
@@ -84,6 +89,8 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         jobs.clone(),
         library.clone(),
     ));
+    let reframing_jobs = jobs.clone();
+    let sampler = runner.clone();
     let transcription = transcription_service(paths, events, library.clone(), jobs, runner)?;
     media.add_import_listener(Arc::new(transcription.clone()));
     let tokens = Arc::new(TaskTokenRegistry::new(Arc::new(RandomTokens)));
@@ -135,7 +142,9 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
     });
     let (library_templates, brand_kits, brand_kit_files) =
         library_services(paths, events, &projects, &media, &template_checks, prober);
+    let reframing = reframing_service(events, &projects, &media, reframing_jobs, sampler);
     Ok(Services {
+        reframing,
         library_templates,
         brand_kits,
         brand_kit_files,
@@ -155,6 +164,28 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
 
 /// The template library and brand kits in the app data folder (prompt 25), and the kits'
 /// files (served at `/media/brand-kits`).
+/// Automatic reframing (prompt 26): frames sampled by ffmpeg, faces found by YuNet over the ONNX
+/// Runtime library next to the binary (loaded on first use, on half the processor's threads).
+fn reframing_service(
+    events: &EventBus,
+    projects: &Arc<ProjectService>,
+    media: &Arc<MediaService>,
+    jobs: JobQueue,
+    sampler: Arc<FfmpegJobRunner>,
+) -> ReframeService {
+    let threads = std::thread::available_parallelism().map_or(4, std::num::NonZero::get);
+    let detector = YuNetDetector::new(RuntimeLocator::for_current_exe(), (threads / 2).max(1));
+    ReframeService::new(ReframeServiceDeps {
+        projects: Arc::clone(projects),
+        media: Arc::clone(media),
+        jobs,
+        sampler,
+        detector: Arc::new(detector),
+        events: Arc::new(events.clone()),
+        clock: Arc::new(SystemClock),
+    })
+}
+
 fn library_services(
     paths: &AppPaths,
     events: &EventBus,

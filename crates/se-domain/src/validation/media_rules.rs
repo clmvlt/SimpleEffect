@@ -1,6 +1,6 @@
 //! Rules of items referring to assets: `UNKNOWN_REFERENCE`, `ASSET_KIND_MISMATCH`,
 //! `INVALID_SPEED`, `NEGATIVE_TIME` (source start), `TIME_OUT_OF_RANGE` and
-//! `SOURCE_RANGE_EXCEEDS_MEDIA` (source end), `VALUE_OUT_OF_RANGE` (fades).
+//! `SOURCE_RANGE_EXCEEDS_MEDIA` (source end), `VALUE_OUT_OF_RANGE` (fades, tracking settings).
 
 use super::{Path, Report, ViolationCode, item_rules::ItemContext, report::seconds};
 use crate::{Asset, AssetId, AssetKind, ImageItem, MediaClip};
@@ -12,6 +12,7 @@ pub(super) fn check_media_clip(
     report: &mut Report,
 ) {
     check_fades(clip, context, path, report);
+    check_tracking(clip, path, report);
     let Some(asset) = find_asset(clip.asset_id, context, path, report) else {
         return;
     };
@@ -57,6 +58,21 @@ pub(super) fn check_image(
                 "asset {} is not an image; play videos and sounds with a media clip",
                 asset.id
             ),
+        );
+    }
+}
+
+/// The settings of a tracked reframe are in range (prompt 26).
+fn check_tracking(clip: &MediaClip, path: &Path, report: &mut Report) {
+    let Some(tracking) = clip.reframe.tracking() else {
+        return;
+    };
+    let tracking_path = path.field("reframe").field("tracking");
+    for (field, rule) in tracking.problems() {
+        report.push(
+            ViolationCode::ValueOutOfRange,
+            &tracking_path.field(field),
+            format!("the tracking setting {field} {rule}"),
         );
     }
 }
@@ -159,7 +175,7 @@ fn check_fades(clip: &MediaClip, context: &ItemContext<'_>, path: &Path, report:
 #[cfg(test)]
 mod tests {
     use crate::{
-        AssetId, Flicks, ItemKind, Project, TemplateId, ViolationCode,
+        AssetId, Flicks, ItemKind, Project, Reframe, TemplateId, TrackingSettings, ViolationCode,
         test_support::{millis, range_ms},
         validate_project,
     };
@@ -264,5 +280,34 @@ mod tests {
         project.sequences[0].tracks[0].items[1].timeline_range = range_ms(10_000, 400);
         // fade in 500 ms > 400 ms item.
         assert_eq!(codes(&project), [ViolationCode::ValueOutOfRange]);
+    }
+
+    #[test]
+    fn reports_tracking_settings_out_of_range() {
+        let mut project = example_project();
+        let clip = fast_clip(&mut project);
+        let focus = clip.reframe.focus().cloned().unwrap();
+        clip.reframe = Reframe::Tracked {
+            focus: focus.clone(),
+            tracking: TrackingSettings::default(),
+        };
+        assert_eq!(validate_project(&project), []);
+        fast_clip(&mut project).reframe = Reframe::Tracked {
+            focus,
+            tracking: TrackingSettings {
+                dead_zone: 0.9,
+                ..TrackingSettings::default()
+            },
+        };
+        let violations = validate_project(&project);
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].code, ViolationCode::ValueOutOfRange);
+        assert!(
+            violations[0]
+                .path
+                .ends_with("kind.reframe.tracking.deadZone"),
+            "{}",
+            violations[0].path
+        );
     }
 }

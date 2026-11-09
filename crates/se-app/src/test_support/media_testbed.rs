@@ -1,7 +1,7 @@
 //! [`MediaTestbed`]: a `ProjectService`, a `MediaService`, a `TaskService`, an
-//! `AgentEditService`, a `FrameRenderService` and a `TranscriptionService` wired to the in-memory
-//! fakes, for tests of the media, task, agent and transcription use cases (se-app) and of what
-//! serves them (se-mcp, se-core).
+//! `AgentEditService`, a `FrameRenderService`, a `TranscriptionService` and a `ReframeService`
+//! wired to the in-memory fakes, for tests of the media, task, agent, transcription and
+//! reframing use cases (se-app) and of what serves them (se-mcp, se-core).
 
 use std::{
     path::{Path, PathBuf},
@@ -12,18 +12,19 @@ use std::{
 use se_domain::{Asset, Format, FormatPreset, FrameRate, ProjectId};
 
 use super::{
-    FakeAgentWorkspaces, FakeDownloader, FakeFrameExtractor, FakeJobRunner, FakeMedia,
-    FakeMediaTools, FakeModelFiles, FakeRendererLink, FakeSpeechExtractor, FakeSubtitleFiles,
-    FakeTranscriber, FixedClock, InMemoryAppLibrary, InMemoryBrandKitLibrary,
-    InMemoryProjectRepository, InMemoryTemplateLibrary, RecordingEventSink, ReplayProvider,
-    SequentialIds, SequentialTokens,
+    FakeAgentWorkspaces, FakeDownloader, FakeFrameExtractor, FakeFrameSampler, FakeJobRunner,
+    FakeMedia, FakeMediaTools, FakeModelFiles, FakeRendererLink, FakeSpeechExtractor,
+    FakeSubjectDetector, FakeSubtitleFiles, FakeTranscriber, FixedClock, InMemoryAppLibrary,
+    InMemoryBrandKitLibrary, InMemoryProjectRepository, InMemoryTemplateLibrary,
+    RecordingEventSink, ReplayProvider, SequentialIds, SequentialTokens,
 };
 use crate::{
     AgentEditService, AppError, BrandKitService, BrandKitServiceDeps, CaptionService,
     CaptionServiceDeps, FrameRenderService, JobQueue, JobQueueConfig, McpAccess, MediaService,
-    MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps, SmartCutService,
-    SmartCutServiceDeps, TaskService, TaskServiceDeps, TaskTokenRegistry, TemplateCheckService,
-    TemplateLibraryDeps, TemplateLibraryService, TranscriptionService, TranscriptionServiceDeps,
+    MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps, ReframeService,
+    ReframeServiceDeps, SmartCutService, SmartCutServiceDeps, TaskService, TaskServiceDeps,
+    TaskTokenRegistry, TemplateCheckService, TemplateLibraryDeps, TemplateLibraryService,
+    TranscriptionService, TranscriptionServiceDeps,
 };
 
 /// The MCP URL runs of the testbed's task service are given.
@@ -94,6 +95,12 @@ pub struct MediaTestbed {
     pub model_files: FakeModelFiles,
     /// Model downloads (writing into `model_files`).
     pub downloader: FakeDownloader,
+    /// Automatic reframing over `projects`, `media`, `sampler` and `detector` (prompt 26).
+    pub reframing: ReframeService,
+    /// Pictures sampled for face detection.
+    pub sampler: FakeFrameSampler,
+    /// The face detector.
+    pub detector: FakeSubjectDetector,
 }
 
 impl MediaTestbed {
@@ -105,26 +112,18 @@ impl MediaTestbed {
         let ids = Arc::new(SequentialIds::default());
         let clock = Arc::new(FixedClock::default());
         let library = Arc::new(InMemoryAppLibrary::default());
-        let files = Arc::new(FakeMedia::default());
-        let runner = Arc::new(FakeJobRunner::default());
-        runner.write_files_to(files.clone());
-        let frames = Arc::new(FakeFrameExtractor::new(files.clone()));
-        let tools = Arc::new(FakeMediaTools::default());
         let jobs = JobQueue::new(events.clone(), ids.clone(), JobQueueConfig::default());
-        let media = Arc::new(MediaService::new(MediaServiceDeps {
-            prober: files.clone(),
-            files: files.clone(),
-            runner: runner.clone(),
-            frames: frames.clone(),
-            tools: tools.clone(),
-            jobs: jobs.clone(),
-            library: library.clone(),
-            ids: ids.clone(),
-            clock: clock.clone(),
-        }));
+        let fake_media = FakeMediaPorts::new();
+        let media = fake_media.service(&jobs, &library, &ids, &clock);
+        let FakeMediaPorts {
+            files,
+            runner,
+            frames,
+            tools,
+        } = fake_media;
         let fakes = TranscriptionFakes::default();
         let transcription = TranscriptionService::new(TranscriptionServiceDeps {
-            jobs,
+            jobs: jobs.clone(),
             library: library.clone(),
             events: events.clone(),
             ids: ids.clone(),
@@ -167,7 +166,11 @@ impl MediaTestbed {
             speech_services(&projects, &media, &transcription, &library);
         let (template_library, library_templates, brand_kit_library, brand_kits) =
             library_services(&projects, &media, &files, &template_checks, &runtime);
+        let (reframing, sampler, detector) = reframing_service(&projects, &media, jobs, &runtime);
         Self {
+            reframing,
+            sampler,
+            detector,
             template_library,
             library_templates,
             brand_kit_library,
@@ -318,6 +321,71 @@ fn task_service(
         },
     });
     (tasks, agent, workspaces, tokens)
+}
+
+/// The fakes behind the media service.
+struct FakeMediaPorts {
+    files: Arc<FakeMedia>,
+    runner: Arc<FakeJobRunner>,
+    frames: Arc<FakeFrameExtractor>,
+    tools: Arc<FakeMediaTools>,
+}
+
+impl FakeMediaPorts {
+    /// Media files, a runner writing into them, frames and tools.
+    fn new() -> Self {
+        let files = Arc::new(FakeMedia::default());
+        let runner = Arc::new(FakeJobRunner::default());
+        runner.write_files_to(files.clone());
+        let frames = Arc::new(FakeFrameExtractor::new(files.clone()));
+        Self {
+            files,
+            runner,
+            frames,
+            tools: Arc::new(FakeMediaTools::default()),
+        }
+    }
+
+    /// The media service over these fakes.
+    fn service(
+        &self,
+        jobs: &JobQueue,
+        library: &Arc<InMemoryAppLibrary>,
+        ids: &Arc<SequentialIds>,
+        clock: &Arc<FixedClock>,
+    ) -> Arc<MediaService> {
+        Arc::new(MediaService::new(MediaServiceDeps {
+            prober: self.files.clone(),
+            files: self.files.clone(),
+            runner: self.runner.clone(),
+            frames: self.frames.clone(),
+            tools: self.tools.clone(),
+            jobs: jobs.clone(),
+            library: library.clone(),
+            ids: ids.clone(),
+            clock: clock.clone(),
+        }))
+    }
+}
+
+/// Automatic reframing over fake sampling and detection (prompt 26).
+fn reframing_service(
+    projects: &Arc<ProjectService>,
+    media: &Arc<MediaService>,
+    jobs: JobQueue,
+    runtime: &Runtime,
+) -> (ReframeService, FakeFrameSampler, FakeSubjectDetector) {
+    let (sampler, detector) = (FakeFrameSampler::default(), FakeSubjectDetector::default());
+    let reframing = ReframeService::new(ReframeServiceDeps {
+        projects: projects.clone(),
+        media: media.clone(),
+        jobs,
+        sampler: Arc::new(sampler.clone()),
+        detector: Arc::new(detector.clone()),
+        events: runtime.events.clone(),
+        clock: runtime.clock.clone(),
+    });
+    (reframing, sampler, detector)
 }
 
 /// The template library and brand kit services over in-memory libraries (prompt 25).

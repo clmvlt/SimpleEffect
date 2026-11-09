@@ -36,6 +36,7 @@ mod tasks;
 mod template_library;
 mod templates;
 mod transcription;
+mod vision;
 
 pub use ai::{
     AgentEvent, AgentFailureKind, AiSettings, AiStatus, AuthStatus, EffortLevel,
@@ -101,4 +102,7 @@ pub use transcription::{
     DownloadProgress, DownloadTarget, GpuRuntimeInfo, TranscriptSearchHit, TranscriptionBackend,
     TranscriptionModelInfo, TranscriptionPreferences, TranscriptionStatus, VoiceModelInfo,
     WhisperInfo,
+};
+pub use vision::{
+    AutoReframeReport, ReframeFailure, ReframeSkipReason, SkippedReframe, VisionStatus,
 };

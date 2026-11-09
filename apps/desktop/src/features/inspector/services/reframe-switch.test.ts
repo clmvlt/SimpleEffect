@@ -30,7 +30,11 @@ describe('reframeEdit', () => {
   });
 
   it('keeps the focus of a tracked clip and the scale between fit and fill', () => {
-    const tracked = clipKind({ ...fill({ x: 0.2, y: 0.5 }), kind: 'tracked' });
+    const tracked = clipKind({
+      ...fill({ x: 0.2, y: 0.5 }),
+      kind: 'tracked',
+      tracking: { smoothing: 0.5, eyeLine: 0.33, groupFraming: true, deadZone: 0.15 },
+    });
     expect(reframeEdit(tracked, 'fill', uhd, hd)).toEqual({
       patch: { kind: 'mediaClip', reframe: fill({ x: 0.2, y: 0.5 }) },
       animations: [],

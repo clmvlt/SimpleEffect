@@ -36,6 +36,7 @@ mod template_category;
 mod template_param;
 mod text;
 mod track;
+mod tracking_settings;
 mod transcription_settings;
 mod transform;
 mod transition;
@@ -81,6 +82,7 @@ pub use template_param::{
 };
 pub use text::{TextAlign, TextBackground, TextCase, TextItem, TextShadow, TextStyle};
 pub use track::{Track, TrackKind};
+pub use tracking_settings::TrackingSettings;
 pub use transcription_settings::TranscriptionSettings;
 pub use transform::Transform2D;
 pub use transition::{Transition, TransitionAlignment, TransitionKind};

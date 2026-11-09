@@ -171,7 +171,8 @@ impl ProjectService {
 }
 
 /// The ids of a copied sequence, from the service's id generator.
-struct CopyIds<'a>(NewIds<'a>);
+/// Ids of a sequence copy from the service's generator (also used by agents' versions).
+pub(crate) struct CopyIds<'a>(pub(crate) NewIds<'a>);
 
 impl SequenceIds for CopyIds<'_> {
     type Error = AppError;

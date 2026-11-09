@@ -7,4 +7,5 @@
 mod analyses;
 mod derived;
 mod previews;
+mod sampling;
 mod support;

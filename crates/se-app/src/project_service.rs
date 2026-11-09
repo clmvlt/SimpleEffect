@@ -28,6 +28,7 @@ pub(crate) use graphics::{graphic_range, place_graphic};
 pub use items::labels as item_labels;
 pub use markers::labels as marker_labels;
 pub use observer::ProjectObserver;
+pub(crate) use sequences::CopyIds;
 pub use sequences::sequence_labels;
 pub use tracks::labels as track_labels;
 pub(crate) use tracks::next_track_name;

@@ -11,8 +11,10 @@
 //! - [`ids`]: one UUIDv7 newtype per entity kind ([`ItemId`], [`AssetId`]…).
 //! - [`spatial`] and [`color`]: units of positions and sizes (ADR-0015), hex colours.
 //! - [`document`]: [`Project`] and everything it contains.
-//! - [`analysis`]: results of media analyses ([`AudioAnalysis`], [`SceneDetection`]) and the
-//!   summaries assets keep ([`AssetAnalysis`]).
+//! - [`analysis`]: results of media analyses ([`AudioAnalysis`], [`SceneDetection`],
+//!   [`SubjectDetection`]) and the summaries assets keep ([`AssetAnalysis`]).
+//! - [`tracking`]: automatic reframing, from detected faces to the focus keyframes of a tracked
+//!   clip ([`track_subject`]; ADR-0037).
 //! - [`validation`]: [`validate_project`], the cross-entity invariants.
 //! - [`operation`]: [`Operation`] and [`apply`], pure and invertible edits (`docs/architecture.md`
 //!   §5.4, ADR-0005).
@@ -53,13 +55,15 @@ pub mod templates;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
 pub mod time;
+pub mod tracking;
 pub mod transaction;
 pub mod transcript;
 pub mod validation;
 
 pub use analysis::{
-    AnalysisKind, AnalysisResult, AssetAnalysis, AudioAnalysis, AudioSummary, LevelEnvelope,
-    LoudnessCurve, SceneDetection, SceneSummary, SilenceSettings,
+    AnalysisKind, AnalysisResult, AssetAnalysis, AudioAnalysis, AudioSummary, FaceBox,
+    LevelEnvelope, LoudnessCurve, SceneDetection, SceneSummary, SilenceSettings, SubjectDetection,
+    SubjectFrame,
 };
 pub use animation_preset::{
     AnimationPhase, AnimationPreset, AnimationPresetLibrary, PresetPlacement, PresetRefusal,
@@ -84,9 +88,9 @@ pub use document::{
     PropertyMut, PropertyRef, Reframe, Sequence, ShapeGeometry, ShapeItem, ShapeKind,
     StreamDecodability, Stroke, TemplateCategory, TemplateChoice, TemplateItem, TemplateParam,
     TemplateParamSpec, TemplateParamValue, TextAlign, TextBackground, TextCase, TextItem,
-    TextShadow, TextStyle, Track, TrackKind, TranscriptionSettings, Transform2D, Transition,
-    TransitionAlignment, TransitionKind, TransitionProblem, VideoStreamInfo, fitted_transition,
-    is_param_name, item_handles, transition_problem, transition_room,
+    TextShadow, TextStyle, Track, TrackKind, TrackingSettings, TranscriptionSettings, Transform2D,
+    Transition, TransitionAlignment, TransitionKind, TransitionProblem, VideoStreamInfo,
+    fitted_transition, is_param_name, item_handles, transition_problem, transition_room,
 };
 pub use error::{DomainError, DomainErrorCode};
 pub use history::{History, HistoryStep};
@@ -120,6 +124,7 @@ pub use time::{
     Flicks, FrameRate, RoundingMode, TimeError, TimeRange, TimecodeError, TimecodeErrorReason,
     format_clock, format_timecode, parse_timecode,
 };
+pub use tracking::{ClipTiming, CropWindow, TrackedFocus, TrackingRequest, track_subject};
 pub use transaction::{Actor, Committed, Transaction, commit};
 pub use transcript::{
     ClipWindow, SequenceSegment, SequenceTranscript, SequenceWord, Transcript, TranscriptSegment,

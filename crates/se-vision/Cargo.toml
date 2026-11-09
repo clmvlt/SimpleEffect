@@ -10,6 +10,22 @@ repository.workspace = true
 [dependencies]
 se-app = { workspace = true }
 se-domain = { workspace = true }
+# The detector's status DTO.
+se-protocol = { workspace = true }
+async-trait = { workspace = true }
+ort = { workspace = true }
+tokio = { workspace = true, features = ["rt"] }
+tracing = { workspace = true }
+
+# CoreML is part of Microsoft's macOS builds: tried first, the CPU otherwise.
+[target.'cfg(target_os = "macos")'.dependencies]
+ort = { workspace = true, features = ["coreml"] }
+
+[dev-dependencies]
+jpeg-decoder = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
 
 [lints]
 workspace = true

@@ -14,6 +14,7 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FormatFields, isDraftSizeValid } from '../../../shared/format';
+import { useVisionStatus } from '../../reframing';
 import {
   effectiveClipPolicy,
   formatChanged,
@@ -52,6 +53,8 @@ export function SequenceFormatForm({
   const nameValid = mode === 'format' || values.name.trim() !== '';
   const changed = mode === 'version' || formatChanged(values, sequence.format);
   const policy = effectiveClipPolicy(values, sequence.format);
+  const vision = useVisionStatus();
+  const canReframe = vision?.available === true;
   return (
     <form
       noValidate
@@ -60,7 +63,8 @@ export function SequenceFormatForm({
         event.preventDefault();
         if (!sizeValid || !nameValid || !changed) return;
         setSending(true);
-        void onSubmit({ ...values, name: values.name.trim() }).finally(() => {
+        const autoReframe = mode === 'version' && canReframe && values.autoReframe;
+        void onSubmit({ ...values, name: values.name.trim(), autoReframe }).finally(() => {
           setSending(false);
         });
       }}
@@ -115,6 +119,30 @@ export function SequenceFormatForm({
         />
         <Label htmlFor={`${policyLabel}-texts`}>{t('editor.sequences.dialog.fitTexts')}</Label>
       </div>
+      {mode === 'version' && (
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id={`${policyLabel}-reframe`}
+              disabled={!canReframe}
+              checked={canReframe && values.autoReframe}
+              onCheckedChange={(checked) => {
+                setValues({ ...values, autoReframe: checked === true });
+              }}
+            />
+            <Label htmlFor={`${policyLabel}-reframe`}>
+              {t('editor.sequences.dialog.autoReframe')}
+            </Label>
+          </div>
+          <p className="pl-6 text-xs text-text-muted">
+            {t(
+              vision === null || canReframe
+                ? 'editor.sequences.dialog.autoReframeHint'
+                : 'editor.sequences.dialog.autoReframeUnavailable',
+            )}
+          </p>
+        </div>
+      )}
       <DialogFooter>
         <DialogClose asChild>
           <Button type="button" variant="ghost">

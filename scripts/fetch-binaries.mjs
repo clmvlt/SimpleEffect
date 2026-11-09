@@ -1,7 +1,7 @@
 // Downloads the pinned sidecars of `scripts/binaries.manifest.json` into
-// `resources/bin/<platform>/` (never committed): ffmpeg and ffprobe, and whisper.cpp in its
+// `resources/bin/<platform>/` (never committed): ffmpeg and ffprobe, whisper.cpp in its
 // `whisper/` subfolder (compiled locally from the pinned sources on macOS, where there is no
-// official build). Shows what it will download (size, source, licence) and asks first; `--yes`
+// official build) and the ONNX Runtime library of face detection in `onnxruntime/`. Shows what it will download (size, source, licence) and asks first; `--yes`
 // skips the question (CI), `--platform <key>` / `--all` choose other platforms (`--all` skips the
 // ones that must be compiled on another operating system). Every download is checked against its
 // pinned size and SHA-256, and only the downloads missing from a platform's stamp are fetched.
@@ -65,6 +65,7 @@ async function main(argv) {
     '\nFFmpeg: third-party GPL builds, for personal use; their sources are linked from' +
       '\nthe builders\x27 pages. whisper.cpp (MIT): the official ggml-org release builds' +
       '\n(Windows, Linux), or its release sources compiled here with CMake (macOS).' +
+      '\nONNX Runtime (MIT): the official Microsoft release builds (none for Intel Macs).' +
       '\nNothing else is downloaded: the app itself downloads the whisper models and the' +
       '\nWindows CUDA build of whisper.cpp only when you ask it to.',
   );

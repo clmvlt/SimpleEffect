@@ -10,6 +10,7 @@ import type { ProjectHistory } from "./ProjectHistory";
 import type { ProjectId } from "./ProjectId";
 import type { ProjectPatch } from "./ProjectPatch";
 import type { ProjectSession } from "./ProjectSession";
+import type { ReframeFailure } from "./ReframeFailure";
 import type { Task } from "./Task";
 import type { TaskEventRecord } from "./TaskEventRecord";
 import type { TaskId } from "./TaskId";
@@ -94,4 +95,16 @@ templates: boolean,
 /**
  * The brand kits changed.
  */
-brandKits: boolean, };
+brandKits: boolean, } | { "kind": "autoReframeFinished", 
+/**
+ * The project.
+ */
+projectId: ProjectId, 
+/**
+ * The clips reframed.
+ */
+appliedItemIds: Array<ItemId>, 
+/**
+ * The media whose faces could not be analysed, and why.
+ */
+failures: Array<ReframeFailure>, };

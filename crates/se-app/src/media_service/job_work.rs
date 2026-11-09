@@ -205,6 +205,8 @@ impl AnalysisRecorder {
                     ..AssetPatch::default()
                 })?
             }
+            // Faces are read by automatic reframing only: the asset keeps no summary of them.
+            AnalysisResult::SubjectDetection(_) => return None,
         };
         Some(
             UpdateAsset {

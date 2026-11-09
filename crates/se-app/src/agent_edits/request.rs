@@ -5,12 +5,14 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use se_domain::{
-    AnimationPhase, CaptionStylePatch, ChangesetId, Flicks, ItemEdge, ItemId, ItemKind, ItemPatch,
-    MarkerColor, Project, PropertyAnimation, TemplateDefinition, TemplateId, TemplateParamValue,
-    TimeRange, TrackId, TransitionAlignment, captions::TimedWord,
+    AnimationPhase, AssetId, CaptionStylePatch, ChangesetId, Flicks, Format, ItemEdge, ItemId,
+    ItemKind, ItemPatch, MarkerColor, Project, PropertyAnimation, TemplateDefinition, TemplateId,
+    TemplateParamValue, TimeRange, TrackId, TrackingSettings, TransitionAlignment,
+    captions::TimedWord,
 };
 
 use super::templates::TemplateChange;
+use crate::reframing::AssetAnalyses;
 use se_protocol::{CaptionSegmentation, CaptionStyleChoice, LibraryTemplate};
 
 /// An item an edit works on: an existing one, or one created by an earlier edit of the same
@@ -229,6 +231,37 @@ pub enum AgentEdit {
     /// same version) and places an instance (prompt 25); brand-bound parameters start with the
     /// project's brand kit values, `params` win over them.
     InsertLibraryTemplate(Box<LibraryInstance>),
+    /// Makes clips of the task's scope follow their subject (prompt 26, ADR-0037), from their
+    /// media's analyses.
+    ReframeClips(Box<ReframeClips>),
+    /// Adds a version of the task's sequence in another format, after it, whose clips follow
+    /// their subject (prompt 26). Everything in it is new content, so the scope allows it;
+    /// reverting the task removes it.
+    AddReframedVersion(Box<ReframedVersion>),
+}
+
+/// Clips to reframe automatically (`auto_reframe` on items).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ReframeClips {
+    /// The clips (media clips on video tracks).
+    pub items: Vec<ItemRef>,
+    /// How to follow the subject.
+    pub settings: TrackingSettings,
+    /// The faces and shot changes of their media (every one must be there).
+    pub analyses: BTreeMap<AssetId, AssetAnalyses>,
+}
+
+/// A reframed version of the task's sequence (`auto_reframe` with `target_format`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ReframedVersion {
+    /// Its name.
+    pub name: String,
+    /// Its format (the frame rate of the task's sequence).
+    pub format: Format,
+    /// How to follow the subject.
+    pub settings: TrackingSettings,
+    /// The faces and shot changes of the media of its clips.
+    pub analyses: BTreeMap<AssetId, AssetAnalyses>,
 }
 
 /// An instance of a library template asked by an agent (`insert_library_template`).

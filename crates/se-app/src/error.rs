@@ -274,6 +274,12 @@ pub enum AppError {
         /// Why, and what to do.
         reason: String,
     },
+    /// Faces cannot be detected on this machine (automatic reframing, prompt 26).
+    #[error("automatic reframing is unavailable: {reason}")]
+    VisionUnavailable {
+        /// Why, and what to do.
+        reason: String,
+    },
     /// No usable transcription model is installed.
     #[error(
         "no transcription model is installed: download one in « Réglages → Transcription » (or \
@@ -384,6 +390,7 @@ impl AppError {
             Self::NothingToRevert { .. } => ErrorCode::NothingToRevert,
             Self::TranscriptionUnavailable { .. } => ErrorCode::TranscriptionUnavailable,
             Self::NoTranscriptionModel => ErrorCode::NoTranscriptionModel,
+            Self::VisionUnavailable { .. } => ErrorCode::VisionUnavailable,
             Self::TranscriptionTargetNotFound { .. } => ErrorCode::TranscriptionTargetNotFound,
             Self::InvalidModelFile { .. } => ErrorCode::InvalidModelFile,
             Self::DownloadFailed { .. } => ErrorCode::DownloadFailed,

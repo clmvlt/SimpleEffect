@@ -37,6 +37,18 @@ export function pictureCorners(layer: CroppedLayer, frame: FrameSize): readonly 
   ].map((local) => toFrame(layer.transform, layer.box, frame, local));
 }
 
+/**
+ * A point of the whole picture (normalised in it, like a focus or a detected face) in frame
+ * pixels, where the picture lies now.
+ */
+export function picturePoint(layer: CroppedLayer, frame: FrameSize, point: Vec2): Vec2 {
+  const { x, y, width, height } = pictureRect(layer);
+  return toFrame(layer.transform, layer.box, frame, {
+    x: x + point.x * width,
+    y: y + point.y * height,
+  });
+}
+
 /** The focus the layer shows: the centre of its crop (a stored focus may lie beyond the reach). */
 export function shownFocus(crop: Crop): Vec2 {
   return { x: crop.x + crop.width / 2, y: crop.y + crop.height / 2 };

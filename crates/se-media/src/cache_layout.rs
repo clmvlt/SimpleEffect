@@ -43,7 +43,8 @@ pub fn completion_files(kind: JobKind) -> Option<Vec<String>> {
         | JobKind::Proxy
         | JobKind::AudioAnalysis
         | JobKind::SceneDetection
-        | JobKind::Transcription => None,
+        | JobKind::Transcription
+        | JobKind::SubjectDetection => None,
     }
 }
 

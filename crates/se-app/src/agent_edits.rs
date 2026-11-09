@@ -13,11 +13,15 @@
 //! - `templates`: motion templates written by agents (prompt 24): new ones and new versions with
 //!   copy on write.
 //! - `cuts`, `cut_scope`: smart cuts of agents (prompt 22) and their « cut » scope rule.
+//! - `reframing`: automatic reframing of clips and reframed versions of the task's sequence
+//!   (prompt 26; a new sequence is the one addition the scope allows outside the task's
+//!   sequence).
 
 mod cut_scope;
 mod cuts;
 mod graphics;
 mod planner;
+mod reframing;
 mod request;
 mod scope;
 mod templates;
@@ -28,7 +32,7 @@ pub use cuts::CutOutcome;
 pub use planner::EditFailure;
 pub use request::{
     AgentEdit, AgentEditReport, ItemRef, LibraryInstance, NewAgentCaptions, NewAgentItem,
-    PresetSpec, TaskChanges,
+    PresetSpec, ReframeClips, ReframedVersion, TaskChanges,
 };
 pub use templates::TemplateChange;
 

@@ -1,6 +1,7 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { Animatable } from "./Animatable";
+import type { TrackingSettings } from "./TrackingSettings";
 import type { Vec2 } from "./Vec2";
 
 /**
@@ -21,4 +22,8 @@ focus: Animatable<Vec2>, } | { "kind": "custom" } | { "kind": "tracked",
 /**
  * The point of the picture kept at the frame's centre over time.
  */
-focus: Animatable<Vec2>, };
+focus: Animatable<Vec2>, 
+/**
+ * How the trajectory was computed (schema version 11), reused when it is recomputed.
+ */
+tracking: TrackingSettings, };

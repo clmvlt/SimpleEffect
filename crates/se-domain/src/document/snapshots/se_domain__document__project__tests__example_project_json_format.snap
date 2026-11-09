@@ -5,7 +5,7 @@ expression: example_project()
 {
   "id": "00000000-0001-7000-8000-000000000000",
   "name": "Example",
-  "schemaVersion": 10,
+  "schemaVersion": 11,
   "revision": 42,
   "settings": {
     "defaultFormat": {

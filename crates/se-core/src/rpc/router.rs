@@ -9,7 +9,7 @@ use super::{
     handlers::{
         HandlerContext, ai, captions, editing, frames, graphics, items, library, media,
         media_settings, projects, smart_cuts, sound, system, tasks, templates, timeline,
-        transcription,
+        transcription, vision,
     },
     request::{Rejection, parse_request},
 };
@@ -115,12 +115,14 @@ impl RpcRouter {
                 name,
                 format,
                 adaptation,
+                auto_reframe,
             } => {
                 let copy = editing::SequenceCopy {
                     sequence_id: *sequence_id,
                     name,
                     format: *format,
                     adaptation: *adaptation,
+                    auto_reframe: *auto_reframe,
                 };
                 editing::duplicate_sequence(context, *project_id, copy).await
             }
@@ -358,6 +360,16 @@ impl RpcRouter {
             | Command::SetTranscriptionSettings { .. } => {
                 Self::dispatch_transcription(context, command).await
             }
+            Command::GetVisionStatus => vision::get_status(context).await,
+            Command::AutoReframeItems {
+                project_id,
+                item_ids,
+                settings,
+            } => vision::auto_reframe_items(context, *project_id, item_ids, *settings).await,
+            Command::GetSubjectDetection {
+                project_id,
+                asset_id,
+            } => vision::get_subject_detection(context, *project_id, *asset_id).await,
             Command::GetSmartCutSettings
             | Command::UpdateSmartCutSettings(_)
             | Command::RemoveWords { .. }
@@ -640,6 +652,7 @@ pub mod testing {
             captions,
             library_templates,
             brand_kits,
+            reframing,
             ..
         } = MediaTestbed::new(Path::new("/projects"));
         HandlerContext {
@@ -659,6 +672,7 @@ pub mod testing {
             captions,
             library_templates,
             brand_kits,
+            reframing,
         }
     }
 }
@@ -866,10 +880,26 @@ mod tests {
             "getSmartCutSettings",
             "listLibraryTemplates",
             "listBrandKits",
+            "getVisionStatus",
         ] {
             let request = format!(r#"{{"type":"request","id":1,"command":{{"kind":"{kind}"}}}}"#);
             assert_eq!(reply(&request).await["result"]["kind"], kind);
         }
+    }
+
+    #[tokio::test]
+    async fn reframing_commands_reach_their_handlers() {
+        let project = "00000000-0009-7000-8000-000000000000";
+        let reframe = reply(&format!(
+            r#"{{"type":"request","id":1,"command":{{"kind":"autoReframeItems","projectId":"{project}","itemIds":[],"settings":{{"smoothing":0.5,"eyeLine":0.33,"groupFraming":true,"deadZone":0.15}}}}}}"#
+        ))
+        .await;
+        assert_eq!(reframe["error"]["code"], "PROJECT_NOT_OPEN");
+        let faces = reply(&format!(
+            r#"{{"type":"request","id":2,"command":{{"kind":"getSubjectDetection","projectId":"{project}","assetId":"00000000-0003-7000-8000-000000000000"}}}}"#
+        ))
+        .await;
+        assert_eq!(faces["error"]["code"], "PROJECT_NOT_OPEN");
     }
 
     #[tokio::test]

@@ -20,6 +20,7 @@ pub mod encoders;
 mod ffmpeg_tools;
 mod files;
 pub mod fingerprint;
+pub mod frame_sampler;
 mod frames;
 mod jobs;
 pub mod peaks;

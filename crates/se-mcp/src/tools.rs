@@ -8,6 +8,7 @@ pub mod add_text;
 pub mod add_transition;
 pub mod apply_animation_preset;
 pub mod apply_batch;
+pub mod auto_reframe;
 pub mod create_captions;
 pub mod create_motion_template;
 pub mod delete_items;
@@ -95,6 +96,7 @@ pub fn catalogue() -> Vec<ToolEntry> {
         ToolEntry::of::<instantiate_template::InstantiateTemplate>(),
         ToolEntry::of::<update_template_params::UpdateTemplateParams>(),
         ToolEntry::of::<insert_library_template::InsertLibraryTemplate>(),
+        ToolEntry::of::<auto_reframe::AutoReframe>(),
     ];
     entries
         .into_iter()
@@ -122,16 +124,18 @@ mod tests {
         "create_captions",
     ];
 
-    /// Motion template modules (prompt 24): checked by the renderer first, and library templates
-    /// (prompt 25): read from the library first; not batchable.
-    const TEMPLATE_MODULE_TOOLS: [&str; 3] = [
+    /// Motion template modules (prompt 24): checked by the renderer first, library templates
+    /// (prompt 25): read from the library first, and automatic reframing (prompt 26): face
+    /// analyses waited for first; not batchable.
+    const TEMPLATE_MODULE_TOOLS: [&str; 4] = [
         "create_motion_template",
         "update_motion_template",
         "insert_library_template",
+        "auto_reframe",
     ];
 
     /// Tools that change the project.
-    const WRITE_TOOLS: [&str; 27] = [
+    const WRITE_TOOLS: [&str; 28] = [
         "add_text",
         "add_shape",
         "add_image",
@@ -159,6 +163,7 @@ mod tests {
         "instantiate_template",
         "update_template_params",
         "insert_library_template",
+        "auto_reframe",
     ];
 
     /// Tools that add something without changing what exists (not read-only, not destructive):
@@ -168,11 +173,11 @@ mod tests {
     #[test]
     fn every_tool_has_an_object_schema_and_a_unique_name() {
         let tools = catalogue();
-        assert_eq!(tools.len(), 43);
+        assert_eq!(tools.len(), 44);
         let mut names: Vec<&str> = tools.iter().map(ToolEntry::name).collect();
         names.sort_unstable();
         names.dedup();
-        assert_eq!(names.len(), 43);
+        assert_eq!(names.len(), 44);
         for tool in &tools {
             assert_eq!(
                 tool.definition.input_schema["type"],

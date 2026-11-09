@@ -49,6 +49,25 @@ pub struct VideoStreamInfo {
     pub rotation: u16,
 }
 
+impl VideoStreamInfo {
+    /// Width and height of the upright picture (the coded size, swapped for quarter turns).
+    #[must_use]
+    pub const fn display_size(&self) -> (u32, u32) {
+        if self.rotation % 180 == 90 {
+            (self.height, self.width)
+        } else {
+            (self.width, self.height)
+        }
+    }
+
+    /// Width over height of the upright picture; `None` for an empty size.
+    #[must_use]
+    pub fn display_aspect(&self) -> Option<f64> {
+        let (width, height) = self.display_size();
+        (width > 0 && height > 0).then(|| f64::from(width) / f64::from(height))
+    }
+}
+
 /// One sound stream of a file.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
@@ -61,4 +80,37 @@ pub struct AudioStreamInfo {
     pub channels: u16,
     /// Samples per second (e.g. 48000).
     pub sample_rate: u32,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn stream(width: u32, height: u32, rotation: u16) -> VideoStreamInfo {
+        VideoStreamInfo {
+            codec: "h264".to_owned(),
+            profile: None,
+            level: None,
+            codec_tag: None,
+            pixel_format: None,
+            bit_depth: None,
+            chroma_subsampling: None,
+            width,
+            height,
+            frame_rate: None,
+            rotation,
+        }
+    }
+
+    #[test]
+    fn quarter_turns_swap_the_display_size() {
+        assert_eq!(stream(1920, 1080, 0).display_size(), (1920, 1080));
+        assert_eq!(stream(1920, 1080, 90).display_size(), (1080, 1920));
+        assert_eq!(stream(1920, 1080, 180).display_size(), (1920, 1080));
+        assert_eq!(
+            stream(1920, 1080, 270).display_aspect(),
+            Some(1080.0 / 1920.0)
+        );
+        assert_eq!(stream(0, 1080, 0).display_aspect(), None);
+    }
 }
