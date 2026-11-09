@@ -107,7 +107,7 @@ describe('automatic reframing in the inspector', () => {
     );
     const send = renderControls([tracked]);
     expect(await screen.findByRole('button', { name: 'Relancer le recadrage' })).toBeEnabled();
-    await user.click(screen.getByRole('switch', { name: 'Cadrage de groupe' }));
+    await user.click(screen.getByRole('switch', { name: 'Plan de groupe' }));
     expect(reframes(send).map((command) => command.settings.groupFraming)).toEqual([false]);
     expect(
       screen.getAllByRole('slider').map((slider) => slider.getAttribute('aria-label')),

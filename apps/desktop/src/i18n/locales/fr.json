@@ -820,7 +820,7 @@
         "smoothing": "Fluidité",
         "eyeLine": "Ligne des yeux",
         "deadZone": "Zone morte",
-        "groupFraming": "Cadrage de groupe",
+        "groupFraming": "Plan de groupe",
         "percent": "{{value}} %"
       },
       "viewer": {

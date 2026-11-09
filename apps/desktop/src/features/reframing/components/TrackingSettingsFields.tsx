@@ -17,7 +17,7 @@ export interface TrackingSettingsFieldsProps {
 
 const SLIDERS: readonly NumericTrackingSetting[] = ['smoothing', 'eyeLine', 'deadZone'];
 
-/** « Fluidité », « Ligne des yeux », « Zone morte » and « Cadrage de groupe » of tracking. */
+/** « Fluidité », « Ligne des yeux », « Zone morte » and « Plan de groupe » of tracking. */
 export function TrackingSettingsFields({
   settings,
   onChange,
