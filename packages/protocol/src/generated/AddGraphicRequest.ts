@@ -4,10 +4,12 @@ import type { Flicks } from "./Flicks";
 import type { NewGraphic } from "./NewGraphic";
 import type { ProjectId } from "./ProjectId";
 import type { SequenceId } from "./SequenceId";
+import type { TrackId } from "./TrackId";
 
 /**
- * A graphic item to add at a time (`addGraphicItem`): it goes on the highest unlocked video
- * track free over its span with nothing above it at that time, or on a new video track on top.
+ * A graphic item to add at a time (`addGraphicItem`): it goes on `trackId` when given and free,
+ * else on the highest unlocked video track free over its span with nothing above it at that
+ * time, or on a new video track on top.
  */
 export type AddGraphicRequest = { 
 /**
@@ -29,4 +31,9 @@ duration: Flicks,
 /**
  * What it shows.
  */
-graphic: NewGraphic, };
+graphic: NewGraphic, 
+/**
+ * The video track it should go on (a drop on the timeline, prompt 25); used when free over
+ * its span, otherwise the usual choice applies.
+ */
+trackId?: TrackId, };

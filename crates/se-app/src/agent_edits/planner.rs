@@ -3,12 +3,12 @@
 //! names it.
 
 use se_domain::{
-    AddMarker, ApplyAnimationPreset, Flicks, ItemId, Marker, Operation, Origin, Project,
-    SetKeyframes, UpdateItem, animation_presets,
+    AddMarker, ApplyAnimationPreset, Flicks, ItemId, ItemKind, Marker, Operation, Origin, Project,
+    SetKeyframes, TemplateItem, Transform2D, UpdateItem, animation_presets,
 };
 
 use super::{
-    AgentEdit, ItemRef, PresetSpec,
+    AgentEdit, ItemRef, LibraryInstance, NewAgentItem, PresetSpec,
     graphics::plan_new_item,
     templates::{TemplateChange, plan_new_template, plan_template_version},
     timing::{plan_delete, plan_gap, plan_move, plan_ripple_delete, plan_split, plan_trim},
@@ -24,6 +24,7 @@ use crate::{
     },
     edit_plan::EditPlan,
     new_ids::NewIds,
+    template_library::{instance_values, plan_copy},
 };
 
 /// Why planning failed: the error, and the edit (0-based) that caused it when known.
@@ -103,6 +104,26 @@ impl<'a> AgentPlanner<'a> {
         })
     }
 
+    /// Plans the project's copy of a library template and its new instance.
+    fn add_library_instance(&mut self, instance: &LibraryInstance) -> Result<ItemId, AppError> {
+        let origin = Origin::AiTask {
+            task_id: self.agent.task_id,
+        };
+        let template = plan_copy(&mut self.plan, &instance.entry, origin)?;
+        let params = instance_values(self.plan.project()?, &template, instance.params.clone());
+        let new = NewAgentItem {
+            kind: ItemKind::MotionTemplate(TemplateItem {
+                template_id: template.id,
+                params,
+                transform: Transform2D::default(),
+            }),
+            range: instance.range,
+            track: instance.track,
+            presets: instance.presets.clone(),
+        };
+        plan_new_item(self, &new)
+    }
+
     /// Plans one edit and applies it to the draft (so its refusal surfaces now); returns the
     /// items it created.
     fn add(&mut self, edit: &AgentEdit) -> Result<Vec<ItemId>, AppError> {
@@ -178,6 +199,9 @@ impl<'a> AgentPlanner<'a> {
                 let change = plan_template_version(self, *template, definition, source)?;
                 self.templates.push(change);
                 Vec::new()
+            }
+            AgentEdit::InsertLibraryTemplate(instance) => {
+                vec![self.add_library_instance(instance)?]
             }
             AgentEdit::AddMarker { time, label, color } => {
                 let marker = Marker {

@@ -12,9 +12,13 @@ import type { CutSummary } from "./CutSummary";
 import type { FillerOccurrence } from "./FillerOccurrence";
 import type { FontFamily } from "./FontFamily";
 import type { ImportReport } from "./ImportReport";
+import type { InsertedLibraryTemplate } from "./InsertedLibraryTemplate";
 import type { ItemId } from "./ItemId";
 import type { JobId } from "./JobId";
 import type { JobSnapshot } from "./JobSnapshot";
+import type { LibraryBrandKit } from "./LibraryBrandKit";
+import type { LibraryImportResult } from "./LibraryImportResult";
+import type { LibraryTemplate } from "./LibraryTemplate";
 import type { LinkGroupId } from "./LinkGroupId";
 import type { MarkerId } from "./MarkerId";
 import type { MediaSettings } from "./MediaSettings";
@@ -30,6 +34,7 @@ import type { SmartCutSettings } from "./SmartCutSettings";
 import type { Task } from "./Task";
 import type { TaskEventRecord } from "./TaskEventRecord";
 import type { TaskRevertReport } from "./TaskRevertReport";
+import type { TemplateUpdateReport } from "./TemplateUpdateReport";
 import type { TimeRange } from "./TimeRange";
 import type { TrackId } from "./TrackId";
 import type { Transcript } from "./Transcript";
@@ -177,7 +182,47 @@ settings: AiSettings, } | { "kind": "updateAiSettings",
 /**
  * The settings as saved.
  */
-settings: AiSettings, } | { "kind": "reportFrameRenderFailure" } | { "kind": "reportTemplateCheck" } | { "kind": "removeTemplate" } | { "kind": "getTranscriptionStatus", 
+settings: AiSettings, } | { "kind": "reportFrameRenderFailure" } | { "kind": "reportTemplateCheck" } | { "kind": "removeTemplate" } | { "kind": "listLibraryTemplates", 
+/**
+ * The entries, by name.
+ */
+templates: Array<LibraryTemplate>, } | { "kind": "saveTemplateToLibrary", 
+/**
+ * The entry as saved.
+ */
+template: LibraryTemplate, } | { "kind": "saveCaptionStyleToLibrary", 
+/**
+ * The new entry.
+ */
+template: LibraryTemplate, } | { "kind": "updateLibraryTemplateInfo", 
+/**
+ * The entry as saved.
+ */
+template: LibraryTemplate, } | { "kind": "removeLibraryTemplate" } | { "kind": "insertLibraryTemplate" } & InsertedLibraryTemplate | { "kind": "updateTemplateFromLibrary" } & TemplateUpdateReport | { "kind": "exportLibraryTemplate" } | { "kind": "importLibraryTemplates", 
+/**
+ * One result per file, in order.
+ */
+results: Array<LibraryImportResult>, } | { "kind": "listBrandKits", 
+/**
+ * The kits, by name.
+ */
+kits: Array<LibraryBrandKit>, } | { "kind": "createBrandKit", 
+/**
+ * The new kit.
+ */
+kit: LibraryBrandKit, } | { "kind": "saveBrandKit", 
+/**
+ * The kit as saved (new version).
+ */
+kit: LibraryBrandKit, } | { "kind": "removeBrandKit" } | { "kind": "addBrandKitLogo", 
+/**
+ * The kit with its new logo (saved).
+ */
+kit: LibraryBrandKit, } | { "kind": "setProjectBrandKit" } | { "kind": "addProjectBrandKitToLibrary", 
+/**
+ * The new library kit.
+ */
+kit: LibraryBrandKit, } | { "kind": "getTranscriptionStatus", 
 /**
  * The status.
  */

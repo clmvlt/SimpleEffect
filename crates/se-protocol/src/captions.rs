@@ -27,6 +27,8 @@ pub enum CaptionStyleChoice {
         /// Its id.
         style_id: CaptionStyleId,
     },
+    /// A new style made from the caption look of the project's brand kit (prompt 25).
+    BrandKit,
 }
 
 /// Overrides of the segmentation limits (`null` fields keep the style's line limits and the

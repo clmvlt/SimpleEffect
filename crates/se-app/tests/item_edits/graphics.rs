@@ -26,6 +26,7 @@ fn request(opened: &Opened, at: i64, graphic: NewGraphic) -> AddGraphicRequest {
         at: secs(at),
         duration: secs(2),
         graphic,
+        track_id: None,
     }
 }
 

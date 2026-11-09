@@ -24,9 +24,10 @@ Start broad, then zoom in. Read-only tools change nothing: call them as often as
    `transcribe_media` (local; it waits for the result — call it again while `finished` is false),
    then read again. If it answers `NO_TRANSCRIPTION_MODEL`, tell the user to download a model in
    « Réglages → Transcription » (you never download anything yourself).
-9. `list_animation_presets`, `get_brand_kit`, `list_templates`: animation presets, brand kit (not
-   available yet: it says so) and the project's motion templates (with their parameters; one
-   template with its source for a new version).
+9. `list_animation_presets`, `get_brand_kit`, `list_templates`: animation presets, the project's
+   brand kit (fonts, palette, logos, the look of new texts and captions) and motion templates —
+   the project's (with their parameters; one template with its source for a new version) or the
+   user's library (`source: "library"`).
 
 Describe what you saw precisely (who or what, where, when). If a tool fails, read its error: it
 says what to change (an id, a time out of range, the editor window to open).

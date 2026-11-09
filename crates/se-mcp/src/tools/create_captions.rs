@@ -30,8 +30,9 @@ pub struct Input {
     pub range: Option<RangeInput>,
     /// A predefined style — `tiktokBold` (one bold upper-case line, words popping),
     /// `minimal` (two plain lines), `karaoke` (spoken words filling in yellow), `box` (lines on
-    /// dark boxes) — or the `style_id` of a caption style of the project. Default: the style of
-    /// the captions replaced, else `minimal`.
+    /// dark boxes) —, `brand_kit` (the project's brand kit look) or the `style_id` of a caption
+    /// style of the project. Default: the style of the captions replaced, else the brand kit's
+    /// look when the project has a kit, else `minimal`.
     pub style: Option<String>,
     /// Longest line in characters (4–80; default: the style's).
     pub max_chars_per_line: Option<u32>,
@@ -142,11 +143,17 @@ impl McpTool for CreateCaptions {
     }
 }
 
-/// A preset name or a caption style id.
+/// The `style` naming the project's brand kit look (prompt 25).
+pub const BRAND_KIT_STYLE: &str = "brand_kit";
+
+/// A preset name, `brand_kit` (the project's brand kit look) or a caption style id.
 ///
 /// # Errors
 /// [`ToolError::invalid_arguments`] listing the presets.
 pub fn style_choice(text: &str) -> Result<CaptionStyleChoice, ToolError> {
+    if text == BRAND_KIT_STYLE {
+        return Ok(CaptionStyleChoice::BrandKit);
+    }
     if CAPTION_PRESETS.contains(&text) {
         return Ok(CaptionStyleChoice::Preset {
             preset: text.to_owned(),
@@ -156,8 +163,8 @@ pub fn style_choice(text: &str) -> Result<CaptionStyleChoice, ToolError> {
         .map(|style_id| CaptionStyleChoice::Existing { style_id })
         .map_err(|_| {
             ToolError::invalid_arguments(format!(
-                "style '{text}' is neither a preset ({}) nor a caption style id (get_item of a \
-                 caption shows its style_id)",
+                "style '{text}' is neither a preset ({}), `brand_kit` nor a caption style id \
+                 (get_item of a caption shows its style_id)",
                 CAPTION_PRESETS.join(", ")
             ))
         })
@@ -192,6 +199,10 @@ mod tests {
         assert!(matches!(
             style_choice("00000000-0001-7000-8000-000000000000"),
             Ok(CaptionStyleChoice::Existing { .. })
+        ));
+        assert!(matches!(
+            style_choice("brand_kit"),
+            Ok(CaptionStyleChoice::BrandKit)
         ));
         assert!(style_choice("disco").is_err());
     }

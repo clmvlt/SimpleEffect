@@ -4,8 +4,10 @@ import type { AddGraphicRequest } from "./AddGraphicRequest";
 import type { AiSettings } from "./AiSettings";
 import type { AnimationPhase } from "./AnimationPhase";
 import type { AssetId } from "./AssetId";
+import type { BrandKitId } from "./BrandKitId";
 import type { CaptionEmphasisEdit } from "./CaptionEmphasisEdit";
 import type { CaptionStyleEdit } from "./CaptionStyleEdit";
+import type { CaptionStyleId } from "./CaptionStyleId";
 import type { CaptionTextEdit } from "./CaptionTextEdit";
 import type { CreateProjectRequest } from "./CreateProjectRequest";
 import type { DecodabilityReport } from "./DecodabilityReport";
@@ -18,12 +20,16 @@ import type { GenerateCaptionsRequest } from "./GenerateCaptionsRequest";
 import type { GenerateDerivedRequest } from "./GenerateDerivedRequest";
 import type { ImportMediaRequest } from "./ImportMediaRequest";
 import type { ImportSubtitlesRequest } from "./ImportSubtitlesRequest";
+import type { InsertLibraryTemplateRequest } from "./InsertLibraryTemplateRequest";
 import type { ItemAnimation } from "./ItemAnimation";
 import type { ItemId } from "./ItemId";
 import type { ItemPlacement } from "./ItemPlacement";
 import type { ItemTrim } from "./ItemTrim";
 import type { ItemUpdate } from "./ItemUpdate";
 import type { JobId } from "./JobId";
+import type { LibraryBrandKit } from "./LibraryBrandKit";
+import type { LibraryTemplateId } from "./LibraryTemplateId";
+import type { LibraryTemplateInfo } from "./LibraryTemplateInfo";
 import type { MarkerColor } from "./MarkerColor";
 import type { MarkerId } from "./MarkerId";
 import type { MarkerPatch } from "./MarkerPatch";
@@ -576,7 +582,103 @@ projectId: ProjectId,
 /**
  * The template.
  */
-templateId: TemplateId, } | { "kind": "getTranscriptionStatus" } | { "kind": "updateTranscriptionPreferences" } & TranscriptionPreferences | { "kind": "startTranscriptionDownload", 
+templateId: TemplateId, } | { "kind": "listLibraryTemplates" } | { "kind": "saveTemplateToLibrary", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The project template.
+ */
+templateId: TemplateId, 
+/**
+ * Name, description, tags and category to save.
+ */
+info: LibraryTemplateInfo, } | { "kind": "saveCaptionStyleToLibrary", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The caption style.
+ */
+styleId: CaptionStyleId, 
+/**
+ * Name, description and tags to save.
+ */
+info: LibraryTemplateInfo, } | { "kind": "updateLibraryTemplateInfo", 
+/**
+ * The entry.
+ */
+templateId: LibraryTemplateId, 
+/**
+ * The new information.
+ */
+info: LibraryTemplateInfo, } | { "kind": "removeLibraryTemplate", 
+/**
+ * The entry.
+ */
+templateId: LibraryTemplateId, } | { "kind": "insertLibraryTemplate" } & InsertLibraryTemplateRequest | { "kind": "updateTemplateFromLibrary", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The project template (linked to a library entry).
+ */
+templateId: TemplateId, } | { "kind": "exportLibraryTemplate", 
+/**
+ * The entry.
+ */
+templateId: LibraryTemplateId, 
+/**
+ * Absolute path of the file to write.
+ */
+path: string, } | { "kind": "importLibraryTemplates", 
+/**
+ * The open project whose window checks the templates.
+ */
+projectId: ProjectId, 
+/**
+ * Absolute paths of the files.
+ */
+paths: Array<string>, } | { "kind": "listBrandKits" } | { "kind": "createBrandKit", 
+/**
+ * Its name.
+ */
+name: string, 
+/**
+ * A kit to copy (logos included), `null` for defaults.
+ */
+copyOf: BrandKitId | null, } | { "kind": "saveBrandKit", 
+/**
+ * The kit (its logos listed by file; remove one by leaving it out).
+ */
+kit: LibraryBrandKit, } | { "kind": "removeBrandKit", 
+/**
+ * The kit.
+ */
+kitId: BrandKitId, } | { "kind": "addBrandKitLogo", 
+/**
+ * The kit.
+ */
+kitId: BrandKitId, 
+/**
+ * Absolute path of the image.
+ */
+path: string, } | { "kind": "setProjectBrandKit", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The kit, `null` for none.
+ */
+kitId: BrandKitId | null, } | { "kind": "addProjectBrandKitToLibrary", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, } | { "kind": "getTranscriptionStatus" } | { "kind": "updateTranscriptionPreferences" } & TranscriptionPreferences | { "kind": "startTranscriptionDownload", 
 /**
  * What to download.
  */

@@ -24,6 +24,7 @@ pub mod get_task_changes;
 pub mod get_timeline;
 pub mod get_transcript;
 pub mod insert_gap;
+pub mod insert_library_template;
 pub mod instantiate_template;
 pub mod list_animation_presets;
 pub mod list_assets;
@@ -93,6 +94,7 @@ pub fn catalogue() -> Vec<ToolEntry> {
         ToolEntry::of::<update_motion_template::UpdateMotionTemplate>(),
         ToolEntry::of::<instantiate_template::InstantiateTemplate>(),
         ToolEntry::of::<update_template_params::UpdateTemplateParams>(),
+        ToolEntry::of::<insert_library_template::InsertLibraryTemplate>(),
     ];
     entries
         .into_iter()
@@ -120,11 +122,16 @@ mod tests {
         "create_captions",
     ];
 
-    /// Motion template modules (prompt 24): checked by the renderer first, not batchable.
-    const TEMPLATE_MODULE_TOOLS: [&str; 2] = ["create_motion_template", "update_motion_template"];
+    /// Motion template modules (prompt 24): checked by the renderer first, and library templates
+    /// (prompt 25): read from the library first; not batchable.
+    const TEMPLATE_MODULE_TOOLS: [&str; 3] = [
+        "create_motion_template",
+        "update_motion_template",
+        "insert_library_template",
+    ];
 
     /// Tools that change the project.
-    const WRITE_TOOLS: [&str; 26] = [
+    const WRITE_TOOLS: [&str; 27] = [
         "add_text",
         "add_shape",
         "add_image",
@@ -151,6 +158,7 @@ mod tests {
         "update_motion_template",
         "instantiate_template",
         "update_template_params",
+        "insert_library_template",
     ];
 
     /// Tools that add something without changing what exists (not read-only, not destructive):
@@ -160,11 +168,11 @@ mod tests {
     #[test]
     fn every_tool_has_an_object_schema_and_a_unique_name() {
         let tools = catalogue();
-        assert_eq!(tools.len(), 42);
+        assert_eq!(tools.len(), 43);
         let mut names: Vec<&str> = tools.iter().map(ToolEntry::name).collect();
         names.sort_unstable();
         names.dedup();
-        assert_eq!(names.len(), 42);
+        assert_eq!(names.len(), 43);
         for tool in &tools {
             assert_eq!(
                 tool.definition.input_schema["type"],

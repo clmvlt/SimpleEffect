@@ -14,15 +14,16 @@ use se_domain::{Asset, Format, FormatPreset, FrameRate, ProjectId};
 use super::{
     FakeAgentWorkspaces, FakeDownloader, FakeFrameExtractor, FakeJobRunner, FakeMedia,
     FakeMediaTools, FakeModelFiles, FakeRendererLink, FakeSpeechExtractor, FakeSubtitleFiles,
-    FakeTranscriber, FixedClock, InMemoryAppLibrary, InMemoryProjectRepository, RecordingEventSink,
-    ReplayProvider, SequentialIds, SequentialTokens,
+    FakeTranscriber, FixedClock, InMemoryAppLibrary, InMemoryBrandKitLibrary,
+    InMemoryProjectRepository, InMemoryTemplateLibrary, RecordingEventSink, ReplayProvider,
+    SequentialIds, SequentialTokens,
 };
 use crate::{
-    AgentEditService, AppError, CaptionService, CaptionServiceDeps, FrameRenderService, JobQueue,
-    JobQueueConfig, McpAccess, MediaService, MediaServiceDeps, ProjectService,
-    ProjectServiceConfig, ProjectServiceDeps, SmartCutService, SmartCutServiceDeps, TaskService,
-    TaskServiceDeps, TaskTokenRegistry, TemplateCheckService, TranscriptionService,
-    TranscriptionServiceDeps,
+    AgentEditService, AppError, BrandKitService, BrandKitServiceDeps, CaptionService,
+    CaptionServiceDeps, FrameRenderService, JobQueue, JobQueueConfig, McpAccess, MediaService,
+    MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps, SmartCutService,
+    SmartCutServiceDeps, TaskService, TaskServiceDeps, TaskTokenRegistry, TemplateCheckService,
+    TemplateLibraryDeps, TemplateLibraryService, TranscriptionService, TranscriptionServiceDeps,
 };
 
 /// The MCP URL runs of the testbed's task service are given.
@@ -77,6 +78,14 @@ pub struct MediaTestbed {
     pub captions: CaptionService,
     /// SRT files of `captions`.
     pub subtitles: FakeSubtitleFiles,
+    /// The template library of `library_templates` (prompt 25).
+    pub template_library: InMemoryTemplateLibrary,
+    /// Template library use cases over `projects` and `template_checks`.
+    pub library_templates: TemplateLibraryService,
+    /// The brand kits of `brand_kits` (logo copies appear in `files`).
+    pub brand_kit_library: InMemoryBrandKitLibrary,
+    /// Brand kit use cases over `projects` and `media`.
+    pub brand_kits: BrandKitService,
     /// whisper.cpp of `transcription`.
     pub transcriber: FakeTranscriber,
     /// Speech audio extractions.
@@ -123,23 +132,12 @@ impl MediaTestbed {
             ..fakes.deps()
         });
         media.add_import_listener(Arc::new(transcription.clone()));
-        let agent = ReplayProvider::default();
-        let workspaces = Arc::new(FakeAgentWorkspaces::default());
-        let tokens = Arc::new(TaskTokenRegistry::new(
-            Arc::new(SequentialTokens::default()),
-        ));
-        let tasks = TaskService::new(TaskServiceDeps {
-            providers: vec![Arc::new(agent.clone())],
-            workspaces: workspaces.clone(),
-            library: library.clone(),
+        let runtime = Runtime {
             events: events.clone(),
             clock: clock.clone(),
             ids: ids.clone(),
-            mcp: McpAccess {
-                url: TESTBED_MCP_URL.to_owned(),
-                tokens: tokens.clone(),
-            },
-        });
+        };
+        let (tasks, agent, workspaces, tokens) = task_service(&library, &runtime);
         let renderer = Arc::new(FakeRendererLink::default());
         let renders = Arc::new(FrameRenderService::new(renderer.clone(), ids.clone()));
         let template_checks = Arc::new(TemplateCheckService::new(renderer.clone(), ids.clone()));
@@ -160,10 +158,20 @@ impl MediaTestbed {
                 .with_observer(Arc::new(tasks.clone()))
                 .with_observer(Arc::new(transcription.clone())),
         );
-        let edits = Arc::new(AgentEditService::new(projects.clone(), tasks.clone(), ids));
+        let edits = Arc::new(AgentEditService::new(
+            projects.clone(),
+            tasks.clone(),
+            ids.clone(),
+        ));
         let (smart_cuts, captions, subtitles) =
             speech_services(&projects, &media, &transcription, &library);
+        let (template_library, library_templates, brand_kit_library, brand_kits) =
+            library_services(&projects, &media, &files, &template_checks, &runtime);
         Self {
+            template_library,
+            library_templates,
+            brand_kit_library,
+            brand_kits,
             captions,
             subtitles,
             smart_cuts,
@@ -275,6 +283,83 @@ pub async fn settle() {
 }
 
 /// Smart cuts and captions (over in-memory SRT files).
+/// The runtime fakes shared by every service.
+struct Runtime {
+    events: Arc<RecordingEventSink>,
+    clock: Arc<FixedClock>,
+    ids: Arc<SequentialIds>,
+}
+
+/// The task service over a replayed AI provider, with its workspaces and MCP tokens.
+fn task_service(
+    library: &Arc<InMemoryAppLibrary>,
+    runtime: &Runtime,
+) -> (
+    TaskService,
+    ReplayProvider,
+    Arc<FakeAgentWorkspaces>,
+    Arc<TaskTokenRegistry>,
+) {
+    let agent = ReplayProvider::default();
+    let workspaces = Arc::new(FakeAgentWorkspaces::default());
+    let tokens = Arc::new(TaskTokenRegistry::new(
+        Arc::new(SequentialTokens::default()),
+    ));
+    let tasks = TaskService::new(TaskServiceDeps {
+        providers: vec![Arc::new(agent.clone())],
+        workspaces: workspaces.clone(),
+        library: library.clone(),
+        events: runtime.events.clone(),
+        clock: runtime.clock.clone(),
+        ids: runtime.ids.clone(),
+        mcp: McpAccess {
+            url: TESTBED_MCP_URL.to_owned(),
+            tokens: tokens.clone(),
+        },
+    });
+    (tasks, agent, workspaces, tokens)
+}
+
+/// The template library and brand kit services over in-memory libraries (prompt 25).
+fn library_services(
+    projects: &Arc<ProjectService>,
+    media: &Arc<MediaService>,
+    files: &Arc<FakeMedia>,
+    checks: &Arc<TemplateCheckService>,
+    runtime: &Runtime,
+) -> (
+    InMemoryTemplateLibrary,
+    TemplateLibraryService,
+    InMemoryBrandKitLibrary,
+    BrandKitService,
+) {
+    let template_library = InMemoryTemplateLibrary::default();
+    let library_templates = TemplateLibraryService::new(TemplateLibraryDeps {
+        library: Arc::new(template_library.clone()),
+        projects: projects.clone(),
+        checks: checks.clone(),
+        events: runtime.events.clone(),
+        clock: runtime.clock.clone(),
+        ids: runtime.ids.clone(),
+    });
+    let brand_kit_library = InMemoryBrandKitLibrary::writing_to(files.clone());
+    let brand_kits = BrandKitService::new(BrandKitServiceDeps {
+        library: Arc::new(brand_kit_library.clone()),
+        projects: projects.clone(),
+        media: media.clone(),
+        prober: files.clone(),
+        events: runtime.events.clone(),
+        clock: runtime.clock.clone(),
+        ids: runtime.ids.clone(),
+    });
+    (
+        template_library,
+        library_templates,
+        brand_kit_library,
+        brand_kits,
+    )
+}
+
 fn speech_services(
     projects: &Arc<ProjectService>,
     media: &Arc<MediaService>,

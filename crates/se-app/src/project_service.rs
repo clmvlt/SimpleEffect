@@ -24,6 +24,7 @@ mod trims;
 
 pub(crate) use graphics::top_video_index;
 pub use graphics::{animation_preset_infos, graphic_track};
+pub(crate) use graphics::{graphic_range, place_graphic};
 pub use items::labels as item_labels;
 pub use markers::labels as marker_labels;
 pub use observer::ProjectObserver;

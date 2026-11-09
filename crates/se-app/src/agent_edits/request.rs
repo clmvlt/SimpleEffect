@@ -2,16 +2,16 @@
 //! [`TaskChanges`]). Times are flicks and entities ids: se-mcp converts the agents' seconds,
 //! timecodes and names at the boundary.
 
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
 use se_domain::{
     AnimationPhase, CaptionStylePatch, ChangesetId, Flicks, ItemEdge, ItemId, ItemKind, ItemPatch,
-    MarkerColor, Project, PropertyAnimation, TemplateDefinition, TemplateId, TimeRange, TrackId,
-    TransitionAlignment, captions::TimedWord,
+    MarkerColor, Project, PropertyAnimation, TemplateDefinition, TemplateId, TemplateParamValue,
+    TimeRange, TrackId, TransitionAlignment, captions::TimedWord,
 };
 
 use super::templates::TemplateChange;
-use se_protocol::{CaptionSegmentation, CaptionStyleChoice};
+use se_protocol::{CaptionSegmentation, CaptionStyleChoice, LibraryTemplate};
 
 /// An item an edit works on: an existing one, or one created by an earlier edit of the same
 /// call (`apply_batch` references).
@@ -225,6 +225,25 @@ pub enum AgentEdit {
         /// The new module.
         source: String,
     },
+    /// Copies a motion template of the app's library into the project (reusing a copy of the
+    /// same version) and places an instance (prompt 25); brand-bound parameters start with the
+    /// project's brand kit values, `params` win over them.
+    InsertLibraryTemplate(Box<LibraryInstance>),
+}
+
+/// An instance of a library template asked by an agent (`insert_library_template`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct LibraryInstance {
+    /// The library entry (a motion template).
+    pub entry: LibraryTemplate,
+    /// Where it sits in the task's sequence.
+    pub range: TimeRange,
+    /// The video track; `None` picks the highest free track of the task.
+    pub track: Option<TrackId>,
+    /// Values given by the agent.
+    pub params: BTreeMap<String, TemplateParamValue>,
+    /// Animations applied to it in the same edit.
+    pub presets: Vec<PresetSpec>,
 }
 
 /// What one call of [`super::AgentEditService::apply`] did.

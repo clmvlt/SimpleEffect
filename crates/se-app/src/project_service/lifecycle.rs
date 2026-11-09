@@ -1,6 +1,9 @@
 //! Creating, opening and closing projects.
 
-use std::{path::Path, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use se_domain::{Format, FormatPreset, FrameRate, Project, ProjectId, validate_project};
 use se_protocol::{CoreEvent, FormatPresetDimensions, NewProjectDefaults, ProjectSession};
@@ -197,5 +200,24 @@ impl ProjectService {
     /// [`AppError::ProjectNotOpen`].
     pub async fn project(&self, project_id: ProjectId) -> Result<Arc<Project>, AppError> {
         Ok(self.handle(project_id).await?.view().await?.project)
+    }
+
+    /// The projects open in this core, in opening order (brand kit changes reach them at once,
+    /// prompt 25).
+    pub async fn open_project_ids(&self) -> Vec<ProjectId> {
+        self.open
+            .lock()
+            .await
+            .iter()
+            .map(ProjectActorHandle::project_id)
+            .collect()
+    }
+
+    /// The folder of an open project (`<Name>.seproj`).
+    ///
+    /// # Errors
+    /// [`AppError::ProjectNotOpen`].
+    pub async fn project_folder(&self, project_id: ProjectId) -> Result<PathBuf, AppError> {
+        Ok(self.handle(project_id).await?.path().to_path_buf())
     }
 }

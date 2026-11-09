@@ -72,6 +72,7 @@ pub(super) fn plan_template_version(
             template: template_id,
         })?;
     let version = current.version.saturating_add(1);
+    let library = current.library;
     let instances = instances_of(planner, template_id)?;
     let in_place = instances.iter().all(|instance| instance.in_scope);
     let id = if in_place {
@@ -79,7 +80,12 @@ pub(super) fn plan_template_version(
     } else {
         planner.plan.ids().template()?
     };
-    let template = build(planner, definition, source, id, version)?;
+    let mut template = build(planner, definition, source, id, version)?;
+    if in_place {
+        // An edited copy of a library template stays linked to its entry: « Enregistrer dans la
+        // bibliothèque » then writes a new version of that entry (prompt 25).
+        template.library = library;
+    }
     let mut change = TemplateChange {
         template_id: id,
         version,

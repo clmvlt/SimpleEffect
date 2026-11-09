@@ -7,17 +7,17 @@ use std::{path::PathBuf, sync::Arc};
 
 use se_agents::{FsAgentWorkspaces, providers::claude_code::ClaudeCodeProvider};
 use se_app::{
-    AgentEditService, CaptionService, CaptionServiceDeps, DEFAULT_SAVE_DELAY, FrameRenderService,
-    JobQueue, JobQueueConfig, McpAccess, MediaService, MediaServiceDeps, ProjectService,
-    ProjectServiceConfig, ProjectServiceDeps, SmartCutService, SmartCutServiceDeps, TaskService,
-    TaskServiceDeps, TaskTokenRegistry, TemplateCheckService, TranscriptionService,
-    TranscriptionServiceDeps,
+    AgentEditService, BrandKitService, BrandKitServiceDeps, CaptionService, CaptionServiceDeps,
+    DEFAULT_SAVE_DELAY, FrameRenderService, JobQueue, JobQueueConfig, McpAccess, MediaService,
+    MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps, SmartCutService,
+    SmartCutServiceDeps, TaskService, TaskServiceDeps, TaskTokenRegistry, TemplateCheckService,
+    TemplateLibraryDeps, TemplateLibraryService, TranscriptionService, TranscriptionServiceDeps,
     media_service::settings::keys::TOOLS_DIR,
-    ports::{AppLibraryRepository, FontCatalog, IdGenerator},
+    ports::{AppLibraryRepository, BrandKitLibrary, FontCatalog, IdGenerator, MediaProber},
 };
 use se_fonts::LocalFontCatalog;
 use se_media::{FfmpegJobRunner, FfmpegTools, FfprobeProber, FsMediaFiles, ToolLocator};
-use se_store::{FsProjectRepository, SqliteAppLibrary};
+use se_store::{FsBrandKitLibrary, FsProjectRepository, FsTemplateLibrary, SqliteAppLibrary};
 use se_transcribe::{FsModelFiles, HttpDownloader, WhisperLocator, WhisperTranscriber};
 
 use crate::{
@@ -51,6 +51,12 @@ pub struct Services {
     pub smart_cuts: SmartCutService,
     /// Captions over SRT files on disk (prompt 23).
     pub captions: CaptionService,
+    /// The template library in `<data>/templates` (prompt 25).
+    pub library_templates: TemplateLibraryService,
+    /// Brand kits in `<data>/brand-kits` (prompt 25).
+    pub brand_kits: BrandKitService,
+    /// The brand kits on disk (logo files served at `/media/brand-kits`).
+    pub brand_kit_files: Arc<dyn BrandKitLibrary>,
 }
 
 /// Builds the services over the real adapters, for a core listening on `port`.
@@ -71,6 +77,7 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
     let jobs = JobQueue::new(Arc::new(events.clone()), ids, JobQueueConfig::default());
     let tools = FfmpegTools::new(ToolLocator::for_current_exe(tools_dir));
     let runner = Arc::new(FfmpegJobRunner::new(tools.clone()));
+    let prober: Arc<dyn MediaProber> = Arc::new(FfprobeProber::new(tools.locator().clone()));
     let media = Arc::new(media_service(
         tools,
         runner.clone(),
@@ -126,7 +133,12 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         transcription: transcription.clone(),
         subtitles: Arc::new(se_export::FsSubtitleFiles),
     });
+    let (library_templates, brand_kits, brand_kit_files) =
+        library_services(paths, events, &projects, &media, &template_checks, prober);
     Ok(Services {
+        library_templates,
+        brand_kits,
+        brand_kit_files,
         captions,
         smart_cuts,
         projects,
@@ -139,6 +151,42 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         tokens,
         transcription,
     })
+}
+
+/// The template library and brand kits in the app data folder (prompt 25), and the kits'
+/// files (served at `/media/brand-kits`).
+fn library_services(
+    paths: &AppPaths,
+    events: &EventBus,
+    projects: &Arc<ProjectService>,
+    media: &Arc<MediaService>,
+    template_checks: &Arc<TemplateCheckService>,
+    prober: Arc<dyn MediaProber>,
+) -> (
+    TemplateLibraryService,
+    BrandKitService,
+    Arc<dyn BrandKitLibrary>,
+) {
+    let library_templates = TemplateLibraryService::new(TemplateLibraryDeps {
+        library: Arc::new(FsTemplateLibrary::new(paths.templates())),
+        projects: Arc::clone(projects),
+        checks: Arc::clone(template_checks),
+        events: Arc::new(events.clone()),
+        clock: Arc::new(SystemClock),
+        ids: Arc::new(UuidV7Ids),
+    });
+    let brand_kit_files: Arc<dyn BrandKitLibrary> =
+        Arc::new(FsBrandKitLibrary::new(paths.brand_kits()));
+    let brand_kits = BrandKitService::new(BrandKitServiceDeps {
+        library: Arc::clone(&brand_kit_files),
+        projects: Arc::clone(projects),
+        media: Arc::clone(media),
+        prober,
+        events: Arc::new(events.clone()),
+        clock: Arc::new(SystemClock),
+        ids: Arc::new(UuidV7Ids),
+    });
+    (library_templates, brand_kits, brand_kit_files)
 }
 
 /// The transcription service over whisper.cpp (bundled builds, the GPU pack under

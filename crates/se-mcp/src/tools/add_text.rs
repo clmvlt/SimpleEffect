@@ -64,26 +64,26 @@ pub struct Input {
     pub duration: Option<TimeInput>,
     /// Where its centre sits; default "center".
     pub position: Option<PositionInput>,
-    /// Size in design pixels (1080 = the frame's shorter side); default 96. Short videos: 80–140
-    /// for titles, 48–64 for captions.
+    /// Size in design pixels (1080 = the frame's shorter side); default: the brand kit's text
+    /// style, else 96. Short videos: 80–140 for titles, 48–64 for captions.
     pub font_size: Option<f64>,
-    /// Font family; default "Inter".
+    /// Font family; default: the brand kit's text style, else "Inter".
     pub font_family: Option<String>,
-    /// Weight 1–1000 (400 regular, 700 bold, 900 black); default 600.
+    /// Weight 1–1000 (400 regular, 700 bold, 900 black); default: the brand kit's, else 600.
     pub font_weight: Option<u16>,
-    /// Italic; default false.
+    /// Italic; default: the brand kit's, else false.
     pub italic: Option<bool>,
-    /// Colour `#rrggbb[aa]`; default white.
+    /// Colour `#rrggbb[aa]`; default: the brand kit's text style, else white.
     pub color: Option<String>,
     /// Line alignment; default center.
     pub align: Option<AlignInput>,
     /// Wrapping width in design pixels; default none (one line per `\n`).
     pub max_width: Option<f64>,
-    /// Show in capitals; default false.
+    /// Show in capitals; default: the brand kit's, else false.
     pub uppercase: Option<bool>,
     /// An outline (improves legibility over video).
     pub stroke: Option<StrokeInput>,
-    /// A soft drop shadow; default false.
+    /// A soft drop shadow; default: the brand kit's, else false.
     pub shadow: Option<bool>,
     /// A box behind the text.
     pub background: Option<BackgroundInput>,
@@ -102,7 +102,8 @@ impl McpTool for AddText {
 
     const DESCRIPTION: &'static str = "Adds an editable text over a time range of the task's \
         sequence: content, place, size, font, colour, outline, shadow, box, and optional \
-        entrance/exit animations (presets), all in one step. Answers the new item_id. Check the \
+        entrance/exit animations (presets), all in one step. Unset style fields take the \
+        project's brand kit text style (get_brand_kit). Answers the new item_id. Check the \
         result with get_frames.";
 
     const READ_ONLY: bool = false;
@@ -124,7 +125,12 @@ impl WriteTool for AddText {
             input.duration.as_ref(),
         )?;
         let mut text = TextItem::new(input.text.clone());
-        text.style = style(&input)?;
+        let base = scene
+            .project
+            .brand_kit
+            .as_ref()
+            .map_or_else(TextStyle::default, |kit| kit.text_style.clone());
+        text.style = style(&input, base)?;
         if let Some(position) = input.position {
             text.transform.position = Animatable::constant(position.to_vec2());
         }
@@ -149,9 +155,9 @@ impl WriteTool for AddText {
     }
 }
 
-/// The text style the input asks for, over the defaults.
-fn style(input: &Input) -> Result<TextStyle, ToolError> {
-    let mut style = TextStyle::default();
+/// The text style the input asks for, over `base` (the brand kit's text style, or the defaults).
+fn style(input: &Input, base: TextStyle) -> Result<TextStyle, ToolError> {
+    let mut style = base;
     if let Some(family) = &input.font_family {
         style.font_family.clone_from(family);
     }
@@ -170,9 +176,15 @@ fn style(input: &Input) -> Result<TextStyle, ToolError> {
     if let Some(align) = input.align {
         style.align = align.to_align();
     }
-    style.max_width = input.max_width.map(DesignPixels);
-    if input.uppercase == Some(true) {
-        style.text_case = TextCase::Uppercase;
+    if let Some(width) = input.max_width {
+        style.max_width = Some(DesignPixels(width));
+    }
+    if let Some(uppercase) = input.uppercase {
+        style.text_case = if uppercase {
+            TextCase::Uppercase
+        } else {
+            TextCase::Normal
+        };
     }
     if let Some(stroke) = &input.stroke {
         style.stroke.enabled = true;
@@ -183,7 +195,9 @@ fn style(input: &Input) -> Result<TextStyle, ToolError> {
             style.stroke.width = Animatable::constant(DesignPixels(width));
         }
     }
-    style.shadow.enabled = input.shadow.unwrap_or(false);
+    if let Some(shadow) = input.shadow {
+        style.shadow.enabled = shadow;
+    }
     if let Some(background) = &input.background {
         style.background.enabled = true;
         if let Some(text) = &background.color {

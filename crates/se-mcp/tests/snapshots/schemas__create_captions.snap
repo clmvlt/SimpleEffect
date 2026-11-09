@@ -75,7 +75,7 @@ expression: definition
         "description": "The range to caption (default: your task's range, else the whole sequence). Captions of\nthe caption track crossing it are replaced, so the range grows to cover them whole."
       },
       "style": {
-        "description": "A predefined style — `tiktokBold` (one bold upper-case line, words popping),\n`minimal` (two plain lines), `karaoke` (spoken words filling in yellow), `box` (lines on\ndark boxes) — or the `style_id` of a caption style of the project. Default: the style of\nthe captions replaced, else `minimal`.",
+        "description": "A predefined style — `tiktokBold` (one bold upper-case line, words popping),\n`minimal` (two plain lines), `karaoke` (spoken words filling in yellow), `box` (lines on\ndark boxes) —, `brand_kit` (the project's brand kit look) or the `style_id` of a caption\nstyle of the project. Default: the style of the captions replaced, else the brand kit's\nlook when the project has a kit, else `minimal`.",
         "type": [
           "string",
           "null"

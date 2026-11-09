@@ -1,9 +1,10 @@
 //! Commands a client asks `se-core` to execute.
 
 use se_domain::{
-    AnimationPhase, AssetId, Flicks, Format, FormatAdaptation, ItemId, JobId, MarkerColor,
-    MarkerId, MarkerPatch, ProjectId, PropertyAnimation, SequenceId, TaskId, TemplateId, TimeRange,
-    TrackId, TrackKind, TrackPatch, TranscriptionSettings, TransitionId, TransitionPatch,
+    AnimationPhase, AssetId, BrandKitId, CaptionStyleId, Flicks, Format, FormatAdaptation, ItemId,
+    JobId, LibraryTemplateId, MarkerColor, MarkerId, MarkerPatch, ProjectId, PropertyAnimation,
+    SequenceId, TaskId, TemplateId, TimeRange, TrackId, TrackKind, TrackPatch,
+    TranscriptionSettings, TransitionId, TransitionPatch,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -12,7 +13,8 @@ use crate::{
     AddGraphicRequest, AiSettings, CaptionEmphasisEdit, CaptionStyleEdit, CaptionTextEdit,
     CreateProjectRequest, DecodabilityReport, DecoderCapabilities, DownloadTarget,
     GenerateCaptionsRequest, GenerateDerivedRequest, ImportMediaRequest, ImportSubtitlesRequest,
-    ItemAnimation, ItemPlacement, ItemTrim, ItemUpdate, MediaSettings, NewTransition, PastedItem,
+    InsertLibraryTemplateRequest, ItemAnimation, ItemPlacement, ItemTrim, ItemUpdate,
+    LibraryBrandKit, LibraryTemplateInfo, MediaSettings, NewTransition, PastedItem,
     PlaceMediaRequest, PlacementMode, RelinkAssetRequest, SilenceCutParams, SmartCutSettings,
     SubmitTaskRequest, TaskScope, TemplateCheckOutcome, TranscriptionPreferences, WordCutPurpose,
 };
@@ -580,6 +582,119 @@ pub enum Command {
         project_id: ProjectId,
         /// The template.
         template_id: TemplateId,
+    },
+    /// Every entry of the template library (prompt 25). Answered by
+    /// [`crate::CommandResult::ListLibraryTemplates`].
+    ListLibraryTemplates,
+    /// Saves a project template in the library: a new entry, or a new version of the entry it
+    /// was copied from; the project's copy is then linked to it (one undoable step). Answered by
+    /// [`crate::CommandResult::SaveTemplateToLibrary`].
+    SaveTemplateToLibrary {
+        /// The open project.
+        project_id: ProjectId,
+        /// The project template.
+        template_id: TemplateId,
+        /// Name, description, tags and category to save.
+        info: LibraryTemplateInfo,
+    },
+    /// Saves a project caption style in the library (a new entry). Answered by
+    /// [`crate::CommandResult::SaveCaptionStyleToLibrary`].
+    SaveCaptionStyleToLibrary {
+        /// The open project.
+        project_id: ProjectId,
+        /// The caption style.
+        style_id: CaptionStyleId,
+        /// Name, description and tags to save.
+        info: LibraryTemplateInfo,
+    },
+    /// Renames, describes, tags or refiles a library entry (its content and version stay).
+    /// Answered by [`crate::CommandResult::UpdateLibraryTemplateInfo`].
+    UpdateLibraryTemplateInfo {
+        /// The entry.
+        template_id: LibraryTemplateId,
+        /// The new information.
+        info: LibraryTemplateInfo,
+    },
+    /// Moves a library entry to the system trash (projects keep their copies). Answered by
+    /// [`crate::CommandResult::RemoveLibraryTemplate`].
+    RemoveLibraryTemplate {
+        /// The entry.
+        template_id: LibraryTemplateId,
+    },
+    /// Copies a library motion template into a project (reusing a copy of the same version) and
+    /// places an instance (one undoable step). Answered by
+    /// [`crate::CommandResult::InsertLibraryTemplate`].
+    InsertLibraryTemplate(InsertLibraryTemplateRequest),
+    /// Replaces a project template by the newer version of its library entry, migrating its
+    /// instances' values (one undoable step). Answered by
+    /// [`crate::CommandResult::UpdateTemplateFromLibrary`].
+    UpdateTemplateFromLibrary {
+        /// The open project.
+        project_id: ProjectId,
+        /// The project template (linked to a library entry).
+        template_id: TemplateId,
+    },
+    /// Writes a library entry as a `.setemplate` file. Answered by
+    /// [`crate::CommandResult::ExportLibraryTemplate`].
+    ExportLibraryTemplate {
+        /// The entry.
+        template_id: LibraryTemplateId,
+        /// Absolute path of the file to write.
+        path: String,
+    },
+    /// Reads `.setemplate` files into the library; motion templates are checked by the editor
+    /// window first, like those agents write. Answered by
+    /// [`crate::CommandResult::ImportLibraryTemplates`].
+    ImportLibraryTemplates {
+        /// The open project whose window checks the templates.
+        project_id: ProjectId,
+        /// Absolute paths of the files.
+        paths: Vec<String>,
+    },
+    /// Every brand kit of the library. Answered by [`crate::CommandResult::ListBrandKits`].
+    ListBrandKits,
+    /// Creates a brand kit with default values, or a copy of `copyOf`. Answered by
+    /// [`crate::CommandResult::CreateBrandKit`].
+    CreateBrandKit {
+        /// Its name.
+        name: String,
+        /// A kit to copy (logos included), `null` for defaults.
+        copy_of: Option<BrandKitId>,
+    },
+    /// Saves a library kit (a new version); open projects using it get the new values at once
+    /// (one undoable step each). Answered by [`crate::CommandResult::SaveBrandKit`].
+    SaveBrandKit {
+        /// The kit (its logos listed by file; remove one by leaving it out).
+        kit: Box<LibraryBrandKit>,
+    },
+    /// Moves a library kit to the system trash (projects keep their copies). Answered by
+    /// [`crate::CommandResult::RemoveBrandKit`].
+    RemoveBrandKit {
+        /// The kit.
+        kit_id: BrandKitId,
+    },
+    /// Copies an image file into a kit as a new logo. Answered by
+    /// [`crate::CommandResult::AddBrandKitLogo`].
+    AddBrandKitLogo {
+        /// The kit.
+        kit_id: BrandKitId,
+        /// Absolute path of the image.
+        path: String,
+    },
+    /// Gives an open project a copy of a library kit (its logos imported as assets), or none
+    /// (one undoable step). Also how a project takes a newer version of its kit. Answered by
+    /// [`crate::CommandResult::SetProjectBrandKit`].
+    SetProjectBrandKit {
+        /// The open project.
+        project_id: ProjectId,
+        /// The kit, `null` for none.
+        kit_id: Option<BrandKitId>,
+    },
+    /// Adds the project's own kit (made elsewhere) to the library and links the project to it.
+    /// Answered by [`crate::CommandResult::AddProjectBrandKitToLibrary`].
+    AddProjectBrandKitToLibrary {
+        /// The open project.
+        project_id: ProjectId,
     },
     /// Transcription on this machine: whisper.cpp, GPU, models, downloads, preferences (prompt
     /// 21). Answered by [`crate::CommandResult::GetTranscriptionStatus`].

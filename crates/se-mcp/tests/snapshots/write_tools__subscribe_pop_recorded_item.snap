@@ -49,7 +49,7 @@ expression: detail
         "kind": "static",
         "value": "#ffffff"
       },
-      "fontFamily": "Inter",
+      "fontFamily": "Montserrat",
       "fontSize": {
         "kind": "static",
         "value": 140.0

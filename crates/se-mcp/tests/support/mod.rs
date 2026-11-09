@@ -60,6 +60,7 @@ impl Bed {
             transcription: bed.transcription.clone(),
             smart_cuts: bed.smart_cuts.clone(),
             captions: bed.captions.clone(),
+            library_templates: bed.library_templates.clone(),
         });
         let agent = AgentContext {
             project_id,

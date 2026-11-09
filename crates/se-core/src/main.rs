@@ -16,6 +16,7 @@
 
 mod access_guard;
 mod app_paths;
+mod brand_kit_routes;
 mod error;
 mod font_routes;
 mod handshake;

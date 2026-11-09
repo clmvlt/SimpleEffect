@@ -3,7 +3,8 @@
 use std::path::PathBuf;
 
 use se_domain::{
-    AssetId, AssetKind, DomainError, DomainErrorCode, Flicks, JobId, ProjectId, TaskId,
+    AssetId, AssetKind, BrandKitId, DomainError, DomainErrorCode, Flicks, JobId, LibraryTemplateId,
+    ProjectId, TaskId,
 };
 use se_protocol::{ErrorCode, ProtocolError, TemplateCheckStage, TemplateProblem};
 
@@ -305,6 +306,35 @@ pub enum AppError {
         /// The asset.
         asset_id: AssetId,
     },
+    /// No entry of the template library has this id (prompt 25).
+    #[error(
+        "the template library has no entry {template_id}: it was removed meanwhile; list the \
+         library again"
+    )]
+    LibraryTemplateNotFound {
+        /// The entry.
+        template_id: LibraryTemplateId,
+    },
+    /// No brand kit of the library has this id (prompt 25).
+    #[error("there is no brand kit {kit_id}: it was removed meanwhile; list the kits again")]
+    BrandKitNotFound {
+        /// The kit.
+        kit_id: BrandKitId,
+    },
+    /// A file the library cannot use: not a `.setemplate` archive, not an image (prompt 25).
+    #[error("{path} cannot be used: {reason}")]
+    InvalidLibraryFile {
+        /// The file.
+        path: String,
+        /// Why, and what to do.
+        reason: String,
+    },
+    /// Library information or a library kit with unusable values (prompt 25).
+    #[error("{reason}")]
+    InvalidLibraryEntry {
+        /// Each faulty field and its rule.
+        reason: String,
+    },
     /// A bug: an invariant of the application itself was broken.
     #[error("internal error: {0}; please report it")]
     Internal(String),
@@ -362,6 +392,10 @@ impl AppError {
                 ErrorCode::InvalidSubtitleFile
             }
             Self::Subtitles(_) => ErrorCode::SubtitleFileFailed,
+            Self::LibraryTemplateNotFound { .. } => ErrorCode::LibraryTemplateNotFound,
+            Self::BrandKitNotFound { .. } => ErrorCode::BrandKitNotFound,
+            Self::InvalidLibraryFile { .. } => ErrorCode::InvalidLibraryFile,
+            Self::InvalidLibraryEntry { .. } => ErrorCode::InvalidBrandKit,
             Self::Internal(_) => ErrorCode::Internal,
         }
     }

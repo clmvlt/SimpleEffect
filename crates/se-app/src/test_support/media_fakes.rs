@@ -185,6 +185,22 @@ pub fn probed_audio() -> ProbedMedia {
     probed
 }
 
+/// What probing a 512 × 512 PNG gives (logos, prompt 25).
+#[must_use]
+pub fn probed_image() -> ProbedMedia {
+    let mut probed = probed_video();
+    probed.kind = AssetKind::Image;
+    "png_pipe".clone_into(&mut probed.info.container);
+    probed.info.duration = None;
+    probed.info.audio_streams.clear();
+    if let Some(video) = probed.info.video_stream.as_mut() {
+        "png".clone_into(&mut video.codec);
+        video.width = 512;
+        video.height = 512;
+    }
+    probed
+}
+
 fn stereo(codec: &str, profile: Option<&str>) -> AudioStreamInfo {
     AudioStreamInfo {
         codec: codec.to_owned(),

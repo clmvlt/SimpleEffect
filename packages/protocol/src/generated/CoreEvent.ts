@@ -86,4 +86,12 @@ touchedItems: Array<ItemId>, } | { "kind": "aiStatusChanged" } & AiStatus | { "k
 /**
  * The new status.
  */
-status: TranscriptionStatus, };
+status: TranscriptionStatus, } | { "kind": "libraryChanged", 
+/**
+ * The template library changed.
+ */
+templates: boolean, 
+/**
+ * The brand kits changed.
+ */
+brandKits: boolean, };

@@ -110,6 +110,14 @@ pub enum CoreEvent {
         /// The new status.
         status: TranscriptionStatus,
     },
+    /// The app's library changed (prompt 25): an entry or a kit was saved, imported or removed.
+    /// Clients list it again.
+    LibraryChanged {
+        /// The template library changed.
+        templates: bool,
+        /// The brand kits changed.
+        brand_kits: bool,
+    },
 }
 
 #[cfg(test)]

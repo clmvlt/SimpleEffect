@@ -8,7 +8,7 @@ expression: definition
     "openWorldHint": false,
     "readOnlyHint": true
   },
-  "description": "The project's brand kit (colours, fonts, logos). Not available yet in this version of SimpleEffect: it answers available=false.",
+  "description": "The project's brand kit: heading and body fonts, the named palette (primary, secondary, accent, text, background), logos (image asset ids for add_image or template asset parameters), the look new texts and captions take, and favourite intro/outro library templates. Use it consistently unless the user asks otherwise. Answers available=false when the project has none.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,

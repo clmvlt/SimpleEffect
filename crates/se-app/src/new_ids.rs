@@ -1,8 +1,9 @@
 //! [`NewIds`]: typed ids from the [`IdGenerator`] port.
 
 use se_domain::{
-    AssetId, CaptionStyleId, ChangesetId, ItemId, JobId, LinkGroupId, MarkerId, ProjectId,
-    SequenceId, TaskId, TemplateId, TrackId, TransactionId, TransitionId,
+    AssetId, BrandKitId, CaptionStyleId, ChangesetId, ItemId, JobId, LibraryTemplateId,
+    LinkGroupId, MarkerId, ProjectId, SequenceId, TaskId, TemplateId, TrackId, TransactionId,
+    TransitionId,
 };
 
 use crate::{AppError, ports::IdGenerator};
@@ -58,4 +59,8 @@ id_methods! {
     caption_style -> CaptionStyleId;
     /// A new motion template id.
     template -> TemplateId;
+    /// A new library entry id (prompt 25).
+    library_template -> LibraryTemplateId;
+    /// A new library brand kit id (prompt 25).
+    brand_kit -> BrandKitId;
 }

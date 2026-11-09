@@ -7,8 +7,9 @@ use se_protocol::{
 use super::{
     encode::encode,
     handlers::{
-        HandlerContext, ai, captions, editing, frames, graphics, items, media, media_settings,
-        projects, smart_cuts, sound, system, tasks, templates, timeline, transcription,
+        HandlerContext, ai, captions, editing, frames, graphics, items, library, media,
+        media_settings, projects, smart_cuts, sound, system, tasks, templates, timeline,
+        transcription,
     },
     request::{Rejection, parse_request},
 };
@@ -373,6 +374,82 @@ impl RpcRouter {
             | Command::SetCaptionEmphasis(_)
             | Command::UpdateCaptionStyle(_)
             | Command::ApplyCaptionPreset { .. } => Self::dispatch_captions(context, command).await,
+            Command::ListLibraryTemplates
+            | Command::SaveTemplateToLibrary { .. }
+            | Command::SaveCaptionStyleToLibrary { .. }
+            | Command::UpdateLibraryTemplateInfo { .. }
+            | Command::RemoveLibraryTemplate { .. }
+            | Command::InsertLibraryTemplate(_)
+            | Command::UpdateTemplateFromLibrary { .. }
+            | Command::ExportLibraryTemplate { .. }
+            | Command::ImportLibraryTemplates { .. }
+            | Command::ListBrandKits
+            | Command::CreateBrandKit { .. }
+            | Command::SaveBrandKit { .. }
+            | Command::RemoveBrandKit { .. }
+            | Command::AddBrandKitLogo { .. }
+            | Command::SetProjectBrandKit { .. }
+            | Command::AddProjectBrandKitToLibrary { .. } => {
+                Self::dispatch_library(context, command).await
+            }
+        }
+    }
+
+    /// The template library and brand kit commands (prompt 25).
+    async fn dispatch_library(
+        context: &HandlerContext,
+        command: &Command,
+    ) -> Result<CommandResult, ProtocolError> {
+        match command {
+            Command::ListLibraryTemplates => library::list_templates(context).await,
+            Command::SaveTemplateToLibrary {
+                project_id,
+                template_id,
+                info,
+            } => library::save_template(context, *project_id, *template_id, info).await,
+            Command::SaveCaptionStyleToLibrary {
+                project_id,
+                style_id,
+                info,
+            } => library::save_caption_style(context, *project_id, *style_id, info).await,
+            Command::UpdateLibraryTemplateInfo { template_id, info } => {
+                library::update_info(context, *template_id, info).await
+            }
+            Command::RemoveLibraryTemplate { template_id } => {
+                library::remove_template(context, *template_id).await
+            }
+            Command::InsertLibraryTemplate(request) => {
+                library::insert_template(context, request).await
+            }
+            Command::UpdateTemplateFromLibrary {
+                project_id,
+                template_id,
+            } => library::update_project_template(context, *project_id, *template_id).await,
+            Command::ExportLibraryTemplate { template_id, path } => {
+                library::export_template(context, *template_id, path).await
+            }
+            Command::ImportLibraryTemplates { project_id, paths } => {
+                library::import_templates(context, *project_id, paths).await
+            }
+            Command::ListBrandKits => library::list_brand_kits(context).await,
+            Command::CreateBrandKit { name, copy_of } => {
+                library::create_brand_kit(context, name, *copy_of).await
+            }
+            Command::SaveBrandKit { kit } => library::save_brand_kit(context, kit).await,
+            Command::RemoveBrandKit { kit_id } => library::remove_brand_kit(context, *kit_id).await,
+            Command::AddBrandKitLogo { kit_id, path } => {
+                library::add_brand_kit_logo(context, *kit_id, path).await
+            }
+            Command::SetProjectBrandKit { project_id, kit_id } => {
+                library::set_project_brand_kit(context, *project_id, *kit_id).await
+            }
+            Command::AddProjectBrandKitToLibrary { project_id } => {
+                library::add_project_brand_kit_to_library(context, *project_id).await
+            }
+            _ => Err(ProtocolError::new(
+                se_protocol::ErrorCode::Internal,
+                "a non-library command reached the library dispatcher",
+            )),
         }
     }
 
@@ -561,6 +638,8 @@ pub mod testing {
             transcription,
             smart_cuts,
             captions,
+            library_templates,
+            brand_kits,
             ..
         } = MediaTestbed::new(Path::new("/projects"));
         HandlerContext {
@@ -578,6 +657,8 @@ pub mod testing {
             transcription,
             smart_cuts,
             captions,
+            library_templates,
+            brand_kits,
         }
     }
 }
@@ -783,6 +864,8 @@ mod tests {
             "getAiSettings",
             "getTranscriptionStatus",
             "getSmartCutSettings",
+            "listLibraryTemplates",
+            "listBrandKits",
         ] {
             let request = format!(r#"{{"type":"request","id":1,"command":{{"kind":"{kind}"}}}}"#);
             assert_eq!(reply(&request).await["result"]["kind"], kind);

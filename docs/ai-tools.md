@@ -63,6 +63,7 @@
 | `NO_TRANSCRIPTION_MODEL`, `TRANSCRIPTION_UNAVAILABLE` | No speech model is installed (the user downloads one in « Réglages → Transcription »), or whisper.cpp cannot run (the message says why) |
 | `TEMPLATE_INVALID` | A motion template module cannot be used: every problem with its stage, line and instant; nothing was added |
 | `TEMPLATE_NOT_FOUND` | No such motion template; the message lists the project's templates |
+| `LIBRARY_TEMPLATE_NOT_FOUND` | No such entry in the user's template library (removed meanwhile): list it again with `list_templates` and `source: "library"` |
 | `INTERNAL` | A bug: report it |
 
 - **Read tools change nothing** (annotation `readOnlyHint: true`); write tools are annotated
@@ -86,8 +87,8 @@
 | `search_transcript` | Where words are said in the sequence (full-text search, word times) |
 | `transcribe_media` | Transcribes untranscribed media locally, then waits for the result |
 | `list_animation_presets` | Animation presets (fade, slides, pop…) |
-| `get_brand_kit` | Brand kit (not available until prompt 25) |
-| `list_templates` | Motion templates of the project (parameters, instances), or one with its source |
+| `get_brand_kit` | The project's brand kit: fonts, named palette, logos, looks of new texts and captions, favourite templates |
+| `list_templates` | Motion templates of the project or of the user's library (by category; parameters, brand roles), or one with its source |
 | `get_task_changes` | What the calling task changed so far |
 | `add_text` | A styled text, with entrance/exit animations |
 | `add_shape` | A rectangle, rounded rectangle, ellipse or line |
@@ -116,6 +117,7 @@
 | `update_motion_template` | A new version of a template's module (copied when instances lie outside the scope) |
 | `instantiate_template` | Places a motion template over a time range with parameter values |
 | `update_template_params` | Changes the parameter values of a template instance (keyframes for numbers and colours) |
+| `insert_library_template` | Places a motion template of the user's library (copied into the project) with parameter values |
 
 Ids below are shortened (`…0001…`); real ones are UUIDs.
 
@@ -447,15 +449,41 @@ stable.
 
 ### `get_brand_kit`
 
-The project's brand kit. **Not available yet** (prompt 25).
+The project's brand kit (prompt 25, ADR-0036): the user's visual identity, a copy of one of their
+library kits. **Use it consistently** — heading font for titles, body font for text, the palette's
+roles for colours, the logos — unless the user asks otherwise. New texts (`add_text` fields left
+out), new captions (`create_captions` without `style`, or `style: "brand_kit"`) and template
+parameters bound to a role already take its values.
 
-**Input**: none. **Output**: `{"available":false,"message":"Brand kits are not available yet …"}`
+**Input**: none.
+
+**Output**:
+```json
+{"available":true,"name":"Example brand",
+ "fonts":{"heading":"Montserrat","body":"Inter"},
+ "colors":{"primary":"#ffcc00","secondary":"#1a1a1a","accent":"#ff3366","text":"#ffffff","background":"#1a1a1a"},
+ "logos":[{"name":"Logo","asset_id":"…0003…"}],
+ "text_style":{"font_family":"Montserrat","font_weight":700,"font_size":96.0,"color":"#ffffff","uppercase":false,"stroke":null,"shadow":false,"background":null},
+ "caption_style":{"font_family":"Inter","text_color":"#ffffff","active_color":"#ffd60a","animation":"wordHighlight"},
+ "intro_templates":[{"library_template_id":"…","name":"Lower third"}]}
+```
+Logos are image assets of the project (`add_image`, or a template's `asset` parameter).
+`intro_templates`/`outro_templates` (absent when empty) are library templates the user prefers
+for openings and endings (`insert_library_template`). Without a kit:
+`{"available":false,"message":"This project has no brand kit: …"}`.
 
 ### `list_templates`
 
-The project's motion templates (prompt 24, below).
+Motion templates of the project (prompt 24, below) or of the user's **template library**
+(prompt 25): templates the user saved to reuse in every project. Prefer a fitting library template
+(`insert_library_template`) over writing a new one.
 
-**Input**: `template_id` (optional): one template, with its full source (to write a new version).
+**Input**:
+| Argument | Type | Default |
+|---|---|---|
+| `source` | `project` or `library` | `project` |
+| `category` | `title`, `lowerThird`, `callToAction`, `transition`, `other` | every category |
+| `template_id` | a project `template_id` (or a `library_template_id` with `source: "library"`) | none: the list |
 
 **Output**:
 ```json
@@ -466,11 +494,22 @@ The project's motion templates (prompt 24, below).
      {"name":"accent","label":"Accent","type":"color","default":"#ffcc00","animatable":true},
      {"name":"side","label":"Côté","type":"enum","default":"left","options":["left","right"]},
      {"name":"logo","label":"Logo","type":"asset","default":null}],
-   "instances":1}]}
+   "instances":1,"category":"lowerThird","library_template_id":"…"}]}
 ```
-With `template_id`: `{"template":{…},"source":"export const meta = …"}`. Types: `string` (with
-`multiline`), `number`, `color`, `boolean`, `enum` (`options`), `font`, `asset`. **Errors**:
-`TEMPLATE_NOT_FOUND`.
+`category` is the module's `meta.category`; `library_template_id` (absent when none) names the
+library entry the template was copied from; a parameter's `brand` (absent when none) is the brand
+kit role it starts from. With `source: "library"`:
+```json
+{"templates":[{"library_template_id":"…","name":"Bandeau","description":"Nom et fonction","category":"lowerThird",
+   "tags":["interview"],"version":3,"default_duration":{"timecode":"00:00:05.000","seconds":5.0},
+   "params":[{"name":"accent","label":"Accent","type":"color","default":"#ffcc00","animatable":true,"brand":"accent"}, …],
+   "project_template_id":"…"}]}
+```
+(`project_template_id`: the project's copy of that version, when it has one). Caption styles of
+the library are not listed. With `template_id`: `{"template":{…},"source":"export const meta = …"}`.
+Types: `string` (with `multiline`), `number`, `color`, `boolean`, `enum` (`options`), `font`,
+`asset`. **Errors**: `TEMPLATE_NOT_FOUND`, `LIBRARY_TEMPLATE_NOT_FOUND`, `INVALID_ARGUMENTS`
+(unknown category or source).
 
 ## Write tools (prompt 19)
 
@@ -542,12 +581,12 @@ An editable text over a time range, with optional entrance and exit animations, 
 | `start` | time | required |
 | `end` / `duration` | time (exactly one) | required |
 | `position` | `"center"`, `"top"`, `"bottom"`, `"left"`, `"right"`, `"lower_third"` or `{x, y}` (0–1) | `"center"` |
-| `font_size` | design pixels (1080 = shorter side) | 96 |
-| `font_family`, `font_weight` (1–1000), `italic` | | `"Inter"`, 600, false |
-| `color` | `#rrggbb[aa]` | white |
-| `align` | `left`, `center`, `right` | center |
-| `max_width` | design pixels (wrapping) | none |
-| `uppercase`, `shadow` | booleans | false |
+| `font_size` | design pixels (1080 = shorter side) | the brand kit's text style, else 96 |
+| `font_family`, `font_weight` (1–1000), `italic` | | the brand kit's, else `"Inter"`, 600, false |
+| `color` | `#rrggbb[aa]` | the brand kit's, else white |
+| `align` | `left`, `center`, `right` | the brand kit's, else center |
+| `max_width` | design pixels (wrapping) | the brand kit's, else none |
+| `uppercase`, `shadow` | booleans | the brand kit's, else false |
 | `stroke` | `{color?, width?}` (outline on) | off |
 | `background` | `{color?}` (box on) | off |
 | `track` | video track (id or name) | the highest free track of the task (a new one on top when the task may use every track) |
@@ -795,7 +834,7 @@ Agent instructions: `07-captions.md` (readability, line length, safe areas).
 | Argument | Type | Meaning |
 |---|---|---|
 | `range` | `{start, end}` | Where (default: the task's range, else the whole sequence); captions of the caption track crossing it are replaced |
-| `style` | string | A preset (`tiktokBold`, `minimal`, `karaoke`, `box`) or a `style_id` (default: the replaced captions' style, else `minimal`) |
+| `style` | string | A preset (`tiktokBold`, `minimal`, `karaoke`, `box`), `brand_kit` (the project's brand kit look) or a `style_id` (default: the replaced captions' style, else the brand kit's look, else `minimal`) |
 | `max_chars_per_line` | integer | 4–80 (default: the style's) |
 | `max_lines` | integer | 1–4 (default: the style's) |
 
@@ -889,6 +928,16 @@ type or is outside the new range falls back to the new default (`reset`).
 to the item's start, as `set_keyframes`). Unknown names or wrong types: `INVALID_ARGUMENTS`
 naming the parameter; values outside a range: `VALIDATION_ERROR`.
 
+**Brand kits and the library** (prompt 25). `meta.category` (optional: `title`, `lowerThird`,
+`callToAction`, `transition`, `other`) files the template in the user's browser. A colour, font
+or asset parameter may declare `brand` — `primary`, `secondary`, `accent`, `text`, `background`
+(colours), `heading`, `body` (fonts), `logo` (assets): new instances in a project with a brand kit
+start with the kit's value instead of the default (values given explicitly win), so one template
+fits every brand. The user saves templates to their library and inserts them in other projects;
+agents insert library templates with `insert_library_template`. A project template copied from
+the library and changed by an agent keeps its link: the user may save it back as a new library
+version.
+
 ### `create_motion_template`
 
 **Input**: `source` (required): the whole module.
@@ -924,7 +973,7 @@ batchable. **Errors**: `TEMPLATE_NOT_FOUND`, `TEMPLATE_INVALID`, `RENDERER_UNAVA
 | `template_id` | string | required |
 | `start` | time | required |
 | `end` / `duration` | time | the template's default length (give one at most) |
-| `params` | object | defaults for the values not given |
+| `params` | object | brand kit values for parameters bound to a role, defaults for the others |
 | `track` | id or name of a video track | the highest free track of the task |
 | `position` | `{x, y}` or a named place | `center` (the template draws over the whole frame: keep it unless the whole graphic moves) |
 | `scale`, `opacity` | number | 1 |
@@ -941,6 +990,25 @@ to its default; others unchanged), `expected_revision`. The template's code is u
 **Output**: as other write tools. **Errors**: `INVALID_ARGUMENTS` (not a template instance,
 unknown parameter, wrong type), `VALIDATION_ERROR`, `REVISION_CONFLICT`, `ITEM_NOT_FOUND`,
 `OUT_OF_SCOPE`.
+
+### `insert_library_template`
+
+Places a motion template of the user's library (prompt 25): the template is copied into the
+project (a copy of the same library version already there is reused) and an instance is placed.
+
+| Argument | Type | Default |
+|---|---|---|
+| `template_id` | a `library_template_id` (`list_templates` with `source: "library"`) | required |
+| `start` | time | required |
+| `end` / `duration` | time | the template's default length (give one at most) |
+| `params` | object | brand kit values for parameters bound to a role, defaults for the others |
+| `track` | id or name of a video track | the highest free track of the task |
+| `animation_in`, `animation_out` | `{preset, duration?}` | none |
+
+Not batchable (the library is read first). **Output**: as other write tools (`created` holds the
+instance; `get_item` shows its project `template_id`). **Errors**: `LIBRARY_TEMPLATE_NOT_FOUND`,
+`INVALID_ARGUMENTS` (malformed id, a caption style entry, unknown parameter), `VALIDATION_ERROR`,
+`OUT_OF_SCOPE`, `INVALID_TIME`.
 
 ## Changesets and reverts
 

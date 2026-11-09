@@ -10,6 +10,7 @@ use crate::{
     CORE_VERSION,
     access_guard::{AccessGuard, SessionToken, require_local_access},
     app_paths::AppPaths,
+    brand_kit_routes,
     error::CoreError,
     font_routes, handshake, mcp_routes, media_routes, render_routes,
     rpc::{self, EventBus, HandlerContext, RpcRouter, RpcState},
@@ -58,6 +59,8 @@ pub async fn run(
         transcription: services.transcription.clone(),
         smart_cuts: services.smart_cuts.clone(),
         captions: services.captions.clone(),
+        library_templates: services.library_templates.clone(),
+        brand_kits: services.brand_kits.clone(),
     });
     let state = RpcState::new(router, events.clone(), stopping.clone());
     let app = routes(guard, state, &services, port);
@@ -87,6 +90,9 @@ fn routes(guard: Arc<AccessGuard>, state: RpcState, services: &Services, port: u
         .with_state(state)
         .merge(media_routes::routes(Arc::clone(&services.media)))
         .merge(font_routes::routes(Arc::clone(&services.fonts)))
+        .merge(brand_kit_routes::routes(Arc::clone(
+            &services.brand_kit_files,
+        )))
         .merge(render_routes::routes(Arc::clone(&services.renders)))
         .layer(middleware::from_fn_with_state(guard, require_local_access));
     let agents = mcp_routes::routes(
@@ -100,6 +106,7 @@ fn routes(guard: Arc<AccessGuard>, state: RpcState, services: &Services, port: u
             transcription: services.transcription.clone(),
             smart_cuts: services.smart_cuts.clone(),
             captions: services.captions.clone(),
+            library_templates: services.library_templates.clone(),
         },
         port,
     );

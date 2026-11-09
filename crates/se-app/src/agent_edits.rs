@@ -27,7 +27,8 @@ mod transitions;
 pub use cuts::CutOutcome;
 pub use planner::EditFailure;
 pub use request::{
-    AgentEdit, AgentEditReport, ItemRef, NewAgentCaptions, NewAgentItem, PresetSpec, TaskChanges,
+    AgentEdit, AgentEditReport, ItemRef, LibraryInstance, NewAgentCaptions, NewAgentItem,
+    PresetSpec, TaskChanges,
 };
 pub use templates::TemplateChange;
 
