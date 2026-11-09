@@ -2,7 +2,7 @@
 
 use se_domain::{
     AssetId, CaptionStyleId, ChangesetId, ItemId, JobId, LinkGroupId, MarkerId, ProjectId,
-    SequenceId, TaskId, TrackId, TransactionId, TransitionId,
+    SequenceId, TaskId, TemplateId, TrackId, TransactionId, TransitionId,
 };
 
 use crate::{AppError, ports::IdGenerator};
@@ -56,4 +56,6 @@ id_methods! {
     changeset -> ChangesetId;
     /// A new caption style id.
     caption_style -> CaptionStyleId;
+    /// A new motion template id.
+    template -> TemplateId;
 }

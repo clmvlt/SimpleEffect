@@ -15,10 +15,15 @@ export function useViewerScene(sequence: SequenceEntity): PlaybackScene | null {
   const items = useProjectSelector((state) => state.mirror?.items);
   const assets = useProjectSelector((state) => state.mirror?.assets);
   const captionStyles = useProjectSelector((state) => state.mirror?.project.captionStyles);
+  const templates = useProjectSelector((state) => state.mirror?.project.templates);
   const preview = usePropertyPreview();
   const captionPreview = useCaptionPreview();
   if (tracks === undefined || items === undefined || assets === undefined) return null;
-  const previewed = new Set([...Object.keys(preview.animations), ...Object.keys(preview.contents)]);
+  const previewed = new Set([
+    ...Object.keys(preview.animations),
+    ...Object.keys(preview.contents),
+    ...Object.keys(preview.templateParams),
+  ]);
   let shown: Readonly<Record<ItemId, ItemEntity>> = items;
   if (previewed.size > 0) {
     const copy: Record<ItemId, ItemEntity> = { ...items };
@@ -35,9 +40,10 @@ export function useViewerScene(sequence: SequenceEntity): PlaybackScene | null {
       items: withPreviewStyle(shown, captionPreview),
       assets,
       captionStyles: [...(captionStyles ?? []), captionPreview.style],
+      templates,
     });
   }
-  return sceneOf({ sequence, tracks, items: shown, assets, captionStyles });
+  return sceneOf({ sequence, tracks, items: shown, assets, captionStyles, templates });
 }
 
 /** `items` whose previewed captions point at the preview's style. */

@@ -1,11 +1,15 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
+import type { Animatable } from "./Animatable";
+import type { AssetId } from "./AssetId";
 import type { Color } from "./Color";
 
 /**
- * The value of one template parameter.
+ * The value of one template parameter; its kind matches the parameter's (validation).
  *
- * TODO(prompt-24): enum, font and asset parameters (ADR-0011), validated against the schema.
+ * Numbers and colours are animatable (keyframe times relative to the item's start, like every
+ * keyframe). Reading accepts a bare number or colour as a static value (documents written before
+ * prompt 24).
  */
 export type TemplateParamValue = { "kind": "text", 
 /**
@@ -13,14 +17,26 @@ export type TemplateParamValue = { "kind": "text",
  */
 value: string, } | { "kind": "number", 
 /**
- * The number.
+ * The number, possibly keyframed.
  */
-value: number, } | { "kind": "boolean", 
+value: Animatable<number>, } | { "kind": "boolean", 
 /**
  * The flag.
  */
 value: boolean, } | { "kind": "color", 
 /**
- * The colour.
+ * The colour, possibly keyframed.
  */
-value: Color, };
+value: Animatable<Color>, } | { "kind": "enum", 
+/**
+ * The option chosen.
+ */
+value: string, } | { "kind": "font", 
+/**
+ * The family name.
+ */
+value: string, } | { "kind": "asset", 
+/**
+ * The asset, `null` for none.
+ */
+value: AssetId | null, };

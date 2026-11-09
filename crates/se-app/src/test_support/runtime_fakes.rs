@@ -6,7 +6,7 @@ use std::sync::{
 };
 
 use se_domain::{ProjectId, Uuid};
-use se_protocol::{CoreEvent, FrameRenderRequest};
+use se_protocol::{CoreEvent, FrameRenderRequest, TemplateCheckRequest};
 
 use super::lock;
 use crate::ports::{Clock, EventSink, IdGenerator, RendererLink, TokenSource};
@@ -103,6 +103,7 @@ impl TokenSource for SequentialTokens {
 pub struct FakeRendererLink {
     connected: AtomicBool,
     requests: Mutex<Vec<FrameRenderRequest>>,
+    template_checks: Mutex<Vec<TemplateCheckRequest>>,
 }
 
 impl Default for FakeRendererLink {
@@ -110,6 +111,7 @@ impl Default for FakeRendererLink {
         Self {
             connected: AtomicBool::new(true),
             requests: Mutex::new(Vec::new()),
+            template_checks: Mutex::new(Vec::new()),
         }
     }
 }
@@ -124,6 +126,11 @@ impl FakeRendererLink {
     pub fn requests(&self) -> Vec<FrameRenderRequest> {
         lock(&self.requests).clone()
     }
+
+    /// The template checks asked so far (prompt 24).
+    pub fn template_checks(&self) -> Vec<TemplateCheckRequest> {
+        lock(&self.template_checks).clone()
+    }
 }
 
 impl RendererLink for FakeRendererLink {
@@ -133,5 +140,9 @@ impl RendererLink for FakeRendererLink {
 
     fn request_frames(&self, request: FrameRenderRequest) {
         lock(&self.requests).push(request);
+    }
+
+    fn request_template_check(&self, request: TemplateCheckRequest) {
+        lock(&self.template_checks).push(request);
     }
 }

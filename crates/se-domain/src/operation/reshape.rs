@@ -3,7 +3,7 @@
 
 use crate::{
     Animatable, AnimatableProperty, CaptionWord, DomainError, Flicks, Item, ItemId, ItemKind,
-    Keyframe, MediaClip, PropertyMut, TimeRange,
+    Keyframe, MediaClip, PropertyMut, TemplateParamValue, TimeRange,
 };
 
 /// The new extent of an item.
@@ -59,6 +59,11 @@ pub(crate) fn reshape(item: &Item, reshape: &Reshape) -> Result<Item, DomainErro
         ItemKind::Caption(caption) => {
             let ends_with_item = reshape.content.end() == item.timeline_range.end();
             caption.words = retime_words(&caption.words, offset, duration, ends_with_item);
+        }
+        ItemKind::MotionTemplate(template) => {
+            for value in template.params.values_mut() {
+                retime_param(value, offset, duration);
+            }
         }
         _ => {}
     }
@@ -165,6 +170,15 @@ fn retime_properties(kind: &mut ItemKind, offset: Flicks, duration: Flicks) {
             Some(PropertyMut::Color(value)) => *value = retime(value, offset, duration),
             None => {}
         }
+    }
+}
+
+/// The keyframes of an animated template value retimed like a property (see [`retime`]).
+fn retime_param(value: &mut TemplateParamValue, offset: Flicks, duration: Flicks) {
+    match value {
+        TemplateParamValue::Number { value } => *value = retime(value, offset, duration),
+        TemplateParamValue::Color { value } => *value = retime(value, offset, duration),
+        _ => {}
     }
 }
 
@@ -323,6 +337,47 @@ mod tests {
             clip.reframe.focus(),
             Some(&Animatable::Keyframed {
                 keyframes: vec![focus(0.8, 2000)]
+            })
+        );
+    }
+
+    #[test]
+    fn animated_template_values_follow_a_trim() {
+        let template = crate::TemplateItem {
+            template_id: crate::TemplateId::from_test_index(1),
+            params: [
+                (
+                    "slide".to_owned(),
+                    TemplateParamValue::Number {
+                        value: keyframed(&[(0, 0.0), (1000, 10.0), (3000, 30.0)]),
+                    },
+                ),
+                (
+                    "name".to_owned(),
+                    TemplateParamValue::Text {
+                        value: "Ada".to_owned(),
+                    },
+                ),
+            ]
+            .into(),
+            transform: crate::Transform2D::default(),
+        };
+        let item =
+            crate::test_support::item(1, range_ms(0, 4000), ItemKind::MotionTemplate(template));
+        let trimmed = reshape(&item, &Reshape::trim(range_ms(500, 2000))).unwrap();
+        let ItemKind::MotionTemplate(template) = trimmed.kind else {
+            unreachable!()
+        };
+        assert_eq!(
+            template.params.get("slide"),
+            Some(&TemplateParamValue::Number {
+                value: keyframed(&[(500, 10.0)])
+            })
+        );
+        assert_eq!(
+            template.params.get("name"),
+            Some(&TemplateParamValue::Text {
+                value: "Ada".to_owned()
             })
         );
     }

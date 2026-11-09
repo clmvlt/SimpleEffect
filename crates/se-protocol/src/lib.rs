@@ -32,6 +32,7 @@ mod project_entities;
 mod project_session;
 mod smart_cuts;
 mod tasks;
+mod templates;
 mod transcription;
 
 pub use ai::{
@@ -84,6 +85,10 @@ pub use smart_cuts::{
 pub use tasks::{
     RunKind, SubmitTaskRequest, Task, TaskEventRecord, TaskRevertReport, TaskRun, TaskScope,
     TaskStatus, TaskUsage,
+};
+pub use templates::{
+    TemplateCheckFrame, TemplateCheckOutcome, TemplateCheckRequest, TemplateCheckStage,
+    TemplateProblem,
 };
 pub use transcription::{
     DownloadProgress, DownloadTarget, GpuRuntimeInfo, TranscriptSearchHit, TranscriptionBackend,

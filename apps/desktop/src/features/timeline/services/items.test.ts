@@ -1,6 +1,7 @@
 import type { ThumbnailSheet, WaveformPeaks } from '@se/protocol';
 import { describe, expect, it } from 'vitest';
 
+import { transform } from '../../../shared/project-store/testing/graphics-fixture';
 import { seconds, testAsset, testItem } from '../testing/fixtures';
 import { contentEnd, editPoints, nextEditPoint, previousEditPoint, snapTime } from './edit-points';
 import { itemBox, OVERSCAN_PIXELS, spanBox } from './item-geometry';
@@ -192,7 +193,7 @@ describe('item display', () => {
       label: 'Bonjour',
     });
     const template = testItem('p', 'v1', 0, 1, {
-      kind: { kind: 'motionTemplate', templateId: 'lower', params: {} },
+      kind: { kind: 'motionTemplate', templateId: 'lower', params: {}, transform: transform() },
     });
     expect(itemDisplay(template, 'video', assets, [{ id: 'lower', name: 'Bandeau' }]).label).toBe(
       'Bandeau',

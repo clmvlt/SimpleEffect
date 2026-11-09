@@ -5,7 +5,7 @@ import { useActiveSequence, usePlayheadTime, useSelectedItemIds } from '../../ti
 import { usePropertyEditor, type PropertyEditor } from './use-property-editor';
 
 /** Item kinds the visual sections inspect. */
-export type VisualKind = 'text' | 'shape' | 'image' | 'mediaClip';
+export type VisualKind = 'text' | 'shape' | 'image' | 'mediaClip' | 'motionTemplate';
 
 /** The selected visual items of the active sequence and their editor. */
 export interface Inspection {
@@ -17,12 +17,19 @@ export interface Inspection {
 }
 
 function isVisual(kind: ItemEntity['kind']['kind']): kind is VisualKind {
-  return kind === 'text' || kind === 'shape' || kind === 'image' || kind === 'mediaClip';
+  return (
+    kind === 'text' ||
+    kind === 'shape' ||
+    kind === 'image' ||
+    kind === 'mediaClip' ||
+    kind === 'motionTemplate'
+  );
 }
 
 /**
  * The selection seen by the visual sections: its items on video tracks of the active sequence
- * (texts, shapes, images, clips), with their property editor at the playhead; `null` when none.
+ * (texts, shapes, images, clips, motion template instances), with their property editor at the
+ * playhead; `null` when none.
  */
 export function useInspection(): Inspection | null {
   const mirror = useProjectSelector((state) => state.mirror);

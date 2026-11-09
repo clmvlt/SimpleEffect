@@ -1,0 +1,27 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Adds a motion template written as a TypeScript module (meta, params, render) to the project. The editor compiles it, runs it in a sandbox, checks its time budget and determinism, and answers the template_id with pictures of the entrance, middle and exit — or TEMPLATE_INVALID listing every problem with its line, to fix and send again. A template is not on the timeline yet: then call instantiate_template.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "source": {
+        "description": "The whole TypeScript module: `export const meta = { name, description, defaultDuration }`,\n`export const params = { … }` (JSON Schema subset) and `export function render(ctx, time,\nparams)`. Rules and API: the motion templates instructions.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "source"
+    ],
+    "type": "object"
+  },
+  "name": "create_motion_template"
+}

@@ -15,9 +15,10 @@ use crate::{
     Format, FormatPreset, FrameRate, ImageFit, ImageItem, Item, ItemId, ItemKind, Keyframe,
     LinkGroupId, Marker, MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin,
     Project, ProjectId, ProjectSettings, Reframe, SceneSummary, Sequence, SequenceId,
-    ShapeGeometry, ShapeItem, StreamDecodability, Stroke, TaskId, TemplateItem, TemplateParamValue,
-    TextItem, TextStyle, Track, TrackKind, TranscriptSummary, TranscriptionSettings, Transform2D,
-    Transition, TransitionAlignment, TransitionId, TransitionKind, Vec2, VideoStreamInfo,
+    ShapeGeometry, ShapeItem, StreamDecodability, Stroke, TaskId, TemplateChoice, TemplateItem,
+    TemplateParam, TemplateParamSpec, TemplateParamValue, TextItem, TextStyle, Track, TrackKind,
+    TranscriptSummary, TranscriptionSettings, Transform2D, Transition, TransitionAlignment,
+    TransitionId, TransitionKind, Vec2, VideoStreamInfo,
 };
 
 /// Ids of [`example_project`] that tests refer to: its three assets and its template.
@@ -72,10 +73,7 @@ pub fn example_project() -> Project {
                 color: MarkerColor::Yellow,
             }],
         }],
-        templates: vec![MotionTemplate {
-            id: example_ids::TEMPLATE,
-            name: "Lower third".to_owned(),
-        }],
+        templates: vec![lower_third_template()],
         brand_kit: Some(BrandKit {
             colors: vec![
                 Color::opaque(0xff, 0xcc, 0x00),
@@ -333,32 +331,165 @@ fn logo_image() -> Item {
     item(4, range_ms(5000, 2000), ItemKind::Image(image))
 }
 
+/// Source of the example's lower third (`meta`, `params`, `render`).
+pub const LOWER_THIRD_SOURCE: &str = r"export const meta = { name: 'Lower third', description: 'A name and a role sliding in', defaultDuration: 5 };
+
+export const params = {
+  name: { type: 'string', title: 'Nom', default: 'Jane Doe' },
+  role: { type: 'string', title: 'Titre', default: 'Director', multiline: true },
+  accent: { type: 'string', format: 'color', title: 'Accent', default: '#ffcc00' },
+  slide: { type: 'number', title: 'Glissement', default: 120, minimum: 0, maximum: 400 },
+  showLine: { type: 'boolean', title: 'Ligne', default: true },
+  align: { type: 'string', title: 'Alignement', enum: ['left', 'right'], enumLabels: ['Gauche', 'Droite'], default: 'left' },
+  font: { type: 'string', format: 'font', title: 'Police', default: 'Inter' },
+  logo: { type: 'string', format: 'asset', title: 'Logo' },
+};
+
+export function render(ctx, time, p) {
+  const enter = ctx.ease.outCubic(ctx.clamp(time / 0.6, 0, 1));
+  const exit = ctx.ease.inCubic(ctx.clamp((time - ctx.duration + 0.5) / 0.5, 0, 1));
+  ctx.globalAlpha = enter * (1 - exit);
+  const x = p.align === 'left' ? 120 - p.slide * (1 - enter) : ctx.width - 120 + p.slide * (1 - enter);
+  ctx.fillStyle = p.accent;
+  if (p.showLine) ctx.fillRect(p.align === 'left' ? x - 24 : x + 12, 760, 12, 150);
+  ctx.textAlign = p.align;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 72px ${p.font}`;
+  ctx.fillText(p.name, x, 830);
+  ctx.font = `500 44px ${p.font}`;
+  ctx.fillText(p.role, x, 895);
+}
+";
+
+fn lower_third_template() -> MotionTemplate {
+    let param = |name: &str, label: &str, spec| TemplateParam {
+        name: name.to_owned(),
+        label: label.to_owned(),
+        description: None,
+        spec,
+    };
+    let choice = |value: &str, label: &str| TemplateChoice {
+        value: value.to_owned(),
+        label: label.to_owned(),
+    };
+    MotionTemplate {
+        id: example_ids::TEMPLATE,
+        name: "Lower third".to_owned(),
+        description: "A name and a role sliding in".to_owned(),
+        version: 1,
+        source: LOWER_THIRD_SOURCE.to_owned(),
+        params: vec![
+            param(
+                "name",
+                "Nom",
+                TemplateParamSpec::Text {
+                    default: "Jane Doe".to_owned(),
+                    multiline: false,
+                    max_length: crate::DEFAULT_TEXT_MAX_LENGTH,
+                },
+            ),
+            param(
+                "role",
+                "Titre",
+                TemplateParamSpec::Text {
+                    default: "Director".to_owned(),
+                    multiline: true,
+                    max_length: crate::DEFAULT_TEXT_MAX_LENGTH,
+                },
+            ),
+            param(
+                "accent",
+                "Accent",
+                TemplateParamSpec::Color {
+                    default: Color::opaque(0xff, 0xcc, 0x00),
+                },
+            ),
+            param(
+                "slide",
+                "Glissement",
+                TemplateParamSpec::Number {
+                    default: 120.0,
+                    minimum: Some(0.0),
+                    maximum: Some(400.0),
+                    step: None,
+                },
+            ),
+            param(
+                "showLine",
+                "Ligne",
+                TemplateParamSpec::Boolean { default: true },
+            ),
+            param(
+                "align",
+                "Alignement",
+                TemplateParamSpec::Enum {
+                    default: "left".to_owned(),
+                    options: vec![choice("left", "Gauche"), choice("right", "Droite")],
+                },
+            ),
+            param(
+                "font",
+                "Police",
+                TemplateParamSpec::Font {
+                    default: "Inter".to_owned(),
+                },
+            ),
+            param("logo", "Logo", TemplateParamSpec::Asset),
+        ],
+        default_duration: millis(5000),
+        origin: Origin::AiTask {
+            task_id: TaskId::from_test_index(1),
+        },
+    }
+}
+
 fn lower_third() -> Item {
     let params = BTreeMap::from([
         (
-            "title".to_owned(),
+            "name".to_owned(),
             TemplateParamValue::Text {
-                value: "Jane Doe".to_owned(),
+                value: "Ada Lovelace".to_owned(),
             },
         ),
         (
             "accent".to_owned(),
             TemplateParamValue::Color {
-                value: Color::opaque(0xff, 0xcc, 0x00),
+                value: Animatable::constant(Color::opaque(0x33, 0x99, 0xff)),
             },
         ),
         (
-            "slideIn".to_owned(),
-            TemplateParamValue::Boolean { value: true },
+            "slide".to_owned(),
+            TemplateParamValue::Number {
+                value: Animatable::Keyframed {
+                    keyframes: vec![
+                        Keyframe {
+                            time: millis(0),
+                            value: 200.0,
+                            easing: Easing::Preset {
+                                name: EasingPreset::EaseOut,
+                            },
+                        },
+                        Keyframe {
+                            time: millis(500),
+                            value: 0.0,
+                            easing: Easing::Linear,
+                        },
+                    ],
+                },
+            },
         ),
         (
-            "lineWidth".to_owned(),
-            TemplateParamValue::Number { value: 4.0 },
+            "showLine".to_owned(),
+            TemplateParamValue::Boolean { value: false },
         ),
     ]);
     let template = TemplateItem {
         template_id: example_ids::TEMPLATE,
         params,
+        transform: Transform2D {
+            opacity: Animatable::constant(0.9),
+            ..Transform2D::default()
+        },
     };
     item(5, range_ms(2000, 3000), ItemKind::MotionTemplate(template))
 }

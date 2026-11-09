@@ -178,10 +178,40 @@ fn example_project_v5() -> se_domain::Project {
     project
 }
 
+/// The example project as the version-8 fixture holds it, once migrated: its template a skeleton
+/// that draws nothing, its instance without values, centred and opaque.
+fn example_project_v8() -> se_domain::Project {
+    let mut project = example_project();
+    for template in &mut project.templates {
+        *template = se_domain::MotionTemplate {
+            id: template.id,
+            name: template.name.clone(),
+            description: String::new(),
+            version: 1,
+            source: se_store::MIGRATED_TEMPLATE_SOURCE.to_owned(),
+            params: Vec::new(),
+            default_duration: se_domain::Flicks::from_millis(5000),
+            origin: se_domain::Origin::User,
+        };
+    }
+    for item in project
+        .sequences
+        .iter_mut()
+        .flat_map(|sequence| &mut sequence.tracks)
+        .flat_map(|track| &mut track.items)
+    {
+        if let se_domain::ItemKind::MotionTemplate(template) = &mut item.kind {
+            template.params.clear();
+            template.transform = se_domain::Transform2D::default();
+        }
+    }
+    project
+}
+
 /// The example project as the version-7 fixture holds it, once migrated: its caption « Merci
 /// d'être là » spread equally over its two seconds, drawn with the migrated `minimal` style.
 fn example_project_v7() -> se_domain::Project {
-    let mut project = example_project();
+    let mut project = example_project_v8();
     let style = se_domain::CaptionStyleId::parse(se_store::MIGRATED_CAPTION_STYLE_ID).unwrap();
     project.caption_styles[0].id = style;
     for item in project
@@ -321,8 +351,13 @@ async fn version_7_captions_become_equal_words_with_a_minimal_style() {
 }
 
 #[tokio::test]
-async fn version_8_documents_load_as_they_are() {
-    assert_eq!(load_fixture("project-v8.json").await, example_project());
+async fn version_8_templates_get_an_empty_definition() {
+    assert_eq!(load_fixture("project-v8.json").await, example_project_v8());
+}
+
+#[tokio::test]
+async fn version_9_documents_load_as_they_are() {
+    assert_eq!(load_fixture("project-v9.json").await, example_project());
 }
 
 #[tokio::test]

@@ -14,7 +14,10 @@ function resourceSize(resource: VideoFrame | ImageBitmap): readonly [number, num
 
 const WHOLE: Crop = { x: 0, y: 0, width: 1, height: 1 };
 
-/** A video frame or an image (the part of it the layer crops) stretched over the layer's box. */
+/**
+ * A video frame, an image (the part of it the layer crops) or a motion template's rendered frame,
+ * stretched over the layer's box.
+ */
 export class PictureNode implements LayerNode {
   readonly kind;
   readonly root = new Container();
@@ -22,7 +25,7 @@ export class PictureNode implements LayerNode {
   private readonly blur = new LayerBlur();
   private source: ImageSource | null = null;
 
-  constructor(kind: 'video' | 'image') {
+  constructor(kind: 'video' | 'image' | 'template') {
     this.kind = kind;
     this.sprite.anchor.set(0.5);
     this.root.addChild(this.sprite);

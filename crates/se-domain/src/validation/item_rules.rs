@@ -3,7 +3,7 @@
 
 use super::{
     Path, ProjectIndex, Report, ViolationCode, animation_rules, caption_rules, graphic_rules,
-    media_rules, report::seconds,
+    media_rules, report::seconds, template_rules,
 };
 use crate::{AssetKind, Item, ItemKind, TrackKind};
 
@@ -29,7 +29,7 @@ pub(super) fn check(context: &ItemContext<'_>, report: &mut Report) {
         }
         ItemKind::Image(image) => media_rules::check_image(image, context, &kind_path, report),
         ItemKind::MotionTemplate(template) => {
-            media_rules::check_template(template, context, &kind_path, report);
+            template_rules::check_template_item(template, context, &kind_path, report);
         }
         ItemKind::Text(text) => graphic_rules::check_text(text, &kind_path, report),
         ItemKind::Shape(shape) => graphic_rules::check_shape(shape, &kind_path, report),

@@ -12,6 +12,7 @@ import type { FontLoader } from '../../src/fonts/font-registry';
 import { MediabunnyVideoSource } from '../../src/decode/video-source';
 import type { PreviewEngine } from '../../src/preview/engine';
 import type { RenderScene } from '../../src/preview/frame-renderer';
+import type { TemplateRenderer } from '../../src/templates/template-renderer';
 import { createPreviewEngine } from '../../src/preview/preview-engine';
 
 declare module 'vitest' {
@@ -31,6 +32,8 @@ export interface RenderOptions {
   readonly transparent?: boolean;
   /** Fonts loaded before texts are drawn (`testFonts()` for the bundled Inter). */
   readonly fonts?: FontLoader;
+  /** Renders motion template layers (prompt 24). */
+  readonly templates?: TemplateRenderer;
 }
 
 /** A rendered frame and the engine that drew it (destroy it when done). */
@@ -60,6 +63,7 @@ export async function createTestEngine(
     locator: (assetId, variant) => files[assetId]?.[variant] ?? null,
     pool: { createVideoSource: (url) => new MediabunnyVideoSource(url, 'prefer-software') },
     ...(options.fonts === undefined ? {} : { fonts: options.fonts }),
+    ...(options.templates === undefined ? {} : { templates: options.templates }),
   });
   engine.setScene(scene);
   engine.setProxy(options.proxy === true);

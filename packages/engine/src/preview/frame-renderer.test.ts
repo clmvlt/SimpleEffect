@@ -231,6 +231,7 @@ describe('PreviewEngine', () => {
       status: 'ready',
       issues: [],
       missingFonts: [],
+      templateIssues: [],
       error: null,
     });
   });

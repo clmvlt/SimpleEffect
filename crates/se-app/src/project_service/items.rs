@@ -61,6 +61,10 @@ pub mod labels {
     pub const ADD_SHAPE: &str = "Add shape";
     /// An image was added at the playhead.
     pub const ADD_IMAGE: &str = "Add image";
+    /// An instance of a motion template was added (prompt 24).
+    pub const ADD_TEMPLATE: &str = "Add motion template";
+    /// A motion template no item used was removed (prompt 24).
+    pub const REMOVE_TEMPLATE: &str = "Remove motion template";
     /// An animation preset was applied.
     pub const APPLY_ANIMATION: &str = "Apply animation";
     /// The reframe mode or focus of clips changed (inspector « Cadrage », viewer reframing).

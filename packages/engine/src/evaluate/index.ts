@@ -29,6 +29,7 @@ export {
   type ResolvedTransform,
   type ShapeLayer,
   type Size,
+  type TemplateLayer,
   type TextLayer,
   type VideoLayer,
 } from './frame-graph';
@@ -48,6 +49,15 @@ export {
   type ReframeMode,
   type ReframedPicture,
 } from './reframe';
+export {
+  templateAssets,
+  templateSeconds,
+  templateValues,
+  type TemplateList,
+  type TemplateRef,
+  type TemplateValue,
+  type TemplateValues,
+} from './template-layer';
 export { clipSourceTime, fadeFactor } from './timing';
 export { isInvisible, resolveTransform } from './transform';
 export {

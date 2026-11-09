@@ -104,7 +104,7 @@ fn value_paths(slot: PropertyRef<'_>, path: &Path) -> Vec<(Path, f64)> {
 }
 
 /// Keyframes exist, have strictly increasing times within `[0, duration]` and valid easings.
-fn check_keyframes<T>(
+pub(super) fn check_keyframes<T>(
     property: &Animatable<T>,
     path: &Path,
     duration: Flicks,

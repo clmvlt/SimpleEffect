@@ -656,6 +656,8 @@
       "addText": "Ajouter un texte",
       "addShape": "Ajouter une forme",
       "addImage": "Ajouter une image",
+      "addTemplate": "Ajouter un modèle d’animation",
+      "removeTemplate": "Supprimer un modèle d’animation",
       "applyAnimation": "Appliquer une animation",
       "reframeItems": "Recadrage",
       "revertAiTask": "Annuler une tâche IA",
@@ -886,6 +888,34 @@
         "pulse": "Pulsation"
       }
     },
+    "templates": {
+      "list": {
+        "tab": "Modèles",
+        "title": "Modèles du projet",
+        "emptyTitle": "Aucun modèle d’animation",
+        "emptyDescription": "Demandez à l’IA d’en créer un (bandeau, titre animé, barre de progression…) : il apparaîtra ici, prêt à être réutilisé.",
+        "preview": "Aperçu de « {{name}} »",
+        "version": "v{{version}}",
+        "insert": "Insérer à la tête de lecture",
+        "code": "Voir le code",
+        "remove": "Supprimer le modèle",
+        "inUse": "Utilisé dans le projet : supprimez d’abord ses instances"
+      },
+      "inspector": {
+        "title": "Modèle : {{name}}",
+        "noParams": "Ce modèle n’a aucun paramètre modifiable.",
+        "noImage": "Aucune image",
+        "failed": "Ce modèle a échoué : {{message}}",
+        "failedAt": "Ce modèle a échoué (ligne {{line}}) : {{message}}",
+        "code": "Voir le code",
+        "askAi": "Demander une modification à l’IA",
+        "askAiDraft": "Modifie le modèle « {{name}} » : "
+      },
+      "code": {
+        "title": "{{name}} — version {{version}}",
+        "description": "Le code du modèle, écrit par l’IA. Il n’est pas modifiable ici : changez ses paramètres dans l’inspecteur, ou demandez une modification à l’IA."
+      }
+    },
     "captions": {
       "title": "Sous-titres",
       "noSequence": "Ouvrez une séquence pour voir ses sous-titres.",
@@ -1093,7 +1123,8 @@
       "INVALID_EDIT_POINT": "Ce point de montage est en dehors de l’élément.",
       "FRAME_RATE_LOCKED": "La séquence contient déjà des éléments : sa cadence ne peut plus changer.",
       "LAST_SEQUENCE": "C’est la seule séquence du projet : créez-en une autre avant de la supprimer.",
-      "INVALID_TRANSCRIPTION_SETTINGS": "Réglages de transcription invalides : la langue doit être un code de deux ou trois lettres (fr, en…) et le vocabulaire une seule ligne de 600 caractères au plus."
+      "INVALID_TRANSCRIPTION_SETTINGS": "Réglages de transcription invalides : la langue doit être un code de deux ou trois lettres (fr, en…) et le vocabulaire une seule ligne de 600 caractères au plus.",
+      "TEMPLATE_IN_USE": "Ce modèle est encore utilisé dans le projet : supprimez d’abord ses instances."
     },
     "TASK_NOT_FOUND": "Cette tâche IA n’existe plus dans le projet : actualisez la liste des tâches.",
     "TASK_NOT_ACTIVE": "Cette tâche IA est déjà terminée : il n’y a plus rien à annuler.",
@@ -1112,7 +1143,9 @@
     "DOWNLOAD_FAILED": "Le téléchargement a échoué ou le fichier reçu ne correspond pas : vérifiez la connexion et réessayez.",
     "NO_SPEECH_STREAM": "Ce média n’a pas de son à transcrire.",
     "SUBTITLE_FILE_FAILED": "Le fichier de sous-titres n’a pas pu être lu ou écrit : vérifiez son emplacement et vos droits.",
-    "INVALID_SUBTITLE_FILE": "Ce fichier n’est pas un fichier de sous-titres SRT valide."
+    "INVALID_SUBTITLE_FILE": "Ce fichier n’est pas un fichier de sous-titres SRT valide.",
+    "TEMPLATE_INVALID": "Ce modèle d’animation ne peut pas être utilisé : il ne compile pas, échoue, est trop lent ou n’est pas déterministe.",
+    "TEMPLATE_CHECK_NOT_FOUND": "Cette vérification de modèle n’attend plus de réponse (terminée ou expirée)."
   },
   "format": {
     "ratio": "Format",

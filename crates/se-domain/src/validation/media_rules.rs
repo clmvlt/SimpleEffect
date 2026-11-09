@@ -1,9 +1,9 @@
-//! Rules of items referring to assets or templates: `UNKNOWN_REFERENCE`, `ASSET_KIND_MISMATCH`,
+//! Rules of items referring to assets: `UNKNOWN_REFERENCE`, `ASSET_KIND_MISMATCH`,
 //! `INVALID_SPEED`, `NEGATIVE_TIME` (source start), `TIME_OUT_OF_RANGE` and
 //! `SOURCE_RANGE_EXCEEDS_MEDIA` (source end), `VALUE_OUT_OF_RANGE` (fades).
 
 use super::{Path, Report, ViolationCode, item_rules::ItemContext, report::seconds};
-use crate::{Asset, AssetId, AssetKind, ImageItem, MediaClip, TemplateItem};
+use crate::{Asset, AssetId, AssetKind, ImageItem, MediaClip};
 
 pub(super) fn check_media_clip(
     clip: &MediaClip,
@@ -56,24 +56,6 @@ pub(super) fn check_image(
             format!(
                 "asset {} is not an image; play videos and sounds with a media clip",
                 asset.id
-            ),
-        );
-    }
-}
-
-pub(super) fn check_template(
-    template: &TemplateItem,
-    context: &ItemContext<'_>,
-    path: &Path,
-    report: &mut Report,
-) {
-    if !context.index.has_template(template.template_id) {
-        report.push(
-            ViolationCode::UnknownReference,
-            &path.field("templateId"),
-            format!(
-                "template {} does not exist in this project; use the id of an existing template",
-                template.template_id
             ),
         );
     }

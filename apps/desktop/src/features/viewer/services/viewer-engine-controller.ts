@@ -10,6 +10,7 @@ import type {
   PreviewStats,
   RenderScene,
 } from '@se/engine/preview';
+import type { TemplateRenderer } from '@se/engine/templates';
 
 import { PreviewUnsupportedError, type PreviewEngineFactory } from './preview-engine-factory';
 import type { Size } from './viewer-layout';
@@ -32,6 +33,7 @@ interface Settings {
   locator: MediaLocator;
   playback: PreviewPlayback | null;
   fonts: FontLoader | null;
+  templates: TemplateRenderer | null;
 }
 
 /**
@@ -57,6 +59,7 @@ export class ViewerEngineController {
     locator: () => null,
     playback: null,
     fonts: null,
+    templates: null,
   };
 
   constructor(private readonly factory: PreviewEngineFactory) {}
@@ -145,6 +148,12 @@ export class ViewerEngineController {
     this.engine?.setFonts(fonts);
   }
 
+  /** Renders motion template layers (the app's template runtime, prompt 24). */
+  setTemplates(templates: TemplateRenderer | null): void {
+    this.settings.templates = templates;
+    this.engine?.setTemplates(templates);
+  }
+
   /** Where the layers of the last drawn frame sit (the gizmo's input), `null` before one. */
   getLayout = (): FrameLayout | null => this.layout;
 
@@ -174,11 +183,12 @@ export class ViewerEngineController {
 
   private start(engine: PreviewEngine): void {
     this.engine = engine;
-    const { pixels, proxy, background, scene, time, playback, fonts } = this.settings;
+    const { pixels, proxy, background, scene, time, playback, fonts, templates } = this.settings;
     engine.resize(pixels.width, pixels.height);
     engine.setProxy(proxy);
     engine.setBackground(background);
     engine.setFonts(fonts);
+    engine.setTemplates(templates);
     engine.setScene(scene);
     engine.setTime(time);
     engine.setPlayback(playback);

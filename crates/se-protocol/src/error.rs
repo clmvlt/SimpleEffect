@@ -153,6 +153,11 @@ pub enum ErrorCode {
     SubtitleFileFailed,
     /// A file is not SRT (`.srt`); the message gives the line of the problem.
     InvalidSubtitleFile,
+    /// A motion template module cannot be used: it does not compile, throws, is too slow, not
+    /// deterministic or declares bad parameters (the message lists every problem with its line).
+    TemplateInvalid,
+    /// No template check with that id is waiting (it finished or timed out).
+    TemplateCheckNotFound,
 }
 
 #[cfg(test)]

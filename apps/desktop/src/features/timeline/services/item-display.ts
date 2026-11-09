@@ -33,7 +33,7 @@ export function itemDisplay(
   item: ItemEntity,
   trackKind: TrackKind,
   assets: Readonly<Record<string, Asset>>,
-  templates: readonly MotionTemplate[],
+  templates: readonly Pick<MotionTemplate, 'id' | 'name'>[],
 ): ItemDisplay {
   const kind = item.kind;
   switch (kind.kind) {

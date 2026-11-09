@@ -7,11 +7,18 @@ import type { PictureLease } from '../decode/frame-cache';
 import { frameLookupTime } from '../decode/frame-time';
 import { chooseVariant, type MediaLocator } from '../decode/media-variant';
 import { evaluate, type EvaluableSequence } from '../evaluate/evaluate';
-import { isPictureLayer, type FrameGraph, type PictureLayer } from '../evaluate/frame-graph';
+import {
+  isPictureLayer,
+  type FrameGraph,
+  type PictureLayer,
+  type Size,
+} from '../evaluate/frame-graph';
 import type { AssetTable } from '../evaluate/item-layer';
 import type { FontLoader } from '../fonts/font-registry';
+import type { TemplateIssue, TemplateRenderer } from '../templates/template-renderer';
 import { frameFonts, frameLayout, type FrameLayout } from './frame-layout';
 import { MediaIssues, type MediaIssue } from './media-issue';
+import { TemplateFrames } from './template-frames';
 
 /** Longest wait for fonts before a frame is drawn with the fallback fonts. */
 export const FONT_LOAD_TIMEOUT_MS = 4000;
@@ -42,6 +49,8 @@ export type RenderOutcome =
       readonly issues: readonly MediaIssue[];
       /** Font families the texts asked for that the catalogue lacks (drawn with fallbacks). */
       readonly missingFonts: readonly string[];
+      /** Motion templates of the frame that failed (drawn as the error picture, prompt 24). */
+      readonly templateIssues: readonly TemplateIssue[];
       readonly layout: FrameLayout;
     }
   /** A newer request replaced it before its pictures were ready: nothing was drawn. */
@@ -72,6 +81,8 @@ interface PictureNeed {
 export class FrameRenderer {
   private current: AbortController | null = null;
   private fonts: FontLoader | null = null;
+  private templates: TemplateRenderer | null = null;
+  private output: Size | null = null;
 
   constructor(
     private readonly compositor: Compositor,
@@ -82,6 +93,16 @@ export class FrameRenderer {
   /** Fonts to load before drawing texts (`null`: texts use whatever the platform has). */
   setFonts(fonts: FontLoader | null): void {
     this.fonts = fonts;
+  }
+
+  /** Renders motion template layers (`null`: they draw nothing). */
+  setTemplates(templates: TemplateRenderer | null): void {
+    this.templates = templates;
+  }
+
+  /** The compositor's output size in pixels: template frames are rendered at it. */
+  setOutputSize(width: number, height: number): void {
+    this.output = { width, height };
   }
 
   /** Draws `request`; `onLoading` is called when it has to wait for decoding. */
@@ -102,15 +123,18 @@ export class FrameRenderer {
       if (cached === null) missing.push(need);
       else leases.set(need.layer.itemId, cached);
     }
+    const templates = new TemplateFrames(this.templates, graph, this.output ?? graph.frame);
+    templates.peek(leases);
     const fonts = frameFonts(graph);
     const fontsLoading = fonts.length === 0 ? null : (this.fonts?.ensure(fonts) ?? null);
-    if (missing.length > 0 || fontsLoading !== null) {
+    if (missing.length > 0 || fontsLoading !== null || templates.waiting) {
       onLoading();
       await Promise.all([
         this.fetchAll(missing, leases, issues, {
           signal: controller.signal,
           playback: request.playback === true,
         }),
+        templates.render(leases),
         fontsLoading === null ? null : withTimeout(fontsLoading, FONT_LOAD_TIMEOUT_MS),
       ]);
       if (controller.signal.aborted) {
@@ -128,7 +152,13 @@ export class FrameRenderer {
     }
     if (this.current === controller) this.current = null;
     const missingFonts = this.fonts?.missing(fonts) ?? [];
-    return { kind: 'drawn', issues: issues.list(), missingFonts, layout };
+    return {
+      kind: 'drawn',
+      issues: issues.list(),
+      missingFonts,
+      templateIssues: templates.issues,
+      layout,
+    };
   }
 
   /** Cancels the pending request, if any. */

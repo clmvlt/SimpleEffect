@@ -275,6 +275,10 @@ pub enum CommandResult {
     },
     /// Answer to [`crate::Command::ReportFrameRenderFailure`]: the agent was told.
     ReportFrameRenderFailure,
+    /// Answer to [`crate::Command::ReportTemplateCheck`]: the core has the outcome.
+    ReportTemplateCheck,
+    /// Answer to [`crate::Command::RemoveTemplate`].
+    RemoveTemplate,
     /// Answer to [`crate::Command::GetTranscriptionStatus`].
     GetTranscriptionStatus {
         /// The status.

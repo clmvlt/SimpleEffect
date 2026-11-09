@@ -64,8 +64,8 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Marker** | A labelled instant of a sequence, with one of Premiere's eight colours | `Marker` |
 | **Media clip** | An item showing/playing part of an asset | `ItemKind::MediaClip` |
 | **Text / Shape / Image item** | Declarative graphic items | `ItemKind::Text`, `Shape`, `Image` |
-| **Motion template** | AI-authored, parameterised render module (code + params schema) | `MotionTemplate` |
-| **Template item** | An item instantiating a motion template with parameter values | `ItemKind::MotionTemplate`, `TemplateItem` |
+| **Motion template** | An AI-authored TypeScript module (`meta`, `params`, `render`) drawing frames in a sandbox, with typed parameters the user edits in a generated inspector; stored in the project with a version (prompt 24, ADR-0035) | `MotionTemplate`, `Project.templates` |
+| **Template item (instance)** | An item instantiating a motion template: the values set (others at the defaults) and a transform of the whole frame the template draws | `ItemKind::MotionTemplate`, `TemplateItem` |
 | **Caption** | Subtitle item built from transcript words, styled by a caption style | `ItemKind::Caption` |
 | **Brand kit** | Fonts, colours, logo and default caption style reused by the user and agents | `BrandKit` |
 | **Gap** | Empty time on a track before an item: from the previous item's end (or 0) to its start; computed, never stored. Selected by a click, resized with its handle, closed with `Suppr` | `Gap`, `gapAt`, `resizeGap` |
@@ -283,4 +283,12 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Timing redistribution** | What a text edit does to word times: unchanged words keep theirs, a changed run with as many words keeps them one for one, other runs share their time by length | `retimed_words` |
 | **Copy on write (caption styles)** | Restyling some captions of a shared style copies it for them; a style all of whose users are targeted changes in place | `patch_styles` |
 | **SRT** | The SubRip subtitle file format (numbered cues, `HH:MM:SS,mmm` timings), exported and imported as captions | `write_srt`, `parse_srt`, `SubtitleFiles` |
+| **Template parameter** | A value a motion template declares in `params` (string, number, colour, boolean, enum, font, asset) with its label, default and limits; numbers and colours are animatable | `TemplateParam`, `TemplateParamSpec`, `TemplateParamValue` |
+| **Template definition** | What the core reads from a checked module's `meta` and `params`: name, description, default duration, parameters | `TemplateDefinition`, `parse_definition` |
+| **Template version** | The number of a template's source, raised by each `update_motion_template`; instances render their template's current version | `MotionTemplate::version` |
+| **Template check** | The renderer compiling and running a module before it may enter a project: exports, a time budget per frame, determinism, three pictures; or every problem with its line | `checkTemplate`, `TemplateCheckService`, `templateCheckRequested` |
+| **Template sandbox** | The blob Worker a template runs in: network, storage, timers, clocks, randomness and code generation removed, prototypes frozen, drawing only through `ctx` | `neutralizeGlobals`, `templateWorkerSource` |
+| **Template runtime** | The engine part rendering template layers to pictures (one Worker per template version, a frame cache, the error picture) for the viewer, `get_frames` and export | `TemplateRuntime`, `TemplateWorkerPool` |
+| **Error picture** | The striped picture a failing template draws in its place, with its failure shown in the inspector | `TemplateIssue` |
+| **Copy on write (motion templates)** | A new template version from a task whose scope misses some instances copies the template for the instances in scope; the others keep the old one | `plan_template_version`, `copied_from` |
 

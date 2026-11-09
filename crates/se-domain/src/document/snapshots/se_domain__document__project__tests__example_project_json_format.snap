@@ -5,7 +5,7 @@ expression: example_project()
 {
   "id": "00000000-0001-7000-8000-000000000000",
   "name": "Example",
-  "schemaVersion": 8,
+  "schemaVersion": 9,
   "revision": 42,
   "settings": {
     "defaultFormat": {
@@ -596,19 +596,76 @@ expression: example_project()
                 "params": {
                   "accent": {
                     "kind": "color",
-                    "value": "#ffcc00"
+                    "value": {
+                      "kind": "static",
+                      "value": "#3399ff"
+                    }
                   },
-                  "lineWidth": {
-                    "kind": "number",
-                    "value": 4.0
-                  },
-                  "slideIn": {
-                    "kind": "boolean",
-                    "value": true
-                  },
-                  "title": {
+                  "name": {
                     "kind": "text",
-                    "value": "Jane Doe"
+                    "value": "Ada Lovelace"
+                  },
+                  "showLine": {
+                    "kind": "boolean",
+                    "value": false
+                  },
+                  "slide": {
+                    "kind": "number",
+                    "value": {
+                      "kind": "keyframed",
+                      "keyframes": [
+                        {
+                          "time": 0,
+                          "value": 200.0,
+                          "easing": {
+                            "kind": "preset",
+                            "name": "easeOut"
+                          }
+                        },
+                        {
+                          "time": 352800000,
+                          "value": 0.0,
+                          "easing": {
+                            "kind": "linear"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                "transform": {
+                  "position": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "scale": {
+                    "kind": "static",
+                    "value": {
+                      "x": 1.0,
+                      "y": 1.0
+                    }
+                  },
+                  "rotation": {
+                    "kind": "static",
+                    "value": 0.0
+                  },
+                  "anchor": {
+                    "kind": "static",
+                    "value": {
+                      "x": 0.5,
+                      "y": 0.5
+                    }
+                  },
+                  "opacity": {
+                    "kind": "static",
+                    "value": 0.9
+                  },
+                  "blur": {
+                    "kind": "static",
+                    "value": 0.0
                   }
                 }
               }
@@ -917,7 +974,105 @@ expression: example_project()
   "templates": [
     {
       "id": "00000000-0001-7000-8000-000000000000",
-      "name": "Lower third"
+      "name": "Lower third",
+      "description": "A name and a role sliding in",
+      "version": 1,
+      "source": "export const meta = { name: 'Lower third', description: 'A name and a role sliding in', defaultDuration: 5 };\n\nexport const params = {\n  name: { type: 'string', title: 'Nom', default: 'Jane Doe' },\n  role: { type: 'string', title: 'Titre', default: 'Director', multiline: true },\n  accent: { type: 'string', format: 'color', title: 'Accent', default: '#ffcc00' },\n  slide: { type: 'number', title: 'Glissement', default: 120, minimum: 0, maximum: 400 },\n  showLine: { type: 'boolean', title: 'Ligne', default: true },\n  align: { type: 'string', title: 'Alignement', enum: ['left', 'right'], enumLabels: ['Gauche', 'Droite'], default: 'left' },\n  font: { type: 'string', format: 'font', title: 'Police', default: 'Inter' },\n  logo: { type: 'string', format: 'asset', title: 'Logo' },\n};\n\nexport function render(ctx, time, p) {\n  const enter = ctx.ease.outCubic(ctx.clamp(time / 0.6, 0, 1));\n  const exit = ctx.ease.inCubic(ctx.clamp((time - ctx.duration + 0.5) / 0.5, 0, 1));\n  ctx.globalAlpha = enter * (1 - exit);\n  const x = p.align === 'left' ? 120 - p.slide * (1 - enter) : ctx.width - 120 + p.slide * (1 - enter);\n  ctx.fillStyle = p.accent;\n  if (p.showLine) ctx.fillRect(p.align === 'left' ? x - 24 : x + 12, 760, 12, 150);\n  ctx.textAlign = p.align;\n  ctx.fillStyle = '#ffffff';\n  ctx.font = `800 72px ${p.font}`;\n  ctx.fillText(p.name, x, 830);\n  ctx.font = `500 44px ${p.font}`;\n  ctx.fillText(p.role, x, 895);\n}\n",
+      "params": [
+        {
+          "name": "name",
+          "label": "Nom",
+          "description": null,
+          "spec": {
+            "kind": "string",
+            "default": "Jane Doe",
+            "multiline": false,
+            "maxLength": 2000
+          }
+        },
+        {
+          "name": "role",
+          "label": "Titre",
+          "description": null,
+          "spec": {
+            "kind": "string",
+            "default": "Director",
+            "multiline": true,
+            "maxLength": 2000
+          }
+        },
+        {
+          "name": "accent",
+          "label": "Accent",
+          "description": null,
+          "spec": {
+            "kind": "color",
+            "default": "#ffcc00"
+          }
+        },
+        {
+          "name": "slide",
+          "label": "Glissement",
+          "description": null,
+          "spec": {
+            "kind": "number",
+            "default": 120.0,
+            "minimum": 0.0,
+            "maximum": 400.0,
+            "step": null
+          }
+        },
+        {
+          "name": "showLine",
+          "label": "Ligne",
+          "description": null,
+          "spec": {
+            "kind": "boolean",
+            "default": true
+          }
+        },
+        {
+          "name": "align",
+          "label": "Alignement",
+          "description": null,
+          "spec": {
+            "kind": "enum",
+            "default": "left",
+            "options": [
+              {
+                "value": "left",
+                "label": "Gauche"
+              },
+              {
+                "value": "right",
+                "label": "Droite"
+              }
+            ]
+          }
+        },
+        {
+          "name": "font",
+          "label": "Police",
+          "description": null,
+          "spec": {
+            "kind": "font",
+            "default": "Inter"
+          }
+        },
+        {
+          "name": "logo",
+          "label": "Logo",
+          "description": null,
+          "spec": {
+            "kind": "asset"
+          }
+        }
+      ],
+      "defaultDuration": 3528000000,
+      "origin": {
+        "kind": "aiTask",
+        "taskId": "00000000-0001-7000-8000-000000000000"
+      }
     }
   ],
   "brandKit": {

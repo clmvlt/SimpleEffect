@@ -10,7 +10,7 @@ pub use code::DomainErrorCode;
 
 use crate::{
     AnimatableProperty, AnimationPhase, AssetId, CaptionStyleId, Flicks, FrameRate, ItemEdge,
-    ItemId, MarkerId, SequenceId, TaskId, TrackId, TransitionId, Violation,
+    ItemId, MarkerId, SequenceId, TaskId, TemplateId, TrackId, TransitionId, Violation,
 };
 
 /// A refused change. Nothing was modified.
@@ -47,7 +47,7 @@ pub enum DomainError {
     },
     /// No transition has this id.
     #[error(
-        "transition {transition} does not exist in this project; it may have been removed with          its items, read the project again for current ids"
+        "transition {transition} does not exist in this project; it may have been removed with its items, read the project again for current ids"
     )]
     TransitionNotFound {
         /// The unknown id.
@@ -218,7 +218,7 @@ pub enum DomainError {
     },
     /// Ranges of a multi-range edit overlap, touch or are not sorted by start.
     #[error(
-        "{operation} needs ranges sorted by start that do not overlap or touch; merge touching          ranges into one"
+        "{operation} needs ranges sorted by start that do not overlap or touch; merge touching ranges into one"
     )]
     RangesNotInOrder {
         /// The operation (`rippleDeleteRanges`).
@@ -252,7 +252,7 @@ pub enum DomainError {
     },
     /// No caption style has this id.
     #[error(
-        "caption style {style} does not exist in this project; read the project again for its          caption styles"
+        "caption style {style} does not exist in this project; read the project again for its caption styles"
     )]
     CaptionStyleNotFound {
         /// The unknown id.
@@ -260,12 +260,30 @@ pub enum DomainError {
     },
     /// A caption style still used by captions cannot be removed.
     #[error(
-        "caption style {style} is used by caption {item} (and maybe others); give those captions          another style first"
+        "caption style {style} is used by caption {item} (and maybe others); give those captions another style first"
     )]
     CaptionStyleInUse {
         /// The style.
         style: CaptionStyleId,
         /// One caption using it.
+        item: ItemId,
+    },
+    /// No motion template has this id.
+    #[error(
+        "motion template {template} does not exist in this project; list the project's templates for their ids"
+    )]
+    TemplateNotFound {
+        /// The unknown id.
+        template: TemplateId,
+    },
+    /// A motion template still used by items cannot be removed.
+    #[error(
+        "motion template {template} is used by item {item} (and maybe others); remove those items first"
+    )]
+    TemplateInUse {
+        /// The template.
+        template: TemplateId,
+        /// One item using it.
         item: ItemId,
     },
     /// No predefined caption style has this name.
@@ -368,7 +386,7 @@ pub enum DomainError {
     },
     /// A frame-rate change of a sequence that already holds items.
     #[error(
-        "sequence {sequence} already holds items placed at {current} fps, so its frame rate          cannot change to {requested} fps; keep {current} fps, or start from an empty sequence"
+        "sequence {sequence} already holds items placed at {current} fps, so its frame rate cannot change to {requested} fps; keep {current} fps, or start from an empty sequence"
     )]
     FrameRateLocked {
         /// The sequence.
@@ -380,7 +398,7 @@ pub enum DomainError {
     },
     /// The removal of the only sequence of a project.
     #[error(
-        "sequence {sequence} is the only sequence of the project; create or duplicate another          sequence before removing it"
+        "sequence {sequence} is the only sequence of the project; create or duplicate another sequence before removing it"
     )]
     LastSequence {
         /// The sequence.
@@ -433,6 +451,8 @@ impl DomainError {
             Self::AssetInUse { .. } => DomainErrorCode::AssetInUse,
             Self::CaptionStyleNotFound { .. } => DomainErrorCode::CaptionStyleNotFound,
             Self::CaptionStyleInUse { .. } => DomainErrorCode::CaptionStyleInUse,
+            Self::TemplateNotFound { .. } => DomainErrorCode::TemplateNotFound,
+            Self::TemplateInUse { .. } => DomainErrorCode::TemplateInUse,
             Self::UnknownCaptionPreset { .. } => DomainErrorCode::UnknownCaptionPreset,
             Self::InvalidTranscriptionSettings { .. } => {
                 DomainErrorCode::InvalidTranscriptionSettings

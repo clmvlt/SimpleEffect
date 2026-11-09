@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use se_app::{
     AgentContext, AgentEditService, CaptionService, FrameRenderService, MediaService,
-    ProjectService, SmartCutService, TaskTokenRegistry, TranscriptionService,
+    ProjectService, SmartCutService, TaskTokenRegistry, TemplateCheckService, TranscriptionService,
 };
 use se_domain::{Asset, Flicks, Item, Project, Sequence, TimeRange, Track};
 
@@ -20,6 +20,8 @@ pub struct McpDeps {
     pub media: Arc<MediaService>,
     /// Composited frames drawn by the renderer.
     pub renders: Arc<FrameRenderService>,
+    /// Motion template modules checked by the renderer (prompt 24).
+    pub template_checks: Arc<TemplateCheckService>,
     /// Tokens of running agents: who is calling.
     pub tokens: Arc<TaskTokenRegistry>,
     /// Edits of agents: the only way write tools change a project.

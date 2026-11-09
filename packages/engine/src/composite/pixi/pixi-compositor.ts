@@ -123,6 +123,7 @@ class PixiCompositor implements Compositor {
     switch (layer.kind) {
       case 'video':
       case 'image':
+      case 'template':
         return new PictureNode(layer.kind);
       case 'shape':
         return new ShapeNode();
@@ -141,7 +142,10 @@ class PixiCompositor implements Compositor {
     pictures: PictureSet,
     scale: number,
   ): Size | null {
-    if (node instanceof PictureNode && (layer.kind === 'video' || layer.kind === 'image')) {
+    if (
+      node instanceof PictureNode &&
+      (layer.kind === 'video' || layer.kind === 'image' || layer.kind === 'template')
+    ) {
       return node.update(layer, pictures.get(layer.itemId), graph.frame, scale);
     }
     if (node instanceof ShapeNode && layer.kind === 'shape') {

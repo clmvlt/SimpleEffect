@@ -4,7 +4,7 @@
 the width is 1080, in 16:9 the height). Positions are normalised: `x` 0 (left) to 1 (right), `y` 0
 (top) to 1 (bottom); `(0.5, 0.5)` is the centre and an item's position is where its centre sits.
 
-**Presets or keyframes.** For usual entrances and exits use presets (`list_animation_presets`):
+**Presets, keyframes or a template.** For usual entrances and exits use presets (`list_animation_presets`):
 `animation_in` / `animation_out` of `add_text`, `add_shape`, `add_image`, or
 `apply_animation_preset`. Use `set_keyframes` for a custom move (a title sliding to a corner, a
 slow zoom). Easing: `ease_out` for entrances, `ease_in` for exits, `ease_in_out` for moves; avoid
@@ -26,3 +26,7 @@ slow zoom). Easing: `ease_out` for entrances, `ease_in` for exits, `ease_in_out`
 `lower_third`). In vertical videos keep key text out of the top 12 %, the bottom 20 % and the
 right edge (the apps' buttons and captions cover them); in 16:9 keep a 5 % margin. Check with
 `get_frames`.
+
+**Templates.** For procedural motion or several elements moving together (an animated lower
+third, words rising one by one, a progress bar, a call-to-action button), write a motion template
+(next section): the user keeps editing its texts, colours and options in the inspector.

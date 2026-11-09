@@ -14,10 +14,11 @@ use super::{
     add_image::AddImage, add_marker::AddMarker, add_shape::AddShape, add_text::AddText,
     add_transition::AddTransition, apply_animation_preset::ApplyAnimationPreset,
     delete_items::DeleteItems, edit_caption_text::EditCaptionText,
-    emphasize_caption_words::EmphasizeCaptionWords, insert_gap::InsertGap, move_item::MoveItem,
+    emphasize_caption_words::EmphasizeCaptionWords, insert_gap::InsertGap,
+    instantiate_template::InstantiateTemplate, move_item::MoveItem,
     ripple_delete_range::RippleDeleteRange, set_keyframes::SetKeyframes, set_volume::SetVolume,
     split_at::SplitAt, trim_item::TrimItem, update_caption_style::UpdateCaptionStyle,
-    update_item::UpdateItem,
+    update_item::UpdateItem, update_template_params::UpdateTemplateParams,
 };
 use crate::{
     context::{ToolContext, find_sequence},
@@ -31,7 +32,7 @@ use crate::{
 pub const MAX_ACTIONS: usize = 50;
 
 /// The tools a batch can run.
-const BATCHABLE: [&str; 18] = [
+const BATCHABLE: [&str; 20] = [
     "add_text",
     "add_shape",
     "add_image",
@@ -50,6 +51,8 @@ const BATCHABLE: [&str; 18] = [
     "update_caption_style",
     "edit_caption_text",
     "emphasize_caption_words",
+    "instantiate_template",
+    "update_template_params",
 ];
 
 /// The tool.
@@ -224,6 +227,8 @@ fn plan_action(
         "update_caption_style" => plan_with::<UpdateCaptionStyle>(arguments, scene),
         "edit_caption_text" => plan_with::<EditCaptionText>(arguments, scene),
         "emphasize_caption_words" => plan_with::<EmphasizeCaptionWords>(arguments, scene),
+        "instantiate_template" => plan_with::<InstantiateTemplate>(arguments, scene),
+        "update_template_params" => plan_with::<UpdateTemplateParams>(arguments, scene),
         _ => Err(ToolError::invalid_arguments(format!(
             "{tool} cannot run in a batch; batchable tools are {}",
             BATCHABLE.join(", ")

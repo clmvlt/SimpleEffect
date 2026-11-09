@@ -6,6 +6,7 @@ import {
 } from '@se/protocol';
 import type { FontLoader } from '@se/engine/fonts';
 import type { StillRenderer, StillRendererOptions } from '@se/engine/preview';
+import type { TemplateRenderer } from '@se/engine/templates';
 
 import type { ProjectMirror } from '../../../shared/project-store';
 import { createMediaLocator } from './media-locator';
@@ -27,6 +28,11 @@ export interface AgentFrameDeps {
   readonly families: () => readonly FontFamily[] | null;
   /** A font loader over the catalogue's faces, or `null` where fonts cannot load. */
   readonly fonts: (families: readonly FontFamily[], endpoint: CoreEndpoint) => FontLoader | null;
+  /** The app's motion template runtime, or `null` where templates cannot run (prompt 24). */
+  readonly templates: (
+    families: readonly FontFamily[],
+    endpoint: CoreEndpoint,
+  ) => Promise<TemplateRenderer | null>;
   /** Starts a still renderer (`@se/engine/preview`, imported lazily). */
   readonly createStills: (options: StillRendererOptions) => Promise<StillRenderer>;
   /** Sends one JPEG to `url` (`PUT`). */
@@ -56,6 +62,7 @@ export async function answerFrameRequest(
       height: request.height,
       locator: createMediaLocator(endpoint, assets),
       fonts: (families.length > 0 ? deps.fonts(families, endpoint) : null) ?? undefined,
+      templates: (await deps.templates(families, endpoint)) ?? undefined,
     });
     const proxy = request.width <= PROXY_MAX_WIDTH;
     for (const [index, time] of request.times.entries()) {
@@ -91,6 +98,7 @@ function prepare(request: FrameRenderRequest, deps: AgentFrameDeps) {
     items: mirror.items,
     assets: mirror.assets,
     captionStyles: mirror.project.captionStyles,
+    templates: mirror.project.templates,
   });
   return { scene, endpoint, assets: mirror.assets };
 }

@@ -54,6 +54,7 @@ impl Bed {
             projects: bed.projects.clone(),
             media: bed.media.clone(),
             renders: bed.renders.clone(),
+            template_checks: bed.template_checks.clone(),
             tokens: bed.tokens.clone(),
             edits: bed.edits.clone(),
             transcription: bed.transcription.clone(),
@@ -110,6 +111,32 @@ impl Bed {
             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         }
         self.agent.task_id = task.id;
+    }
+
+    /// Calls `name` while a fake renderer answers its template check with `outcome` (prompt 24).
+    pub async fn call_with_check(
+        &self,
+        name: &str,
+        arguments: Value,
+        outcome: se_protocol::TemplateCheckOutcome,
+    ) -> CallToolResult {
+        let checks = self.services.template_checks.clone();
+        let renderer = self.services.renderer.clone();
+        let already = renderer.template_checks().len();
+        let answer = async move {
+            for _ in 0..1000 {
+                if let Some(request) = renderer.template_checks().get(already) {
+                    checks
+                        .deliver(&request.request_id, outcome)
+                        .expect("the check waits");
+                    return;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+            }
+            panic!("no template check was asked");
+        };
+        let (result, ()) = tokio::join!(self.call(name, arguments), answer);
+        result
     }
 
     /// The current document.

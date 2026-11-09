@@ -5,6 +5,7 @@ import type {
   Flicks,
   ItemEntity,
   ItemId,
+  MotionTemplate,
   SequenceEntity,
   TrackEntity,
   TrackId,
@@ -32,6 +33,8 @@ export interface SceneSource {
   readonly assets: Readonly<Record<AssetId, Asset>>;
   /** The project's caption styles (prompt 23). */
   readonly captionStyles?: readonly CaptionStyle[] | undefined;
+  /** The project's motion templates (prompt 24). */
+  readonly templates?: readonly MotionTemplate[] | undefined;
 }
 
 /**
@@ -45,6 +48,7 @@ export function sceneOf({
   items,
   assets,
   captionStyles,
+  templates,
 }: SceneSource): PlaybackScene {
   const sequenceTracks: PlayableTrack[] = [];
   for (const trackId of sequence.trackIds) {
@@ -69,7 +73,7 @@ export function sceneOf({
     });
   }
   return {
-    sequence: { format: sequence.format, tracks: sequenceTracks, captionStyles },
+    sequence: { format: sequence.format, tracks: sequenceTracks, captionStyles, templates },
     assets,
   };
 }

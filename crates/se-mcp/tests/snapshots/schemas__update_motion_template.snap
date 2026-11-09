@@ -1,0 +1,32 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Replaces the module of a motion template with a new version, checked like create_motion_template (pictures, or TEMPLATE_INVALID with every problem). Instances in the task's scope render the new version; if others lie outside the scope, the new version is a copy (copied_from) only the scope's instances use. Values the new parameters refuse fall back to their defaults (reset).",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "source": {
+        "description": "The whole new module (read the current one with `list_templates {\"template_id\"}`).",
+        "type": "string"
+      },
+      "template_id": {
+        "description": "The template (a `template_id` from `list_templates` or `create_motion_template`).",
+        "type": "string"
+      }
+    },
+    "required": [
+      "template_id",
+      "source"
+    ],
+    "type": "object"
+  },
+  "name": "update_motion_template"
+}

@@ -22,7 +22,12 @@ import { uiPreferencesStorage } from '../../../shared/storage';
 import { taskNotice } from '../services/task-notice';
 import { connectTaskSync } from '../services/task-sync';
 import { redoTargetOf } from '../services/task-scope';
-import { connectComposerPersistence, focusComposer, startRedo } from '../store/composer-store';
+import {
+  connectComposerPersistence,
+  focusComposer,
+  setComposerText,
+  startRedo,
+} from '../store/composer-store';
 
 /** Whether the app window has the focus (system notifications are for when it has not). */
 function windowFocused(): boolean {
@@ -74,6 +79,7 @@ export function useAiTaskSync(): void {
     const sequenceId = item === undefined ? undefined : mirror?.tracks[item.trackId]?.sequenceId;
     if (item !== undefined && sequenceId !== undefined) startRedo(redoTargetOf(item, sequenceId));
     else focusComposer();
+    if (request.draft !== null) setComposerText(request.draft);
   });
 
   useEffect(

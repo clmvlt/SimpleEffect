@@ -1,0 +1,225 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Places a motion template of the project on the task's sequence over a time range (default length: the template's), with parameter values (texts, numbers, colours… — the user edits them later in the inspector), and optional placement and animations of the whole frame. Answers the new item_id; check it with get_frames.",
+  "inputSchema": {
+    "$defs": {
+      "AnimationInput": {
+        "additionalProperties": false,
+        "description": "An animation applied to a new item.",
+        "properties": {
+          "duration": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its length (seconds or timecode); default: the preset's."
+          },
+          "preset": {
+            "description": "A preset id from `list_animation_presets` (`fade`, `pop`, `slideFromLeft`…).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "preset"
+        ],
+        "type": "object"
+      },
+      "NamedPosition": {
+        "description": "A named place of the frame (inside the usual safe areas of vertical and horizontal videos).",
+        "oneOf": [
+          {
+            "const": "center",
+            "description": "The centre (0.5, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "top",
+            "description": "Upper part, centred (0.5, 0.15).",
+            "type": "string"
+          },
+          {
+            "const": "bottom",
+            "description": "Lower part, centred (0.5, 0.8).",
+            "type": "string"
+          },
+          {
+            "const": "left",
+            "description": "Left part, centred vertically (0.2, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "right",
+            "description": "Right part, centred vertically (0.8, 0.5).",
+            "type": "string"
+          },
+          {
+            "const": "lower_third",
+            "description": "Lower third, left (0.3, 0.75): names and titles.",
+            "type": "string"
+          }
+        ]
+      },
+      "PointInput": {
+        "additionalProperties": false,
+        "description": "A point of the frame, normalised: `x` from 0 (left) to 1 (right), `y` from 0 (top) to 1\n(bottom).",
+        "properties": {
+          "x": {
+            "description": "From 0 (left edge) to 1 (right edge).",
+            "format": "double",
+            "type": "number"
+          },
+          "y": {
+            "description": "From 0 (top edge) to 1 (bottom edge).",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "type": "object"
+      },
+      "PositionInput": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/NamedPosition",
+            "description": "A named place."
+          },
+          {
+            "$ref": "#/$defs/PointInput",
+            "description": "A normalised point."
+          }
+        ],
+        "description": "Where an item's centre (its anchor) sits."
+      },
+      "Time": {
+        "description": "Seconds (51.5) or a timecode string: \"51.5s\", \"00:51\", \"00:00:51.500\", or \"00:00:51:12\" (frames at the sequence's rate).",
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "animation_in": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/AnimationInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Entrance animation of the whole frame (preset `in` phase); usually the template animates\nitself."
+      },
+      "animation_out": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/AnimationInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Exit animation of the whole frame (preset `out` phase)."
+      },
+      "duration": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "How long it lasts."
+      },
+      "end": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "When it ends (excluded). Give `end` or `duration`, or neither for the template's default\nduration."
+      },
+      "opacity": {
+        "description": "Opacity from 0 to 1; default 1.",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "params": {
+        "additionalProperties": true,
+        "description": "Parameter values by name (the others take their defaults). Numbers and colours also take\n`{\"keyframes\": [{\"time\": 0, \"value\": …, \"easing\"?: \"ease_out\"}]}` (times relative to the\nitem's start); assets take an image `asset_id`.",
+        "type": [
+          "object",
+          "null"
+        ]
+      },
+      "position": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/PositionInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Where the template's frame is centred; default \"center\" (the template draws over the\nwhole frame: keep the centre unless you move the whole graphic)."
+      },
+      "scale": {
+        "description": "Scale of the whole frame (1 = as drawn).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "start": {
+        "$ref": "#/$defs/Time",
+        "description": "When it starts, in sequence time."
+      },
+      "template_id": {
+        "description": "The template (a `template_id` from `create_motion_template` or `list_templates`).",
+        "type": "string"
+      },
+      "track": {
+        "description": "A video track (id or name); default: the highest free track of the task.",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "template_id",
+      "start"
+    ],
+    "type": "object"
+  },
+  "name": "instantiate_template"
+}

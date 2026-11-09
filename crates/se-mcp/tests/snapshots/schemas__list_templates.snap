@@ -8,10 +8,19 @@ expression: definition
     "openWorldHint": false,
     "readOnlyHint": true
   },
-  "description": "The motion templates available (animated titles, lower thirds…). Not available yet in this version of SimpleEffect: it answers available=false with no templates.",
+  "description": "The motion templates of the project (id, name, version, default duration, parameters with types, defaults and ranges, number of instances). With template_id: that template and its full TypeScript source, to write a new version with update_motion_template.",
   "inputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
+    "properties": {
+      "template_id": {
+        "description": "One template (`template_id`): answers its full source too, to write a new version.",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
     "type": "object"
   },
   "name": "list_templates"

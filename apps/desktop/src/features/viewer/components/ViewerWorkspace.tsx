@@ -8,6 +8,7 @@ import { usePlaybackSession } from '../hooks/use-playback-session';
 import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
 import { usePlayRequests } from '../hooks/use-play-requests';
 import { useViewerFonts } from '../hooks/use-viewer-fonts';
+import { useViewerTemplates } from '../hooks/use-viewer-templates';
 import { useViewerScene } from '../hooks/use-viewer-scene';
 import type { AudioEngineFactory } from '../services/audio-engine-factory';
 import { createMediaLocator } from '../services/media-locator';
@@ -39,6 +40,7 @@ export function ViewerWorkspace({
 }: ViewerWorkspaceProps) {
   const [engine] = useState(() => new ViewerEngineController(createEngine));
   useViewerFonts(engine);
+  useViewerTemplates(engine);
   const scene = useViewerScene(sequence);
   const endpoint = useCoreEndpoint();
   const locator = createMediaLocator(endpoint, scene?.assets ?? {});

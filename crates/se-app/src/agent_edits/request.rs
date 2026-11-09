@@ -6,9 +6,11 @@ use std::sync::Arc;
 
 use se_domain::{
     AnimationPhase, CaptionStylePatch, ChangesetId, Flicks, ItemEdge, ItemId, ItemKind, ItemPatch,
-    MarkerColor, Project, PropertyAnimation, TimeRange, TrackId, TransitionAlignment,
-    captions::TimedWord,
+    MarkerColor, Project, PropertyAnimation, TemplateDefinition, TemplateId, TimeRange, TrackId,
+    TransitionAlignment, captions::TimedWord,
 };
+
+use super::templates::TemplateChange;
 use se_protocol::{CaptionSegmentation, CaptionStyleChoice};
 
 /// An item an edit works on: an existing one, or one created by an earlier edit of the same
@@ -57,7 +59,7 @@ pub struct NewAgentCaptions {
 /// A new text, shape or image placed by an agent.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NewAgentItem {
-    /// What it shows (a `Text`, `Shape` or `Image` kind, fully styled).
+    /// What it shows (a `Text`, `Shape`, `Image` or `MotionTemplate` kind, fully styled).
     pub kind: ItemKind,
     /// Where it sits in the task's sequence.
     pub range: TimeRange,
@@ -206,6 +208,23 @@ pub enum AgentEdit {
         /// The preset's id.
         preset: String,
     },
+    /// Adds a motion template made of a module the renderer checked (prompt 24).
+    CreateTemplate {
+        /// What the module declares.
+        definition: Box<TemplateDefinition>,
+        /// The module.
+        source: String,
+    },
+    /// A new version of a motion template: in place when every instance lies in the task's
+    /// scope, else a copy for the instances of the scope (copy on write).
+    UpdateTemplate {
+        /// The template.
+        template: TemplateId,
+        /// What the new module declares.
+        definition: Box<TemplateDefinition>,
+        /// The new module.
+        source: String,
+    },
 }
 
 /// What one call of [`super::AgentEditService::apply`] did.
@@ -220,6 +239,8 @@ pub struct AgentEditReport {
     pub changed: Vec<ItemId>,
     /// Items removed.
     pub removed: Vec<ItemId>,
+    /// Templates created or given a new version, in edit order.
+    pub templates: Vec<TemplateChange>,
     /// The document right after the call.
     pub project: Arc<Project>,
 }

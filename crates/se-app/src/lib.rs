@@ -50,6 +50,7 @@ pub mod project_view;
 pub mod recovery;
 pub mod smart_cuts;
 pub mod tasks;
+pub mod template_checks;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
 pub mod transcription;
@@ -72,4 +73,5 @@ pub use project_service::{
 };
 pub use smart_cuts::{SmartCutService, SmartCutServiceDeps};
 pub use tasks::{TaskService, TaskServiceDeps};
+pub use template_checks::{CheckedTemplate, TemplateCheckService};
 pub use transcription::{TranscriptionService, TranscriptionServiceDeps};

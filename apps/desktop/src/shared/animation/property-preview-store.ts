@@ -1,4 +1,10 @@
-import type { ItemAnimation, ItemEntity, ItemId, PropertyAnimation } from '@se/protocol';
+import type {
+  ItemAnimation,
+  ItemEntity,
+  ItemId,
+  PropertyAnimation,
+  TemplateParamValue,
+} from '@se/protocol';
 import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 
@@ -14,9 +20,11 @@ export interface PropertyPreviewState {
   readonly animations: Readonly<Record<ItemId, readonly PropertyAnimation[]>>;
   /** Text contents being typed, by item. */
   readonly contents: Readonly<Record<ItemId, string>>;
+  /** Motion template values being edited, by item then parameter name (prompt 24). */
+  readonly templateParams: Readonly<Record<ItemId, Readonly<Record<string, TemplateParamValue>>>>;
 }
 
-const EMPTY: PropertyPreviewState = { animations: {}, contents: {} };
+const EMPTY: PropertyPreviewState = { animations: {}, contents: {}, templateParams: {} };
 
 /** The preview store. */
 export const propertyPreviewStore = createStore<PropertyPreviewState>()(() => EMPTY);
@@ -41,6 +49,18 @@ export function previewContent(itemId: ItemId, content: string): void {
   propertyPreviewStore.setState({ contents });
 }
 
+/** Shows `value` for parameter `name` of the template instance `itemId` while it is edited. */
+export function previewTemplateParam(
+  itemId: ItemId,
+  name: string,
+  value: TemplateParamValue,
+): void {
+  const { templateParams } = propertyPreviewStore.getState();
+  propertyPreviewStore.setState({
+    templateParams: { ...templateParams, [itemId]: { ...templateParams[itemId], [name]: value } },
+  });
+}
+
 /** Drops every preview (the document's values show again). */
 export function clearPropertyPreview(): void {
   if (propertyPreviewStore.getState() !== EMPTY) propertyPreviewStore.setState(EMPTY);
@@ -50,10 +70,14 @@ export function clearPropertyPreview(): void {
 export function previewedItem(item: ItemEntity, state: PropertyPreviewState): ItemEntity {
   const animations = state.animations[item.id];
   const content = state.contents[item.id];
-  if (animations === undefined && content === undefined) return item;
+  const params = state.templateParams[item.id];
+  if (animations === undefined && content === undefined && params === undefined) return item;
   let kind = item.kind;
   for (const animation of animations ?? []) kind = withAnimation(kind, animation);
   if (content !== undefined && kind.kind === 'text') kind = { ...kind, content };
+  if (params !== undefined && kind.kind === 'motionTemplate') {
+    kind = { ...kind, params: { ...kind.params, ...params } };
+  }
   return { ...item, kind };
 }
 

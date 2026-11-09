@@ -33,6 +33,7 @@ mod ripple_delete_range;
 mod ripple_delete_ranges;
 mod sequence_ops;
 mod split_item;
+mod template_ops;
 #[cfg(test)]
 pub(crate) mod testing;
 mod touched;
@@ -61,6 +62,7 @@ pub use ripple_delete_range::RippleDeleteRange;
 pub use ripple_delete_ranges::{RippleDeleteRanges, remaining_parts};
 pub use sequence_ops::{AddSequence, RemoveSequence, SequencePatch, UpdateSequence};
 pub use split_item::SplitItem;
+pub use template_ops::{AddTemplate, RemoveTemplate, ReplaceTemplate};
 pub use touched::TouchedEntities;
 pub use track_ops::{AddTrack, RemoveTrack, ReorderTracks, TrackPatch, UpdateTrack};
 pub use transition_ops::{AddTransition, RemoveTransition, TransitionPatch, UpdateTransition};
@@ -82,7 +84,7 @@ use crate::{DomainError, Project, validate_project};
 /// Operations that change one item accept an `expected_revision`: when set and different from
 /// the item's revision, the edit fails with [`DomainError::RevisionConflict`].
 ///
-/// TODO(prompt-24): operations on motion templates. TODO(prompt-25): on the brand kit.
+/// TODO(prompt-25): operations on the brand kit.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Operation {
@@ -156,6 +158,12 @@ pub enum Operation {
     UpdateCaptionStyle(UpdateCaptionStyle),
     /// Removes a caption style no caption uses.
     RemoveCaptionStyle(RemoveCaptionStyle),
+    /// Adds a motion template to the project.
+    AddTemplate(AddTemplate),
+    /// Replaces a motion template's definition (a new version of its source).
+    ReplaceTemplate(ReplaceTemplate),
+    /// Removes a motion template no item uses.
+    RemoveTemplate(RemoveTemplate),
 }
 
 /// Declares `From<Payload> for Operation` and the dispatch to each payload's [`Edit`] impl.
@@ -216,6 +224,9 @@ operation_payloads!(
     AddCaptionStyle,
     UpdateCaptionStyle,
     RemoveCaptionStyle,
+    AddTemplate,
+    ReplaceTemplate,
+    RemoveTemplate,
 );
 
 /// The outcome of [`apply`].

@@ -10,6 +10,7 @@ use se_domain::{
 use super::{
     AgentEdit, ItemRef, PresetSpec,
     graphics::plan_new_item,
+    templates::{TemplateChange, plan_new_template, plan_template_version},
     timing::{plan_delete, plan_gap, plan_move, plan_ripple_delete, plan_split, plan_trim},
     transitions::plan_transition,
 };
@@ -56,6 +57,8 @@ pub(super) struct PlannedOps {
     pub(super) created: Vec<Vec<ItemId>>,
     /// Whether an edit removes or opens time.
     pub(super) shifts_time: bool,
+    /// Templates created or given a new version, in edit order.
+    pub(super) templates: Vec<TemplateChange>,
 }
 
 /// Plans the edits of one agent call.
@@ -64,6 +67,7 @@ pub(super) struct AgentPlanner<'a> {
     pub(super) agent: &'a AgentContext,
     created: Vec<Vec<ItemId>>,
     shifts_time: bool,
+    templates: Vec<TemplateChange>,
 }
 
 impl<'a> AgentPlanner<'a> {
@@ -74,6 +78,7 @@ impl<'a> AgentPlanner<'a> {
             agent,
             created: Vec::new(),
             shifts_time: false,
+            templates: Vec::new(),
         }
     }
 
@@ -94,6 +99,7 @@ impl<'a> AgentPlanner<'a> {
             ops,
             created: self.created,
             shifts_time: self.shifts_time,
+            templates: self.templates,
         })
     }
 
@@ -159,6 +165,20 @@ impl<'a> AgentPlanner<'a> {
             | AgentEdit::SetCaptionEmphasis { .. }
             | AgentEdit::UpdateCaptionStyle { .. }
             | AgentEdit::ApplyCaptionPreset { .. } => self.add_caption_edit(edit)?,
+            AgentEdit::CreateTemplate { definition, source } => {
+                let change = plan_new_template(self, definition, source)?;
+                self.templates.push(change);
+                Vec::new()
+            }
+            AgentEdit::UpdateTemplate {
+                template,
+                definition,
+                source,
+            } => {
+                let change = plan_template_version(self, *template, definition, source)?;
+                self.templates.push(change);
+                Vec::new()
+            }
             AgentEdit::AddMarker { time, label, color } => {
                 let marker = Marker {
                     id: self.plan.ids().marker()?,

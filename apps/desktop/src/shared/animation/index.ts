@@ -31,6 +31,7 @@ export {
   clearPropertyPreview,
   previewAnimations,
   previewContent,
+  previewTemplateParam,
   previewedItem,
   propertyPreviewStore,
   usePropertyPreview,

@@ -20,6 +20,7 @@ pub mod describe;
 pub mod output;
 pub mod registry;
 pub mod server;
+pub mod template_io;
 pub mod time_io;
 pub mod timing;
 pub mod tools;

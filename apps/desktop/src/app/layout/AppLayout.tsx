@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router';
 
 import { useAiStatusSync } from '../../features/ai';
+import { useTemplateCheckRequests } from '../../features/templates';
 import { useAgentFrameRequests } from '../../features/viewer';
 import { ShortcutsDialogHost } from '../shortcuts/ShortcutsDialogHost';
 import { StatusBar } from '../status-bar/StatusBar';
@@ -8,11 +9,13 @@ import { StatusBar } from '../status-bar/StatusBar';
 /**
  * The window frame shared by every route: the page above, the status bar below, and the keyboard
  * shortcuts help (`?`). It keeps the app-wide AI status in step with the core and answers AI
- * agents' frame requests (whatever page is shown, so refusals come at once).
+ * agents' frame requests and motion template checks (whatever page is shown, so refusals come
+ * at once).
  */
 export function AppLayout() {
   useAiStatusSync();
   useAgentFrameRequests();
+  useTemplateCheckRequests();
   return (
     <div className="flex h-screen flex-col bg-bg text-text">
       <div className="min-h-0 flex-1">

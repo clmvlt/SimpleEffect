@@ -50,6 +50,8 @@ export const ERROR_CODES = [
   'NO_SPEECH_STREAM',
   'SUBTITLE_FILE_FAILED',
   'INVALID_SUBTITLE_FILE',
+  'TEMPLATE_INVALID',
+  'TEMPLATE_CHECK_NOT_FOUND',
 ] as const satisfies readonly ErrorCode[];
 
 /**
@@ -65,6 +67,7 @@ export const EDIT_DETAIL_CODES = [
   'FRAME_RATE_LOCKED',
   'LAST_SEQUENCE',
   'INVALID_TRANSCRIPTION_SETTINGS',
+  'TEMPLATE_IN_USE',
 ] as const satisfies readonly DomainErrorCode[];
 
 /** A domain code with its own message. */

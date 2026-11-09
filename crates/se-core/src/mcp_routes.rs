@@ -115,6 +115,7 @@ mod tests {
                 projects: bed.projects.clone(),
                 media: bed.media.clone(),
                 renders: bed.renders.clone(),
+                template_checks: bed.template_checks.clone(),
                 tokens: bed.tokens.clone(),
                 edits: bed.edits.clone(),
                 transcription: bed.transcription.clone(),
@@ -161,7 +162,7 @@ mod tests {
             .expect("a running task's token connects");
         let tools = client.list_all_tools().await.unwrap();
         assert!(tools.iter().any(|tool| tool.name == "get_frames"));
-        assert_eq!(tools.len(), 38);
+        assert_eq!(tools.len(), 42);
 
         let mut arguments = rmcp::model::JsonObject::new();
         arguments.insert("text".to_owned(), "Abonne-toi".into());

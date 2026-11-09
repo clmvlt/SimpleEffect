@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use se_domain::{
     AssetId, AssetKind, DomainError, DomainErrorCode, Flicks, JobId, ProjectId, TaskId,
 };
-use se_protocol::{ErrorCode, ProtocolError};
+use se_protocol::{ErrorCode, ProtocolError, TemplateCheckStage, TemplateProblem};
 
 use crate::ports::{MediaError, StorageError};
 
@@ -171,7 +171,7 @@ pub enum AppError {
     },
     /// No listed cut has media to cross-fade.
     #[error(
-        "there is no media to cross-fade at this cut: both items need media beyond their edges          (trim them to free some), must last long enough, and the cut must not already have a          transition"
+        "there is no media to cross-fade at this cut: both items need media beyond their edges (trim them to free some), must last long enough, and the cut must not already have a transition"
     )]
     TransitionNoRoom,
     /// The project has no such AI task.
@@ -233,6 +233,18 @@ pub enum AppError {
     InvalidRender {
         /// What is wrong.
         reason: String,
+    },
+    /// A motion template module cannot be used (prompt 24): every problem, with its line.
+    #[error("{}", describe_template_problems(.problems))]
+    TemplateInvalid {
+        /// What the renderer or the core found.
+        problems: Vec<TemplateProblem>,
+    },
+    /// Nothing waits for that template check any more.
+    #[error("no template check {request_id} is waiting: it already finished or timed out")]
+    TemplateCheckNotFound {
+        /// The request.
+        request_id: String,
     },
     /// Nothing waits for frames of that request any more.
     #[error("no frame render {request_id} is waiting: it already finished, failed or timed out")]
@@ -336,6 +348,8 @@ impl AppError {
             Self::RendererUnavailable { .. } => ErrorCode::RendererUnavailable,
             Self::RenderFailed { .. } => ErrorCode::RenderFailed,
             Self::RenderRequestNotFound { .. } => ErrorCode::RenderRequestNotFound,
+            Self::TemplateInvalid { .. } => ErrorCode::TemplateInvalid,
+            Self::TemplateCheckNotFound { .. } => ErrorCode::TemplateCheckNotFound,
             Self::OutOfScope { .. } => ErrorCode::OutOfScope,
             Self::NothingToRevert { .. } => ErrorCode::NothingToRevert,
             Self::TranscriptionUnavailable { .. } => ErrorCode::TranscriptionUnavailable,
@@ -351,6 +365,42 @@ impl AppError {
             Self::Internal(_) => ErrorCode::Internal,
         }
     }
+}
+
+/// The problems of a template, one per line: `line 12, column 3 (at 1.200 s): message`.
+fn describe_template_problems(problems: &[TemplateProblem]) -> String {
+    let lines: Vec<String> = problems
+        .iter()
+        .map(|problem| {
+            let mut place = Vec::new();
+            if let Some(line) = problem.line {
+                place.push(match problem.column {
+                    Some(column) => format!("line {line}, column {column}"),
+                    None => format!("line {line}"),
+                });
+            }
+            if let Some(time) = problem.time {
+                place.push(format!("at {:.3} s", time.to_seconds_f64()));
+            }
+            let stage = match problem.stage {
+                TemplateCheckStage::Compile => "compile",
+                TemplateCheckStage::Exports => "exports",
+                TemplateCheckStage::Render => "render",
+                TemplateCheckStage::Budget => "budget",
+                TemplateCheckStage::Determinism => "determinism",
+                TemplateCheckStage::Definition => "definition",
+            };
+            if place.is_empty() {
+                format!("- [{stage}] {}", problem.message)
+            } else {
+                format!("- [{stage}] {}: {}", place.join(", "), problem.message)
+            }
+        })
+        .collect();
+    format!(
+        "the motion template cannot be used; fix these problems and send the whole module again:\n{}",
+        lines.join("\n")
+    )
 }
 
 /// The protocol code of a media port failure (also used per file in import reports).

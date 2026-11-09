@@ -13,6 +13,8 @@ export interface ComposerRequest {
   readonly nonce: number;
   /** « Refaire avec l'IA »: the item to redo (its range and track become the scope). */
   readonly itemId: ItemId | null;
+  /** Text put in the composer (« Demander une modification à l'IA » of a template), if any. */
+  readonly draft: string | null;
 }
 
 interface ComposerRequestState {
@@ -24,10 +26,13 @@ export const composerRequestStore = createStore<ComposerRequestState>()(() => ({
 
 let nonce = 0;
 
-/** Shows the AI panel and asks its composer to take the focus, about `itemId` if given. */
-export function openComposer(itemId: ItemId | null = null): void {
+/**
+ * Shows the AI panel and asks its composer to take the focus, about `itemId` if given, with
+ * `draft` as its text if given.
+ */
+export function openComposer(itemId: ItemId | null = null, draft: string | null = null): void {
   nonce += 1;
-  composerRequestStore.setState({ request: { nonce, itemId } });
+  composerRequestStore.setState({ request: { nonce, itemId, draft } });
   showSidePanelTab('ai');
 }
 

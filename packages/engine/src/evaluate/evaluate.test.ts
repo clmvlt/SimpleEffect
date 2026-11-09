@@ -15,6 +15,7 @@ import {
   sequence,
   still,
   text,
+  transform,
   videoAsset,
   videoTrack,
 } from '../testing/document';
@@ -86,10 +87,12 @@ describe('evaluate: visibility', () => {
         transform: { scale: { x: 0, y: 1 } },
       }),
     );
+    // An instance of a template the scene does not hold draws nothing.
     const template = item(0 as Flicks, seconds(1), {
       kind: 'motionTemplate',
       templateId: 'template',
       params: {},
+      transform: transform(),
     });
     const orphan = item(0 as Flicks, seconds(1), clip('unknown-asset'));
     const tracks = [transparent, flat, template, orphan].map((entry) => videoTrack([entry]));
