@@ -8,7 +8,7 @@ use se_domain::{AssetKind, Project, Sequence, TrackKind, format_clock};
 use se_protocol::Task;
 
 /// The instruction files, in order.
-const GUIDES: [&str; 8] = [
+const GUIDES: [&str; 9] = [
     include_str!("../../assets/agent-instructions/00-role.md"),
     include_str!("../../assets/agent-instructions/01-time-and-scope.md"),
     include_str!("../../assets/agent-instructions/02-reading-the-project.md"),
@@ -17,6 +17,28 @@ const GUIDES: [&str; 8] = [
     include_str!("../../assets/agent-instructions/05-audio-editing.md"),
     include_str!("../../assets/agent-instructions/06-smart-cuts.md"),
     include_str!("../../assets/agent-instructions/07-captions.md"),
+    include_str!("../../assets/agent-instructions/08-motion-templates.md"),
+];
+
+/// The example motion templates closing `08-motion-templates.md` (title, module), checked by the
+/// engine's browser tests (`packages/engine/test/templates/`).
+const TEMPLATE_EXAMPLES: [(&str, &str); 4] = [
+    (
+        "Lower third",
+        include_str!("../../assets/agent-instructions/templates/lower-third.ts"),
+    ),
+    (
+        "Animated title",
+        include_str!("../../assets/agent-instructions/templates/animated-title.ts"),
+    ),
+    (
+        "Progress bar",
+        include_str!("../../assets/agent-instructions/templates/progress-bar.ts"),
+    ),
+    (
+        "Call to action",
+        include_str!("../../assets/agent-instructions/templates/call-to-action.ts"),
+    ),
 ];
 
 /// The instructions added to the CLI's system prompt for `task` on `project` (`None` when the
@@ -27,6 +49,9 @@ pub(super) fn compose(task: &Task, project: Option<&Project>) -> String {
         .map(|guide| guide.trim_end())
         .collect::<Vec<_>>()
         .join("\n\n");
+    for (title, source) in TEMPLATE_EXAMPLES {
+        let _ = write!(text, "\n\n### {title}\n\n```ts\n{}\n```", source.trim_end());
+    }
     text.push_str("\n\n# Task scope\n\n");
     write_scope(&mut text, task, project);
     if let Some(project) = project {
@@ -216,6 +241,8 @@ mod tests {
         assert!(text.contains("# Motion basics"));
         assert!(text.contains("# Audio editing"));
         assert!(text.contains("# Smart cuts"));
+        assert!(text.contains("# Motion templates"));
+        assert!(text.contains("### Call to action\n\n```ts\nexport const meta"));
         assert!(text.contains("00:00:01.000 to 00:00:02.000"));
         assert!(text.contains(&format!("{} (`{}`)", track.name, track.id)));
         assert!(text.contains("« Main edit »"));
