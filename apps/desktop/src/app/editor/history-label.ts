@@ -60,6 +60,8 @@ const CORE_LABEL_KEYS = {
   'Add text': 'editor.history.addText',
   'Add shape': 'editor.history.addShape',
   'Add image': 'editor.history.addImage',
+  'Add motion template': 'editor.history.addTemplate',
+  'Remove motion template': 'editor.history.removeTemplate',
   'Apply animation': 'editor.history.applyAnimation',
   'Reframe items': 'editor.history.reframeItems',
   'Add transitions': 'editor.history.addTransitions',

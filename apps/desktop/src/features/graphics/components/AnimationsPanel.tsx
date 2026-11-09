@@ -19,6 +19,7 @@ import {
   ANIMATION_SECONDS_RANGE,
   setGraphicsPreferences,
 } from '../store/graphics-preferences-store';
+import { ProjectTemplates } from '../../templates';
 import { PresetCard } from './PresetCard';
 
 const PHASES: readonly AnimationPhase[] = ['in', 'out', 'emphasis'];
@@ -78,6 +79,7 @@ export function AnimationsPanel() {
                 {t(`editor.animations.phases.${phase}`)}
               </TabsTrigger>
             ))}
+            <TabsTrigger value="templates">{t('editor.templates.list.tab')}</TabsTrigger>
           </TabsList>
           {PHASES.map((phase) => (
             <TabsContent key={phase} value={phase} className="min-h-0 flex-1">
@@ -100,6 +102,11 @@ export function AnimationsPanel() {
               </ScrollArea>
             </TabsContent>
           ))}
+          <TabsContent value="templates" className="min-h-0 flex-1">
+            <ScrollArea className="h-full">
+              <ProjectTemplates />
+            </ScrollArea>
+          </TabsContent>
         </Tabs>
       )}
     </div>

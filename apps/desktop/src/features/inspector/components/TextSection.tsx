@@ -4,9 +4,7 @@ import {
   PropertyRow,
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
   Switch,
@@ -18,8 +16,8 @@ import { AlignCenter, AlignLeft, AlignRight } from '@se/ui/icons';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useFontFamilies } from '../../../shared/fonts';
 import type { Inspection } from '../hooks/use-inspection';
+import { FontFamilySelect, useKnownFamily } from './FontFamilySelect';
 import { NumberRow, StaticNumber } from './PropertyFields';
 
 const WEIGHTS = ['100', '200', '300', '400', '500', '600', '700', '800', '900'] as const;
@@ -39,19 +37,15 @@ function firstText(items: readonly ItemEntity[]): TextItem | null {
  */
 export function TextSection({ inspection }: { readonly inspection: Inspection }) {
   const { t } = useTranslation();
-  const families = useFontFamilies();
   const { editor, items } = inspection;
   const text = firstText(items);
   const [content, setContent] = useState<string | null>(null);
+  const known = useKnownFamily(text?.style.fontFamily ?? '');
   if (text === null) return null;
   const { style } = text;
   const patch = (change: TextPatch) => {
     editor.patch((item) => (item.kind.kind === 'text' ? { kind: 'text', ...change } : null));
   };
-  const known =
-    families.length === 0 || families.some((family) => family.name === style.fontFamily);
-  const bundled = families.filter((family) => family.source === 'bundled');
-  const installed = families.filter((family) => family.source === 'system');
   return (
     <PropertyGroup title={t('editor.inspector.text.title')}>
       <div className="px-2 pb-1">
@@ -69,37 +63,13 @@ export function TextSection({ inspection }: { readonly inspection: Inspection })
         />
       </div>
       <PropertyRow label={t('editor.inspector.text.font')} htmlFor="inspector-font">
-        <Select
+        <FontFamilySelect
+          id="inspector-font"
           value={style.fontFamily}
-          onValueChange={(fontFamily) => {
+          onChange={(fontFamily) => {
             patch({ fontFamily });
           }}
-        >
-          <SelectTrigger id="inspector-font" size="xs" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {!known && <SelectItem value={style.fontFamily}>{style.fontFamily}</SelectItem>}
-            <SelectGroup>
-              <SelectLabel>{t('editor.inspector.text.bundledFonts')}</SelectLabel>
-              {bundled.map((family) => (
-                <SelectItem key={family.name} value={family.name}>
-                  {family.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-            {installed.length > 0 && (
-              <SelectGroup>
-                <SelectLabel>{t('editor.inspector.text.systemFonts')}</SelectLabel>
-                {installed.map((family) => (
-                  <SelectItem key={family.name} value={family.name}>
-                    {family.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            )}
-          </SelectContent>
-        </Select>
+        />
       </PropertyRow>
       {!known && (
         <p role="alert" className="px-2 pb-1 text-xs text-warning">

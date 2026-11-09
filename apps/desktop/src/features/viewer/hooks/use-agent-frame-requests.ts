@@ -5,6 +5,7 @@ import { useRef } from 'react';
 import { useCoreClient, useCoreEndpoint, useCoreEvent } from '../../../shared/core';
 import { catalogFaces, fontCatalogStore, loadFontCatalog } from '../../../shared/fonts';
 import { useProjectMirrorReader } from '../../../shared/project-store';
+import { templateRuntimeFor } from '../../../shared/templates';
 import { answerFrameRequest, type AgentFrameDeps } from '../services/agent-frames';
 import { PreviewUnsupportedError } from '../services/preview-engine-factory';
 
@@ -24,6 +25,10 @@ const fonts: AgentFrameDeps['fonts'] = (families, endpoint) => {
   registry.setCatalog(catalogFaces(families, endpoint));
   return registry;
 };
+
+/** The app's template runtime, or `null` where Workers cannot run (jsdom). */
+const templates: AgentFrameDeps['templates'] = async (families, endpoint) =>
+  templateRuntimeFor({ endpoint, families }).catch(() => null);
 
 /** Sends a JPEG to the core's upload route. */
 const upload: AgentFrameDeps['upload'] = async (url, jpeg) => {
@@ -53,6 +58,7 @@ export function useAgentFrameRequests(deps: Partial<AgentFrameDeps> = {}): void 
       endpoint: () => endpoint,
       families: () => fontCatalogStore.getState().families,
       fonts,
+      templates,
       createStills,
       upload,
       reportFailure: async (requestId, message) => {

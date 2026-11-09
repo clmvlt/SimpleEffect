@@ -35,6 +35,7 @@ function fakeDeps(mirror: ProjectMirror | null, failRender = false) {
         jpeg: new Blob([`still ${String(renders.length)}`]),
         issues: [],
         missingFonts: [],
+        templateIssues: [],
       });
     },
     destroy: () => {
@@ -46,6 +47,7 @@ function fakeDeps(mirror: ProjectMirror | null, failRender = false) {
     endpoint: () => endpoint,
     families: () => [],
     fonts: () => null,
+    templates: () => Promise.resolve(null),
     createStills: (given) => {
       options.push(given);
       return Promise.resolve(stills);

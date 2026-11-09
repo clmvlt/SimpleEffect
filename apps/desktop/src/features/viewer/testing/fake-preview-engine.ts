@@ -9,6 +9,7 @@ import type {
   PreviewStats,
   RenderScene,
 } from '@se/engine/preview';
+import type { TemplateRenderer } from '@se/engine/templates';
 
 import type {
   PreviewEngineFactory,
@@ -22,13 +23,20 @@ export class FakePreviewEngine implements PreviewEngine {
   proxy = false;
   background: CompositorBackground = 'black';
   size: readonly [number, number] = [0, 0];
+  templates: TemplateRenderer | null = null;
   sceneUpdates = 0;
   playback: PreviewPlayback | null = null;
   /** Every time set, in order (playback draws). */
   readonly times: Flicks[] = [];
   destroyed = false;
   fonts: FontLoader | null = null;
-  private state: PreviewState = { status: 'idle', issues: [], missingFonts: [], error: null };
+  private state: PreviewState = {
+    status: 'idle',
+    issues: [],
+    missingFonts: [],
+    templateIssues: [],
+    error: null,
+  };
   private readonly listeners = new Set<(state: PreviewState) => void>();
   private layout: FrameLayout | null = null;
   private readonly layoutListeners = new Set<(layout: FrameLayout) => void>();
@@ -57,6 +65,9 @@ export class FakePreviewEngine implements PreviewEngine {
   }
   setFonts(fonts: FontLoader | null): void {
     this.fonts = fonts;
+  }
+  setTemplates(templates: TemplateRenderer | null): void {
+    this.templates = templates;
   }
   getLayout(): FrameLayout | null {
     return this.layout;

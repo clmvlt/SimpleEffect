@@ -234,7 +234,13 @@ describe('ViewerPanel', () => {
     const engine = await runningEngine(engines);
     vi.useFakeTimers();
     act(() => {
-      engine.emit({ status: 'loading', issues: [], missingFonts: [], error: null });
+      engine.emit({
+        status: 'loading',
+        issues: [],
+        missingFonts: [],
+        templateIssues: [],
+        error: null,
+      });
     });
     expect(screen.queryByRole('status', { name: 'Décodage de l’image…' })).toBeNull();
     act(() => {
@@ -246,6 +252,7 @@ describe('ViewerPanel', () => {
         status: 'ready',
         issues: [{ assetId: 'a', kind: 'missing' }],
         missingFonts: [],
+        templateIssues: [],
         error: null,
       });
     });
