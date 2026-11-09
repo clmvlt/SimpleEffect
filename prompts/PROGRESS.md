@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-09 — Prompt 24: Modèles de motion générés par l'IA — Done
 
-**Branch**: `feature/24-templates-motion`, merged into `dev` at `MERGE_SHA`
+**Branch**: `feature/24-templates-motion`, merged into `dev` at `96eec7a`
 
 **Done**
 - se-domain (ADR-0035): `MotionTemplate { id, name, description, version, source, params: [TemplateParam { name, label, description, spec }], default_duration, origin }` with `TemplateParamSpec` (`string` multiline/maxLength, `number` min/max/step, `color`, `boolean`, `enum` with labelled options, `font`, `asset`) and limits; `TemplateItem { template_id, params: name → TemplateParamValue (numbers and colours `Animatable`), transform }`; `templates::parse_definition` (strict reading of a checked module's `meta` and `params`, params as ordered `[name, schema]` pairs) → `TemplateDefinition` or every `DefinitionProblem`, `migrate_params` (values kept by name across versions, the others reset); operations `AddTemplate`, `ReplaceTemplate`, `RemoveTemplate` (`TEMPLATE_IN_USE`, `TEMPLATE_NOT_FOUND`), `TemplatePatch` (values merged by name, `null` resets); validation `INVALID_TEMPLATE`, `INVALID_TEMPLATE_PARAMS`; template keyframes follow trims and splits; schema 9; the example project holds a lower-third template and a keyframed instance.
