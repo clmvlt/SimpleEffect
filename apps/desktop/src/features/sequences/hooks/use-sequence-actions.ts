@@ -1,4 +1,4 @@
-import type { ItemEntity, ItemId, SequenceId } from '@se/protocol';
+import type { AutoReframeReport, ItemEntity, ItemId, SequenceId } from '@se/protocol';
 import { toast } from '@se/ui';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,7 @@ import { useCoreClient } from '../../../shared/core';
 import { errorMessageKey } from '../../../shared/errors';
 import { draftToFormat } from '../../../shared/format';
 import { useProjectMirrorReader, type ProjectMirror } from '../../../shared/project-store';
+import { DEFAULT_TRACKING_SETTINGS } from '../../reframing';
 import { sequencesApi } from '../api';
 import { itemsLeavingFrame, positionalOrigins, sameOrigins } from '../services/out-of-frame';
 import { adaptationOf, evaluableOf, type SequenceFormatValues } from '../services/sequence-format';
@@ -108,7 +109,7 @@ export function useSequenceActions(handlers: SequenceActionHandlers): SequenceAc
           clipReframe: 'keep',
           fitTextWidths: false,
         });
-        handlers.onActivate(copy);
+        handlers.onActivate(copy.sequenceId);
       } catch (error) {
         failed(error);
       }
@@ -143,20 +144,26 @@ export function useSequenceActions(handlers: SequenceActionHandlers): SequenceAc
       const from = mirror?.sequences[sequenceId]?.format;
       if (source === null || from === undefined || mirror === null) return false;
       let versionId: SequenceId;
+      let reframe: AutoReframeReport | null;
       try {
-        versionId = await api().duplicateSequence(
+        ({ sequenceId: versionId, reframe } = await api().duplicateSequence(
           sequenceId,
           values.name,
           draftToFormat(values),
           adaptationOf(values, from),
-        );
+          values.autoReframe ? DEFAULT_TRACKING_SETTINGS : undefined,
+        ));
       } catch (error) {
         failed(error);
         return false;
       }
       handlers.onActivate(versionId);
       toast.success(t('editor.sequences.versionCreated', { name: values.name }), {
-        description: t('editor.sequences.independent'),
+        description: t(
+          reframe !== null && reframe.waitingAssetIds.length > 0
+            ? 'editor.sequences.reframing'
+            : 'editor.sequences.independent',
+        ),
       });
       const version = sequenceIn(readMirror(), versionId);
       if (version !== null) {

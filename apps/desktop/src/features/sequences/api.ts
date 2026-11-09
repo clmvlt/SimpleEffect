@@ -1,4 +1,17 @@
-import type { CoreClient, Format, FormatAdaptation, SequenceId } from '@se/protocol';
+import type {
+  AutoReframeReport,
+  CoreClient,
+  Format,
+  FormatAdaptation,
+  SequenceId,
+  TrackingSettings,
+} from '@se/protocol';
+
+/** A sequence copy: its id, and what automatic reframing did when it was asked (prompt 26). */
+export interface SequenceCopy {
+  readonly sequenceId: SequenceId;
+  readonly reframe: AutoReframeReport | null;
+}
 
 /**
  * Protocol calls on sequences (prompt 16). Each is one transaction in the core (one undo step);
@@ -12,13 +25,17 @@ export interface SequencesApi {
     format: Format,
     adaptation: FormatAdaptation,
   ) => Promise<void>;
-  /** A copy after the sequence: `format: null` keeps its format, else a version in `format`. */
+  /**
+   * A copy after the sequence: `format: null` keeps its format, else a version in `format`;
+   * with `autoReframe`, its clips follow their subject.
+   */
   readonly duplicateSequence: (
     sequenceId: SequenceId,
     name: string,
     format: Format | null,
     adaptation: FormatAdaptation,
-  ) => Promise<SequenceId>;
+    autoReframe?: TrackingSettings,
+  ) => Promise<SequenceCopy>;
   readonly removeSequence: (sequenceId: SequenceId) => Promise<void>;
 }
 
@@ -31,17 +48,18 @@ export function sequencesApi(client: Pick<CoreClient, 'send'>, projectId: string
     setSequenceFormat: async (sequenceId, format, adaptation) => {
       await client.send({ kind: 'setSequenceFormat', projectId, sequenceId, format, adaptation });
     },
-    duplicateSequence: async (sequenceId, name, format, adaptation) =>
-      (
-        await client.send({
-          kind: 'duplicateSequence',
-          projectId,
-          sequenceId,
-          name,
-          format,
-          adaptation,
-        })
-      ).sequenceId,
+    duplicateSequence: async (sequenceId, name, format, adaptation, autoReframe) => {
+      const result = await client.send({
+        kind: 'duplicateSequence',
+        projectId,
+        sequenceId,
+        name,
+        format,
+        adaptation,
+        ...(autoReframe === undefined ? {} : { autoReframe }),
+      });
+      return { sequenceId: result.sequenceId, reframe: result.reframe ?? null };
+    },
     removeSequence: async (sequenceId) => {
       await client.send({ kind: 'removeSequence', projectId, sequenceId });
     },

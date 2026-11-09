@@ -132,6 +132,9 @@ describe('derived protocol types', () => {
       | 'addBrandKitLogo'
       | 'setProjectBrandKit'
       | 'addProjectBrandKitToLibrary'
+      | 'getVisionStatus'
+      | 'autoReframeItems'
+      | 'getSubjectDetection'
     >();
   });
 
@@ -169,6 +172,7 @@ describe('derived protocol types', () => {
       | 'templateCheckRequested'
       | 'transcriptionStatusChanged'
       | 'libraryChanged'
+      | 'autoReframeFinished'
     >();
     expectTypeOf<CoreEventOf<'jobCompleted'>['job']>().toEqualTypeOf<JobSnapshot>();
     expectTypeOf<CoreEventOf<'projectPatched'>>().toExtend<ProjectPatch>();

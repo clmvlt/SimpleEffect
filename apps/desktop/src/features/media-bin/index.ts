@@ -6,5 +6,10 @@
  */
 export { MediaBinPanel } from './components/MediaBinPanel';
 export { useAssetMediaUrl } from './hooks/use-asset-media';
-export { useTranscriptionJob, type TranscriptionJobState } from './hooks/use-transcription-job';
+export {
+  useAssetJob,
+  useTranscriptionJob,
+  type AssetJobState,
+  type TranscriptionJobState,
+} from './hooks/use-transcription-job';
 export { revealAsset, useSelectedAssetId } from './store/media-bin-store';

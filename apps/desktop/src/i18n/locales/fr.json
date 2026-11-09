@@ -102,7 +102,8 @@
         "proxy": "Proxy",
         "audioAnalysis": "Analyse du son",
         "sceneDetection": "Changements de plan",
-        "transcription": "Transcription"
+        "transcription": "Transcription",
+        "subjectDetection": "Analyse des visages"
       },
       "menu": {
         "transcribe": "Transcrire",
@@ -679,7 +680,8 @@
       "saveTemplateToLibrary": "Lien du modèle à la bibliothèque",
       "chooseBrandKit": "Choix du brand kit",
       "updateBrandKit": "Mise à jour du brand kit",
-      "removeBrandKit": "Retrait du brand kit"
+      "removeBrandKit": "Retrait du brand kit",
+      "autoReframe": "Recadrage automatique"
     },
     "transcript": {
       "title": "Transcription",
@@ -796,9 +798,41 @@
         "remove_other": "Supprimer la sélection ({{count}})"
       }
     },
+    "reframing": {
+      "start": "Recadrer automatiquement",
+      "relaunch": "Relancer le recadrage",
+      "unavailable": "La détection des visages n’est pas disponible sur cet ordinateur : recadrez à la main.",
+      "progress": "Analyse des visages : {{percent}} %",
+      "progressUnknown": "Analyse des visages en attente…",
+      "progressLabel": "Progression de l’analyse des visages",
+      "analysisFailed": "L’analyse des visages a échoué : {{message}}",
+      "trackedHint": "La zone gardée suit le sujet. Chaque réglage modifié recalcule le recadrage.",
+      "applied_one": "Recadrage appliqué à {{count}} clip",
+      "applied_other": "Recadrage appliqué à {{count}} clips",
+      "analysing": "Analyse des visages en cours…",
+      "analysingHint": "Le recadrage s’appliquera dès qu’elle sera finie (annulable avec Ctrl+Z).",
+      "nothing": "Aucun clip vidéo à recadrer dans la sélection.",
+      "finished_one": "Recadrage automatique appliqué à {{count}} clip",
+      "finished_other": "Recadrage automatique appliqué à {{count}} clips",
+      "failed_one": "L’analyse des visages a échoué pour {{count}} média",
+      "failed_other": "L’analyse des visages a échoué pour {{count}} médias",
+      "settings": {
+        "smoothing": "Fluidité",
+        "eyeLine": "Ligne des yeux",
+        "deadZone": "Zone morte",
+        "groupFraming": "Cadrage de groupe",
+        "percent": "{{value}} %"
+      },
+      "viewer": {
+        "showFaces": "Visages détectés",
+        "trajectory": "Trajectoire du cadre",
+        "face": "Visage détecté ({{percent}} %)"
+      }
+    },
     "sequences": {
       "copyName": "{{name}} (copie)",
       "versionCreated": "Version « {{name}} » créée",
+      "reframing": "Le recadrage automatique s’appliquera dès que l’analyse des visages sera finie.",
       "independent": "Elle est indépendante : les modifications de l’une ne sont pas reportées sur l’autre.",
       "dialog": {
         "title": {
@@ -819,6 +853,9 @@
           "keep": "Garder le cadrage de chaque clip"
         },
         "fitTexts": "Adapter la largeur des textes au nouveau cadre",
+        "autoReframe": "Recadrage automatique (suivi du sujet)",
+        "autoReframeHint": "Le cadre de chaque clip suit le visage à l’écran ; les images clés restent modifiables.",
+        "autoReframeUnavailable": "Indisponible : la détection des visages ne fonctionne pas sur cet ordinateur.",
         "cancel": "Annuler",
         "confirm": {
           "format": "Appliquer",
@@ -1224,7 +1261,8 @@
     "LIBRARY_TEMPLATE_NOT_FOUND": "Ce modèle n’est plus dans la bibliothèque : elle a été rechargée.",
     "BRAND_KIT_NOT_FOUND": "Ce brand kit n’existe plus : la liste a été rechargée.",
     "INVALID_LIBRARY_FILE": "Ce fichier ne peut pas être utilisé : ce n’est pas un modèle SimpleEffect (.setemplate) ou pas une image.",
-    "INVALID_BRAND_KIT": "Valeurs invalides : vérifiez le nom, les polices et les champs signalés."
+    "INVALID_BRAND_KIT": "Valeurs invalides : vérifiez le nom, les polices et les champs signalés.",
+    "VISION_UNAVAILABLE": "La détection des visages n’est pas disponible sur cet ordinateur : recadrez les clips à la main."
   },
   "format": {
     "ratio": "Format",

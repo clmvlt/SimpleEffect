@@ -22,6 +22,8 @@ export interface SequenceFormatValues extends FormatDraft {
   /** The clips' reframe policy; `null` follows the format (see {@link defaultClipPolicy}). */
   readonly clipPolicy: ClipReframePolicy | null;
   readonly fitTextWidths: boolean;
+  /** A version's clips follow their subject (prompt 26; unused when changing the format). */
+  readonly autoReframe: boolean;
 }
 
 /** The mirror records a sequence is read from. */
@@ -100,6 +102,7 @@ export function initialFormatValues(
     nameEdited: false,
     clipPolicy: null,
     fitTextWidths: true,
+    autoReframe: mode === 'version',
   };
 }
 

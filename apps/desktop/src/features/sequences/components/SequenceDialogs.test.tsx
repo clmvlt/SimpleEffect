@@ -3,7 +3,7 @@
  */
 import { CoreClient, type Command } from '@se/protocol';
 import { Toaster, TooltipProvider } from '@se/ui';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nextProvider } from 'react-i18next';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -17,6 +17,7 @@ import {
 } from '../../../shared/project-store';
 import { reframeSession } from '../../../shared/project-store/testing/reframe-fixture';
 import { IDS } from '../../../shared/project-store/testing/session-fixture';
+import { resetVisionStore } from '../../reframing';
 import { estimateTextLayer } from '../services/text-extent';
 import { useSequenceActions, type SequenceActionHandlers } from '../hooks/use-sequence-actions';
 import { closeSequenceDialog, openSequenceDialog } from '../store/sequence-dialog-store';
@@ -29,10 +30,13 @@ const FRAME_RATES = [
 
 const clients: CoreClient[] = [];
 afterEach(() => {
-  for (const client of clients.splice(0)) client.close();
   act(() => {
     closeSequenceDialog();
   });
+  // Unmount before forgetting the vision status (a mounted form would ask for it again).
+  cleanup();
+  for (const client of clients.splice(0)) client.close();
+  resetVisionStore();
 });
 
 function Harness(handlers: SequenceActionHandlers) {
@@ -56,11 +60,22 @@ function verticalSession() {
   };
 }
 
-function renderDialogs() {
+function renderDialogs({ faces = false } = {}) {
   const client = CoreClient.connect(() => new Promise(() => undefined));
   clients.push(client);
   const send = vi.spyOn(client, 'send').mockImplementation((command: Command) => {
     switch (command.kind) {
+      case 'getVisionStatus':
+        return Promise.resolve({
+          kind: command.kind,
+          status: {
+            available: faces,
+            model: 'yunet-2026may',
+            runtime: null,
+            accelerator: null,
+            reason: faces ? null : 'no runtime',
+          },
+        } as never);
       case 'setSequenceFormat':
         // The core publishes the patch before answering.
         sync.load(verticalSession());
@@ -68,7 +83,15 @@ function renderDialogs() {
       case 'getNewProjectDefaults':
         return Promise.resolve({ kind: command.kind, frameRates: FRAME_RATES } as never);
       case 'duplicateSequence':
-        return Promise.resolve({ kind: command.kind, sequenceId: 'sequence-2' } as never);
+        return Promise.resolve({
+          kind: command.kind,
+          sequenceId: 'sequence-2',
+          ...(command.autoReframe === undefined
+            ? {}
+            : {
+                reframe: { appliedItemIds: [], waitingAssetIds: ['asset-video'], skipped: [] },
+              }),
+        } as never);
       default:
         return Promise.resolve({ kind: command.kind } as never);
     }
@@ -195,6 +218,51 @@ describe('creating a version', () => {
     });
     expect(handlers.onActivate).toHaveBeenCalledWith('sequence-2');
     expect((await screen.findAllByText('Version « Film 9:16 » créée'))[0]).toBeInTheDocument();
+  });
+});
+
+describe('creating a version with automatic reframing', () => {
+  it('lets clips follow their subject when faces can be detected', async () => {
+    const user = userEvent.setup();
+    const { send } = renderDialogs({ faces: true });
+    act(() => {
+      openSequenceDialog({ kind: 'version', sequenceId: IDS.sequence });
+    });
+    const dialog = await screen.findByRole('dialog', { name: 'Créer une version de « Film »' });
+    const option = within(dialog).getByRole('checkbox', {
+      name: 'Recadrage automatique (suivi du sujet)',
+    });
+    await waitFor(() => {
+      expect(option).toBeChecked();
+    });
+    await user.click(within(dialog).getByRole('button', { name: 'Créer la version' }));
+    await waitFor(() => {
+      expect(sent(send, 'duplicateSequence')).toHaveLength(1);
+    });
+    expect(sent(send, 'duplicateSequence')[0]).toMatchObject({
+      autoReframe: { smoothing: 0.5, eyeLine: 0.33, groupFraming: true, deadZone: 0.15 },
+    });
+    expect((await screen.findAllByText(/dès que l’analyse des visages/))[0]).toBeInTheDocument();
+  });
+
+  it('offers nothing when faces cannot be detected', async () => {
+    const user = userEvent.setup();
+    const { send } = renderDialogs({ faces: false });
+    act(() => {
+      openSequenceDialog({ kind: 'version', sequenceId: IDS.sequence });
+    });
+    const dialog = await screen.findByRole('dialog', { name: 'Créer une version de « Film »' });
+    expect(await within(dialog).findByText(/Indisponible/)).toBeInTheDocument();
+    const option = within(dialog).getByRole('checkbox', {
+      name: 'Recadrage automatique (suivi du sujet)',
+    });
+    expect(option).toBeDisabled();
+    expect(option).not.toBeChecked();
+    await user.click(within(dialog).getByRole('button', { name: 'Créer la version' }));
+    await waitFor(() => {
+      expect(sent(send, 'duplicateSequence')).toHaveLength(1);
+    });
+    expect(sent(send, 'duplicateSequence')[0]).not.toHaveProperty('autoReframe');
   });
 });
 

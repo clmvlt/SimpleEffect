@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useProjectSelector } from '../../../shared/project-store';
 import { startReframing } from '../../../shared/reframe';
+import { AutoReframeControls } from '../../reframing';
 import type { Inspection } from '../hooks/use-inspection';
 import {
   PICKABLE_REFRAME_MODES,
@@ -27,7 +28,8 @@ function isPickable(mode: string): mode is PickableReframeMode {
 /**
  * « Cadrage » of clips on video tracks (ADR-0026): how the picture fits the frame (fit, fill,
  * natural size; tracked clips show their mode), the point of the picture a fill keeps (in
- * percent, animatable) and « Recadrer dans le viewer » for one filling clip.
+ * percent, animatable), « Recadrer dans le viewer » for one filling clip, and automatic
+ * reframing (prompt 26: « Recadrer automatiquement », the tracking settings).
  */
 export function ReframeSection({ inspection }: { readonly inspection: Inspection }) {
   const { t } = useTranslation();
@@ -97,6 +99,7 @@ export function ReframeSection({ inspection }: { readonly inspection: Inspection
           </Button>
         </div>
       )}
+      <AutoReframeControls key={items.map((item) => item.id).join(',')} clips={items} />
     </PropertyGroup>
   );
 }

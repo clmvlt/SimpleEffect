@@ -6,6 +6,7 @@ import { frameGuideShapes, hasGuides } from './frame-guides';
 import {
   pannedFocus,
   pictureCorners,
+  picturePoint,
   pictureRect,
   shownFocus,
   type CroppedLayer,
@@ -77,6 +78,15 @@ describe('reframing geometry', () => {
     expect(left?.y).toBe(0.5);
     const far = pannedFocus(layer, vertical, { x: 500, y: 900 }, { x: 99_999, y: 900 });
     expect(far?.x).toBeCloseTo(0.3164 / 2, 9);
+  });
+
+  it('places points of the picture (a focus, a face) in the frame', () => {
+    // The shown focus is the frame's centre; the picture's left edge lies left of the frame.
+    const centre = picturePoint(layer, vertical, shownFocus(layer.crop));
+    expect(centre.x).toBeCloseTo(540, 6);
+    expect(centre.y).toBeCloseTo(960, 6);
+    const left = picturePoint(layer, vertical, { x: 0, y: 0 });
+    expect(left.x).toBeCloseTo(pictureRect(layer).x, 6);
   });
 });
 
