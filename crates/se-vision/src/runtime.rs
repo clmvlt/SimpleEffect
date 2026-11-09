@@ -88,7 +88,7 @@ impl RuntimeLocator {
 pub struct LoadedRuntime {
     /// The environment sessions are created in (telemetry off).
     pub environment: Environment,
-    /// `ONNX Runtime 1.31.0`.
+    /// `ONNX Runtime 1.31.0`, or `ONNX Runtime (build 402979a)` (see `describe`).
     pub description: String,
     /// The library file loaded.
     pub path: PathBuf,
@@ -128,14 +128,21 @@ pub fn load(locator: &RuntimeLocator) -> Result<Arc<LoadedRuntime>, String> {
     Ok(runtime)
 }
 
-/// `ONNX Runtime 1.31.0` from the build information (`git-branch=rel-1.31.0, …`).
+/// What to show of the build information: `ONNX Runtime 1.31.0` for a release branch
+/// (`git-branch=rel-1.31.0, …`), else `ONNX Runtime (build 402979a)` — Microsoft's official
+/// builds say `git-branch=HEAD`, and ort exposes no other version text.
 fn describe(info: &str) -> String {
-    info.split([',', ' '])
-        .find_map(|part| part.trim().strip_prefix("git-branch=rel-"))
-        .map_or_else(
-            || "ONNX Runtime".to_owned(),
-            |version| format!("ONNX Runtime {version}"),
-        )
+    let field = |prefix: &str| {
+        info.split([',', ' '])
+            .find_map(|part| part.trim().strip_prefix(prefix).map(str::to_owned))
+    };
+    if let Some(version) = field("git-branch=rel-") {
+        return format!("ONNX Runtime {version}");
+    }
+    field("git-commit-id=").map_or_else(
+        || "ONNX Runtime".to_owned(),
+        |commit| format!("ONNX Runtime (build {commit})"),
+    )
 }
 
 #[cfg(test)]
@@ -182,5 +189,16 @@ mod tests {
             "ONNX Runtime 1.31.0"
         );
         assert_eq!(describe("something else"), "ONNX Runtime");
+    }
+
+    #[test]
+    fn official_builds_without_a_release_branch_name_their_commit() {
+        // The text of Microsoft's 1.31.0 Windows build.
+        assert_eq!(
+            describe(
+                "ORT Build Info: git-branch=HEAD, git-commit-id=402979a, fp8-kv-cache=1, build type=RelWithDebInfo"
+            ),
+            "ONNX Runtime (build 402979a)"
+        );
     }
 }
