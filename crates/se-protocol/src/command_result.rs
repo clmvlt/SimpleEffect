@@ -2,18 +2,18 @@
 
 use se_domain::{
     AssetId, CaptionStyleId, ChangesetId, ItemId, JobId, LinkGroupId, MarkerId, SequenceId,
-    TimeRange, TrackId, Transcript, TransitionId,
+    SubjectDetection, TimeRange, TrackId, Transcript, TransitionId,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    AiSettings, AiStatus, AnimationPresetInfo, CaptionsReport, CutSummary, FillerOccurrence,
-    FontFamily, ImportReport, InsertedLibraryTemplate, JobSnapshot, LibraryBrandKit,
-    LibraryImportResult, LibraryTemplate, MediaSettings, MediaToolsStatus, NewProjectDefaults,
-    PlacedGraphic, ProjectCacheInfo, ProjectSession, RecentProject, RelinkOutcome,
-    SmartCutSettings, Task, TaskEventRecord, TaskRevertReport, TemplateUpdateReport,
-    TranscriptSearchHit, TranscriptionStatus,
+    AiSettings, AiStatus, AnimationPresetInfo, AutoReframeReport, CaptionsReport, CutSummary,
+    FillerOccurrence, FontFamily, ImportReport, InsertedLibraryTemplate, JobSnapshot,
+    LibraryBrandKit, LibraryImportResult, LibraryTemplate, MediaSettings, MediaToolsStatus,
+    NewProjectDefaults, PlacedGraphic, ProjectCacheInfo, ProjectSession, RecentProject,
+    RelinkOutcome, SmartCutSettings, Task, TaskEventRecord, TaskRevertReport, TemplateUpdateReport,
+    TranscriptSearchHit, TranscriptionStatus, VisionStatus,
 };
 
 /// The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
@@ -62,6 +62,10 @@ pub enum CommandResult {
     DuplicateSequence {
         /// Id of the copy.
         sequence_id: SequenceId,
+        /// What automatic reframing did, when it was asked (prompt 26).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        reframe: Option<AutoReframeReport>,
     },
     /// Answer to [`crate::Command::RemoveSequence`]: committed.
     RemoveSequence,
@@ -437,6 +441,18 @@ pub enum CommandResult {
     ApplyCaptionPreset {
         /// The style made from the preset.
         style_id: CaptionStyleId,
+    },
+    /// Answer to [`crate::Command::GetVisionStatus`].
+    GetVisionStatus {
+        /// Whether faces can be detected here, and why not.
+        status: VisionStatus,
+    },
+    /// Answer to [`crate::Command::AutoReframeItems`].
+    AutoReframeItems(AutoReframeReport),
+    /// Answer to [`crate::Command::GetSubjectDetection`].
+    GetSubjectDetection {
+        /// The faces of the sampled pictures; `null` while not analysed.
+        detection: Option<SubjectDetection>,
     },
 }
 

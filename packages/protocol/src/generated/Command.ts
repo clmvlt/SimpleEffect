@@ -53,6 +53,7 @@ import type { TimeRange } from "./TimeRange";
 import type { TrackId } from "./TrackId";
 import type { TrackKind } from "./TrackKind";
 import type { TrackPatch } from "./TrackPatch";
+import type { TrackingSettings } from "./TrackingSettings";
 import type { TranscriptionPreferences } from "./TranscriptionPreferences";
 import type { TranscriptionSettings } from "./TranscriptionSettings";
 import type { TransitionId } from "./TransitionId";
@@ -158,7 +159,13 @@ format: Format | null,
 /**
  * How the copied items adapt to the copy's format.
  */
-adaptation: FormatAdaptation, } | { "kind": "removeSequence", 
+adaptation: FormatAdaptation, 
+/**
+ * Make every clip of the copy's video tracks follow its subject with these settings
+ * (prompt 26): the copy is one step, the reframing one more (at once for media already
+ * analysed, else when `autoReframeFinished` arrives).
+ */
+autoReframe?: TrackingSettings, } | { "kind": "removeSequence", 
 /**
  * The open project.
  */
@@ -866,4 +873,24 @@ itemIds: Array<ItemId>,
 /**
  * The preset's id (`tiktokBold`, `minimal`, `karaoke`, `box`).
  */
-preset: string, };
+preset: string, } | { "kind": "getVisionStatus" } | { "kind": "autoReframeItems", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The clips (others are reported as skipped).
+ */
+itemIds: Array<ItemId>, 
+/**
+ * How to follow the subject.
+ */
+settings: TrackingSettings, } | { "kind": "getSubjectDetection", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The media.
+ */
+assetId: AssetId, };

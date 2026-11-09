@@ -1,0 +1,97 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Makes media clips follow their subject (faces): the frame's window moves with the speaker, smoothly, with a jump at each shot change, as editable reframeFocus keyframes (reframe tracked). Without target_format: reframes the media clips of your scope (or item_ids). With target_format (\"9:16\", \"1:1\", \"4:5\", \"16:9\"): creates a version of your task's sequence in that format whose clips follow their subject — e.g. a vertical cut of a landscape interview. Faces are analysed locally first (once per media; may take a while): finished=false means call again with the same arguments. Check the result with get_frames. Not batchable.",
+  "inputSchema": {
+    "$defs": {
+      "FormatInput": {
+        "anyOf": [
+          {
+            "description": "`\"9:16\"` (1080 × 1920), `\"16:9\"` (1920 × 1080), `\"1:1\"` (1080 × 1080) or `\"4:5\"`\n(1080 × 1350).",
+            "type": "string"
+          },
+          {
+            "description": "A size in pixels (even, 2–16384).",
+            "properties": {
+              "height": {
+                "description": "Height in pixels.",
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "width": {
+                "description": "Width in pixels.",
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "width",
+              "height"
+            ],
+            "type": "object"
+          }
+        ],
+        "description": "A format: a preset name or a size."
+      }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "item_ids": {
+        "description": "Ids of media clips (on video tracks of your scope) to reframe; default: every media clip\nof a video track lying in your scope. Ignored with `target_format`.",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "name": {
+        "description": "Name of the new version (default: the sequence's name and the format, `Interview 9:16`).",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "smoothing": {
+        "description": "How smooth the frame's moves are, 0 (follows closely) to 1 (slow, steady); default 0.5.",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "target_format": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/FormatInput"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Create a version of your task's sequence in this format instead (`\"9:16\"`, `\"1:1\"`,\n`\"4:5\"`, `\"16:9\"` or `{width, height}`), at the sequence's frame rate, every clip\nfilling the frame and following its subject."
+      },
+      "wait_seconds": {
+        "description": "Seconds to wait for the face analyses (default 90, at most 110; 0 starts them and\nanswers at once).",
+        "format": "double",
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "name": "auto_reframe"
+}

@@ -8,7 +8,7 @@ use se_domain::{AssetKind, BrandKit, Project, Sequence, TrackKind, format_clock}
 use se_protocol::Task;
 
 /// The instruction files, in order.
-const GUIDES: [&str; 10] = [
+const GUIDES: [&str; 11] = [
     include_str!("../../assets/agent-instructions/00-role.md"),
     include_str!("../../assets/agent-instructions/01-time-and-scope.md"),
     include_str!("../../assets/agent-instructions/02-reading-the-project.md"),
@@ -19,6 +19,7 @@ const GUIDES: [&str; 10] = [
     include_str!("../../assets/agent-instructions/07-captions.md"),
     include_str!("../../assets/agent-instructions/08-motion-templates.md"),
     include_str!("../../assets/agent-instructions/09-brand-kit.md"),
+    include_str!("../../assets/agent-instructions/10-reframing.md"),
 ];
 
 /// The example motion templates closing `08-motion-templates.md` (title, module), checked by the

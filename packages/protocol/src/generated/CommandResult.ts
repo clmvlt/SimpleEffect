@@ -4,6 +4,7 @@ import type { AiSettings } from "./AiSettings";
 import type { AiStatus } from "./AiStatus";
 import type { AnimationPresetInfo } from "./AnimationPresetInfo";
 import type { AssetId } from "./AssetId";
+import type { AutoReframeReport } from "./AutoReframeReport";
 import type { CaptionStyleId } from "./CaptionStyleId";
 import type { CaptionsReport } from "./CaptionsReport";
 import type { ChangesetId } from "./ChangesetId";
@@ -31,6 +32,7 @@ import type { RecentProject } from "./RecentProject";
 import type { RelinkOutcome } from "./RelinkOutcome";
 import type { SequenceId } from "./SequenceId";
 import type { SmartCutSettings } from "./SmartCutSettings";
+import type { SubjectDetection } from "./SubjectDetection";
 import type { Task } from "./Task";
 import type { TaskEventRecord } from "./TaskEventRecord";
 import type { TaskRevertReport } from "./TaskRevertReport";
@@ -41,6 +43,7 @@ import type { Transcript } from "./Transcript";
 import type { TranscriptSearchHit } from "./TranscriptSearchHit";
 import type { TranscriptionStatus } from "./TranscriptionStatus";
 import type { TransitionId } from "./TransitionId";
+import type { VisionStatus } from "./VisionStatus";
 
 /**
  * The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
@@ -57,7 +60,11 @@ sequenceId: SequenceId, } | { "kind": "renameSequence" } | { "kind": "setSequenc
 /**
  * Id of the copy.
  */
-sequenceId: SequenceId, } | { "kind": "removeSequence" } | { "kind": "undo" } | { "kind": "redo" } | { "kind": "addTrack", 
+sequenceId: SequenceId, 
+/**
+ * What automatic reframing did, when it was asked (prompt 26).
+ */
+reframe?: AutoReframeReport, } | { "kind": "removeSequence" } | { "kind": "undo" } | { "kind": "redo" } | { "kind": "addTrack", 
 /**
  * Id of the new track.
  */
@@ -282,4 +289,12 @@ styleIds: Array<CaptionStyleId>, } | { "kind": "applyCaptionPreset",
 /**
  * The style made from the preset.
  */
-styleId: CaptionStyleId, };
+styleId: CaptionStyleId, } | { "kind": "getVisionStatus", 
+/**
+ * Whether faces can be detected here, and why not.
+ */
+status: VisionStatus, } | { "kind": "autoReframeItems" } & AutoReframeReport | { "kind": "getSubjectDetection", 
+/**
+ * The faces of the sampled pictures; `null` while not analysed.
+ */
+detection: SubjectDetection | null, };
