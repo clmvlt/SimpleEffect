@@ -88,6 +88,8 @@ describe('derived protocol types', () => {
       | 'getAiSettings'
       | 'updateAiSettings'
       | 'reportFrameRenderFailure'
+      | 'reportTemplateCheck'
+      | 'removeTemplate'
       | 'getTranscriptionStatus'
       | 'updateTranscriptionPreferences'
       | 'startTranscriptionDownload'
@@ -148,6 +150,7 @@ describe('derived protocol types', () => {
       | 'taskChangesetUpdated'
       | 'aiStatusChanged'
       | 'renderFramesRequested'
+      | 'templateCheckRequested'
       | 'transcriptionStatusChanged'
     >();
     expectTypeOf<CoreEventOf<'jobCompleted'>['job']>().toEqualTypeOf<JobSnapshot>();
