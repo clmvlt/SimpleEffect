@@ -13,7 +13,7 @@ use super::{CaptionItem, ImageItem, MediaClip, ShapeItem, TemplateItem, TextItem
 #[serde(tag = "kind", rename_all = "camelCase")]
 #[allow(
     clippy::large_enum_variant,
-    reason = "items live inline in their track's list and are cloned whole by every edit; a box               per text would add an allocation for no measurable gain (hundreds of items)"
+    reason = "items live inline in their track's list and are cloned whole by every edit; a box per text would add an allocation for no measurable gain (hundreds of items)"
 )]
 pub enum ItemKind {
     /// Part of a video or audio asset.

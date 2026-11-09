@@ -362,7 +362,8 @@ mod tests {
             .into(),
             transform: crate::Transform2D::default(),
         };
-        let item = crate::test_support::item(1, range_ms(0, 4000), ItemKind::MotionTemplate(template));
+        let item =
+            crate::test_support::item(1, range_ms(0, 4000), ItemKind::MotionTemplate(template));
         let trimmed = reshape(&item, &Reshape::trim(range_ms(500, 2000))).unwrap();
         let ItemKind::MotionTemplate(template) = trimmed.kind else {
             unreachable!()

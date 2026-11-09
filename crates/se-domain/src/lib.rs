@@ -49,10 +49,10 @@ pub mod ids;
 pub mod operation;
 pub mod reformat;
 pub mod spatial;
+pub mod templates;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
 pub mod time;
-pub mod templates;
 pub mod transaction;
 pub mod transcript;
 pub mod validation;
@@ -74,19 +74,17 @@ pub use document::{
     Animatable, AnimatableProperty, Asset, AssetDurations, AssetKind, AudioStreamInfo, BrandKit,
     CAPTION_LINE_CHARS, CAPTION_LINES, CURRENT_SCHEMA_VERSION, CaptionAnimation, CaptionBox,
     CaptionItem, CaptionOutline, CaptionShadow, CaptionStyle, CaptionWord, ContentFingerprint,
-    DEFAULT_SAMPLE_RATE, DEFAULT_TEXT_MAX_LENGTH, Decodability, DerivedFile, DerivedMedia, DerivedStatus, Easing,
-    EasingPreset, FadeShape, FingerprintError, Format, FormatPreset, Handles, ImageFit, ImageItem,
-    Item, ItemKind, Keyframe, MAX_TEMPLATE_DESCRIPTION_CHARS, MAX_TEMPLATE_DURATION,
-    MAX_TEMPLATE_NAME_CHARS, MAX_TEMPLATE_PARAMS, MAX_TEMPLATE_SOURCE_BYTES, Marker, MarkerColor,
-    MediaClip, MediaInfo, MotionTemplate, Origin,
-    Project, ProjectSettings, PropertyMut, PropertyRef, Reframe, Sequence, ShapeGeometry,
-    ShapeItem, ShapeKind, StreamDecodability, Stroke, TemplateChoice, TemplateItem, TemplateParam,
-    TemplateParamSpec, TemplateParamValue, TextAlign,
-    TextBackground, TextCase, TextItem, TextShadow, TextStyle, Track, TrackKind,
-    TranscriptionSettings, Transform2D, Transition, TransitionAlignment, TransitionKind,
-    TransitionProblem, VideoStreamInfo, fitted_transition, is_param_name, item_handles,
-    transition_problem,
-    transition_room,
+    DEFAULT_SAMPLE_RATE, DEFAULT_TEXT_MAX_LENGTH, Decodability, DerivedFile, DerivedMedia,
+    DerivedStatus, Easing, EasingPreset, FadeShape, FingerprintError, Format, FormatPreset,
+    Handles, ImageFit, ImageItem, Item, ItemKind, Keyframe, MAX_TEMPLATE_DESCRIPTION_CHARS,
+    MAX_TEMPLATE_DURATION, MAX_TEMPLATE_NAME_CHARS, MAX_TEMPLATE_PARAMS, MAX_TEMPLATE_SOURCE_BYTES,
+    Marker, MarkerColor, MediaClip, MediaInfo, MotionTemplate, Origin, Project, ProjectSettings,
+    PropertyMut, PropertyRef, Reframe, Sequence, ShapeGeometry, ShapeItem, ShapeKind,
+    StreamDecodability, Stroke, TemplateChoice, TemplateItem, TemplateParam, TemplateParamSpec,
+    TemplateParamValue, TextAlign, TextBackground, TextCase, TextItem, TextShadow, TextStyle,
+    Track, TrackKind, TranscriptionSettings, Transform2D, Transition, TransitionAlignment,
+    TransitionKind, TransitionProblem, VideoStreamInfo, fitted_transition, is_param_name,
+    item_handles, transition_problem, transition_room,
 };
 pub use error::{DomainError, DomainErrorCode};
 pub use history::{History, HistoryStep};
@@ -96,12 +94,11 @@ pub use ids::{
 };
 pub use operation::{
     AddAsset, AddCaptionStyle, AddItem, AddMarker, AddSequence, AddTemplate, AddTrack,
-    AddTransition, Applied,
-    ApplyAnimationPreset, AssetPatch, Assign, CaptionPatch, CaptionStylePatch, ImagePatch,
-    InsertGap, ItemEdge, ItemPatch, LinkItems, MarkerPatch, MediaClipPatch, MoveItem, Operation,
-    PropertyAnimation, RemoveAsset, RemoveCaptionStyle, RemoveItem, RemoveMarker, RemoveSequence,
-    RemoveTemplate, RemoveTrack, RemoveTransition, RenameProject, ReorderTracks, ReplaceTemplate,
-    RestoreItem, RippleDeleteRange,
+    AddTransition, Applied, ApplyAnimationPreset, AssetPatch, Assign, CaptionPatch,
+    CaptionStylePatch, ImagePatch, InsertGap, ItemEdge, ItemPatch, LinkItems, MarkerPatch,
+    MediaClipPatch, MoveItem, Operation, PropertyAnimation, RemoveAsset, RemoveCaptionStyle,
+    RemoveItem, RemoveMarker, RemoveSequence, RemoveTemplate, RemoveTrack, RemoveTransition,
+    RenameProject, ReorderTracks, ReplaceTemplate, RestoreItem, RippleDeleteRange,
     RippleDeleteRanges, SequencePatch, SetKeyframes, SetTranscriptionSettings, ShapePatch,
     SplitItem, TemplatePatch, TextPatch, TouchedEntities, TrackPatch, TransitionPatch,
     TransitionSnapshot, TrimItem, UnlinkItems, UpdateAsset, UpdateCaptionStyle, UpdateItem,
@@ -112,12 +109,13 @@ pub use reformat::{
     copy_sequence, format_change, sequence_version,
 };
 pub use spatial::{DESIGN_REFERENCE_SIDE, DesignPixels, Vec2};
+pub use templates::{
+    DefinitionProblem, ParamMigration, TemplateDefinition, migrate_params, parse_definition,
+    parse_definition_json,
+};
 pub use time::{
     Flicks, FrameRate, RoundingMode, TimeError, TimeRange, TimecodeError, TimecodeErrorReason,
     format_clock, format_timecode, parse_timecode,
-};
-pub use templates::{
-    DefinitionProblem, ParamMigration, TemplateDefinition, migrate_params, parse_definition,
 };
 pub use transaction::{Actor, Committed, Transaction, commit};
 pub use transcript::{

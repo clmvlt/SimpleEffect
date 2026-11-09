@@ -51,9 +51,7 @@ pub fn migrate_params(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        Animatable, Origin, TemplateId, TemplateParam, TemplateParamSpec, time::Flicks,
-    };
+    use crate::{Animatable, Origin, TemplateId, TemplateParam, TemplateParamSpec, time::Flicks};
 
     fn template(params: Vec<TemplateParam>) -> MotionTemplate {
         MotionTemplate {
@@ -97,17 +95,36 @@ mod tests {
                     step: None,
                 },
             ),
-            param("shown", TemplateParamSpec::Text {
-                default: String::new(),
-                multiline: false,
-                max_length: 10,
-            }),
+            param(
+                "shown",
+                TemplateParamSpec::Text {
+                    default: String::new(),
+                    multiline: false,
+                    max_length: 10,
+                },
+            ),
         ]);
         let params = BTreeMap::from([
-            ("title".to_owned(), TemplateParamValue::Text { value: "Hi".to_owned() }),
-            ("size".to_owned(), TemplateParamValue::Number { value: Animatable::constant(80.0) }),
-            ("shown".to_owned(), TemplateParamValue::Boolean { value: true }),
-            ("gone".to_owned(), TemplateParamValue::Boolean { value: false }),
+            (
+                "title".to_owned(),
+                TemplateParamValue::Text {
+                    value: "Hi".to_owned(),
+                },
+            ),
+            (
+                "size".to_owned(),
+                TemplateParamValue::Number {
+                    value: Animatable::constant(80.0),
+                },
+            ),
+            (
+                "shown".to_owned(),
+                TemplateParamValue::Boolean { value: true },
+            ),
+            (
+                "gone".to_owned(),
+                TemplateParamValue::Boolean { value: false },
+            ),
         ]);
         let migration = migrate_params(&params, &new_version);
         assert_eq!(migration.params.keys().collect::<Vec<_>>(), ["title"]);

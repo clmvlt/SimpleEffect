@@ -7,7 +7,14 @@ use super::DefinitionProblem;
 use crate::{Color, DEFAULT_TEXT_MAX_LENGTH, TemplateChoice, TemplateParam, TemplateParamSpec};
 
 /// Keys every parameter may carry.
-const COMMON_KEYS: [&str; 6] = ["type", "title", "description", "default", "examples", "$comment"];
+const COMMON_KEYS: [&str; 6] = [
+    "type",
+    "title",
+    "description",
+    "default",
+    "examples",
+    "$comment",
+];
 
 pub(super) fn parse_param(
     name: &str,
@@ -23,7 +30,8 @@ pub(super) fn parse_param(
         return None;
     };
     let before = problems.len();
-    let label = optional_string(schema, "title", &path, problems).unwrap_or_else(|| name.to_owned());
+    let label =
+        optional_string(schema, "title", &path, problems).unwrap_or_else(|| name.to_owned());
     let description = optional_string(schema, "description", &path, problems);
     let spec = parse_spec(schema, &path, problems)?;
     (problems.len() == before).then(|| TemplateParam {
@@ -108,10 +116,14 @@ fn font_spec(
         .get("default")
         .and_then(Value::as_str)
         .filter(|family| !family.trim().is_empty());
-    require(default, path, "a font family default such as 'Inter'", problems).map(|default| {
-        TemplateParamSpec::Font {
-            default: default.to_owned(),
-        }
+    require(
+        default,
+        path,
+        "a font family default such as 'Inter'",
+        problems,
+    )
+    .map(|default| TemplateParamSpec::Font {
+        default: default.to_owned(),
     })
 }
 
@@ -160,13 +172,11 @@ fn number_spec(
     let maximum = bound("maximum");
     let step = bound("multipleOf").or(integer.then_some(1.0));
     let default = schema.get("default").and_then(Value::as_f64);
-    require(default, path, "a number default", problems).map(|default| {
-        TemplateParamSpec::Number {
-            default,
-            minimum,
-            maximum,
-            step,
-        }
+    require(default, path, "a number default", problems).map(|default| TemplateParamSpec::Number {
+        default,
+        minimum,
+        maximum,
+        step,
     })
 }
 
@@ -180,8 +190,13 @@ fn color_spec(
         .get("default")
         .and_then(Value::as_str)
         .and_then(|text| Color::parse(text).ok());
-    require(default, path, "a colour default written #rrggbb or #rrggbbaa", problems)
-        .map(|default| TemplateParamSpec::Color { default })
+    require(
+        default,
+        path,
+        "a colour default written #rrggbb or #rrggbbaa",
+        problems,
+    )
+    .map(|default| TemplateParamSpec::Color { default })
 }
 
 fn text_spec(
@@ -189,7 +204,12 @@ fn text_spec(
     path: &str,
     problems: &mut Vec<DefinitionProblem>,
 ) -> Option<TemplateParamSpec> {
-    refuse_unknown_keys(schema, path, &with_common(&["multiline", "maxLength"]), problems);
+    refuse_unknown_keys(
+        schema,
+        path,
+        &with_common(&["multiline", "maxLength"]),
+        problems,
+    );
     let multiline = match schema.get("multiline") {
         None => false,
         Some(value) => value.as_bool().unwrap_or_else(|| {
@@ -229,13 +249,22 @@ fn enum_spec(
     path: &str,
     problems: &mut Vec<DefinitionProblem>,
 ) -> Option<TemplateParamSpec> {
-    refuse_unknown_keys(schema, path, &with_common(&["enum", "enumLabels"]), problems);
-    let values: Option<Vec<String>> = schema.get("enum").and_then(Value::as_array).and_then(|values| {
-        values
-            .iter()
-            .map(|value| value.as_str().map(str::to_owned))
-            .collect()
-    });
+    refuse_unknown_keys(
+        schema,
+        path,
+        &with_common(&["enum", "enumLabels"]),
+        problems,
+    );
+    let values: Option<Vec<String>> =
+        schema
+            .get("enum")
+            .and_then(Value::as_array)
+            .and_then(|values| {
+                values
+                    .iter()
+                    .map(|value| value.as_str().map(str::to_owned))
+                    .collect()
+            });
     let Some(values) = values else {
         problems.push(DefinitionProblem::new(
             format!("{path}.enum"),
@@ -252,7 +281,10 @@ fn enum_spec(
                     .map(|label| label.as_str().map(str::to_owned))
                     .collect()
             });
-            if labels.as_ref().is_none_or(|labels| labels.len() != values.len()) {
+            if labels
+                .as_ref()
+                .is_none_or(|labels| labels.len() != values.len())
+            {
                 problems.push(DefinitionProblem::new(
                     format!("{path}.enumLabels"),
                     "give one string label per option, in the order of `enum`",
@@ -274,11 +306,15 @@ fn enum_spec(
         })
         .collect();
     let default = schema.get("default").and_then(Value::as_str);
-    require(default, path, "a default that is one of the options", problems).map(|default| {
-        TemplateParamSpec::Enum {
-            default: default.to_owned(),
-            options,
-        }
+    require(
+        default,
+        path,
+        "a default that is one of the options",
+        problems,
+    )
+    .map(|default| TemplateParamSpec::Enum {
+        default: default.to_owned(),
+        options,
     })
 }
 
@@ -311,7 +347,10 @@ fn optional_string(
         Some(Value::String(text)) if !text.trim().is_empty() => Some(text.trim().to_owned()),
         None | Some(Value::Null | Value::String(_)) => None,
         Some(_) => {
-            problems.push(DefinitionProblem::new(format!("{path}.{key}"), "must be a string"));
+            problems.push(DefinitionProblem::new(
+                format!("{path}.{key}"),
+                "must be a string",
+            ));
             None
         }
     }

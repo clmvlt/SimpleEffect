@@ -10,7 +10,8 @@ use se_app::{
     AgentEditService, CaptionService, CaptionServiceDeps, DEFAULT_SAVE_DELAY, FrameRenderService,
     JobQueue, JobQueueConfig, McpAccess, MediaService, MediaServiceDeps, ProjectService,
     ProjectServiceConfig, ProjectServiceDeps, SmartCutService, SmartCutServiceDeps, TaskService,
-    TaskServiceDeps, TaskTokenRegistry, TranscriptionService, TranscriptionServiceDeps,
+    TaskServiceDeps, TaskTokenRegistry, TemplateCheckService, TranscriptionService,
+    TranscriptionServiceDeps,
     media_service::settings::keys::TOOLS_DIR,
     ports::{AppLibraryRepository, FontCatalog, IdGenerator},
 };
@@ -40,6 +41,8 @@ pub struct Services {
     pub fonts: Arc<dyn FontCatalog>,
     /// Frames of sequences drawn by the renderer for agents (`get_frames`, `/media/renders`).
     pub renders: Arc<FrameRenderService>,
+    /// Motion template modules checked by the renderer (prompt 24, `reportTemplateCheck`).
+    pub template_checks: Arc<TemplateCheckService>,
     /// MCP tokens of running agents (minted by `tasks`, checked by `/mcp`).
     pub tokens: Arc<TaskTokenRegistry>,
     /// Transcription (models, downloads, jobs, transcripts), observing projects and imports.
@@ -86,6 +89,10 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         Arc::new(events.clone()),
         Arc::new(UuidV7Ids),
     ));
+    let template_checks = Arc::new(TemplateCheckService::new(
+        Arc::new(events.clone()),
+        Arc::new(UuidV7Ids),
+    ));
     let deps = ProjectServiceDeps {
         repository: Arc::new(FsProjectRepository),
         library: library.clone(),
@@ -128,6 +135,7 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         edits,
         fonts: font_catalog(),
         renders,
+        template_checks,
         tokens,
         transcription,
     })

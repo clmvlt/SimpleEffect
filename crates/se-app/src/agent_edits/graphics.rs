@@ -1,4 +1,4 @@
-//! New texts, shapes and images placed by agents: on the given video track, or on the highest
+//! New texts, shapes, images and motion template instances placed by agents: on the given video track, or on the highest
 //! free track the task may use (a new track on top when the task may use every track), with
 //! their animations in the same edit. Created items carry `origin = AiTask(task)`.
 
@@ -19,7 +19,7 @@ use crate::{
 /// Queues the item (and its track when a new one is needed) and its presets; returns its id.
 ///
 /// # Errors
-/// A kind other than text, shape or image, an empty range, an audio or foreign track, no free
+/// A kind other than text, shape, image or template instance, an empty range, an audio or foreign track, no free
 /// track the task may use.
 pub(super) fn plan_new_item(
     planner: &mut AgentPlanner<'_>,
@@ -27,11 +27,11 @@ pub(super) fn plan_new_item(
 ) -> Result<ItemId, AppError> {
     if !matches!(
         new.kind,
-        ItemKind::Text(_) | ItemKind::Shape(_) | ItemKind::Image(_)
+        ItemKind::Text(_) | ItemKind::Shape(_) | ItemKind::Image(_) | ItemKind::MotionTemplate(_)
     ) {
         return Err(AppError::InvalidEdit {
             reason: format!(
-                "agents add texts, shapes and images, not a {}",
+                "agents add texts, shapes, images and template instances, not a {}",
                 new.kind.label()
             ),
         });

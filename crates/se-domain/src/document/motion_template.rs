@@ -80,7 +80,11 @@ impl MotionTemplate {
             "description",
             format!("must hold at most {MAX_TEMPLATE_DESCRIPTION_CHARS} characters"),
         );
-        check(self.version >= 1, "version", "must be at least 1".to_owned());
+        check(
+            self.version >= 1,
+            "version",
+            "must be at least 1".to_owned(),
+        );
         check(
             !self.source.trim().is_empty() && self.source.len() <= MAX_TEMPLATE_SOURCE_BYTES,
             "source",
@@ -97,7 +101,10 @@ impl MotionTemplate {
             format!("must hold at most {MAX_TEMPLATE_PARAMS} parameters"),
         );
         for (index, param) in self.params.iter().enumerate() {
-            if self.params[..index].iter().any(|other| other.name == param.name) {
+            if self.params[..index]
+                .iter()
+                .any(|other| other.name == param.name)
+            {
                 problems.push((
                     format!("params[{index}].name"),
                     format!("'{}' is declared twice", param.name),

@@ -2,8 +2,8 @@
 
 use se_domain::{
     AnimationPhase, AssetId, Flicks, Format, FormatAdaptation, ItemId, JobId, MarkerColor,
-    MarkerId, MarkerPatch, ProjectId, PropertyAnimation, SequenceId, TaskId, TimeRange, TrackId,
-    TrackKind, TrackPatch, TranscriptionSettings, TransitionId, TransitionPatch,
+    MarkerId, MarkerPatch, ProjectId, PropertyAnimation, SequenceId, TaskId, TemplateId, TimeRange,
+    TrackId, TrackKind, TrackPatch, TranscriptionSettings, TransitionId, TransitionPatch,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -14,7 +14,7 @@ use crate::{
     GenerateCaptionsRequest, GenerateDerivedRequest, ImportMediaRequest, ImportSubtitlesRequest,
     ItemAnimation, ItemPlacement, ItemTrim, ItemUpdate, MediaSettings, NewTransition, PastedItem,
     PlaceMediaRequest, PlacementMode, RelinkAssetRequest, SilenceCutParams, SmartCutSettings,
-    SubmitTaskRequest, TaskScope, TranscriptionPreferences, WordCutPurpose,
+    SubmitTaskRequest, TaskScope, TemplateCheckOutcome, TranscriptionPreferences, WordCutPurpose,
 };
 
 /// A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -564,6 +564,22 @@ pub enum Command {
         request_id: String,
         /// Why, for the agent (English, actionable).
         message: String,
+    },
+    /// The renderer's answer to a `templateCheckRequested` event (prompt 24). Answered by
+    /// [`crate::CommandResult::ReportTemplateCheck`].
+    ReportTemplateCheck {
+        /// The request.
+        request_id: String,
+        /// What the check found.
+        outcome: TemplateCheckOutcome,
+    },
+    /// Removes a motion template no item uses (one undoable step). Answered by
+    /// [`crate::CommandResult::RemoveTemplate`].
+    RemoveTemplate {
+        /// The open project.
+        project_id: ProjectId,
+        /// The template.
+        template_id: TemplateId,
     },
     /// Transcription on this machine: whisper.cpp, GPU, models, downloads, preferences (prompt
     /// 21). Answered by [`crate::CommandResult::GetTranscriptionStatus`].

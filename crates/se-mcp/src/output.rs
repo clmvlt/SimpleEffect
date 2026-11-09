@@ -35,6 +35,8 @@ pub mod codes {
     pub const REVISION_CONFLICT: &str = "REVISION_CONFLICT";
     /// The item is on a track the user locked.
     pub const LOCKED_TRACK: &str = "LOCKED_TRACK";
+    /// No motion template has that id.
+    pub const TEMPLATE_NOT_FOUND: &str = "TEMPLATE_NOT_FOUND";
     /// A bug in the tool.
     pub const INTERNAL: &str = "INTERNAL";
 }
@@ -76,6 +78,12 @@ impl ToolOutput {
     pub fn push_jpeg(&mut self, jpeg: &[u8]) {
         let data = base64::engine::general_purpose::STANDARD.encode(jpeg);
         self.blocks.push(ContentBlock::image(data, "image/jpeg"));
+    }
+
+    /// Appends a JPEG picture already encoded in base64 (pictures the renderer sent as text).
+    pub fn push_jpeg_base64(&mut self, data: &str) {
+        self.blocks
+            .push(ContentBlock::image(data.to_owned(), "image/jpeg"));
     }
 
     /// The content blocks, in order.

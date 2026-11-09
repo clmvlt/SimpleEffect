@@ -9,8 +9,8 @@
 //! what to do instead.
 
 use se_domain::{
-    CaptionStyleId, Item, ItemId, ItemKind, Marker, MarkerId, Project, Sequence, TouchedEntities,
-    Track, TrackId, Transition, format_clock,
+    CaptionStyleId, Item, ItemId, ItemKind, Marker, MarkerId, Project, Sequence, TemplateId,
+    TouchedEntities, Track, TrackId, Transition, format_clock,
 };
 use se_protocol::TaskScope;
 
@@ -54,6 +54,9 @@ pub(crate) fn check_scope(scope: &TaskScope, change: &PlannedChange<'_>) -> Resu
     }
     for &style in &change.touched.caption_styles {
         checker.caption_style(style)?;
+    }
+    for &template in &change.touched.templates {
+        checker.template(template)?;
     }
     Ok(())
 }
@@ -130,6 +133,19 @@ fn find_item(project: &Project, id: ItemId) -> Option<Placed<'_>> {
         sequence.tracks.iter().find_map(|track| {
             let item = track.items.iter().find(|item| item.id == id)?;
             Some(Placed {
+                sequence,
+                track,
+                item,
+            })
+        })
+    })
+}
+
+/// Every item of `project` with where it is.
+fn placed_items(project: &Project) -> impl Iterator<Item = Placed<'_>> {
+    project.sequences.iter().flat_map(|sequence| {
+        sequence.tracks.iter().flat_map(move |track| {
+            track.items.iter().map(move |item| Placed {
                 sequence,
                 track,
                 item,
@@ -238,6 +254,26 @@ impl Checker<'_> {
         Ok(())
     }
 
+    /// A motion template may change only when every item using it, before and after, lies in
+    /// the scope (its code draws them); a new version made by an agent is copied otherwise.
+    fn template(&self, template: TemplateId) -> Result<(), AppError> {
+        for project in [self.change.before, self.change.after] {
+            for placed in placed_items(project) {
+                let instance = matches!(&placed.item.kind, ItemKind::MotionTemplate(item) if item.template_id == template);
+                if instance
+                    && !item_in_scope(self.scope, placed.sequence, placed.track, placed.item)
+                {
+                    return Err(out_of_scope(format!(
+                        "motion template {template} is also used by {}, outside this task's scope ({}): give the template a new version with update_motion_template (instances outside the scope keep the old one)",
+                        describe_item(&placed),
+                        self.scope_text()
+                    )));
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// A caption style may change only when every caption using it, before and after, lies in
     /// the scope (its look is theirs).
     fn caption_style(&self, style: CaptionStyleId) -> Result<(), AppError> {
@@ -256,7 +292,7 @@ impl Checker<'_> {
                 if styled && !item_in_scope(self.scope, placed.sequence, placed.track, placed.item)
                 {
                     return Err(out_of_scope(format!(
-                        "caption style {style} is also used by {}, outside this task's scope                          ({}): change the style of the captions of the scope only (list them in                          `items`: they get a style of their own)",
+                        "caption style {style} is also used by {}, outside this task's scope ({}): change the style of the captions of the scope only (list them in `items`: they get a style of their own)",
                         describe_item(&placed),
                         self.scope_text()
                     )));

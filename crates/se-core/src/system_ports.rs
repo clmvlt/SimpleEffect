@@ -5,7 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use se_app::ports::{Clock, EventSink, IdGenerator, RendererLink, TokenSource};
 use se_domain::Uuid;
-use se_protocol::{CoreEvent, FrameRenderRequest};
+use se_protocol::{CoreEvent, FrameRenderRequest, TemplateCheckRequest};
 
 use crate::rpc::EventBus;
 
@@ -61,6 +61,10 @@ impl RendererLink for EventBus {
 
     fn request_frames(&self, request: FrameRenderRequest) {
         EventBus::publish(self, CoreEvent::RenderFramesRequested(request));
+    }
+
+    fn request_template_check(&self, request: TemplateCheckRequest) {
+        EventBus::publish(self, CoreEvent::TemplateCheckRequested(request));
     }
 }
 

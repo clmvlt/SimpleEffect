@@ -9,5 +9,7 @@ mod definition;
 mod migration;
 mod param_schema;
 
-pub use definition::{DefinitionProblem, TemplateDefinition, parse_definition};
+pub use definition::{
+    DefinitionProblem, TemplateDefinition, parse_definition, parse_definition_json,
+};
 pub use migration::{ParamMigration, migrate_params};

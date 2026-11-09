@@ -3,7 +3,7 @@
 
 use se_domain::{
     AnimatableProperty, AnimationPhase, AssetId, Flicks, ItemId, ProjectId, PropertyAnimation,
-    SequenceId, ShapeKind, TrackId,
+    SequenceId, ShapeKind, TemplateId, TrackId,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -31,6 +31,11 @@ pub enum NewGraphic {
     Image {
         /// The image asset.
         asset_id: AssetId,
+    },
+    /// An instance of a motion template of the project, with its default values (prompt 24).
+    Template {
+        /// The template.
+        template_id: TemplateId,
     },
 }
 

@@ -177,7 +177,7 @@ settings: AiSettings, } | { "kind": "updateAiSettings",
 /**
  * The settings as saved.
  */
-settings: AiSettings, } | { "kind": "reportFrameRenderFailure" } | { "kind": "getTranscriptionStatus", 
+settings: AiSettings, } | { "kind": "reportFrameRenderFailure" } | { "kind": "reportTemplateCheck" } | { "kind": "removeTemplate" } | { "kind": "getTranscriptionStatus", 
 /**
  * The status.
  */

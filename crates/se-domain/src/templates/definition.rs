@@ -114,6 +114,27 @@ fn module_path(template: &MotionTemplate, field: &str) -> String {
     }
 }
 
+/// [`parse_definition`] of the two exports written as JSON text (what the renderer sends).
+///
+/// # Errors
+/// An export that is not JSON, or every problem [`parse_definition`] finds.
+pub fn parse_definition_json(
+    meta_json: &str,
+    params_json: &str,
+) -> Result<TemplateDefinition, Vec<DefinitionProblem>> {
+    let read = |json: &str, export: &str| {
+        serde_json::from_str::<Value>(json).map_err(|error| {
+            vec![DefinitionProblem::new(
+                export,
+                format!(
+                    "the `{export}` export is not plain data ({error}): use only strings, numbers, booleans, arrays and objects"
+                ),
+            )]
+        })
+    };
+    parse_definition(&read(meta_json, "meta")?, &read(params_json, "params")?)
+}
+
 /// Reads the `meta` and `params` exports of a template module.
 ///
 /// # Errors
@@ -149,7 +170,12 @@ fn parse_meta(
         ));
         return None;
     };
-    refuse_unknown_keys(meta, "meta", &["name", "description", "defaultDuration"], problems);
+    refuse_unknown_keys(
+        meta,
+        "meta",
+        &["name", "description", "defaultDuration"],
+        problems,
+    );
     let name = match meta.get("name").and_then(Value::as_str) {
         Some(name) if !name.trim().is_empty() => Some(name.to_owned()),
         _ => {
@@ -164,7 +190,10 @@ fn parse_meta(
         None | Some(Value::Null) => String::new(),
         Some(Value::String(text)) => text.clone(),
         Some(_) => {
-            problems.push(DefinitionProblem::new("meta.description", "must be a string"));
+            problems.push(DefinitionProblem::new(
+                "meta.description",
+                "must be a string",
+            ));
             String::new()
         }
     };
@@ -255,7 +284,10 @@ mod tests {
     }
 
     fn paths(problems: &[DefinitionProblem]) -> Vec<&str> {
-        problems.iter().map(|problem| problem.path.as_str()).collect()
+        problems
+            .iter()
+            .map(|problem| problem.path.as_str())
+            .collect()
     }
 
     #[test]
@@ -277,13 +309,19 @@ mod tests {
         let names: Vec<&str> = definition.params.iter().map(|p| p.name.as_str()).collect();
         assert_eq!(
             names,
-            ["name", "role", "slide", "count", "accent", "line", "align", "font", "logo"]
+            [
+                "name", "role", "slide", "count", "accent", "line", "align", "font", "logo"
+            ]
         );
         assert_eq!(definition.params[0].label, "Nom");
         assert_eq!(definition.params[1].label, "role");
         assert!(matches!(
             definition.params[1].spec,
-            TemplateParamSpec::Text { multiline: true, max_length: 80, .. }
+            TemplateParamSpec::Text {
+                multiline: true,
+                max_length: 80,
+                ..
+            }
         ));
         assert!(matches!(
             definition.params[3].spec,

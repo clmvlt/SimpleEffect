@@ -18,6 +18,7 @@ pub mod smart_cuts;
 pub mod sound;
 pub mod system;
 pub mod tasks;
+pub mod templates;
 pub mod timeline;
 pub mod transcription;
 
@@ -25,7 +26,7 @@ use std::{path::Path, sync::Arc};
 
 use se_app::{
     CaptionService, FrameRenderService, MediaService, ProjectService, SmartCutService, TaskService,
-    TranscriptionService, ports::FontCatalog,
+    TemplateCheckService, TranscriptionService, ports::FontCatalog,
 };
 use se_protocol::{ErrorCode, ProtocolError};
 
@@ -48,6 +49,8 @@ pub struct HandlerContext {
     pub fonts: Arc<dyn FontCatalog>,
     /// Frames drawn by the renderer for agents (failure reports).
     pub renders: Arc<FrameRenderService>,
+    /// Motion template checks run by the renderer (prompt 24).
+    pub template_checks: Arc<TemplateCheckService>,
     /// Transcription: models, downloads, jobs, transcripts (also observes projects).
     pub transcription: TranscriptionService,
     /// Smart cuts (prompt 22).

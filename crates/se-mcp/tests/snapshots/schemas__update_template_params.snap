@@ -1,0 +1,42 @@
+---
+source: crates/se-mcp/tests/schemas.rs
+expression: definition
+---
+{
+  "annotations": {
+    "destructiveHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Changes parameter values of a motion template instance (texts, numbers, colours, options, fonts, images; numbers and colours may be keyframed); null resets a value to the template's default. The template's code is unchanged (update_motion_template changes it).",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "expected_revision": {
+        "description": "The item's revision you read (refused with `REVISION_CONFLICT` when it changed since).",
+        "format": "uint64",
+        "minimum": 0,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "item_id": {
+        "description": "The instance (an `item_id` of kind `motion_template`, or `$name` in `apply_batch`).",
+        "type": "string"
+      },
+      "params": {
+        "additionalProperties": true,
+        "description": "Values by parameter name; `null` resets one to its default. Numbers and colours also take\n`{\"keyframes\": [{\"time\": 0, \"value\": …, \"easing\"?}]}` (times relative to the item's\nstart).",
+        "type": "object"
+      }
+    },
+    "required": [
+      "item_id",
+      "params"
+    ],
+    "type": "object"
+  },
+  "name": "update_template_params"
+}

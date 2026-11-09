@@ -10,6 +10,8 @@
 //! - `graphics`, `timing`, `transitions`: the planners of each kind of edit. Moves, trims,
 //!   splits and deletes keep linked items together, as in the timeline.
 //! - `scope`: the scope check and its messages.
+//! - `templates`: motion templates written by agents (prompt 24): new ones and new versions with
+//!   copy on write.
 //! - `cuts`, `cut_scope`: smart cuts of agents (prompt 22) and their « cut » scope rule.
 
 mod cut_scope;
@@ -18,6 +20,7 @@ mod graphics;
 mod planner;
 mod request;
 mod scope;
+mod templates;
 mod timing;
 mod transitions;
 
@@ -26,6 +29,7 @@ pub use planner::EditFailure;
 pub use request::{
     AgentEdit, AgentEditReport, ItemRef, NewAgentCaptions, NewAgentItem, PresetSpec, TaskChanges,
 };
+pub use templates::TemplateChange;
 
 use std::{collections::BTreeSet, sync::Arc};
 
@@ -109,7 +113,7 @@ impl AgentEditService {
                 continue;
             };
             self.note_changeset(agent, &commit).await;
-            return Ok(report(commit, planned.created));
+            return Ok(report(commit, planned.created, planned.templates));
         }
         Err(EditFailure::whole(AppError::InvalidEdit {
             reason: "the project kept changing while these actions were applied: read it again \
@@ -202,7 +206,11 @@ impl AgentEditService {
 }
 
 /// What a committed call reports.
-fn report(commit: AiCommit, created: Vec<Vec<ItemId>>) -> AgentEditReport {
+fn report(
+    commit: AiCommit,
+    created: Vec<Vec<ItemId>>,
+    templates: Vec<TemplateChange>,
+) -> AgentEditReport {
     let present: BTreeSet<ItemId> = commit.project.items().map(|item| item.id).collect();
     let (changed, removed) = commit
         .touched_items
@@ -213,6 +221,7 @@ fn report(commit: AiCommit, created: Vec<Vec<ItemId>>) -> AgentEditReport {
         created,
         changed,
         removed,
+        templates,
         project: commit.project,
     }
 }

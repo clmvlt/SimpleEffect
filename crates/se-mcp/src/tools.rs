@@ -9,6 +9,7 @@ pub mod add_transition;
 pub mod apply_animation_preset;
 pub mod apply_batch;
 pub mod create_captions;
+pub mod create_motion_template;
 pub mod delete_items;
 pub mod edit_caption_text;
 pub mod emphasize_caption_words;
@@ -23,6 +24,7 @@ pub mod get_task_changes;
 pub mod get_timeline;
 pub mod get_transcript;
 pub mod insert_gap;
+pub mod instantiate_template;
 pub mod list_animation_presets;
 pub mod list_assets;
 pub mod list_templates;
@@ -39,6 +41,8 @@ pub mod transcribe_media;
 pub mod trim_item;
 pub mod update_caption_style;
 pub mod update_item;
+pub mod update_motion_template;
+pub mod update_template_params;
 
 use crate::registry::ToolEntry;
 
@@ -85,6 +89,10 @@ pub fn catalogue() -> Vec<ToolEntry> {
         ToolEntry::of::<update_caption_style::UpdateCaptionStyle>(),
         ToolEntry::of::<edit_caption_text::EditCaptionText>(),
         ToolEntry::of::<emphasize_caption_words::EmphasizeCaptionWords>(),
+        ToolEntry::of::<create_motion_template::CreateMotionTemplate>(),
+        ToolEntry::of::<update_motion_template::UpdateMotionTemplate>(),
+        ToolEntry::of::<instantiate_template::InstantiateTemplate>(),
+        ToolEntry::of::<update_template_params::UpdateTemplateParams>(),
     ];
     entries
         .into_iter()
@@ -112,8 +120,11 @@ mod tests {
         "create_captions",
     ];
 
+    /// Motion template modules (prompt 24): checked by the renderer first, not batchable.
+    const TEMPLATE_MODULE_TOOLS: [&str; 2] = ["create_motion_template", "update_motion_template"];
+
     /// Tools that change the project.
-    const WRITE_TOOLS: [&str; 23] = [
+    const WRITE_TOOLS: [&str; 26] = [
         "add_text",
         "add_shape",
         "add_image",
@@ -137,20 +148,23 @@ mod tests {
         "update_caption_style",
         "edit_caption_text",
         "emphasize_caption_words",
+        "update_motion_template",
+        "instantiate_template",
+        "update_template_params",
     ];
 
-    /// Tools that add facts next to the project without changing the document (not read-only,
-    /// not destructive).
-    const ANALYSIS_TOOLS: [&str; 1] = ["transcribe_media"];
+    /// Tools that add something without changing what exists (not read-only, not destructive):
+    /// transcripts next to the project, a new motion template.
+    const ANALYSIS_TOOLS: [&str; 2] = ["transcribe_media", "create_motion_template"];
 
     #[test]
     fn every_tool_has_an_object_schema_and_a_unique_name() {
         let tools = catalogue();
-        assert_eq!(tools.len(), 38);
+        assert_eq!(tools.len(), 42);
         let mut names: Vec<&str> = tools.iter().map(ToolEntry::name).collect();
         names.sort_unstable();
         names.dedup();
-        assert_eq!(names.len(), 38);
+        assert_eq!(names.len(), 42);
         for tool in &tools {
             assert_eq!(
                 tool.definition.input_schema["type"],
@@ -184,9 +198,11 @@ mod tests {
 
     #[test]
     fn every_write_tool_can_run_in_a_batch() {
-        let batched = WRITE_TOOLS
-            .iter()
-            .filter(|tool| **tool != "apply_batch" && !CUT_TOOLS.contains(tool));
+        let batched = WRITE_TOOLS.iter().filter(|tool| {
+            **tool != "apply_batch"
+                && !CUT_TOOLS.contains(tool)
+                && !TEMPLATE_MODULE_TOOLS.contains(tool)
+        });
         for tool in batched {
             assert!(
                 super::apply_batch::batchable(tool),

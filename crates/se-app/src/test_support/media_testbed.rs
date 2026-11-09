@@ -21,7 +21,8 @@ use crate::{
     AgentEditService, AppError, CaptionService, CaptionServiceDeps, FrameRenderService, JobQueue,
     JobQueueConfig, McpAccess, MediaService, MediaServiceDeps, ProjectService,
     ProjectServiceConfig, ProjectServiceDeps, SmartCutService, SmartCutServiceDeps, TaskService,
-    TaskServiceDeps, TaskTokenRegistry, TranscriptionService, TranscriptionServiceDeps,
+    TaskServiceDeps, TaskTokenRegistry, TemplateCheckService, TranscriptionService,
+    TranscriptionServiceDeps,
 };
 
 /// The MCP URL runs of the testbed's task service are given.
@@ -64,8 +65,10 @@ pub struct MediaTestbed {
     pub tokens: Arc<TaskTokenRegistry>,
     /// Composited frames for agents, over `renderer`.
     pub renders: Arc<FrameRenderService>,
-    /// The renderer connection of `renders`.
+    /// The renderer connection of `renders` and `template_checks`.
     pub renderer: Arc<FakeRendererLink>,
+    /// Motion template checks over `renderer` (prompt 24).
+    pub template_checks: Arc<TemplateCheckService>,
     /// Transcription use cases (observing projects, told about imports); not started.
     pub transcription: TranscriptionService,
     /// Smart cuts over `projects`, `media` and `transcription` (prompt 22).
@@ -139,6 +142,7 @@ impl MediaTestbed {
         });
         let renderer = Arc::new(FakeRendererLink::default());
         let renders = Arc::new(FrameRenderService::new(renderer.clone(), ids.clone()));
+        let template_checks = Arc::new(TemplateCheckService::new(renderer.clone(), ids.clone()));
         let deps = ProjectServiceDeps {
             repository: Arc::new(repository.clone()),
             library: library.clone(),
@@ -180,6 +184,7 @@ impl MediaTestbed {
             tokens,
             renders,
             renderer,
+            template_checks,
             transcription,
             transcriber: fakes.transcriber,
             extractor: fakes.extractor,

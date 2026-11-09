@@ -16,9 +16,9 @@ use crate::{
     LinkGroupId, Marker, MarkerColor, MarkerId, MediaClip, MediaInfo, MotionTemplate, Origin,
     Project, ProjectId, ProjectSettings, Reframe, SceneSummary, Sequence, SequenceId,
     ShapeGeometry, ShapeItem, StreamDecodability, Stroke, TaskId, TemplateChoice, TemplateItem,
-    TemplateParam, TemplateParamSpec, TemplateParamValue,
-    TextItem, TextStyle, Track, TrackKind, TranscriptSummary, TranscriptionSettings, Transform2D,
-    Transition, TransitionAlignment, TransitionId, TransitionKind, Vec2, VideoStreamInfo,
+    TemplateParam, TemplateParamSpec, TemplateParamValue, TextItem, TextStyle, Track, TrackKind,
+    TranscriptSummary, TranscriptionSettings, Transform2D, Transition, TransitionAlignment,
+    TransitionId, TransitionKind, Vec2, VideoStreamInfo,
 };
 
 /// Ids of [`example_project`] that tests refer to: its three assets and its template.
@@ -414,7 +414,11 @@ fn lower_third_template() -> MotionTemplate {
                     step: None,
                 },
             ),
-            param("showLine", "Ligne", TemplateParamSpec::Boolean { default: true }),
+            param(
+                "showLine",
+                "Ligne",
+                TemplateParamSpec::Boolean { default: true },
+            ),
             param(
                 "align",
                 "Alignement",

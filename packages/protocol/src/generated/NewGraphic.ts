@@ -2,6 +2,7 @@
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { AssetId } from "./AssetId";
 import type { ShapeKind } from "./ShapeKind";
+import type { TemplateId } from "./TemplateId";
 
 /**
  * What a new graphic item shows (`addGraphicItem`). It starts with the default look (white
@@ -19,4 +20,8 @@ shape: ShapeKind, } | { "kind": "image",
 /**
  * The image asset.
  */
-assetId: AssetId, };
+assetId: AssetId, } | { "kind": "template", 
+/**
+ * The template.
+ */
+templateId: TemplateId, };

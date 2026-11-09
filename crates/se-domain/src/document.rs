@@ -62,14 +62,14 @@ pub use motion_template::{
     MAX_TEMPLATE_DESCRIPTION_CHARS, MAX_TEMPLATE_DURATION, MAX_TEMPLATE_NAME_CHARS,
     MAX_TEMPLATE_SOURCE_BYTES, MotionTemplate, TemplateItem, TemplateParamValue,
 };
-pub use template_param::{
-    DEFAULT_TEXT_MAX_LENGTH, MAX_ENUM_OPTIONS, MAX_PARAM_NAME_CHARS, MAX_TEMPLATE_PARAMS,
-    TemplateChoice, TemplateParam, TemplateParamSpec, is_param_name,
-};
 pub use project::{CURRENT_SCHEMA_VERSION, Project, ProjectSettings};
 pub use sequence::Sequence;
 pub use shape::{ShapeGeometry, ShapeItem, ShapeKind};
 pub use stroke::Stroke;
+pub use template_param::{
+    DEFAULT_TEXT_MAX_LENGTH, MAX_ENUM_OPTIONS, MAX_PARAM_NAME_CHARS, MAX_TEMPLATE_PARAMS,
+    TemplateChoice, TemplateParam, TemplateParamSpec, is_param_name,
+};
 pub use text::{TextAlign, TextBackground, TextCase, TextItem, TextShadow, TextStyle};
 pub use track::{Track, TrackKind};
 pub use transcription_settings::TranscriptionSettings;

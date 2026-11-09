@@ -1,10 +1,12 @@
-//! Graphics and keyframes (prompt 15): new texts, shapes and images placed at a time, batched
-//! keyframe changes and animation presets. Each command is one user transaction.
+//! Graphics and keyframes (prompt 15): new texts, shapes, images and motion template instances
+//! (prompt 24) placed at a time, batched keyframe changes, animation presets and the removal of
+//! unused templates. Each command is one user transaction.
 
 use se_domain::{
     AddItem, AddTrack, AnimatableProperty, AnimationPhase, ApplyAnimationPreset, AssetKind, Flicks,
-    ImageItem, Item, ItemId, ItemKind, Operation, Origin, ProjectId, Sequence, SetKeyframes,
-    ShapeItem, TextItem, TimeRange, TrackId, TrackKind, animation_presets, preset_samples,
+    ImageItem, Item, ItemId, ItemKind, Operation, Origin, ProjectId, RemoveTemplate, Sequence,
+    SetKeyframes, ShapeItem, TemplateId, TemplateItem, TextItem, TimeRange, TrackId, TrackKind,
+    Transform2D, animation_presets, preset_samples,
 };
 use se_protocol::{
     AddGraphicRequest, AnimationPresetInfo, AnimationPresetSample, ItemAnimation, NewGraphic,
@@ -79,9 +81,31 @@ impl ProjectService {
             NewGraphic::Text { .. } => labels::ADD_TEXT,
             NewGraphic::Shape { .. } => labels::ADD_SHAPE,
             NewGraphic::Image { .. } => labels::ADD_IMAGE,
+            NewGraphic::Template { .. } => labels::ADD_TEMPLATE,
         };
         self.commit_user_edit(&handle, label, ops).await?;
         Ok(PlacedGraphic { item_id, track_id })
+    }
+
+    /// Removes a motion template no item uses (one undoable step, prompt 24).
+    ///
+    /// # Errors
+    /// Not open, unknown template, a template still used (`TEMPLATE_IN_USE` in the details),
+    /// storage errors.
+    pub async fn remove_template(
+        &self,
+        project_id: ProjectId,
+        template_id: TemplateId,
+    ) -> Result<(), AppError> {
+        let handle = self.handle(project_id).await?;
+        let ops = vec![
+            RemoveTemplate {
+                template: template_id,
+            }
+            .into(),
+        ];
+        self.commit_user_edit(&handle, labels::REMOVE_TEMPLATE, ops)
+            .await
     }
 
     /// Sets animatable properties of items in one transaction (several properties of one item,
@@ -201,6 +225,22 @@ fn graphic_kind(
                 });
             }
             ItemKind::Image(ImageItem::new(*asset_id))
+        }
+        NewGraphic::Template { template_id } => {
+            if !project
+                .templates
+                .iter()
+                .any(|template| template.id == *template_id)
+            {
+                return Err(AppError::InvalidEdit {
+                    reason: format!("motion template {template_id} does not exist in this project"),
+                });
+            }
+            ItemKind::MotionTemplate(TemplateItem {
+                template_id: *template_id,
+                params: std::collections::BTreeMap::new(),
+                transform: Transform2D::default(),
+            })
         }
     })
 }

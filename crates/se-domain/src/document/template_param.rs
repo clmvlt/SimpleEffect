@@ -111,7 +111,9 @@ impl TemplateParam {
             TemplateParamSpec::Color { default } => TemplateParamValue::Color {
                 value: Animatable::constant(*default),
             },
-            TemplateParamSpec::Boolean { default } => TemplateParamValue::Boolean { value: *default },
+            TemplateParamSpec::Boolean { default } => {
+                TemplateParamValue::Boolean { value: *default }
+            }
             TemplateParamSpec::Enum { default, .. } => TemplateParamValue::Enum {
                 value: default.clone(),
             },
@@ -200,14 +202,13 @@ impl TemplateParam {
                 .is_empty()
                 .then(|| "the font family must not be empty".to_owned()),
             // Colours, flags and assets fit when the kinds agree; any other pair is a mismatch.
-            _ => (self.spec.kind_name() != value.kind_name())
-                .then(|| {
-                    format!(
-                        "a {} value was given to a {} parameter",
-                        value.kind_name(),
-                        self.spec.kind_name()
-                    )
-                }),
+            _ => (self.spec.kind_name() != value.kind_name()).then(|| {
+                format!(
+                    "a {} value was given to a {} parameter",
+                    value.kind_name(),
+                    self.spec.kind_name()
+                )
+            }),
         }
     }
 }
@@ -362,13 +363,20 @@ mod tests {
     #[test]
     fn declarations_report_their_problems() {
         let inverted = number(Some(3.0), Some(2.0)).problems();
-        assert!(inverted.iter().any(|(field, rule)| *field == "spec"
-            && rule.contains("greater than maximum")));
+        assert!(
+            inverted
+                .iter()
+                .any(|(field, rule)| *field == "spec" && rule.contains("greater than maximum"))
+        );
         let outside = number(Some(2.0), Some(3.0)).problems();
         assert!(outside.iter().any(|(field, _)| *field == "spec.default"));
         let twice = choice(&["left", "left"]).problems();
         assert!(twice.iter().any(|(_, rule)| rule.contains("listed twice")));
-        assert_eq!(choice(&[]).problems().len(), 2, "no option and an unknown default");
+        assert_eq!(
+            choice(&[]).problems().len(),
+            2,
+            "no option and an unknown default"
+        );
     }
 
     #[test]

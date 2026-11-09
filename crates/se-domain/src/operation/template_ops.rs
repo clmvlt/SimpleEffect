@@ -121,7 +121,12 @@ mod tests {
             },
         );
         assert_eq!(applied.project.templates[0].name, "Progress bar");
-        assert!(applied.touched.templates.contains(&TemplateId::from_test_index(9)));
+        assert!(
+            applied
+                .touched
+                .templates
+                .contains(&TemplateId::from_test_index(9))
+        );
     }
 
     #[test]
@@ -142,11 +147,11 @@ mod tests {
         let mut next = project.templates[0].clone();
         next.version += 1;
         next.source.push_str("\n// v2\n");
-        let applied = apply_ok(
-            &project,
-            ReplaceTemplate { template: next },
+        let applied = apply_ok(&project, ReplaceTemplate { template: next });
+        assert_eq!(
+            applied.project.templates[0].version,
+            project.templates[0].version + 1
         );
-        assert_eq!(applied.project.templates[0].version, project.templates[0].version + 1);
         let unknown = apply_err(
             &project,
             ReplaceTemplate {

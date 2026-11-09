@@ -41,6 +41,8 @@ import type { SmartCutSettings } from "./SmartCutSettings";
 import type { SubmitTaskRequest } from "./SubmitTaskRequest";
 import type { TaskId } from "./TaskId";
 import type { TaskScope } from "./TaskScope";
+import type { TemplateCheckOutcome } from "./TemplateCheckOutcome";
+import type { TemplateId } from "./TemplateId";
 import type { TimeRange } from "./TimeRange";
 import type { TrackId } from "./TrackId";
 import type { TrackKind } from "./TrackKind";
@@ -558,7 +560,23 @@ requestId: string,
 /**
  * Why, for the agent (English, actionable).
  */
-message: string, } | { "kind": "getTranscriptionStatus" } | { "kind": "updateTranscriptionPreferences" } & TranscriptionPreferences | { "kind": "startTranscriptionDownload", 
+message: string, } | { "kind": "reportTemplateCheck", 
+/**
+ * The request.
+ */
+requestId: string, 
+/**
+ * What the check found.
+ */
+outcome: TemplateCheckOutcome, } | { "kind": "removeTemplate", 
+/**
+ * The open project.
+ */
+projectId: ProjectId, 
+/**
+ * The template.
+ */
+templateId: TemplateId, } | { "kind": "getTranscriptionStatus" } | { "kind": "updateTranscriptionPreferences" } & TranscriptionPreferences | { "kind": "startTranscriptionDownload", 
 /**
  * What to download.
  */

@@ -8,7 +8,7 @@ use super::{
     encode::encode,
     handlers::{
         HandlerContext, ai, captions, editing, frames, graphics, items, media, media_settings,
-        projects, smart_cuts, sound, system, tasks, timeline, transcription,
+        projects, smart_cuts, sound, system, tasks, templates, timeline, transcription,
     },
     request::{Rejection, parse_request},
 };
@@ -337,6 +337,14 @@ impl RpcRouter {
                 request_id,
                 message,
             } => frames::report_failure(context, request_id, message),
+            Command::ReportTemplateCheck {
+                request_id,
+                outcome,
+            } => templates::report_template_check(context, request_id, outcome.clone()),
+            Command::RemoveTemplate {
+                project_id,
+                template_id,
+            } => templates::remove_template(context, *project_id, *template_id).await,
             Command::GetTranscriptionStatus
             | Command::UpdateTranscriptionPreferences(_)
             | Command::StartTranscriptionDownload { .. }
@@ -549,6 +557,7 @@ pub mod testing {
             media,
             tasks,
             renders,
+            template_checks,
             transcription,
             smart_cuts,
             captions,
@@ -565,6 +574,7 @@ pub mod testing {
             tasks: Arc::new(tasks),
             fonts: Arc::new(FakeFontCatalog),
             renders,
+            template_checks,
             transcription,
             smart_cuts,
             captions,
@@ -802,5 +812,19 @@ mod tests {
         )
         .await;
         assert_eq!(reply["error"]["code"], "RENDER_REQUEST_NOT_FOUND");
+    }
+
+    #[tokio::test]
+    async fn template_commands_reach_their_handlers() {
+        let late = reply(
+            r#"{"type":"request","id":1,"command":{"kind":"reportTemplateCheck","requestId":"gone","outcome":{"kind":"failed","problems":[]}}}"#,
+        )
+        .await;
+        assert_eq!(late["error"]["code"], "TEMPLATE_CHECK_NOT_FOUND");
+        let remove = reply(
+            r#"{"type":"request","id":1,"command":{"kind":"removeTemplate","projectId":"00000000-0009-7000-8000-000000000000","templateId":"00000000-0001-7000-8000-000000000000"}}"#,
+        )
+        .await;
+        assert_eq!(remove["error"]["code"], "PROJECT_NOT_OPEN");
     }
 }
