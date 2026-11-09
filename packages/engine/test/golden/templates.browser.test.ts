@@ -18,7 +18,9 @@ import {
 } from '../../src/testing/document';
 import { catalogFontSource } from '../../src/templates/font-faces';
 import { TemplateRuntime } from '../../src/templates/template-runtime';
+import { blobWorkerFactory, type WorkerFactory } from '../../src/templates/template-worker';
 import lowerThird from '../../../../crates/se-app/assets/agent-instructions/templates/lower-third.ts?raw';
+import oswald from '../../../../crates/se-fonts/fonts/oswald/oswald-latin-wght-normal.woff2?url';
 import inter from './fixtures/inter-latin.woff2?url';
 import { TEXT_TOLERANCE, expectGolden, renderScene, type Rendered } from './golden';
 
@@ -107,19 +109,20 @@ function scene(
   };
 }
 
-function runtime(): TemplateRuntime {
+/** A runtime whose catalogue holds Inter (the fixture) and the bundled Oswald. */
+function runtime(createWorker: WorkerFactory = blobWorkerFactory): TemplateRuntime {
+  const face = (family: string, url: string) => ({
+    family,
+    url,
+    weightMin: 100,
+    weightMax: 900,
+    italic: false,
+    unicodeRange: null,
+    format: 'woff2',
+  });
   return new TemplateRuntime({
-    fonts: catalogFontSource([
-      {
-        family: 'Inter',
-        url: inter,
-        weightMin: 100,
-        weightMax: 900,
-        italic: false,
-        unicodeRange: null,
-        format: 'woff2',
-      },
-    ]),
+    fonts: catalogFontSource([face('Inter', inter), face('Oswald', oswald)]),
+    createWorker,
   });
 }
 
@@ -132,8 +135,13 @@ afterEach(() => {
   runtimes = [];
 });
 
-async function draw(motion: MotionTemplate, time: Flicks, values = {}): Promise<Rendered> {
-  const templates = runtime();
+async function draw(
+  motion: MotionTemplate,
+  time: Flicks,
+  values = {},
+  createWorker?: WorkerFactory,
+): Promise<Rendered> {
+  const templates = runtime(createWorker);
   runtimes.push(templates);
   const frame = await renderScene(scene(motion, values), time, {}, { templates });
   rendered.push(frame);
@@ -163,6 +171,38 @@ describe('motion templates in the engine', () => {
     const first = await draw(template(lowerThird), ms(800));
     const second = await draw(template(lowerThird), ms(800));
     expect([...second.pixels.data]).toEqual([...first.pixels.data]);
+  });
+
+  it('draws a family first asked for while rendering in a Worker given it first', async () => {
+    // The Worker starts with Inter only: Oswald is found missing by the first frame. Electron's
+    // Chromium keeps the fallback (Inter) for a family used before it loads, per Worker (the
+    // test browser may not), so the runtime draws again in a new Worker given the family first.
+    const counting = (count: { started: number }): WorkerFactory => {
+      return (source) => {
+        count.started += 1;
+        return blobWorkerFactory(source);
+      };
+    };
+    const oswaldWorkers = { started: 0 };
+    const oswaldFrame = await draw(
+      template(lowerThird),
+      ms(1500),
+      { font: { kind: 'font', value: 'Oswald' } },
+      counting(oswaldWorkers),
+    );
+    const interFrame = await draw(template(lowerThird), ms(1500));
+    const unknownWorkers = { started: 0 };
+    const unknownFrame = await draw(
+      template(lowerThird),
+      ms(1500),
+      { font: { kind: 'font', value: 'Not In The Catalogue' } },
+      counting(unknownWorkers),
+    );
+    expect(oswaldFrame.engine.getState().templateIssues).toEqual([]);
+    expect(oswaldWorkers.started).toBe(2);
+    expect(unknownWorkers.started).toBe(1);
+    expect([...unknownFrame.pixels.data]).toEqual([...interFrame.pixels.data]);
+    expect([...oswaldFrame.pixels.data]).not.toEqual([...interFrame.pixels.data]);
   });
 
   it('draws the error picture for a failing template and reports it', async () => {

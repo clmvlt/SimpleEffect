@@ -7,6 +7,9 @@ import type { TemplateCheckOutcome, TemplateProblem } from '@se/protocol';
 import { describe, expect, it } from 'vitest';
 
 import { checkTemplate } from '../../src/templates/check-template';
+import { catalogFontSource } from '../../src/templates/font-faces';
+import { blobWorkerFactory } from '../../src/templates/template-worker';
+import oswald from '../../../../crates/se-fonts/fonts/oswald/oswald-latin-wght-normal.woff2?url';
 import animatedTitle from '../../../../crates/se-app/assets/agent-instructions/templates/animated-title.ts?raw';
 import callToAction from '../../../../crates/se-app/assets/agent-instructions/templates/call-to-action.ts?raw';
 import lowerThird from '../../../../crates/se-app/assets/agent-instructions/templates/lower-third.ts?raw';
@@ -63,6 +66,35 @@ describe('template checks', () => {
     expect([pixels.width, pixels.height]).toEqual([320, 180]);
     expect(redAt(pixels, 40, 90)).toBeGreaterThan(200);
     expect(redAt(pixels, 280, 90)).toBeLessThan(40);
+  });
+
+  it('checks again in a Worker given a family first asked for while rendering', async () => {
+    // Electron's Chromium keeps the fallback for a family a Worker used before its faces
+    // arrived: a family named only in the code (not a font parameter) needs a second Worker.
+    let started = 0;
+    const outcome = await checkTemplate(
+      moduleWith("ctx.text('Oswald', 100, 100, { family: 'Oswald', size: 80, color: p.color });"),
+      {
+        ...OPTIONS,
+        fonts: catalogFontSource([
+          {
+            family: 'Oswald',
+            url: oswald,
+            weightMin: 200,
+            weightMax: 700,
+            italic: false,
+            unicodeRange: null,
+            format: 'woff2',
+          },
+        ]),
+        createWorker: (source) => {
+          started += 1;
+          return blobWorkerFactory(source);
+        },
+      },
+    );
+    expect(outcome.kind).toBe('passed');
+    expect(started).toBe(2);
   });
 
   it.each([
