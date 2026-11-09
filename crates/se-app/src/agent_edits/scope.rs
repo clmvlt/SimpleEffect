@@ -7,6 +7,11 @@
 //! (linked partners, items shifted by a ripple edit, transitions dropped with a moved item).
 //! Its messages are read by agents: they name the faulty entity, its place, the scope, and
 //! what to do instead.
+//!
+//! One exception (prompt 26, ADR-0037): a transaction may add a **new** sequence (a version of
+//! the task's sequence made by automatic reframing). Everything inside a sequence the transaction
+//! creates is new content, so its tracks, items and markers are not checked; existing sequences
+//! other than the task's stay out of reach, and no sequence can be removed.
 
 use se_domain::{
     CaptionStyleId, Item, ItemId, ItemKind, Marker, MarkerId, Project, Sequence, TemplateId,
@@ -205,6 +210,12 @@ struct Checker<'a> {
 }
 
 impl Checker<'_> {
+    /// Whether `sequence` is created by the checked transaction (absent before, present after).
+    fn created(&self, sequence: se_domain::SequenceId) -> bool {
+        let has = |project: &Project| project.sequences.iter().any(|s| s.id == sequence);
+        !has(self.change.before) && has(self.change.after)
+    }
+
     fn scope_text(&self) -> String {
         describe_scope(self.scope, self.change.before)
     }
@@ -230,6 +241,12 @@ impl Checker<'_> {
     }
 
     fn item(&self, id: ItemId) -> Result<(), AppError> {
+        if find_item(self.change.before, id).is_none()
+            && find_item(self.change.after, id)
+                .is_some_and(|placed| self.created(placed.sequence.id))
+        {
+            return Ok(());
+        }
         if let Some(placed) = find_item(self.change.before, id)
             && !item_in_scope(self.scope, placed.sequence, placed.track, placed.item)
         {
@@ -306,6 +323,7 @@ impl Checker<'_> {
         let before = find_track(self.change.before, id);
         let after = find_track(self.change.after, id);
         match (before, after) {
+            (None, Some((sequence, _))) if self.created(sequence.id) => Ok(()),
             (None, Some((sequence, track))) => {
                 if sequence.id != self.scope.sequence_id || self.scope.tracks.is_some() {
                     return Err(out_of_scope(format!(
@@ -388,6 +406,7 @@ impl Checker<'_> {
             .or(after.as_ref())
             .map_or_else(|| id.to_string(), |sequence| sequence.name.clone());
         match (before, after) {
+            (None, Some(_)) => Ok(()),
             (Some(old), Some(new)) if id == self.scope.sequence_id => {
                 if old.name == new.name && old.format == new.format {
                     Ok(())
@@ -399,7 +418,8 @@ impl Checker<'_> {
             }
             _ => Err(out_of_scope(format!(
                 "sequence « {name} » is outside this task's scope ({}): AI tasks change only \
-                 their own sequence and never add or remove sequences",
+                 their own sequence, never remove sequences, and add only new versions \
+                 (auto_reframe with target_format)",
                 self.scope_text()
             ))),
         }
@@ -411,6 +431,9 @@ impl Checker<'_> {
             find_marker(self.change.after, id),
         ];
         for (sequence, marker) in markers.into_iter().flatten() {
+            if self.created(sequence.id) {
+                continue;
+            }
             let inside = sequence.id == self.scope.sequence_id
                 && self
                     .scope

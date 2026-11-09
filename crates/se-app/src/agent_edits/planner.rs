@@ -10,6 +10,7 @@ use se_domain::{
 use super::{
     AgentEdit, ItemRef, LibraryInstance, NewAgentItem, PresetSpec,
     graphics::plan_new_item,
+    reframing::{plan_reframe_clips, plan_reframed_version},
     templates::{TemplateChange, plan_new_template, plan_template_version},
     timing::{plan_delete, plan_gap, plan_move, plan_ripple_delete, plan_split, plan_trim},
     transitions::plan_transition,
@@ -203,6 +204,9 @@ impl<'a> AgentPlanner<'a> {
             AgentEdit::InsertLibraryTemplate(instance) => {
                 vec![self.add_library_instance(instance)?]
             }
+            AgentEdit::ReframeClips(_) | AgentEdit::AddReframedVersion(_) => {
+                self.add_reframing_edit(edit)?
+            }
             AgentEdit::AddMarker { time, label, color } => {
                 let marker = Marker {
                     id: self.plan.ids().marker()?,
@@ -220,6 +224,30 @@ impl<'a> AgentPlanner<'a> {
         };
         self.plan.project()?;
         Ok(created)
+    }
+
+    /// Plans an automatic reframing edit; returns the items of a new version.
+    fn add_reframing_edit(&mut self, edit: &AgentEdit) -> Result<Vec<ItemId>, AppError> {
+        match edit {
+            AgentEdit::ReframeClips(request) => {
+                plan_reframe_clips(self, request)?;
+                Ok(Vec::new())
+            }
+            AgentEdit::AddReframedVersion(request) => {
+                let sequence = plan_reframed_version(self, request)?;
+                Ok(self
+                    .plan
+                    .project()?
+                    .sequences
+                    .iter()
+                    .filter(|candidate| candidate.id == sequence)
+                    .flat_map(|candidate| &candidate.tracks)
+                    .flat_map(|track| &track.items)
+                    .map(|item| item.id)
+                    .collect())
+            }
+            _ => Ok(Vec::new()),
+        }
     }
 
     /// Plans a caption edit; returns the captions it created.

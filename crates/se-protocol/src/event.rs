@@ -6,7 +6,8 @@ use ts_rs::TS;
 
 use crate::{
     AiStatus, FrameRenderRequest, JobProgress, JobSnapshot, ProjectHistory, ProjectPatch,
-    ProjectSession, Task, TaskEventRecord, TemplateCheckRequest, TranscriptionStatus,
+    ProjectSession, ReframeFailure, Task, TaskEventRecord, TemplateCheckRequest,
+    TranscriptionStatus,
 };
 
 /// An event pushed inside a [`crate::EventEnvelope`], tagged by `kind` (camelCase).
@@ -117,6 +118,17 @@ pub enum CoreEvent {
         templates: bool,
         /// The brand kits changed.
         brand_kits: bool,
+    },
+    /// Automatic reframing waiting for face analyses finished (prompt 26): the clips of the
+    /// analysed media were reframed in one undoable step (`projectPatched` came first), the
+    /// others failed.
+    AutoReframeFinished {
+        /// The project.
+        project_id: ProjectId,
+        /// The clips reframed.
+        applied_item_ids: Vec<ItemId>,
+        /// The media whose faces could not be analysed, and why.
+        failures: Vec<ReframeFailure>,
     },
 }
 

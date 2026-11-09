@@ -179,6 +179,34 @@ impl MediaService {
         self.deps.jobs.cancel(job_id)
     }
 
+    /// Queues the scene detection of `asset_id` ahead of the other analyses when the database
+    /// lacks it for the current content and none runs (automatic reframing resets its tracking at
+    /// each shot change and waits for it, prompt 26).
+    ///
+    /// # Errors
+    /// Not open, unknown asset.
+    pub async fn request_scene_detection(
+        &self,
+        project_id: ProjectId,
+        asset_id: AssetId,
+    ) -> Result<(), AppError> {
+        let handle = self.handle(project_id)?;
+        let view = handle.view().await?;
+        let asset = view
+            .project
+            .assets
+            .iter()
+            .find(|asset| asset.id == asset_id)
+            .ok_or(AppError::AssetNotFound {
+                project_id,
+                asset_id,
+            })?;
+        if !asset.missing {
+            self.schedule_scene_detection(&handle, asset).await;
+        }
+        Ok(())
+    }
+
     /// Where the files of an asset of any open project are; `None` if no open project has it.
     pub async fn asset_files(&self, asset_id: AssetId) -> Option<AssetFiles> {
         let handles: Vec<ProjectActorHandle> = self.registry().values().cloned().collect();

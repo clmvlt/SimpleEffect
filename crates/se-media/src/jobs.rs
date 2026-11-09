@@ -1,6 +1,7 @@
-//! [`FfmpegJobRunner`]: the `MediaJobRunner`, `FrameExtractor` and `SpeechAudioExtractor` ports
-//! over ffmpeg (thumbnails, waveform peaks, mezzanines and proxies, audio analyses, scene
-//! detection, frames, speech audio for transcription).
+//! [`FfmpegJobRunner`]: the `MediaJobRunner`, `FrameExtractor`, `SpeechAudioExtractor` and
+//! `FrameSampler` ports over ffmpeg (thumbnails, waveform peaks, mezzanines and proxies, audio
+//! analyses, scene detection, frames, speech audio for transcription, pictures for face
+//! detection).
 
 mod audio_analysis;
 mod ffmpeg_progress;
@@ -16,14 +17,18 @@ use std::path::Path;
 
 use async_trait::async_trait;
 use se_app::ports::{
-    FrameExtractor, FrameRequest, MediaError, MediaJobOutput, MediaJobRunner, MediaJobSpec,
-    MediaTask, ProgressSink, SpeechAudioExtractor,
+    FrameExtractor, FrameRequest, FrameSampleRequest, FrameSampler, MediaError, MediaJobOutput,
+    MediaJobRunner, MediaJobSpec, MediaTask, ProgressSink, SampledFrame, SpeechAudioExtractor,
 };
 use se_domain::AnalysisResult;
 use se_protocol::JobKind;
 
 pub use self::{scene_detection::scene_filter, thumbnails::parse_tile_times};
-use crate::{cache_layout, ffmpeg_tools::FfmpegTools, frames, speech_audio, tools::Tool};
+use tokio::sync::mpsc;
+
+use crate::{
+    cache_layout, ffmpeg_tools::FfmpegTools, frame_sampler, frames, speech_audio, tools::Tool,
+};
 
 /// Runs media jobs with the ffmpeg of its [`FfmpegTools`].
 #[derive(Debug, Clone)]
@@ -105,5 +110,17 @@ impl SpeechAudioExtractor for FfmpegJobRunner {
         speech_audio::extract(&ffmpeg, source, output).await?;
         progress.report(1.0);
         Ok(())
+    }
+}
+
+#[async_trait]
+impl FrameSampler for FfmpegJobRunner {
+    async fn sample_frames(
+        &self,
+        request: &FrameSampleRequest,
+        frames: mpsc::Sender<SampledFrame>,
+    ) -> Result<(), MediaError> {
+        let ffmpeg = self.tools.locator().locate(Tool::Ffmpeg)?;
+        frame_sampler::sample(&ffmpeg, request, &frames).await
     }
 }

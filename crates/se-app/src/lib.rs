@@ -49,6 +49,7 @@ pub mod project_actor;
 pub mod project_service;
 pub mod project_view;
 pub mod recovery;
+pub mod reframing;
 pub mod smart_cuts;
 pub mod tasks;
 pub mod template_checks;
@@ -74,6 +75,7 @@ pub use project_service::{
     animation_preset_infos, graphic_track, item_labels, marker_labels, sequence_labels,
     track_labels, transition_labels,
 };
+pub use reframing::{ReframeService, ReframeServiceDeps};
 pub use smart_cuts::{SmartCutService, SmartCutServiceDeps};
 pub use tasks::{TaskService, TaskServiceDeps};
 pub use template_checks::{CheckedTemplate, TemplateCheckService};

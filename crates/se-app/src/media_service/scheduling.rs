@@ -137,8 +137,16 @@ impl MediaService {
         }
         let content_key = fingerprint.cache_key();
         for (kind, task) in analysis_tasks(asset) {
-            self.schedule_analysis(handle, asset, kind, task, &output_dir, &content_key)
-                .await;
+            let priority = priority(task.kind(), false);
+            self.schedule_analysis(
+                handle,
+                asset,
+                (kind, task),
+                &output_dir,
+                &content_key,
+                priority,
+            )
+            .await;
         }
         if let Err(error) = self.schedule_derived(handle, project, asset, trigger).await {
             tracing::warn!(%error, asset = %asset.id, "queuing derived media failed");
@@ -166,10 +174,10 @@ impl MediaService {
         &self,
         handle: &ProjectActorHandle,
         asset: &Asset,
-        kind: AnalysisKind,
-        task: MediaTask,
+        (kind, task): (AnalysisKind, MediaTask),
         output_dir: &Path,
         content_key: &str,
+        priority: JobPriority,
     ) {
         if self
             .deps
@@ -197,7 +205,6 @@ impl MediaService {
                 tracing::warn!(%error, asset = %asset.id, "reading a stored analysis failed");
             }
         }
-        let priority = priority(task.kind(), false);
         self.enqueue(
             handle,
             asset,
@@ -206,6 +213,35 @@ impl MediaService {
             priority,
             Some(Arc::new(recorder)),
         );
+    }
+
+    /// Queues the scene detection of `asset` ahead of the other analyses unless one runs or the
+    /// database holds it for the current content (automatic reframing waits for it, prompt 26).
+    pub(super) async fn schedule_scene_detection(
+        &self,
+        handle: &ProjectActorHandle,
+        asset: &Asset,
+    ) {
+        let Some(fingerprint) = &asset.fingerprint else {
+            return;
+        };
+        let Some((kind, task)) = analysis_tasks(asset)
+            .into_iter()
+            .find(|(kind, _)| *kind == AnalysisKind::SceneDetection)
+        else {
+            return;
+        };
+        let output_dir = media_cache_dir(handle.path(), fingerprint);
+        let content_key = fingerprint.cache_key();
+        self.schedule_analysis(
+            handle,
+            asset,
+            (kind, task),
+            &output_dir,
+            &content_key,
+            JobPriority::Normal,
+        )
+        .await;
     }
 
     /// Queues `task` on `asset`.

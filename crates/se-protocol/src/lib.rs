@@ -103,4 +103,6 @@ pub use transcription::{
     TranscriptionModelInfo, TranscriptionPreferences, TranscriptionStatus, VoiceModelInfo,
     WhisperInfo,
 };
-pub use vision::VisionStatus;
+pub use vision::{
+    AutoReframeReport, ReframeFailure, ReframeSkipReason, SkippedReframe, VisionStatus,
+};

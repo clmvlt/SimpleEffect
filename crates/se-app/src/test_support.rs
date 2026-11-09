@@ -16,6 +16,7 @@ mod memory_transcripts;
 mod runtime_fakes;
 mod subtitle_fakes;
 mod transcription_fakes;
+mod vision_fakes;
 
 pub use agent_fakes::{
     FakeAgentWorkspaces, REPLAY_PROVIDER_ID, ReplayProvider, ReplayScript, ReplayStep,
@@ -50,3 +51,4 @@ fn lock<T>(mutex: &std::sync::Mutex<T>) -> std::sync::MutexGuard<'_, T> {
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
+pub use vision_fakes::{FaceScript, FakeFrameSampler, FakeSubjectDetector, left_face};
