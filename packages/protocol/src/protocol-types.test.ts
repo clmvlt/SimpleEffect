@@ -116,6 +116,22 @@ describe('derived protocol types', () => {
       | 'setCaptionEmphasis'
       | 'updateCaptionStyle'
       | 'applyCaptionPreset'
+      | 'listLibraryTemplates'
+      | 'saveTemplateToLibrary'
+      | 'saveCaptionStyleToLibrary'
+      | 'updateLibraryTemplateInfo'
+      | 'removeLibraryTemplate'
+      | 'insertLibraryTemplate'
+      | 'updateTemplateFromLibrary'
+      | 'exportLibraryTemplate'
+      | 'importLibraryTemplates'
+      | 'listBrandKits'
+      | 'createBrandKit'
+      | 'saveBrandKit'
+      | 'removeBrandKit'
+      | 'addBrandKitLogo'
+      | 'setProjectBrandKit'
+      | 'addProjectBrandKitToLibrary'
     >();
   });
 
@@ -152,6 +168,7 @@ describe('derived protocol types', () => {
       | 'renderFramesRequested'
       | 'templateCheckRequested'
       | 'transcriptionStatusChanged'
+      | 'libraryChanged'
     >();
     expectTypeOf<CoreEventOf<'jobCompleted'>['job']>().toEqualTypeOf<JobSnapshot>();
     expectTypeOf<CoreEventOf<'projectPatched'>>().toExtend<ProjectPatch>();

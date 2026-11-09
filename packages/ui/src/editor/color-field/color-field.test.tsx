@@ -17,11 +17,13 @@ function Harness({
   onChange,
   onCommit,
   recentColors,
+  palette,
 }: {
   initial: string;
   onChange?: (hex: string) => void;
   onCommit?: (hex: string) => void;
   recentColors?: string[];
+  palette?: { color: string; label: string }[];
 }) {
   const [value, setValue] = useState(initial);
   return (
@@ -29,7 +31,14 @@ function Harness({
       label="Couleur du texte"
       value={value}
       recentColors={recentColors}
-      labels={{ hex: 'Hex', hue: 'Teinte', recent: 'Récentes', eyeDropper: 'Pipette' }}
+      palette={palette}
+      labels={{
+        hex: 'Hex',
+        hue: 'Teinte',
+        recent: 'Récentes',
+        eyeDropper: 'Pipette',
+        palette: 'Brand kit',
+      }}
       onChange={(next) => {
         setValue(next);
         onChange?.(next);
@@ -105,6 +114,25 @@ describe('ColorField', () => {
     const recent = screen.getByRole('group', { name: 'Récentes' });
     expect(recent).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: GREY }));
+    expect(onCommit).toHaveBeenCalledWith(GREY);
+  });
+
+  it('picks a named palette colour in one click', async () => {
+    const user = userEvent.setup();
+    const onCommit = vi.fn();
+    render(
+      <Harness
+        initial={RED}
+        onCommit={onCommit}
+        palette={[
+          { color: SKY, label: 'Primaire' },
+          { color: GREY, label: 'Fond' },
+        ]}
+      />,
+    );
+    await openPicker(user);
+    expect(screen.getByRole('group', { name: 'Brand kit' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: `Fond ${GREY}` }));
     expect(onCommit).toHaveBeenCalledWith(GREY);
   });
 

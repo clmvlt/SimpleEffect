@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Inspection } from '../hooks/use-inspection';
-import { FontFamilySelect, useKnownFamily } from './FontFamilySelect';
+import { FontFamilySelect, useKnownFamily } from '../../../shared/fonts';
 import { NumberRow, StaticNumber } from './PropertyFields';
 
 const WEIGHTS = ['100', '200', '300', '400', '500', '600', '700', '800', '900'] as const;

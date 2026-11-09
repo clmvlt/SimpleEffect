@@ -52,6 +52,10 @@ export const ERROR_CODES = [
   'INVALID_SUBTITLE_FILE',
   'TEMPLATE_INVALID',
   'TEMPLATE_CHECK_NOT_FOUND',
+  'LIBRARY_TEMPLATE_NOT_FOUND',
+  'BRAND_KIT_NOT_FOUND',
+  'INVALID_LIBRARY_FILE',
+  'INVALID_BRAND_KIT',
 ] as const satisfies readonly ErrorCode[];
 
 /**
@@ -68,6 +72,7 @@ export const EDIT_DETAIL_CODES = [
   'LAST_SEQUENCE',
   'INVALID_TRANSCRIPTION_SETTINGS',
   'TEMPLATE_IN_USE',
+  'INVALID_BRAND_KIT',
 ] as const satisfies readonly DomainErrorCode[];
 
 /** A domain code with its own message. */

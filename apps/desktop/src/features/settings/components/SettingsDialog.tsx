@@ -17,6 +17,7 @@ import { useAiSettings } from '../hooks/use-ai-settings';
 import { useMediaSettings } from '../hooks/use-media-settings';
 import { useProjectCache } from '../hooks/use-project-cache';
 import { useTranscriptionSettings } from '../hooks/use-transcription-settings';
+import { BrandKitsSection } from '../../brand-kits';
 import { settingsSectionOf, type SettingsSection } from '../store/settings-dialog-store';
 import { AiSettingsSection } from './AiSettingsSection';
 import { MediaSettingsSection } from './MediaSettingsSection';
@@ -38,7 +39,8 @@ export interface SettingsDialogProps {
 /**
  * « Réglages »: app preferences by section — Médias (derived copies, ffmpeg tools, the open
  * project's cache), IA (the AI CLI, its login, task defaults) and Transcription (whisper.cpp, GPU,
- * models, options; loaded only while shown). Changes are saved as they are made.
+ * models, options; loaded only while shown) and Brand kits (prompt 25: the library's kits, each
+ * saved by its own button). Other changes are saved as they are made.
  */
 export function SettingsDialog({
   open,
@@ -69,6 +71,7 @@ export function SettingsDialog({
             <TabsTrigger value="media">{t('settings.sections.media')}</TabsTrigger>
             <TabsTrigger value="ai">{t('settings.sections.ai')}</TabsTrigger>
             <TabsTrigger value="transcription">{t('settings.sections.transcription')}</TabsTrigger>
+            <TabsTrigger value="brandKits">{t('settings.sections.brandKits')}</TabsTrigger>
           </TabsList>
           <TabsContent
             value="media"
@@ -108,6 +111,12 @@ export function SettingsDialog({
             ) : (
               <TranscriptionSettingsSection status={transcription.status} actions={transcription} />
             )}
+          </TabsContent>
+          <TabsContent
+            value="brandKits"
+            className="flex max-h-[70vh] flex-col gap-4 overflow-auto pt-3"
+          >
+            {section === 'brandKits' && <BrandKitsSection projectId={projectId} />}
           </TabsContent>
         </Tabs>
       </DialogContent>

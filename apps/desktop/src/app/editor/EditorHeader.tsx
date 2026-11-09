@@ -2,7 +2,8 @@ import { Button, Icon, IconButton, Separator } from '@se/ui';
 import { House, Redo2, Undo2 } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
-import { SettingsButton } from '../../features/settings';
+import { BrandKitButton } from '../../features/brand-kits';
+import { SettingsButton, openSettings } from '../../features/settings';
 import { useActiveSequence } from '../../features/timeline';
 import { selectProjectName, useProjectSelector } from '../../shared/project-store';
 import { ShortcutsButton } from '../shortcuts/ShortcutsButton';
@@ -62,6 +63,12 @@ export function EditorHeader({ projectId, onHome }: EditorHeaderProps) {
           onClick={redo}
         />
         <Separator orientation="vertical" className="h-5 self-center" />
+        <BrandKitButton
+          projectId={projectId}
+          onManage={() => {
+            openSettings('brandKits');
+          }}
+        />
         <ShortcutsButton />
         <SettingsButton projectId={projectId} />
       </div>

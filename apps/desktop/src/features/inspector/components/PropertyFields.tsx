@@ -1,8 +1,9 @@
 import type { AnimatableProperty, Vec2 } from '@se/protocol';
-import { ColorField, KeyframeButton, PropertyRow, ScrubInput } from '@se/ui';
+import { KeyframeButton, PropertyRow, ScrubInput } from '@se/ui';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { BrandColorField } from '../../../shared/brand-kit';
 import type { PropertyValues } from '../../../shared/animation';
 import type { PropertyEditor } from '../hooks/use-property-editor';
 import { allSame, keepAlpha, opaquePart } from '../services/inspector-values';
@@ -200,7 +201,7 @@ export function ColorRow({
   const mixed = !allSame(values, (left, right) => left === right);
   return (
     <AnimatedRow editor={editor} property={property} label={label} htmlFor={id}>
-      <ColorField
+      <BrandColorField
         id={id}
         label={label}
         value={opaquePart(first)}

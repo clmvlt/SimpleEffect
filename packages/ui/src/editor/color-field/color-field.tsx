@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { cn } from '../../lib/cn';
 import { textFieldClasses } from '../../primitives/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../../primitives/popover';
-import { ColorPickerPanel, type ColorPickerLabels } from './color-picker-panel';
+import { ColorPickerPanel, type ColorPickerLabels, type ColorSwatch } from './color-picker-panel';
 import { colorFromHex, hexFromColor, normalizeHex, type PickerColor } from './color-model';
 
 /** Default (English) names of the picker controls. */
@@ -14,6 +14,7 @@ export const DEFAULT_COLOR_FIELD_LABELS: ColorPickerLabels = {
   hue: 'Hue',
   eyeDropper: 'Pick a colour on screen',
   recent: 'Recent colours',
+  palette: 'Palette',
 };
 
 /** Props of {@link ColorField}. */
@@ -28,6 +29,8 @@ export interface ColorFieldProps {
   label: string;
   /** Recently used colours (`#rrggbb`), offered as one-click swatches. */
   recentColors?: readonly string[] | undefined;
+  /** Named colours (a brand kit's palette) offered first as one-click swatches. */
+  palette?: readonly ColorSwatch[] | undefined;
   /** Names of the picker controls; the app passes localised ones. */
   labels?: Partial<ColorPickerLabels> | undefined;
   id?: string | undefined;
@@ -48,6 +51,7 @@ export function ColorField({
   onCommit,
   label,
   recentColors = [],
+  palette = [],
   labels,
   id,
   disabled = false,
@@ -101,6 +105,7 @@ export function ColorField({
           color={color}
           labels={{ ...DEFAULT_COLOR_FIELD_LABELS, ...labels }}
           recentColors={recentColors}
+          palette={palette}
           onChange={change}
           onCommit={commit}
           onPick={changeAndCommit}

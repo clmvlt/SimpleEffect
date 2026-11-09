@@ -1,6 +1,5 @@
 import type { TemplateParam } from '@se/protocol';
 import {
-  ColorField,
   Input,
   KeyframeButton,
   PropertyRow,
@@ -16,11 +15,12 @@ import {
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { BrandColorField } from '../../../shared/brand-kit';
 import { useProjectSelector } from '../../../shared/project-store';
 import type { ParamChange, TemplateParamsEditor } from '../hooks/use-template-params';
 import { keepAlpha, opaquePart } from '../services/inspector-values';
 import { colorAt, numberAt, withColorAt, withNumberAt } from '../services/template-params';
-import { FontFamilySelect } from './FontFamilySelect';
+import { FontFamilySelect } from '../../../shared/fonts';
 
 /** Value of the asset menu meaning « no image ». */
 const NO_ASSET = '__none__';
@@ -221,7 +221,7 @@ function ColorParamField({ editor, param, id }: FieldProps) {
     (current, local, tolerance) =>
       withColorAt(current, local, keepAlpha(hex, color), tolerance);
   return (
-    <ColorField
+    <BrandColorField
       id={id}
       label={param.label}
       value={opaquePart(color)}

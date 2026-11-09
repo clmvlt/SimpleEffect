@@ -22,30 +22,35 @@ export function badgeTemplate(): MotionTemplate {
         name: 'label',
         label: 'Texte',
         description: null,
+        brand: null,
         spec: { kind: 'string', default: 'NEW', multiline: false, maxLength: 40 },
       },
       {
         name: 'size',
         label: 'Taille',
         description: null,
+        brand: null,
         spec: { kind: 'number', default: 60, minimum: 10, maximum: 200, step: 1 },
       },
       {
         name: 'tint',
         label: 'Teinte',
         description: null,
+        brand: null,
         spec: { kind: 'color', default: documentColor('ff3366') },
       },
       {
         name: 'shown',
         label: 'Visible',
         description: null,
+        brand: null,
         spec: { kind: 'boolean', default: true },
       },
       {
         name: 'corner',
         label: 'Coin',
         description: null,
+        brand: null,
         spec: {
           kind: 'enum',
           default: 'topRight',
@@ -59,12 +64,15 @@ export function badgeTemplate(): MotionTemplate {
         name: 'font',
         label: 'Police',
         description: null,
+        brand: null,
         spec: { kind: 'font', default: 'Inter' },
       },
-      { name: 'logo', label: 'Logo', description: null, spec: { kind: 'asset' } },
+      { name: 'logo', label: 'Logo', description: null, brand: null, spec: { kind: 'asset' } },
     ],
     defaultDuration: (3 * SECOND) as Flicks,
     origin: { kind: 'user' },
+    category: 'other',
+    library: null,
   };
 }
 

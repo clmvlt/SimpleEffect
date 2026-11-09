@@ -9,6 +9,7 @@ import { useElementWidth } from '../hooks/use-element-width';
 import { useLaneMenu } from '../hooks/use-lane-menu';
 import { useLanePointer } from '../hooks/use-lane-pointer';
 import { useMediaDrop } from '../hooks/use-media-drop';
+import { useTemplateDrop } from '../hooks/use-template-drop';
 import type { TimeSpan } from '../services/in-out';
 import { OVERSCAN_PIXELS, spanBox } from '../services/item-geometry';
 import { marqueeBox } from '../services/marquee';
@@ -64,7 +65,8 @@ export function TrackLanes({
   const { model, layout, viewport, commands } = context();
   const { rect, laneHandlers } = useLanePointer(context);
   const gapHover = useGapHover(context);
-  const drop = useMediaDrop(context);
+  const mediaDrop = useMediaDrop(context);
+  const templateDrop = useTemplateDrop(context);
   const menu = useLaneMenu(context);
   const preview = useGesturePreview();
   const { showSilences } = useEditPreferences();
@@ -86,7 +88,18 @@ export function TrackLanes({
             gapHover.onPointerMove(event);
           }}
           onPointerLeave={gapHover.onPointerLeave}
-          {...drop}
+          onDragOver={(event) => {
+            mediaDrop.onDragOver(event);
+            templateDrop.onDragOver(event);
+          }}
+          onDragLeave={(event) => {
+            mediaDrop.onDragLeave(event);
+            templateDrop.onDragLeave(event);
+          }}
+          onDrop={(event) => {
+            mediaDrop.onDrop(event);
+            templateDrop.onDrop(event);
+          }}
         >
           {allRows(layout).map((row) => (
             <TrackLane

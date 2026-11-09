@@ -81,6 +81,12 @@ const CORE_LABEL_KEYS = {
   'Emphasize caption words': 'editor.history.emphasizeCaptionWords',
   'Change caption style': 'editor.history.changeCaptionStyle',
   'Apply caption style': 'editor.history.applyCaptionPreset',
+  'Insert motion template': 'editor.history.insertLibraryTemplate',
+  'Update motion template': 'editor.history.updateTemplate',
+  'Save template to library': 'editor.history.saveTemplateToLibrary',
+  'Choose brand kit': 'editor.history.chooseBrandKit',
+  'Update brand kit': 'editor.history.updateBrandKit',
+  'Remove brand kit': 'editor.history.removeBrandKit',
 } as const;
 
 /** The undo/redo label to show for a transaction label received from the core. */

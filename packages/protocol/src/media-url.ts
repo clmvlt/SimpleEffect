@@ -52,6 +52,15 @@ export function fontMediaPath(faceId: string): string {
 }
 
 /**
+ * Path of a logo of a library brand kit (prompt 25): `file` is the kit's `logos/<name>`, e.g.
+ * `/media/brand-kits/<kit id>/logos/<name>.png`.
+ */
+export function brandKitLogoPath(kitId: string, file: string): string {
+  const name = file.startsWith('logos/') ? file.slice('logos/'.length) : file;
+  return `/media/brand-kits/${encodeURIComponent(kitId)}/logos/${encodeURIComponent(name)}`;
+}
+
+/**
  * Absolute URL of a `/media` path on `endpoint`, with the session token as `t` (media elements
  * and `<img>` cannot send headers). `version` is appended as `v` to defeat caches when the file
  * changes (e.g. after its job completes again). Never log the result: it carries the token.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { assetMediaPath, mediaUrl } from './media-url';
+import { assetMediaPath, brandKitLogoPath, mediaUrl } from './media-url';
 import { decodeWaveformPeaks } from './waveform-peaks';
 
 const ENDPOINT = { url: 'http://127.0.0.1:4000', token: 'secret' };
@@ -15,6 +15,12 @@ describe('media URLs', () => {
     expect(assetMediaPath(id, 'thumbnailSheet')).toBe(`/media/assets/${id}/thumbnails/sheet`);
     expect(assetMediaPath(id, 'poster')).toBe(`/media/assets/${id}/thumbnails/poster`);
     expect(assetMediaPath(id, { peaks: 1024 })).toBe(`/media/assets/${id}/peaks/1024`);
+  });
+
+  it('names brand kit logos', () => {
+    expect(brandKitLogoPath('kit-1', 'logos/a b.png')).toBe(
+      '/media/brand-kits/kit-1/logos/a%20b.png',
+    );
   });
 
   it('carries the token and an optional version', () => {
