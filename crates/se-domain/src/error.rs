@@ -10,7 +10,7 @@ pub use code::DomainErrorCode;
 
 use crate::{
     AnimatableProperty, AnimationPhase, AssetId, CaptionStyleId, Flicks, FrameRate, ItemEdge,
-    ItemId, MarkerId, SequenceId, TaskId, TrackId, TransitionId, Violation,
+    ItemId, MarkerId, SequenceId, TaskId, TemplateId, TrackId, TransitionId, Violation,
 };
 
 /// A refused change. Nothing was modified.
@@ -268,6 +268,24 @@ pub enum DomainError {
         /// One caption using it.
         item: ItemId,
     },
+    /// No motion template has this id.
+    #[error(
+        "motion template {template} does not exist in this project; list the project's templates          for their ids"
+    )]
+    TemplateNotFound {
+        /// The unknown id.
+        template: TemplateId,
+    },
+    /// A motion template still used by items cannot be removed.
+    #[error(
+        "motion template {template} is used by item {item} (and maybe others); remove those items          first"
+    )]
+    TemplateInUse {
+        /// The template.
+        template: TemplateId,
+        /// One item using it.
+        item: ItemId,
+    },
     /// No predefined caption style has this name.
     #[error("there is no caption style preset '{preset}'; use one of: {known}")]
     UnknownCaptionPreset {
@@ -433,6 +451,8 @@ impl DomainError {
             Self::AssetInUse { .. } => DomainErrorCode::AssetInUse,
             Self::CaptionStyleNotFound { .. } => DomainErrorCode::CaptionStyleNotFound,
             Self::CaptionStyleInUse { .. } => DomainErrorCode::CaptionStyleInUse,
+            Self::TemplateNotFound { .. } => DomainErrorCode::TemplateNotFound,
+            Self::TemplateInUse { .. } => DomainErrorCode::TemplateInUse,
             Self::UnknownCaptionPreset { .. } => DomainErrorCode::UnknownCaptionPreset,
             Self::InvalidTranscriptionSettings { .. } => {
                 DomainErrorCode::InvalidTranscriptionSettings

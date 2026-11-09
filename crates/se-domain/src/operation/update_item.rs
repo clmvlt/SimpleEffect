@@ -77,12 +77,12 @@ mod tests {
             template_id: None,
             params: [
                 (
-                    "title".to_owned(),
+                    "name".to_owned(),
                     Some(TemplateParamValue::Text {
                         value: "Bob".to_owned(),
                     }),
                 ),
-                ("slideIn".to_owned(), None),
+                ("showLine".to_owned(), None),
             ]
             .into(),
         });
@@ -91,12 +91,12 @@ mod tests {
             unreachable!()
         };
         assert_eq!(
-            template.params.get("title"),
+            template.params.get("name"),
             Some(&TemplateParamValue::Text {
                 value: "Bob".to_owned()
             })
         );
-        assert!(!template.params.contains_key("slideIn"));
+        assert!(!template.params.contains_key("showLine"));
     }
 
     #[test]

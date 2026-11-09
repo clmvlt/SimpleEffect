@@ -7,13 +7,14 @@ use std::collections::BTreeMap;
 
 use proptest::prelude::*;
 use se_domain::{
-    AddAsset, AddCaptionStyle, AddItem, AddMarker, AddSequence, AddTrack, AddTransition,
+    AddAsset, AddCaptionStyle, AddItem, AddMarker, AddSequence, AddTemplate, AddTrack, AddTransition,
     Animatable, AnimationPhase, ApplyAnimationPreset, AssetId, AssetPatch, Assign,
     CaptionAnimation, CaptionItem, CaptionPatch, CaptionStyleId, CaptionStylePatch, CaptionWord,
     Color, Decodability, DerivedFile, DerivedStatus, DesignPixels, Easing, FadeShape, Flicks,
     Format, FormatPreset, FrameRate, InsertGap, Item, ItemEdge, ItemId, ItemKind, ItemPatch,
     Keyframe, LinkGroupId, LinkItems, Marker, MarkerColor, MarkerId, MarkerPatch, MediaClipPatch,
-    MoveItem, Operation, Project, PropertyAnimation, Reframe, RemoveAsset, RemoveCaptionStyle,
+    MotionTemplate, MoveItem, Operation, Project, PropertyAnimation, Reframe, RemoveAsset,
+    RemoveCaptionStyle, RemoveTemplate, ReplaceTemplate, TemplateId,
     RemoveItem, RemoveMarker, RemoveSequence, RemoveTrack, RemoveTransition, RenameProject,
     ReorderTracks, RippleDeleteRange, RippleDeleteRanges, SceneSummary, Sequence, SequenceId,
     SequencePatch, SetKeyframes, SetTranscriptionSettings, ShapePatch, SplitItem,
@@ -32,7 +33,7 @@ use crate::picking::{
 
 /// Number of operation kinds the generator produces (every operation but `RestoreItem`, which
 /// the inverses exercise).
-pub const KINDS: u8 = 32;
+pub const KINDS: u8 = 33;
 
 /// Random numbers from which one operation is built.
 #[derive(Debug, Clone, Copy)]
@@ -85,7 +86,8 @@ impl Generator {
             28 => preset(project, seed),
             29 => Some(transcription_settings(seed)),
             30 => self.ranges_operation(project, seed),
-            _ => self.caption_operation(project, seed),
+            31 => self.caption_operation(project, seed),
+            _ => self.template_operation(project, seed),
         }
     }
 
@@ -133,6 +135,52 @@ impl Generator {
                     patch: ItemPatch::Caption(CaptionPatch {
                         words: None,
                         style_id: Some(*pick(&styles, seed.pick / 7)?),
+                    }),
+                    expected_revision: None,
+                }
+                .into()
+            }
+        })
+    }
+
+    /// Motion templates (copies added, new versions — some dropping a parameter instances use,
+    /// refused at the end of the transaction —, removals refused while used) and template values
+    /// (keyframed numbers, colours, now and then out of range).
+    fn template_operation(&mut self, project: &Project, seed: Seed) -> Option<Operation> {
+        let template = pick(&project.templates, seed.pick)?;
+        Some(match seed.choice % 4 {
+            0 => AddTemplate {
+                index: seed.pick.is_multiple_of(2).then_some(0),
+                template: MotionTemplate {
+                    id: TemplateId::from_test_index(self.fresh()),
+                    ..template.clone()
+                },
+            }
+            .into(),
+            1 => {
+                let mut next = template.clone();
+                next.version += 1;
+                if seed.pick.is_multiple_of(3) {
+                    next.params.retain(|param| param.name != "slide");
+                }
+                ReplaceTemplate { template: next }.into()
+            }
+            2 => RemoveTemplate {
+                template: template.id,
+            }
+            .into(),
+            _ => {
+                let instances: Vec<Item> = items(project)
+                    .into_iter()
+                    .map(|(_, item)| item)
+                    .filter(|item| matches!(item.kind, ItemKind::MotionTemplate(_)))
+                    .collect();
+                let item = pick(&instances, seed.pick)?;
+                UpdateItem {
+                    item: item.id,
+                    patch: ItemPatch::MotionTemplate(TemplatePatch {
+                        template_id: None,
+                        params: template_values(item.timeline_range.duration(), seed),
                     }),
                     expected_revision: None,
                 }
@@ -581,7 +629,7 @@ fn update(item: &Item, seed: Seed) -> Operation {
         ItemKind::MotionTemplate(_) => ItemPatch::MotionTemplate(TemplatePatch {
             template_id: None,
             params: [(
-                "title".to_owned(),
+                "name".to_owned(),
                 seed.choice
                     .is_multiple_of(3)
                     .then(|| TemplateParamValue::Text {
@@ -605,6 +653,41 @@ fn update(item: &Item, seed: Seed) -> Operation {
 }
 
 /// An animation preset on a random item (refused for kinds without the preset's properties).
+/// Values of the example's lower third: a keyframed slide (beyond its maximum now and then), a
+/// colour, and the line reset to its default.
+fn template_values(duration: Flicks, seed: Seed) -> BTreeMap<String, Option<TemplateParamValue>> {
+    let end = Flicks::new(duration.get() / 2).unwrap_or(Flicks::ZERO);
+    let slide = f64::from(seed.choice % 500);
+    BTreeMap::from([
+        (
+            "slide".to_owned(),
+            Some(TemplateParamValue::Number {
+                value: Animatable::Keyframed {
+                    keyframes: vec![
+                        Keyframe {
+                            time: Flicks::ZERO,
+                            value: slide,
+                            easing: Easing::Linear,
+                        },
+                        Keyframe {
+                            time: end.max(Flicks::from_millis(1)),
+                            value: 0.0,
+                            easing: Easing::Linear,
+                        },
+                    ],
+                },
+            }),
+        ),
+        (
+            "accent".to_owned(),
+            Some(TemplateParamValue::Color {
+                value: Animatable::constant(Color::opaque(0x10, 0x20, 0x30)),
+            }),
+        ),
+        ("showLine".to_owned(), None),
+    ])
+}
+
 fn preset(project: &Project, seed: Seed) -> Option<Operation> {
     const PRESETS: [(&str, AnimationPhase); 5] = [
         ("fade", AnimationPhase::In),

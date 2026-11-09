@@ -7,7 +7,7 @@ use std::{
 };
 
 use super::{Violation, ViolationCode};
-use crate::{Asset, AssetId, CaptionStyleId, Flicks, Project, TemplateId};
+use crate::{Asset, AssetId, CaptionStyleId, Flicks, MotionTemplate, Project, TemplateId};
 
 /// A location in the document, written like JS property access with element ids in brackets.
 #[derive(Debug, Clone, Default)]
@@ -52,7 +52,7 @@ impl Report {
 /// Entities that items refer to, by id.
 pub(super) struct ProjectIndex<'a> {
     assets: HashMap<AssetId, &'a Asset>,
-    templates: HashSet<TemplateId>,
+    templates: HashMap<TemplateId, &'a MotionTemplate>,
     caption_styles: HashSet<CaptionStyleId>,
 }
 
@@ -63,13 +63,13 @@ impl<'a> ProjectIndex<'a> {
         for asset in &project.assets {
             assets.entry(asset.id).or_insert(asset);
         }
+        let mut templates = HashMap::new();
+        for template in &project.templates {
+            templates.entry(template.id).or_insert(template);
+        }
         Self {
             assets,
-            templates: project
-                .templates
-                .iter()
-                .map(|template| template.id)
-                .collect(),
+            templates,
             caption_styles: project
                 .caption_styles
                 .iter()
@@ -95,9 +95,9 @@ impl<'a> ProjectIndex<'a> {
         self.caption_styles.contains(&id)
     }
 
-    /// Whether the project has a template with this id.
-    pub(super) fn has_template(&self, id: TemplateId) -> bool {
-        self.templates.contains(&id)
+    /// The template with this id, if the project has one.
+    pub(super) fn template(&self, id: TemplateId) -> Option<&'a MotionTemplate> {
+        self.templates.get(&id).copied()
     }
 }
 

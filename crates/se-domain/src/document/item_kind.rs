@@ -52,7 +52,8 @@ impl ItemKind {
             Self::Text(text) => Some(&text.transform),
             Self::Shape(shape) => Some(&shape.transform),
             Self::Image(image) => Some(&image.transform),
-            Self::MotionTemplate(_) | Self::Caption(_) => None,
+            Self::MotionTemplate(template) => Some(&template.transform),
+            Self::Caption(_) => None,
         }
     }
 
@@ -63,7 +64,8 @@ impl ItemKind {
             Self::Text(text) => Some(&mut text.transform),
             Self::Shape(shape) => Some(&mut shape.transform),
             Self::Image(image) => Some(&mut image.transform),
-            Self::MotionTemplate(_) | Self::Caption(_) => None,
+            Self::MotionTemplate(template) => Some(&mut template.transform),
+            Self::Caption(_) => None,
         }
     }
 }

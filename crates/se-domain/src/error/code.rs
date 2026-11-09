@@ -53,6 +53,10 @@ pub enum DomainErrorCode {
     CaptionStyleNotFound,
     /// A caption style still used by captions.
     CaptionStyleInUse,
+    /// No motion template has the given id.
+    TemplateNotFound,
+    /// A motion template still used by items.
+    TemplateInUse,
     /// No predefined caption style has the given name.
     UnknownCaptionPreset,
     /// An empty name.

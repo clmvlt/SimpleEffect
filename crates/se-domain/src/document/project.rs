@@ -18,7 +18,9 @@ use crate::ids::ProjectId;
 /// Version 6 (prompt 16): media clips that fill the frame carry a focus (`reframe.focus`).
 /// Version 7 (prompt 21): transcription settings and transcript summaries.
 /// Version 8 (prompt 23): caption styles, captions made of timed words.
-pub const CURRENT_SCHEMA_VERSION: u32 = 8;
+/// Version 9 (prompt 24): motion templates with source, parameters and versions; template items
+/// with a transform and animatable values.
+pub const CURRENT_SCHEMA_VERSION: u32 = 9;
 
 /// The whole editable state of a project, serialized as `project.json` (ADR-0006).
 ///

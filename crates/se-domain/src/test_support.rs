@@ -11,7 +11,7 @@
 
 mod example_project;
 
-pub use example_project::{example_ids, example_project};
+pub use example_project::{LOWER_THIRD_SOURCE, example_ids, example_project};
 
 use crate::{Flicks, Item, ItemId, ItemKind, Origin, TimeRange, Track, TrackId, TrackKind};
 

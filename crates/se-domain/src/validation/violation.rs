@@ -73,11 +73,16 @@ pub enum ViolationCode {
     InsufficientHandles,
     /// Caption words that are empty, overlap, are not in speaking order or leave their item.
     InvalidCaptionWords,
+    /// A motion template whose definition is unusable (name, source, parameter declarations).
+    InvalidTemplate,
+    /// A template item value its template's parameter refuses (unknown name, wrong kind, out of
+    /// range, not an option).
+    InvalidTemplateParams,
 }
 
 impl ViolationCode {
     /// Every code, in declaration order.
-    pub const ALL: [Self; 20] = [
+    pub const ALL: [Self; 22] = [
         Self::DuplicateId,
         Self::UnknownReference,
         Self::AssetKindMismatch,
@@ -98,6 +103,8 @@ impl ViolationCode {
         Self::InvalidTransition,
         Self::InsufficientHandles,
         Self::InvalidCaptionWords,
+        Self::InvalidTemplate,
+        Self::InvalidTemplateParams,
     ];
 
     /// The serialized form (`OVERLAPPING_ITEMS`).
@@ -124,6 +131,8 @@ impl ViolationCode {
             Self::InvalidTransition => "INVALID_TRANSITION",
             Self::InsufficientHandles => "INSUFFICIENT_HANDLES",
             Self::InvalidCaptionWords => "INVALID_CAPTION_WORDS",
+            Self::InvalidTemplate => "INVALID_TEMPLATE",
+            Self::InvalidTemplateParams => "INVALID_TEMPLATE_PARAMS",
         }
     }
 }

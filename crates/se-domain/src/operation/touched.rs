@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::{AssetId, CaptionStyleId, ItemId, MarkerId, SequenceId, TrackId};
+use crate::{AssetId, CaptionStyleId, ItemId, MarkerId, SequenceId, TemplateId, TrackId};
 
 /// Ids of the entities an edit added, changed or removed.
 ///
@@ -23,6 +23,8 @@ pub struct TouchedEntities {
     pub assets: BTreeSet<AssetId>,
     /// Caption styles added, changed or removed.
     pub caption_styles: BTreeSet<CaptionStyleId>,
+    /// Motion templates added, replaced or removed.
+    pub templates: BTreeSet<TemplateId>,
     /// The project's own fields (its name) changed.
     pub project: bool,
 }
@@ -36,6 +38,7 @@ impl TouchedEntities {
         self.markers.extend(other.markers);
         self.assets.extend(other.assets);
         self.caption_styles.extend(other.caption_styles);
+        self.templates.extend(other.templates);
         self.project |= other.project;
     }
 
@@ -48,6 +51,7 @@ impl TouchedEntities {
             && self.markers.is_empty()
             && self.assets.is_empty()
             && self.caption_styles.is_empty()
+            && self.templates.is_empty()
             && !self.project
     }
 }
