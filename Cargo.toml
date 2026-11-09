@@ -67,6 +67,17 @@ process-wrap = { version = "10.0.1", default-features = false, features = [
 ] }
 # Snapshot tests (`json`: `assert_json_snapshot!` of serialized documents).
 insta = { version = "1.49.0", features = ["json"] }
+# Decodes the JPEG test picture of se-vision's real detection test (dev only).
+jpeg-decoder = { version = "0.3.2", default-features = false }
+# ONNX Runtime bindings (se-vision, ADR-0037): the library is loaded at runtime from
+# `resources/bin/<platform>/onnxruntime/` (`pnpm fetch-binaries`, Microsoft's 1.31 builds), so
+# nothing is downloaded or linked at build time; telemetry is disabled when it loads.
+ort = { version = "=2.0.0-rc.15", default-features = false, features = [
+  "api-31",
+  "load-dynamic",
+  "std",
+  "tracing",
+] }
 proptest = "1.12.0"
 rand = "0.10.3"
 # HTTPS downloads of transcription models and of the GPU pack, only after the user agreed

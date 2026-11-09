@@ -1,8 +1,10 @@
 {
-  "$comment": "Pinned sidecar binaries fetched by `pnpm fetch-binaries` into resources/bin/<platform>/: FFmpeg (ffmpeg, ffprobe at the top level; `license` of a platform is its FFmpeg build's) and whisper.cpp (MIT, in the whisper/ subfolder: the CLI and the libraries it loads from its own folder). Every download has a pinned SHA-256 from its publisher (GitHub release asset digest or the builder's .sha256 file). whisper.cpp has no official macOS CLI build: on macOS the pinned source tarball is compiled locally (`build`: CMake, Metal shaders embedded), so darwin-* can only be fetched on a Mac. Windows gets the CPU build only; its CUDA build is downloaded by the app on request, never by this script. Licences and the choice of FFmpeg builds: docs/adr/0018-media-import-jobs-and-cache.md. To upgrade: change url, sha256, size and files together (and `build` for source downloads), then run the script on each platform.",
+  "$comment": "Pinned sidecar binaries fetched by `pnpm fetch-binaries` into resources/bin/<platform>/: FFmpeg (ffmpeg, ffprobe at the top level; `license` of a platform is its FFmpeg build's), whisper.cpp (MIT, in the whisper/ subfolder: the CLI and the libraries it loads from its own folder) and ONNX Runtime (MIT, in the onnxruntime/ subfolder: the library se-vision loads at runtime for face detection, with its licence and third-party notices; no official build exists for darwin-x64, where automatic reframing is unavailable). Every download has a pinned SHA-256 from its publisher (GitHub release asset digest or the builder's .sha256 file). whisper.cpp has no official macOS CLI build: on macOS the pinned source tarball is compiled locally (`build`: CMake, Metal shaders embedded), so darwin-* can only be fetched on a Mac. Windows gets the CPU build only; its CUDA build is downloaded by the app on request, never by this script. Licences and the choice of FFmpeg builds: docs/adr/0018-media-import-jobs-and-cache.md. To upgrade: change url, sha256, size and files together (and `build` for source downloads), then run the script on each platform.",
   "ffmpegVersion": "9.0.2",
   "whisperVersion": "1.9.5",
   "whisperLicense": "MIT — ggml-org/whisper.cpp (https://github.com/ggml-org/whisper.cpp)",
+  "onnxRuntimeVersion": "1.31.0",
+  "onnxRuntimeLicense": "MIT — Microsoft ONNX Runtime official release builds (https://github.com/microsoft/onnxruntime): CPU execution provider (CoreML on macOS); no build for Intel Macs",
   "platforms": {
     "win32-x64": {
       "license": "GPL-3.0-or-later — Gyan.dev essentials build (https://www.gyan.dev/ffmpeg/builds/)",
@@ -36,6 +38,18 @@
             "whisper/ggml-cpu-skylakex.dll": "Release/ggml-cpu-skylakex.dll",
             "whisper/ggml-cpu-sse42.dll": "Release/ggml-cpu-sse42.dll",
             "whisper/ggml-cpu-x64.dll": "Release/ggml-cpu-x64.dll"
+          }
+        },
+        {
+          "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.31.0/onnxruntime-win-x64-1.31.0.zip",
+          "sha256": "3958d8a44984160692c1b4ffd0de3cb48f8c39f9d34bb31e433db06e30b82195",
+          "size": 82887349,
+          "archive": "zip",
+          "files": {
+            "onnxruntime/onnxruntime.dll": "onnxruntime-win-x64-1.31.0/lib/onnxruntime.dll",
+            "onnxruntime/onnxruntime_providers_shared.dll": "onnxruntime-win-x64-1.31.0/lib/onnxruntime_providers_shared.dll",
+            "onnxruntime/LICENSE": "onnxruntime-win-x64-1.31.0/LICENSE",
+            "onnxruntime/ThirdPartyNotices.txt": "onnxruntime-win-x64-1.31.0/ThirdPartyNotices.txt"
           }
         }
       ]
@@ -94,6 +108,17 @@
             ]
           },
           "files": { "whisper/whisper-cli": "whisper.cpp-1.9.5/build/bin/whisper-cli" }
+        },
+        {
+          "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.31.0/onnxruntime-osx-arm64-1.31.0.tgz",
+          "sha256": "1031b36dd3bdaa8d976a6130d9cf2a05e9be320b93ae804f8427b91dc3432afc",
+          "size": 36549009,
+          "archive": "tar.gz",
+          "files": {
+            "onnxruntime/libonnxruntime.dylib": "onnxruntime-osx-arm64-1.31.0/lib/libonnxruntime.1.31.0.dylib",
+            "onnxruntime/LICENSE": "onnxruntime-osx-arm64-1.31.0/LICENSE",
+            "onnxruntime/ThirdPartyNotices.txt": "onnxruntime-osx-arm64-1.31.0/ThirdPartyNotices.txt"
+          }
         }
       ]
     },
@@ -191,6 +216,18 @@
             "whisper/libggml-cpu-sse42.so": "whisper-bin-ubuntu-x64/libggml-cpu-sse42.so",
             "whisper/libggml-cpu-x64.so": "whisper-bin-ubuntu-x64/libggml-cpu-x64.so",
             "whisper/libggml-cpu-zen4.so": "whisper-bin-ubuntu-x64/libggml-cpu-zen4.so"
+          }
+        },
+        {
+          "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.31.0/onnxruntime-linux-x64-1.31.0.tgz",
+          "sha256": "cc5c72baf5ae5c8238a6841f0897227be2d02826b9cf98eaf02fdefaeeb03a57",
+          "size": 11408003,
+          "archive": "tar.gz",
+          "files": {
+            "onnxruntime/libonnxruntime.so": "onnxruntime-linux-x64-1.31.0/lib/libonnxruntime.so.1.31.0",
+            "onnxruntime/libonnxruntime_providers_shared.so": "onnxruntime-linux-x64-1.31.0/lib/libonnxruntime_providers_shared.so",
+            "onnxruntime/LICENSE": "onnxruntime-linux-x64-1.31.0/LICENSE",
+            "onnxruntime/ThirdPartyNotices.txt": "onnxruntime-linux-x64-1.31.0/ThirdPartyNotices.txt"
           }
         }
       ]

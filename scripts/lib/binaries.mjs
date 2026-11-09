@@ -89,7 +89,13 @@ export function validateManifest(manifest) {
   if (typeof platforms !== 'object' || platforms === null) {
     throw new Error('the manifest has no "platforms" object');
   }
-  for (const field of ['ffmpegVersion', 'whisperVersion', 'whisperLicense']) {
+  for (const field of [
+    'ffmpegVersion',
+    'whisperVersion',
+    'whisperLicense',
+    'onnxRuntimeVersion',
+    'onnxRuntimeLicense',
+  ]) {
     if (typeof root[field] !== 'string' || root[field].length === 0) {
       problems.push(`${field} must be a non-empty string`);
     }
@@ -248,6 +254,7 @@ export function describePlan(manifest, key, downloads = manifest.platforms[key]?
     `${key}`,
     `  FFmpeg ${manifest.ffmpegVersion}: ${entry?.license}`,
     `  whisper.cpp ${manifest.whisperVersion}: ${manifest.whisperLicense}`,
+    `  ONNX Runtime ${manifest.onnxRuntimeVersion}: ${manifest.onnxRuntimeLicense}`,
   ];
   for (const download of downloads) {
     const note = download.build ? `  (source, compiled here with ${download.build.system})` : '';
@@ -345,5 +352,5 @@ export function formatSize(bytes) {
  * @typedef {{ system: keyof typeof BUILD_SYSTEMS, source: string, steps: string[][] }} Build
  * @typedef {{ url: string, sha256: string, size: number, archive: 'zip' | 'tar.xz' | 'tar.gz' | 'none', files: Record<string, string>, build?: Build }} Download
  * @typedef {{ license: string, downloads: Download[] }} PlatformEntry
- * @typedef {{ ffmpegVersion: string, whisperVersion: string, whisperLicense: string, platforms: Record<string, PlatformEntry> }} Manifest
+ * @typedef {{ ffmpegVersion: string, whisperVersion: string, whisperLicense: string, onnxRuntimeVersion: string, onnxRuntimeLicense: string, platforms: Record<string, PlatformEntry> }} Manifest
  */

@@ -36,6 +36,7 @@ mod tasks;
 mod template_library;
 mod templates;
 mod transcription;
+mod vision;
 
 pub use ai::{
     AgentEvent, AgentFailureKind, AiSettings, AiStatus, AuthStatus, EffortLevel,
@@ -102,3 +103,4 @@ pub use transcription::{
     TranscriptionModelInfo, TranscriptionPreferences, TranscriptionStatus, VoiceModelInfo,
     WhisperInfo,
 };
+pub use vision::VisionStatus;

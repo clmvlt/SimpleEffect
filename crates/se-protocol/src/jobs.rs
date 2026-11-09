@@ -22,6 +22,8 @@ pub enum JobKind {
     SceneDetection,
     /// The words spoken (whisper.cpp).
     Transcription,
+    /// Faces in sampled pictures, for automatic reframing (prompt 26).
+    SubjectDetection,
 }
 
 /// Where a job stands.

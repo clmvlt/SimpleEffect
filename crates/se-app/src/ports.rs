@@ -18,6 +18,7 @@ mod template_library;
 mod transcode;
 mod transcript_store;
 mod transcription;
+mod vision;
 
 pub use agents::{
     AgentError, AgentProvider, AgentRun, AgentRunSpec, AgentSession, AgentWorkspaces, CancelHandle,
@@ -48,3 +49,4 @@ pub use transcription::{
     ModelFile, ModelFiles, SpeechAudioExtractor, Transcriber, TranscriberEnvironment,
     TranscriberError, TranscriptionOutput, TranscriptionRequest,
 };
+pub use vision::{FrameSampleRequest, FrameSampler, SampledFrame, SubjectDetector, VisionError};

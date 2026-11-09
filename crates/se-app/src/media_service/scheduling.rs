@@ -93,7 +93,8 @@ pub(super) fn is_used(project: &Project, asset: &Asset) -> bool {
 pub(super) fn priority(kind: JobKind, used: bool) -> JobPriority {
     match kind {
         JobKind::Thumbnails | JobKind::WaveformPeaks => JobPriority::High,
-        JobKind::Proxy => JobPriority::Normal,
+        // Subject detection runs on request only (automatic reframing waits for it).
+        JobKind::Proxy | JobKind::SubjectDetection => JobPriority::Normal,
         JobKind::Mezzanine if used => JobPriority::Normal,
         JobKind::Mezzanine => JobPriority::Idle,
         JobKind::AudioAnalysis | JobKind::SceneDetection | JobKind::Transcription => {
