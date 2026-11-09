@@ -1,5 +1,5 @@
 //! Media analyses (`docs/architecture.md` §7): what the analysis jobs measured on an asset's sound
-//! ([`AudioAnalysis`]) and pictures ([`SceneDetection`]).
+//! ([`AudioAnalysis`]) and pictures ([`SceneDetection`], [`SubjectDetection`]).
 //!
 //! Full results live in the project database (`analyses` table, written by se-store), not in the
 //! document: they can be large (one loudness value per half second) and are facts about a file's
@@ -9,6 +9,7 @@
 mod audio;
 mod levels;
 mod scenes;
+mod subjects;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -19,6 +20,7 @@ pub use self::{
     audio::{AudioAnalysis, AudioSummary, LoudnessCurve, SilenceSettings},
     levels::LevelEnvelope,
     scenes::{SceneDetection, SceneSummary},
+    subjects::{FaceBox, SubjectDetection, SubjectFrame},
 };
 
 /// Which analysis a stored result is (the `kind` column of the `analyses` table).
@@ -29,15 +31,19 @@ pub enum AnalysisKind {
     AudioAnalysis,
     /// Instants where the picture changes shot.
     SceneDetection,
+    /// Faces in sampled pictures (prompt 26, run on request by automatic reframing).
+    SubjectDetection,
 }
 
 impl AnalysisKind {
-    /// The stable name stored in the database (`audioAnalysis`, `sceneDetection`).
+    /// The stable name stored in the database (`audioAnalysis`, `sceneDetection`,
+    /// `subjectDetection`).
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::AudioAnalysis => "audioAnalysis",
             Self::SceneDetection => "sceneDetection",
+            Self::SubjectDetection => "subjectDetection",
         }
     }
 }
@@ -50,6 +56,8 @@ pub enum AnalysisResult {
     AudioAnalysis(AudioAnalysis),
     /// Result of a scene detection.
     SceneDetection(SceneDetection),
+    /// Result of a subject detection.
+    SubjectDetection(SubjectDetection),
 }
 
 impl AnalysisResult {
@@ -69,6 +77,7 @@ impl AnalysisResult {
         match self {
             Self::AudioAnalysis(_) => AnalysisKind::AudioAnalysis,
             Self::SceneDetection(_) => AnalysisKind::SceneDetection,
+            Self::SubjectDetection(_) => AnalysisKind::SubjectDetection,
         }
     }
 }

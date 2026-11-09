@@ -289,7 +289,7 @@ fn text_property_mut(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{AssetId, Reframe, ShapeItem, ShapeKind, TextItem};
+    use crate::{AssetId, Reframe, ShapeItem, ShapeKind, TextItem, TrackingSettings};
 
     #[test]
     fn reads_and_writes_reach_the_same_property() {
@@ -324,6 +324,7 @@ mod tests {
             (
                 Reframe::Tracked {
                     focus: Reframe::centred(),
+                    tracking: TrackingSettings::default(),
                 },
                 true,
             ),

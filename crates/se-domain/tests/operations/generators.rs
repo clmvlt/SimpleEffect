@@ -19,9 +19,10 @@ use se_domain::{
     RippleDeleteRanges, SceneSummary, Sequence, SequenceId, SequencePatch, SetBrandKit,
     SetKeyframes, SetTranscriptionSettings, ShapePatch, SplitItem, StreamDecodability, TemplateId,
     TemplateParamValue, TemplatePatch, TextPatch, TimeRange, TrackId, TrackKind, TrackPatch,
-    TranscriptionSettings, Transition, TransitionAlignment, TransitionId, TransitionKind,
-    TransitionPatch, TrimItem, UnlinkItems, UpdateAsset, UpdateCaptionStyle, UpdateItem,
-    UpdateMarker, UpdateSequence, UpdateTrack, UpdateTransition, Vec2, caption_style_from_preset,
+    TrackingSettings, TranscriptionSettings, Transition, TransitionAlignment, TransitionId,
+    TransitionKind, TransitionPatch, TrimItem, UnlinkItems, UpdateAsset, UpdateCaptionStyle,
+    UpdateItem, UpdateMarker, UpdateSequence, UpdateTrack, UpdateTransition, Vec2,
+    caption_style_from_preset,
     captions::retimed_words,
     test_support::{millis, track},
 };
@@ -714,14 +715,21 @@ fn preset(project: &Project, seed: Seed) -> Option<Operation> {
     )
 }
 
-/// A reframe mode; now and then a focus outside the picture (refused by validation).
+/// A reframe mode; now and then a focus outside the picture or a tracking setting out of range
+/// (refused by validation).
 fn reframe(seed: Seed) -> Reframe {
     let x = f64::from(seed.choice % 11) / 10.0;
     let focus = Animatable::constant(Vec2::new(x, 0.5));
     match seed.choice % 5 {
         0 => Reframe::Fit,
         1 => Reframe::Custom,
-        2 => Reframe::Tracked { focus },
+        2 => Reframe::Tracked {
+            focus,
+            tracking: TrackingSettings {
+                smoothing: f64::from(seed.choice % 13) / 10.0,
+                ..TrackingSettings::default()
+            },
+        },
         3 if seed.choice.is_multiple_of(7) => Reframe::Fill {
             focus: Animatable::constant(Vec2::new(x + 1.5, 0.5)),
         },

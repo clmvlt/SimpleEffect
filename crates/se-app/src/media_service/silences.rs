@@ -22,7 +22,7 @@ impl MediaService {
             .await?
             .and_then(|result| match result {
                 AnalysisResult::AudioAnalysis(analysis) => Some(analysis.silences),
-                AnalysisResult::SceneDetection(_) => None,
+                AnalysisResult::SceneDetection(_) | AnalysisResult::SubjectDetection(_) => None,
             }))
     }
 

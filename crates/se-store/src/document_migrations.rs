@@ -18,14 +18,17 @@
 //! assets a `transcript` summary; version 8 (prompt 23) made captions timed words with a project
 //! caption style; version 9 (prompt 24) gave motion templates their source, parameters and
 //! versions and template items a transform (`templates_v9.rs`); version 10 (prompt 25) completed
-//! brand kits and gave templates a category and a library link (`brand_kit_v10.rs`). Journals
+//! brand kits and gave templates a category and a library link (`brand_kit_v10.rs`); version 11
+//! (prompt 26) gave tracked reframes their tracking settings (`tracking_v11.rs`). Journals
 //! need no migration: no transaction touched assets before version 2, every field added since has
 //! a serde default (empty, linear, off, centred, `other`, no link), `Animatable` reads the bare
 //! values of properties that became animatable, and no command created or edited captions before
-//! version 8, templates before version 9, nor brand kits before version 10.
+//! version 8, templates before version 9, brand kits before version 10, nor tracked reframes
+//! before version 11 (whose settings default too).
 
 mod brand_kit_v10;
 mod templates_v9;
+mod tracking_v11;
 
 pub use brand_kit_v10::{MIGRATED_BRAND_CAPTION_STYLE_ID, MIGRATED_BRAND_KIT_NAME};
 pub use templates_v9::MIGRATED_TEMPLATE_SOURCE;
@@ -33,6 +36,7 @@ pub use templates_v9::MIGRATED_TEMPLATE_SOURCE;
 use brand_kit_v10::migrate_v9_to_v10;
 use serde_json::{Map, Value, json};
 use templates_v9::migrate_v8_to_v9;
+use tracking_v11::migrate_v10_to_v11;
 
 /// One step: the document of version `N` (index `N - 1`) to version `N + 1`.
 pub type DocumentMigration = fn(Value) -> Result<Value, String>;
@@ -49,6 +53,7 @@ pub const MIGRATIONS: &[DocumentMigration] = &[
     migrate_v7_to_v8,
     migrate_v8_to_v9,
     migrate_v9_to_v10,
+    migrate_v10_to_v11,
 ];
 
 /// Id of the caption style given to the captions of a version-7 document. Ids only need to be

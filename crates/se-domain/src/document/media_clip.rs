@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::{Animatable, FadeShape, Transform2D};
+use super::{Animatable, FadeShape, TrackingSettings, Transform2D};
 use crate::{
     ids::AssetId,
     spatial::Vec2,
@@ -105,13 +105,14 @@ pub enum Reframe {
     /// The picture at its natural size, one picture pixel per design pixel (ADR-0015), framed
     /// freely by the transform; it does not adapt to the frame.
     Custom,
-    /// Like [`Reframe::Fill`], with a focus that follows the subject (keyframes written by
-    /// automatic reframing).
-    ///
-    /// TODO(prompt-26): subject tracking writes these keyframes (and its settings).
+    /// Like [`Reframe::Fill`], with a focus that follows the subject: keyframes written by
+    /// automatic reframing ([`crate::tracking`], ADR-0037), editable like any other.
     Tracked {
         /// The point of the picture kept at the frame's centre over time.
         focus: Animatable<Vec2>,
+        /// How the trajectory was computed (schema version 11), reused when it is recomputed.
+        #[serde(default)]
+        tracking: TrackingSettings,
     },
 }
 
@@ -137,7 +138,7 @@ impl Reframe {
     #[must_use]
     pub const fn focus(&self) -> Option<&Animatable<Vec2>> {
         match self {
-            Self::Fill { focus } | Self::Tracked { focus } => Some(focus),
+            Self::Fill { focus } | Self::Tracked { focus, .. } => Some(focus),
             Self::Fit | Self::Custom => None,
         }
     }
@@ -145,8 +146,17 @@ impl Reframe {
     /// Mutable access to the focus of the fill modes.
     pub const fn focus_mut(&mut self) -> Option<&mut Animatable<Vec2>> {
         match self {
-            Self::Fill { focus } | Self::Tracked { focus } => Some(focus),
+            Self::Fill { focus } | Self::Tracked { focus, .. } => Some(focus),
             Self::Fit | Self::Custom => None,
+        }
+    }
+
+    /// The tracking settings of [`Reframe::Tracked`], `None` for the other modes.
+    #[must_use]
+    pub const fn tracking(&self) -> Option<&TrackingSettings> {
+        match self {
+            Self::Tracked { tracking, .. } => Some(tracking),
+            Self::Fit | Self::Fill { .. } | Self::Custom => None,
         }
     }
 }
