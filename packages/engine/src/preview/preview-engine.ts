@@ -20,6 +20,8 @@ export async function createPreviewEngine(options: PreviewEngineOptions): Promis
     options.locator,
     options.schedule,
   );
+  engine.resize(options.width, options.height);
   if (options.fonts !== undefined) engine.setFonts(options.fonts);
+  if (options.templates !== undefined) engine.setTemplates(options.templates);
   return engine;
 }

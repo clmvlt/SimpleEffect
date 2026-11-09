@@ -122,6 +122,8 @@ export default defineConfig(
     '**/.tsbuild/',
     '**/storybook-static/',
     'target/',
+    // Example motion templates of the agents' instructions (tested by the engine's browser tests).
+    'crates/',
     'packages/protocol/src/generated/',
   ]),
   js.configs.recommended,

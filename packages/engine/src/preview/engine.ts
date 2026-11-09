@@ -4,6 +4,7 @@ import type { Compositor, CompositorBackground, RenderCanvas } from '../composit
 import type { DecoderPool, DecoderPoolOptions, DecoderPoolStats } from '../decode/decoder-pool';
 import type { MediaLocator } from '../decode/media-variant';
 import type { FontLoader } from '../fonts/font-registry';
+import type { TemplateIssue, TemplateRenderer } from '../templates/template-renderer';
 import type { FrameLayout } from './frame-layout';
 import { FrameRenderer, type RenderScene } from './frame-renderer';
 import type { MediaIssue } from './media-issue';
@@ -24,6 +25,8 @@ export interface PreviewState {
   readonly issues: readonly MediaIssue[];
   /** Font families of the frame on screen missing from the catalogue (drawn with fallbacks). */
   readonly missingFonts: readonly string[];
+  /** Motion templates of the frame on screen that failed (drawn as the error picture). */
+  readonly templateIssues: readonly TemplateIssue[];
   readonly error: string | null;
 }
 
@@ -43,6 +46,8 @@ export interface PreviewEngineOptions {
   readonly schedule?: (callback: () => void) => void;
   /** Fonts loaded before texts are drawn (see `PreviewEngine.setFonts`). */
   readonly fonts?: FontLoader;
+  /** Renders motion template layers (see `PreviewEngine.setTemplates`). */
+  readonly templates?: TemplateRenderer;
 }
 
 /** Decoder and playback counters, for the performance HUD and leak checks. */
@@ -69,6 +74,8 @@ export interface PreviewEngine {
   setBackground(background: CompositorBackground): void;
   /** Fonts loaded before texts are drawn (the font catalogue); `null` uses the platform's. */
   setFonts(fonts: FontLoader | null): void;
+  /** Renders motion template layers (`@se/engine/templates`); `null`: they draw nothing. */
+  setTemplates(templates: TemplateRenderer | null): void;
   /** Canvas size in pixels (the frame is scaled to fill it). */
   resize(width: number, height: number): void;
   getState(): PreviewState;
@@ -101,8 +108,11 @@ function sameIssue(left: MediaIssue, right: MediaIssue): boolean {
 }
 
 function sameState(left: PreviewState, right: PreviewState): boolean {
+  const templateIssues = (state: PreviewState) =>
+    state.templateIssues.map((issue) => `${issue.itemId} ${issue.message}`).join('\n');
   return (
     left.status === right.status &&
+    templateIssues(left) === templateIssues(right) &&
     left.error === right.error &&
     left.missingFonts.join('\n') === right.missingFonts.join('\n') &&
     left.issues.length === right.issues.length &&
@@ -125,7 +135,13 @@ class Engine implements PreviewEngine {
   private playback: PreviewPlayback | null = null;
   private drawnTime: Flicks | null = null;
   private readonly prefetcher: PlaybackPrefetcher;
-  private state: PreviewState = { status: 'idle', issues: [], missingFonts: [], error: null };
+  private state: PreviewState = {
+    status: 'idle',
+    issues: [],
+    missingFonts: [],
+    templateIssues: [],
+    error: null,
+  };
   private readonly listeners = new Set<(state: PreviewState) => void>();
   private layout: FrameLayout | null = null;
   private readonly layoutListeners = new Set<(layout: FrameLayout) => void>();
@@ -191,8 +207,14 @@ class Engine implements PreviewEngine {
     this.invalidate();
   }
 
+  setTemplates(templates: TemplateRenderer | null): void {
+    this.renderer.setTemplates(templates);
+    this.invalidate();
+  }
+
   resize(width: number, height: number): void {
     this.compositor.resize(width, height);
+    this.renderer.setOutputSize(width, height);
     this.invalidate();
   }
 
@@ -295,6 +317,7 @@ class Engine implements PreviewEngine {
           status: 'ready',
           issues: outcome.issues,
           missingFonts: outcome.missingFonts,
+          templateIssues: outcome.templateIssues,
           error: null,
         });
         this.layout = outcome.layout;
@@ -302,7 +325,13 @@ class Engine implements PreviewEngine {
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.setState({ status: 'error', issues: [], missingFonts: [], error: message });
+      this.setState({
+        status: 'error',
+        issues: [],
+        missingFonts: [],
+        templateIssues: [],
+        error: message,
+      });
     } finally {
       this.inFlight -= 1;
       if (this.playback !== null && this.drawnTime !== this.time) this.drawPlaybackFrame();

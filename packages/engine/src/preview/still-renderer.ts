@@ -6,6 +6,7 @@ import { DecoderPool, type DecoderPoolOptions } from '../decode/decoder-pool';
 import type { MediaLocator } from '../decode/media-variant';
 import type { FontLoader } from '../fonts/font-registry';
 import { FrameRenderer, type RenderScene } from './frame-renderer';
+import type { TemplateIssue, TemplateRenderer } from '../templates/template-renderer';
 import type { MediaIssue } from './media-issue';
 
 /** JPEG quality of stills (0–1): small enough for agents, sharp enough to read texts. */
@@ -19,6 +20,8 @@ export interface StillRendererOptions {
   readonly locator: MediaLocator;
   /** Fonts to load before drawing texts. */
   readonly fonts?: FontLoader | undefined;
+  /** Renders motion template layers (prompt 24). */
+  readonly templates?: TemplateRenderer | undefined;
   readonly pool?: DecoderPoolOptions | undefined;
 }
 
@@ -27,6 +30,8 @@ export interface Still {
   readonly jpeg: Blob;
   readonly issues: readonly MediaIssue[];
   readonly missingFonts: readonly string[];
+  /** Motion templates that failed (drawn as the error picture). */
+  readonly templateIssues: readonly TemplateIssue[];
 }
 
 /**
@@ -60,16 +65,23 @@ export function createStillRendererWith(
   canvas: OffscreenCanvas,
   compositor: Compositor,
   pool: DecoderPool,
-  options: Pick<StillRendererOptions, 'locator' | 'fonts'>,
+  options: Pick<StillRendererOptions, 'locator' | 'fonts' | 'templates'>,
 ): StillRenderer {
   const renderer = new FrameRenderer(compositor, pool, options.locator);
   renderer.setFonts(options.fonts ?? null);
+  renderer.setTemplates(options.templates ?? null);
+  renderer.setOutputSize(canvas.width, canvas.height);
   let busy: Promise<unknown> = Promise.resolve();
   const drawOne = async (scene: RenderScene, time: Flicks, proxy: boolean): Promise<Still> => {
     const outcome = await renderer.render({ scene, time, proxy });
     if (outcome.kind !== 'drawn') throw new Error('the still was replaced before it was drawn');
     const jpeg = await canvas.convertToBlob({ type: 'image/jpeg', quality: STILL_JPEG_QUALITY });
-    return { jpeg, issues: outcome.issues, missingFonts: outcome.missingFonts };
+    return {
+      jpeg,
+      issues: outcome.issues,
+      missingFonts: outcome.missingFonts,
+      templateIssues: outcome.templateIssues,
+    };
   };
   return {
     render(scene, time, proxy) {

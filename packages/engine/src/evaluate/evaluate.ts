@@ -3,6 +3,7 @@ import type { Flicks, Format, Item, TrackKind } from '@se/protocol';
 import type { FrameGraph, Layer, Size } from './frame-graph';
 import { designScale } from './geometry';
 import { itemLayer, type AssetTable, type CaptionStyleList } from './item-layer';
+import type { TemplateList } from './template-layer';
 import {
   transitionProgress,
   transitionSpan,
@@ -31,6 +32,8 @@ export interface EvaluableSequence {
   readonly tracks: readonly EvaluableTrack[];
   /** The project's caption styles (prompt 23); captions use the default preset without them. */
   readonly captionStyles?: CaptionStyleList | undefined;
+  /** The project's motion templates (prompt 24); their instances draw nothing without them. */
+  readonly templates?: TemplateList | undefined;
 }
 
 /** Index of the item of a sorted, non-overlapping list covering `time` (binary search), or −1. */
@@ -93,6 +96,7 @@ interface FrameContext {
   readonly designScale: number;
   readonly assets: AssetTable;
   readonly captionStyles: CaptionStyleList | undefined;
+  readonly templates: TemplateList | undefined;
 }
 
 /** The two layers of a dissolve, weighted `1 − p` and `p`, tagged as one group. */
@@ -134,6 +138,7 @@ export function evaluate(
     designScale: scale,
     assets,
     captionStyles: sequence.captionStyles,
+    templates: sequence.templates,
   };
   const layers: Layer[] = [];
   for (const track of sequence.tracks) {

@@ -17,14 +17,16 @@
     "./playback": "./src/playback/index.ts",
     "./preview": "./src/preview/index.ts",
     "./safe-areas": "./src/safe-areas/index.ts",
-    "./sources": "./src/sources/index.ts"
+    "./sources": "./src/sources/index.ts",
+    "./templates": "./src/templates/index.ts"
   },
   "scripts": {
     "test": "vitest run"
   },
   "dependencies": {
     "mediabunny": "1.65.2",
-    "pixi.js": "8.22.0"
+    "pixi.js": "8.22.0",
+    "sucrase": "3.35.1"
   },
   "devDependencies": {
     "@se/protocol": "workspace:*"

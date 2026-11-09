@@ -1,6 +1,7 @@
 import type { AssetId, Flicks, ItemId, TextAlign, TransitionId, Vec2 } from '@se/protocol';
 
 import type { Rgba } from '../animation/color';
+import type { TemplateRef, TemplateValues } from './template-layer';
 
 /** A width and a height in pixels of the sequence frame. */
 export interface Size {
@@ -176,8 +177,24 @@ export interface CaptionLayer extends LayerBase {
   readonly boxPerLine: boolean;
 }
 
+/**
+ * A motion template instance (prompt 24): the template's code draws the whole frame (its box)
+ * with the values at the evaluated time; the template runtime renders it to a picture.
+ */
+export interface TemplateLayer extends LayerBase {
+  readonly kind: 'template';
+  readonly template: TemplateRef;
+  readonly params: TemplateValues;
+  /** Seconds since the instance's start (beyond its range during a dissolve). */
+  readonly time: number;
+  /** The instance's length in seconds. */
+  readonly duration: number;
+  /** The frame, in sequence pixels. */
+  readonly box: Size;
+}
+
 /** Something to draw, in stacking order within {@link FrameGraph.layers}. */
-export type Layer = VideoLayer | ImageLayer | ShapeLayer | TextLayer | CaptionLayer;
+export type Layer = VideoLayer | ImageLayer | ShapeLayer | TextLayer | CaptionLayer | TemplateLayer;
 
 /** A layer that needs decoded pixels (a video frame or an image). */
 export type PictureLayer = VideoLayer | ImageLayer;

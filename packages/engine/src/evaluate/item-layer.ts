@@ -15,6 +15,7 @@ import { captionLayerStyle, captionTransform } from './caption-layer';
 import { assetDisplaySize, imageBox } from './geometry';
 import { shapeLayerStyle, textLayerStyle, type GraphicContext } from './graphic-layers';
 import { CENTRE_FOCUS, reframedPicture } from './reframe';
+import { templateSeconds, templateValues, type TemplateList } from './template-layer';
 import { clipSourceTime, fadeFactor } from './timing';
 import { isInvisible, resolveTransform } from './transform';
 
@@ -39,6 +40,8 @@ export interface LayerContext {
   readonly assets: AssetTable;
   /** The project's caption styles (captions are drawn with the default preset without them). */
   readonly captionStyles?: CaptionStyleList | undefined;
+  /** The project's motion templates (instances of a missing template draw nothing). */
+  readonly templates?: TemplateList | undefined;
   /** Extra opacity factor (a dissolve's weight); 1 when absent. */
   readonly opacity?: number;
 }
@@ -114,15 +117,26 @@ function layerOfKind(kind: ItemKind, context: LayerContext, localTime: Flicks): 
         ? null
         : { itemId, ...caption, transform: captionTransform(style, weight) };
     }
-    case 'motionTemplate':
-      // TODO(prompt-24): motion templates render through the template runtime.
-      return null;
+    case 'motionTemplate': {
+      const template = context.templates?.find((candidate) => candidate.id === kind.templateId);
+      if (template === undefined) return null;
+      return {
+        itemId,
+        kind: 'template',
+        template: { id: template.id, version: template.version, source: template.source },
+        params: templateValues(template, kind.params, localTime),
+        time: templateSeconds(localTime),
+        duration: templateSeconds(context.item.timelineRange.duration),
+        box: context.frame,
+        transform: placed(kind.transform),
+      };
+    }
   }
 }
 
 /**
  * The layer drawing `kind` at the context's time, or `null` when nothing is visible: audio-only
- * clips, unknown assets, templates (not rendered yet), invisible transforms.
+ * clips, unknown assets or templates, invisible transforms.
  */
 export function itemLayer(kind: ItemKind, context: LayerContext): Layer | null {
   const localTime = (context.time - context.item.timelineRange.start) as Flicks;
