@@ -63,7 +63,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | [x] | 23 | [Sous-titres automatiques animés](23-sous-titres.md) | 15, 22 | 24 |
 | **Phase 6 — Motion design avancé** |||||
 | [x] | 24 | [Modèles de motion générés par l'IA](24-templates-motion.md) ⚠️ | 19 | 23 |
-| [ ] | 25 | [Bibliothèque de templates et brand kit](25-bibliotheque-brand-kit.md) | 23, 24 | 26 |
+| [x] | 25 | [Bibliothèque de templates et brand kit](25-bibliotheque-brand-kit.md) | 23, 24 | 26 |
 | [ ] | 26 | [Recadrage automatique 16:9 → 9:16](26-recadrage-auto.md) | 16, 19 | 25 |
 | **Phase 7 — Export** |||||
 | [ ] | 27 | [Export vidéo (rendu final)](27-export-video.md) ⚠️ | 16 | 21 → 26 |

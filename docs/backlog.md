@@ -114,11 +114,14 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 
 - Version history of library entries (today an entry keeps its latest content only) and a « revenir à la version précédente ».
 - Shared libraries between machines (a folder the user syncs) — the library is local only.
-- Brand kit previews drawn by the engine (the settings preview is drawn by the page; fonts show only once the editor registered them).
+- Brand kit previews drawn by the engine (the settings preview is drawn by the page with the catalogue's fonts loaded into it, `useDocumentFonts`).
 - A finer caption look in the kit editor (outline, plate, animation): today set on captions, then saved to the library.
 - Applying a library caption style from the « Sous-titres » panel (today: the template browser's « Appliquer aux sous-titres sélectionnés »).
 - Live brand binding as an option (instances following later kit changes).
 - Template thumbnails cached on disk for large libraries (previews are rendered live).
+- Inserting the kit's favourite intro and outro templates as a pair from the editor (today stored, edited in the kit and shown to agents only).
+- The kit's logos as shortcuts in image parameters of templates (today: the project's images).
+- Brand-bound colour parameters keeping the default's alpha (a kit colour is opaque).
 
 ## Platform
 - Light theme.
