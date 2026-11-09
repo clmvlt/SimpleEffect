@@ -4,11 +4,11 @@
 
 use std::fmt::Write as _;
 
-use se_domain::{AssetKind, Project, Sequence, TrackKind, format_clock};
+use se_domain::{AssetKind, BrandKit, Project, Sequence, TrackKind, format_clock};
 use se_protocol::Task;
 
 /// The instruction files, in order.
-const GUIDES: [&str; 9] = [
+const GUIDES: [&str; 10] = [
     include_str!("../../assets/agent-instructions/00-role.md"),
     include_str!("../../assets/agent-instructions/01-time-and-scope.md"),
     include_str!("../../assets/agent-instructions/02-reading-the-project.md"),
@@ -18,6 +18,7 @@ const GUIDES: [&str; 9] = [
     include_str!("../../assets/agent-instructions/06-smart-cuts.md"),
     include_str!("../../assets/agent-instructions/07-captions.md"),
     include_str!("../../assets/agent-instructions/08-motion-templates.md"),
+    include_str!("../../assets/agent-instructions/09-brand-kit.md"),
 ];
 
 /// The example motion templates closing `08-motion-templates.md` (title, module), checked by the
@@ -44,13 +45,18 @@ const TEMPLATE_EXAMPLES: [(&str, &str); 4] = [
 /// The instructions added to the CLI's system prompt for `task` on `project` (`None` when the
 /// project could not be read: the agent then discovers it with its tools).
 pub(super) fn compose(task: &Task, project: Option<&Project>) -> String {
-    let mut text = GUIDES
+    let (before_examples, after_examples) = GUIDES.split_at(9);
+    let mut text = before_examples
         .iter()
         .map(|guide| guide.trim_end())
         .collect::<Vec<_>>()
         .join("\n\n");
     for (title, source) in TEMPLATE_EXAMPLES {
         let _ = write!(text, "\n\n### {title}\n\n```ts\n{}\n```", source.trim_end());
+    }
+    for guide in after_examples {
+        text.push_str("\n\n");
+        text.push_str(guide.trim_end());
     }
     text.push_str("\n\n# Task scope\n\n");
     write_scope(&mut text, task, project);
@@ -163,6 +169,37 @@ fn write_project(text: &mut String, task: &Task, project: &Project) {
         count(AssetKind::Audio),
         count(AssetKind::Image)
     );
+    write_brand_kit(text, project.brand_kit.as_ref());
+}
+
+/// The brand kit in one line (or that there is none), so the agent applies it without a call.
+fn write_brand_kit(text: &mut String, kit: Option<&BrandKit>) {
+    let Some(kit) = kit else {
+        text.push_str("- Brand kit: none.\n");
+        return;
+    };
+    let colors = kit
+        .colors
+        .entries()
+        .iter()
+        .map(|(role, color)| format!("{} {color}", role.name()))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let logos = kit
+        .logos
+        .iter()
+        .map(|logo| format!("« {} » (`{}`)", logo.name, logo.asset_id))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let _ = writeln!(
+        text,
+        "- Brand kit « {} »: heading font {}, body font {}; colours {colors}; logos: {}. Use it \
+         consistently unless the user asks otherwise (`get_brand_kit` for every detail).",
+        kit.name,
+        kit.fonts.heading,
+        kit.fonts.body,
+        if logos.is_empty() { "none" } else { &logos },
+    );
 }
 
 /// `V1 (video, 3 items), A1 (audio, 2 items, muted)`, bottom video track first.
@@ -242,6 +279,13 @@ mod tests {
         assert!(text.contains("# Audio editing"));
         assert!(text.contains("# Smart cuts"));
         assert!(text.contains("# Motion templates"));
+        assert!(text.contains("# Brand kit and template library"));
+        assert!(text.contains(
+            "- Brand kit « Example brand »: heading font Montserrat, body font Inter; colours \
+             primary #ffcc00"
+        ));
+        let examples = text.find("### Call to action").unwrap();
+        assert!(examples < text.find("# Brand kit and template library").unwrap());
         assert!(text.contains("### Call to action\n\n```ts\nexport const meta"));
         assert!(text.contains("00:00:01.000 to 00:00:02.000"));
         assert!(text.contains(&format!("{} (`{}`)", track.name, track.id)));

@@ -5,7 +5,7 @@ expression: example_project()
 {
   "id": "00000000-0001-7000-8000-000000000000",
   "name": "Example",
-  "schemaVersion": 9,
+  "schemaVersion": 10,
   "revision": 42,
   "settings": {
     "defaultFormat": {
@@ -977,7 +977,7 @@ expression: example_project()
       "name": "Lower third",
       "description": "A name and a role sliding in",
       "version": 1,
-      "source": "export const meta = { name: 'Lower third', description: 'A name and a role sliding in', defaultDuration: 5 };\n\nexport const params = {\n  name: { type: 'string', title: 'Nom', default: 'Jane Doe' },\n  role: { type: 'string', title: 'Titre', default: 'Director', multiline: true },\n  accent: { type: 'string', format: 'color', title: 'Accent', default: '#ffcc00' },\n  slide: { type: 'number', title: 'Glissement', default: 120, minimum: 0, maximum: 400 },\n  showLine: { type: 'boolean', title: 'Ligne', default: true },\n  align: { type: 'string', title: 'Alignement', enum: ['left', 'right'], enumLabels: ['Gauche', 'Droite'], default: 'left' },\n  font: { type: 'string', format: 'font', title: 'Police', default: 'Inter' },\n  logo: { type: 'string', format: 'asset', title: 'Logo' },\n};\n\nexport function render(ctx, time, p) {\n  const enter = ctx.ease.outCubic(ctx.clamp(time / 0.6, 0, 1));\n  const exit = ctx.ease.inCubic(ctx.clamp((time - ctx.duration + 0.5) / 0.5, 0, 1));\n  ctx.globalAlpha = enter * (1 - exit);\n  const x = p.align === 'left' ? 120 - p.slide * (1 - enter) : ctx.width - 120 + p.slide * (1 - enter);\n  ctx.fillStyle = p.accent;\n  if (p.showLine) ctx.fillRect(p.align === 'left' ? x - 24 : x + 12, 760, 12, 150);\n  ctx.textAlign = p.align;\n  ctx.fillStyle = '#ffffff';\n  ctx.font = `800 72px ${p.font}`;\n  ctx.fillText(p.name, x, 830);\n  ctx.font = `500 44px ${p.font}`;\n  ctx.fillText(p.role, x, 895);\n}\n",
+      "source": "export const meta = { name: 'Lower third', description: 'A name and a role sliding in', defaultDuration: 5, category: 'lowerThird' };\n\nexport const params = {\n  name: { type: 'string', title: 'Nom', default: 'Jane Doe' },\n  role: { type: 'string', title: 'Titre', default: 'Director', multiline: true },\n  accent: { type: 'string', format: 'color', title: 'Accent', default: '#ffcc00', brand: 'accent' },\n  slide: { type: 'number', title: 'Glissement', default: 120, minimum: 0, maximum: 400 },\n  showLine: { type: 'boolean', title: 'Ligne', default: true },\n  align: { type: 'string', title: 'Alignement', enum: ['left', 'right'], enumLabels: ['Gauche', 'Droite'], default: 'left' },\n  font: { type: 'string', format: 'font', title: 'Police', default: 'Inter' },\n  logo: { type: 'string', format: 'asset', title: 'Logo' },\n};\n\nexport function render(ctx, time, p) {\n  const enter = ctx.ease.outCubic(ctx.clamp(time / 0.6, 0, 1));\n  const exit = ctx.ease.inCubic(ctx.clamp((time - ctx.duration + 0.5) / 0.5, 0, 1));\n  ctx.globalAlpha = enter * (1 - exit);\n  const x = p.align === 'left' ? 120 - p.slide * (1 - enter) : ctx.width - 120 + p.slide * (1 - enter);\n  ctx.fillStyle = p.accent;\n  if (p.showLine) ctx.fillRect(p.align === 'left' ? x - 24 : x + 12, 760, 12, 150);\n  ctx.textAlign = p.align;\n  ctx.fillStyle = '#ffffff';\n  ctx.font = `800 72px ${p.font}`;\n  ctx.fillText(p.name, x, 830);\n  ctx.font = `500 44px ${p.font}`;\n  ctx.fillText(p.role, x, 895);\n}\n",
       "params": [
         {
           "name": "name",
@@ -988,7 +988,8 @@ expression: example_project()
             "default": "Jane Doe",
             "multiline": false,
             "maxLength": 2000
-          }
+          },
+          "brand": null
         },
         {
           "name": "role",
@@ -999,7 +1000,8 @@ expression: example_project()
             "default": "Director",
             "multiline": true,
             "maxLength": 2000
-          }
+          },
+          "brand": null
         },
         {
           "name": "accent",
@@ -1008,7 +1010,8 @@ expression: example_project()
           "spec": {
             "kind": "color",
             "default": "#ffcc00"
-          }
+          },
+          "brand": "accent"
         },
         {
           "name": "slide",
@@ -1020,7 +1023,8 @@ expression: example_project()
             "minimum": 0.0,
             "maximum": 400.0,
             "step": null
-          }
+          },
+          "brand": null
         },
         {
           "name": "showLine",
@@ -1029,7 +1033,8 @@ expression: example_project()
           "spec": {
             "kind": "boolean",
             "default": true
-          }
+          },
+          "brand": null
         },
         {
           "name": "align",
@@ -1048,7 +1053,8 @@ expression: example_project()
                 "label": "Droite"
               }
             ]
-          }
+          },
+          "brand": null
         },
         {
           "name": "font",
@@ -1057,7 +1063,8 @@ expression: example_project()
           "spec": {
             "kind": "font",
             "default": "Inter"
-          }
+          },
+          "brand": null
         },
         {
           "name": "logo",
@@ -1065,24 +1072,158 @@ expression: example_project()
           "description": null,
           "spec": {
             "kind": "asset"
-          }
+          },
+          "brand": null
         }
       ],
       "defaultDuration": 3528000000,
       "origin": {
         "kind": "aiTask",
         "taskId": "00000000-0001-7000-8000-000000000000"
+      },
+      "category": "lowerThird",
+      "library": {
+        "templateId": "00000000-0001-7000-8000-000000000000",
+        "version": 1
       }
     }
   ],
   "brandKit": {
-    "colors": [
-      "#ffcc00",
-      "#1a1a1a"
+    "source": {
+      "kitId": "00000000-0001-7000-8000-000000000000",
+      "version": 2
+    },
+    "name": "Example brand",
+    "fonts": {
+      "heading": "Montserrat",
+      "body": "Inter"
+    },
+    "colors": {
+      "primary": "#ffcc00",
+      "secondary": "#1a1a1a",
+      "accent": "#ff3366",
+      "text": "#ffffff",
+      "background": "#1a1a1a"
+    },
+    "logos": [
+      {
+        "name": "Logo",
+        "assetId": "00000000-0003-7000-8000-000000000000"
+      }
     ],
-    "fonts": [
-      "Inter"
-    ]
+    "textStyle": {
+      "fontFamily": "Montserrat",
+      "fontWeight": 700,
+      "italic": false,
+      "fontSize": {
+        "kind": "static",
+        "value": 96.0
+      },
+      "color": {
+        "kind": "static",
+        "value": "#ffffff"
+      },
+      "stroke": {
+        "enabled": false,
+        "color": {
+          "kind": "static",
+          "value": "#000000"
+        },
+        "width": {
+          "kind": "static",
+          "value": 4.0
+        }
+      },
+      "shadow": {
+        "enabled": false,
+        "color": {
+          "kind": "static",
+          "value": "#000000b3"
+        },
+        "blur": {
+          "kind": "static",
+          "value": 8.0
+        },
+        "offset": {
+          "kind": "static",
+          "value": {
+            "x": 0.0,
+            "y": 4.0
+          }
+        }
+      },
+      "background": {
+        "enabled": false,
+        "color": {
+          "kind": "static",
+          "value": "#000000b3"
+        },
+        "padding": {
+          "x": 24.0,
+          "y": 12.0
+        },
+        "cornerRadius": 8.0
+      },
+      "letterSpacing": {
+        "kind": "static",
+        "value": 0.0
+      },
+      "lineHeight": 1.2,
+      "align": "center",
+      "maxWidth": null,
+      "textCase": "normal"
+    },
+    "captionStyle": {
+      "id": "00000000-0002-7000-8000-000000000000",
+      "preset": "karaoke",
+      "fontFamily": "Inter",
+      "fontWeight": 800,
+      "italic": false,
+      "fontSize": 62.0,
+      "textCase": "normal",
+      "lineHeight": 1.2,
+      "textColor": "#ffffff",
+      "activeColor": "#ffd600",
+      "emphasisColor": "#ff5c8a",
+      "outline": {
+        "enabled": true,
+        "color": "#000000",
+        "width": 4.0
+      },
+      "shadow": {
+        "enabled": false,
+        "color": "#00000099",
+        "blur": 6.0,
+        "offset": {
+          "x": 0.0,
+          "y": 2.0
+        }
+      },
+      "background": {
+        "enabled": false,
+        "color": "#000000b3",
+        "padding": {
+          "x": 24.0,
+          "y": 12.0
+        },
+        "cornerRadius": 12.0
+      },
+      "position": {
+        "x": 0.5,
+        "y": 0.86
+      },
+      "animation": "wordHighlight",
+      "highlightSpoken": true,
+      "maxCharsPerLine": 32,
+      "maxLines": 2
+    },
+    "introTemplates": [
+      {
+        "id": "00000000-0001-7000-8000-000000000000",
+        "name": "Lower third"
+      }
+    ],
+    "outroTemplates": []
   },
   "captionStyles": [
     {

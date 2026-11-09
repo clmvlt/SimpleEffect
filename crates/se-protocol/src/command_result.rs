@@ -9,10 +9,11 @@ use ts_rs::TS;
 
 use crate::{
     AiSettings, AiStatus, AnimationPresetInfo, CaptionsReport, CutSummary, FillerOccurrence,
-    FontFamily, ImportReport, JobSnapshot, MediaSettings, MediaToolsStatus, NewProjectDefaults,
+    FontFamily, ImportReport, InsertedLibraryTemplate, JobSnapshot, LibraryBrandKit,
+    LibraryImportResult, LibraryTemplate, MediaSettings, MediaToolsStatus, NewProjectDefaults,
     PlacedGraphic, ProjectCacheInfo, ProjectSession, RecentProject, RelinkOutcome,
-    SmartCutSettings, Task, TaskEventRecord, TaskRevertReport, TranscriptSearchHit,
-    TranscriptionStatus,
+    SmartCutSettings, Task, TaskEventRecord, TaskRevertReport, TemplateUpdateReport,
+    TranscriptSearchHit, TranscriptionStatus,
 };
 
 /// The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
@@ -279,6 +280,68 @@ pub enum CommandResult {
     ReportTemplateCheck,
     /// Answer to [`crate::Command::RemoveTemplate`].
     RemoveTemplate,
+    /// Answer to [`crate::Command::ListLibraryTemplates`].
+    ListLibraryTemplates {
+        /// The entries, by name.
+        templates: Vec<LibraryTemplate>,
+    },
+    /// Answer to [`crate::Command::SaveTemplateToLibrary`].
+    SaveTemplateToLibrary {
+        /// The entry as saved.
+        template: LibraryTemplate,
+    },
+    /// Answer to [`crate::Command::SaveCaptionStyleToLibrary`].
+    SaveCaptionStyleToLibrary {
+        /// The new entry.
+        template: LibraryTemplate,
+    },
+    /// Answer to [`crate::Command::UpdateLibraryTemplateInfo`].
+    UpdateLibraryTemplateInfo {
+        /// The entry as saved.
+        template: LibraryTemplate,
+    },
+    /// Answer to [`crate::Command::RemoveLibraryTemplate`].
+    RemoveLibraryTemplate,
+    /// Answer to [`crate::Command::InsertLibraryTemplate`].
+    InsertLibraryTemplate(InsertedLibraryTemplate),
+    /// Answer to [`crate::Command::UpdateTemplateFromLibrary`].
+    UpdateTemplateFromLibrary(TemplateUpdateReport),
+    /// Answer to [`crate::Command::ExportLibraryTemplate`].
+    ExportLibraryTemplate,
+    /// Answer to [`crate::Command::ImportLibraryTemplates`].
+    ImportLibraryTemplates {
+        /// One result per file, in order.
+        results: Vec<LibraryImportResult>,
+    },
+    /// Answer to [`crate::Command::ListBrandKits`].
+    ListBrandKits {
+        /// The kits, by name.
+        kits: Vec<LibraryBrandKit>,
+    },
+    /// Answer to [`crate::Command::CreateBrandKit`].
+    CreateBrandKit {
+        /// The new kit.
+        kit: LibraryBrandKit,
+    },
+    /// Answer to [`crate::Command::SaveBrandKit`].
+    SaveBrandKit {
+        /// The kit as saved (new version).
+        kit: LibraryBrandKit,
+    },
+    /// Answer to [`crate::Command::RemoveBrandKit`].
+    RemoveBrandKit,
+    /// Answer to [`crate::Command::AddBrandKitLogo`].
+    AddBrandKitLogo {
+        /// The kit with its new logo (saved).
+        kit: LibraryBrandKit,
+    },
+    /// Answer to [`crate::Command::SetProjectBrandKit`].
+    SetProjectBrandKit,
+    /// Answer to [`crate::Command::AddProjectBrandKitToLibrary`].
+    AddProjectBrandKitToLibrary {
+        /// The new library kit.
+        kit: LibraryBrandKit,
+    },
     /// Answer to [`crate::Command::GetTranscriptionStatus`].
     GetTranscriptionStatus {
         /// The status.

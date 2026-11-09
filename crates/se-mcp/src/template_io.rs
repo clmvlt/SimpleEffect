@@ -13,9 +13,9 @@ use serde_json::{Map, Value};
 
 use crate::{
     output::{ToolError, ToolOutput, codes},
-    time_io::TimeOutput,
+    time_io::{TimeInput, TimeOutput},
     tools::set_keyframes::KeyframeInput,
-    write_inputs::color,
+    write_inputs::{color, span},
     writes::WriteScene,
 };
 
@@ -65,12 +65,17 @@ pub struct TemplateSummary {
     pub description: String,
     /// Version of its source.
     pub version: u32,
+    /// Its browser category (`title`, `lowerThird`, `callToAction`, `transition`, `other`).
+    pub category: &'static str,
     /// Length of new instances.
     pub default_duration: TimeOutput,
     /// Its parameters, in declaration order.
     pub params: Vec<ParamSummary>,
     /// Items using it.
     pub instances: usize,
+    /// The library entry it was copied from (`list_templates` with `source: "library"`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub library_template_id: Option<String>,
 }
 
 /// One parameter as agents read it.
@@ -100,6 +105,9 @@ pub struct ParamSummary {
     /// Whether keyframes may animate it (numbers and colours).
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub animatable: bool,
+    /// The brand kit role new instances take their value from (`accent`, `heading`, `logo`…).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub brand: Option<&'static str>,
 }
 
 /// The summary of `template` in `project`.
@@ -110,6 +118,7 @@ pub fn template_summary(project: &Project, template: &MotionTemplate) -> Templat
         name: template.name.clone(),
         description: template.description.clone(),
         version: template.version,
+        category: template.category.name(),
         default_duration: TimeOutput::from(template.default_duration),
         params: template.params.iter().map(param_summary).collect(),
         instances: project
@@ -118,10 +127,15 @@ pub fn template_summary(project: &Project, template: &MotionTemplate) -> Templat
                 matches!(&item.kind, se_domain::ItemKind::MotionTemplate(instance) if instance.template_id == template.id)
             })
             .count(),
+        library_template_id: template
+            .library
+            .map(|link| link.template_id.to_string()),
     }
 }
 
-fn param_summary(param: &TemplateParam) -> ParamSummary {
+/// The summary of one parameter.
+#[must_use]
+pub fn param_summary(param: &TemplateParam) -> ParamSummary {
     let mut summary = ParamSummary {
         name: param.name.clone(),
         label: param.label.clone(),
@@ -132,6 +146,7 @@ fn param_summary(param: &TemplateParam) -> ParamSummary {
         options: Vec::new(),
         multiline: false,
         animatable: false,
+        brand: param.brand.map(se_domain::BrandRole::name),
     };
     match &param.spec {
         TemplateParamSpec::Text {
@@ -164,6 +179,28 @@ fn param_summary(param: &TemplateParam) -> ParamSummary {
         TemplateParamSpec::Asset => {}
     }
     summary
+}
+
+/// The span of a new instance: `start` with `end` or `duration`, or `default_duration`.
+///
+/// # Errors
+/// [`codes::INVALID_TIME`] for unreadable or out-of-range times.
+pub fn template_range(
+    scene: &WriteScene<'_>,
+    start: &TimeInput,
+    end: Option<&TimeInput>,
+    duration: Option<&TimeInput>,
+    default_duration: Flicks,
+) -> Result<se_domain::TimeRange, ToolError> {
+    if end.is_some() || duration.is_some() {
+        return span(scene, start, end, duration);
+    }
+    let start = scene.time(start)?;
+    let end = start
+        .checked_add(default_duration)
+        .ok_or_else(|| ToolError::new(codes::INVALID_TIME, "the end is too far"))?;
+    se_domain::TimeRange::from_start_end(start, end)
+        .map_err(|_| ToolError::new(codes::INVALID_TIME, "the start is invalid"))
 }
 
 /// Values for `template` read from `values` (parameter name → value; `null` resets to the

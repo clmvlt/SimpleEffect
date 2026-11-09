@@ -49,15 +49,20 @@ export interface WorkerPoolOptions {
  */
 export class TemplateWorkerPool {
   private readonly entries = new Map<string, Promise<PoolEntry>>();
+  /** Families each template version turned out to draw with (lower case), given at start. */
+  private readonly familiesOf = new Map<string, Set<string>>();
   private readonly maxWorkers: number;
 
   constructor(private readonly options: WorkerPoolOptions = {}) {
     this.maxWorkers = options.maxWorkers ?? 8;
   }
 
-  /** The Worker of `template` (started and given the default font the first time). */
+  /**
+   * The Worker of `template` (started the first time and given the default font and the
+   * families the version is known to draw with).
+   */
   acquire(template: TemplateRef): Promise<PoolEntry> {
-    const key = `${template.id}@${String(template.version)}`;
+    const key = templateKey(template);
     const existing = this.entries.get(key);
     if (existing !== undefined) {
       this.entries.delete(key);
@@ -72,7 +77,7 @@ export class TemplateWorkerPool {
 
   /** Remembers that `template` overran or crashed: its frames fail at once from now on. */
   markFailed(template: TemplateRef, failure: TemplateFailure): void {
-    const key = `${template.id}@${String(template.version)}`;
+    const key = templateKey(template);
     void this.entries.get(key)?.then((entry) => {
       if (entry.kind === 'ready') entry.pooled.worker.terminate();
     });
@@ -120,6 +125,37 @@ export class TemplateWorkerPool {
     return true;
   }
 
+  /**
+   * After `pooled` drew a frame with families it lacked: a Worker whose text used a family
+   * before its faces arrived keeps the fallback font even once they load (Chromium resolves a
+   * family once per Worker), so the version's Worker is replaced by one given those families
+   * first (the old one retires after its queued frames). Resolves with the Worker to draw again
+   * with — this one, or the one another frame's restart already made —, or `null` when the
+   * catalogue has none of the families (the fallback is then the right picture).
+   */
+  async restartWithFonts(
+    template: TemplateRef,
+    pooled: PooledWorker,
+    families: readonly string[],
+  ): Promise<PoolEntry | null> {
+    const key = templateKey(template);
+    const known = this.knownFamilies(key);
+    const fresh = [...new Set(families.map((family) => family.toLowerCase()))].filter(
+      (family) => !known.has(family),
+    );
+    for (const family of fresh) known.add(family);
+    if (fresh.length === 0 || !(await this.hasFaces(fresh))) {
+      const current = await this.entries.get(key);
+      const replaced = current?.kind !== 'ready' || current.pooled !== pooled;
+      return replaced && current !== undefined ? current : null;
+    }
+    const entry = this.start(template);
+    this.entries.delete(key);
+    this.entries.set(key, entry);
+    pooled.worker.retire();
+    return entry;
+  }
+
   /** Stops every Worker. */
   destroy(): void {
     for (const entry of this.entries.values()) {
@@ -142,9 +178,8 @@ export class TemplateWorkerPool {
         this.options.loadWatchdogMs ?? TEMPLATE_LOAD_WATCHDOG_MS,
       );
       const pooled: PooledWorker = { worker, families: new Set(), images: new Map() };
-      await this.provideFonts(pooled, [DEFAULT_TEMPLATE_FAMILY], TEMPLATE_LOAD_WATCHDOG_MS).catch(
-        () => false,
-      );
+      const families = [DEFAULT_TEMPLATE_FAMILY, ...this.knownFamilies(templateKey(template))];
+      await this.provideFonts(pooled, families, TEMPLATE_LOAD_WATCHDOG_MS).catch(() => false);
       return { kind: 'ready', pooled };
     } catch (error) {
       const failure =
@@ -153,6 +188,23 @@ export class TemplateWorkerPool {
           : new TemplateFailure('crashed', [{ message: String(error), line: null, column: null }]);
       return { kind: 'failed', failure };
     }
+  }
+
+  private knownFamilies(key: string): Set<string> {
+    let families = this.familiesOf.get(key);
+    if (families === undefined) {
+      families = new Set();
+      this.familiesOf.set(key, families);
+    }
+    return families;
+  }
+
+  /** Whether the font catalogue has faces for any of `families`. */
+  private async hasFaces(families: readonly string[]): Promise<boolean> {
+    const source = this.options.fonts;
+    if (source === undefined) return false;
+    const faces = await Promise.all(families.map((family) => source(family).catch(() => [])));
+    return faces.some((found) => found.length > 0);
   }
 
   private async sendImages(
@@ -185,4 +237,9 @@ export class TemplateWorkerPool {
       });
     }
   }
+}
+
+/** The pool's key of a template version. */
+function templateKey(template: TemplateRef): string {
+  return `${template.id}@${String(template.version)}`;
 }

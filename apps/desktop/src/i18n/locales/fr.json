@@ -673,7 +673,13 @@
       "shiftCaptions": "Décalage des sous-titres",
       "emphasizeCaptionWords": "Mots mis en avant",
       "changeCaptionStyle": "Style des sous-titres",
-      "applyCaptionPreset": "Style prédéfini des sous-titres"
+      "applyCaptionPreset": "Style prédéfini des sous-titres",
+      "insertLibraryTemplate": "Insérer un modèle de la bibliothèque",
+      "updateTemplate": "Mise à jour du modèle",
+      "saveTemplateToLibrary": "Lien du modèle à la bibliothèque",
+      "chooseBrandKit": "Choix du brand kit",
+      "updateBrandKit": "Mise à jour du brand kit",
+      "removeBrandKit": "Retrait du brand kit"
     },
     "transcript": {
       "title": "Transcription",
@@ -914,6 +920,72 @@
       "code": {
         "title": "{{name}} — version {{version}}",
         "description": "Le code du modèle, écrit par l’IA. Il n’est pas modifiable ici : changez ses paramètres dans l’inspecteur, ou demandez une modification à l’IA."
+      },
+      "categories": {
+        "all": "Tous",
+        "title": "Titres",
+        "lowerThird": "Lower thirds",
+        "callToAction": "CTA",
+        "transition": "Transitions",
+        "captions": "Sous-titres",
+        "other": "Autres"
+      },
+      "browser": {
+        "title": "Modèles",
+        "search": "Rechercher un modèle",
+        "sourceLabel": "Provenance des modèles",
+        "sources": {
+          "all": "Tout",
+          "project": "Projet",
+          "library": "Bibliothèque"
+        },
+        "categoryLabel": "Catégorie",
+        "project": "Projet",
+        "library": "Bibliothèque",
+        "updateBadge": "v{{version}} disponible",
+        "update": "Mettre à jour vers la version {{version}}",
+        "updated": "« {{name}} » mis à jour (version {{version}} de la bibliothèque)",
+        "saveToLibrary": "Enregistrer dans la bibliothèque…",
+        "saveVersion": "Enregistrer une nouvelle version dans la bibliothèque…",
+        "more": "Actions de « {{name}} »",
+        "applyStyle": "Appliquer aux sous-titres sélectionnés",
+        "selectCaptions": "Sélectionnez des sous-titres dans la timeline pour leur appliquer ce style.",
+        "styleApplied": "Style « {{name}} » appliqué à {{count}} sous-titre(s)",
+        "captionSample": "Un style de sous-titres",
+        "export": "Exporter…",
+        "exportTitle": "Exporter le modèle",
+        "exportButton": "Exporter",
+        "exported": "« {{name}} » exporté",
+        "fileFilter": "Modèles SimpleEffect",
+        "allFiles": "Tous les fichiers",
+        "rename": "Renommer…",
+        "removeFromLibrary": "Retirer de la bibliothèque",
+        "removedFromLibrary": "« {{name}} » retiré de la bibliothèque (mis à la corbeille)",
+        "importTitle": "Importer des modèles (.setemplate)",
+        "importButton": "Importer",
+        "import": {
+          "imported": "« {{name}} » ajouté à la bibliothèque",
+          "updated": "« {{name}} » mis à jour dans la bibliothèque (version {{version}})",
+          "unchanged": "« {{name}} » est déjà dans la bibliothèque (version {{version}})"
+        },
+        "importFailed": "{{path}} n’a pas été importé : {{message}}",
+        "emptyTitle": "Aucun modèle d’animation",
+        "emptyDescription": "Demandez à l’IA d’en créer un (bandeau, titre animé, appel à l’action…), ou importez un fichier .setemplate : enregistrez-les dans la bibliothèque pour les réutiliser dans tous vos projets.",
+        "noMatch": "Aucun modèle ne correspond"
+      },
+      "library": {
+        "saveTitle": "Enregistrer dans la bibliothèque",
+        "saveVersionTitle": "Enregistrer la version {{version}} dans la bibliothèque",
+        "renameTitle": "Modifier le modèle de la bibliothèque",
+        "name": "Nom",
+        "nameRequired": "Donnez un nom au modèle.",
+        "description": "Description",
+        "category": "Catégorie",
+        "tags": "Mots-clés",
+        "tagsHint": "Séparés par des virgules (ex. : interview, shorts).",
+        "save": "Enregistrer",
+        "saved": "« {{name}} » enregistré dans la bibliothèque (version {{version}})",
+        "renamed": "« {{name}} » modifié"
       }
     },
     "captions": {
@@ -1002,7 +1074,9 @@
         "layout": "Disposition",
         "positionY": "Position verticale",
         "maxChars": "Caractères par ligne",
-        "maxLines": "Lignes"
+        "maxLines": "Lignes",
+        "saveToLibrary": "Enregistrer ce style dans la bibliothèque…",
+        "libraryName": "Style de sous-titres"
       }
     }
   },
@@ -1119,6 +1193,7 @@
     "edit": {
       "OVERLAPPING_ITEMS": "Les éléments se chevaucheraient : déplacez ou rognez l’un d’eux, ou utilisez une autre piste.",
       "TRACK_LOCKED": "Cette piste est verrouillée : déverrouillez-la pour la modifier.",
+      "INVALID_BRAND_KIT": "Ce brand kit a des valeurs invalides : corrigez son nom ou ses polices.",
       "TRIM_BEYOND_SOURCE": "Le média ne va pas plus loin : impossible de rallonger davantage ce clip.",
       "INVALID_EDIT_POINT": "Ce point de montage est en dehors de l’élément.",
       "FRAME_RATE_LOCKED": "La séquence contient déjà des éléments : sa cadence ne peut plus changer.",
@@ -1145,7 +1220,11 @@
     "SUBTITLE_FILE_FAILED": "Le fichier de sous-titres n’a pas pu être lu ou écrit : vérifiez son emplacement et vos droits.",
     "INVALID_SUBTITLE_FILE": "Ce fichier n’est pas un fichier de sous-titres SRT valide.",
     "TEMPLATE_INVALID": "Ce modèle d’animation ne peut pas être utilisé : il ne compile pas, échoue, est trop lent ou n’est pas déterministe.",
-    "TEMPLATE_CHECK_NOT_FOUND": "Cette vérification de modèle n’attend plus de réponse (terminée ou expirée)."
+    "TEMPLATE_CHECK_NOT_FOUND": "Cette vérification de modèle n’attend plus de réponse (terminée ou expirée).",
+    "LIBRARY_TEMPLATE_NOT_FOUND": "Ce modèle n’est plus dans la bibliothèque : elle a été rechargée.",
+    "BRAND_KIT_NOT_FOUND": "Ce brand kit n’existe plus : la liste a été rechargée.",
+    "INVALID_LIBRARY_FILE": "Ce fichier ne peut pas être utilisé : ce n’est pas un modèle SimpleEffect (.setemplate) ou pas une image.",
+    "INVALID_BRAND_KIT": "Valeurs invalides : vérifiez le nom, les polices et les champs signalés."
   },
   "format": {
     "ratio": "Format",
@@ -1161,7 +1240,9 @@
   },
   "common": {
     "notifications": "Notifications",
-    "close": "Fermer"
+    "close": "Fermer",
+    "cancel": "Annuler",
+    "save": "Enregistrer"
   },
   "settings": {
     "open": "Réglages",
@@ -1170,7 +1251,8 @@
     "sections": {
       "media": "Médias",
       "ai": "IA",
-      "transcription": "Transcription"
+      "transcription": "Transcription",
+      "brandKits": "Brand kits"
     },
     "media": {
       "derivedTitle": "Copies de travail",
@@ -1521,6 +1603,92 @@
       "cannotApply": "Une modification ne peut plus être défaite",
       "keep": "Tout garder",
       "confirm": "Annuler le reste"
+    }
+  },
+  "brandKit": {
+    "roles": {
+      "primary": "Primaire",
+      "secondary": "Secondaire",
+      "accent": "Accent",
+      "text": "Texte",
+      "background": "Fond",
+      "heading": "Police des titres",
+      "body": "Police du texte",
+      "logo": "Logo"
+    },
+    "fontsGroup": "Brand kit",
+    "paletteGroup": "Palette du brand kit",
+    "menu": {
+      "label": "Brand kit du projet",
+      "none": "Aucun brand kit",
+      "noKit": "Aucun",
+      "kits": "Mes brand kits",
+      "outdated": "Version {{version}} disponible",
+      "update": "Mettre à jour vers la version {{version}}",
+      "notInLibrary": "Ce kit n’est pas dans vos brand kits (projet venu d’un autre poste).",
+      "addToLibrary": "Ajouter à mes brand kits",
+      "added": "« {{name}} » ajouté à vos brand kits",
+      "manage": "Gérer les brand kits…",
+      "chosen": "Brand kit « {{name}} » appliqué au projet",
+      "removed": "Le projet n’utilise plus de brand kit",
+      "updated": "Brand kit « {{name}} » mis à jour"
+    },
+    "settings": {
+      "description": "Polices, couleurs, logos et styles par défaut, appliqués aux nouveaux textes et sous-titres et proposés dans les champs. Un projet garde une copie de son kit.",
+      "list": "Brand kits",
+      "new": "Nouveau brand kit",
+      "newName": "Mon brand kit",
+      "empty": "Aucun brand kit",
+      "emptyDescription": "Créez un kit avec vos polices, vos couleurs et vos logos : les nouveaux textes et sous-titres les prendront, et l’IA les utilisera.",
+      "duplicate": "Dupliquer",
+      "copyName": "{{name}} (copie)",
+      "remove": "Supprimer",
+      "removed": "« {{name}} » mis à la corbeille (les projets gardent leur copie)",
+      "actions": "Actions de « {{name}} »",
+      "name": "Nom",
+      "fonts": "Polices",
+      "palette": "Palette",
+      "logos": "Logos",
+      "addLogo": "Ajouter un logo…",
+      "logoTitle": "Choisir des logos",
+      "logoButton": "Ajouter",
+      "imagesFilter": "Images",
+      "allFiles": "Tous les fichiers",
+      "logoName": "Nom du logo",
+      "removeLogo": "Retirer « {{name}} »",
+      "noLogo": "Aucun logo",
+      "textStyle": "Style des nouveaux textes",
+      "font": "Police",
+      "weight": "Graisse",
+      "size": "Taille",
+      "color": "Couleur",
+      "uppercase": "Majuscules",
+      "outline": "Contour",
+      "outlineColor": "Couleur du contour",
+      "shadow": "Ombre",
+      "plate": "Fond",
+      "plateColor": "Couleur du fond",
+      "captionStyle": "Style des nouveaux sous-titres",
+      "captionPreset": "Point de départ",
+      "textColor": "Couleur du texte",
+      "activeColor": "Mot prononcé",
+      "favorites": "Modèles favoris",
+      "intro": "Intros",
+      "outro": "Outros",
+      "noFavorite": "Aucun",
+      "addFavorite": "Ajouter un modèle de la bibliothèque",
+      "removeFavorite": "Retirer « {{name}} »",
+      "preview": "Aperçu",
+      "previewTitle": "Titre de la vidéo",
+      "previewBody": "Le texte courant prend la police du texte.",
+      "previewCaption": "Les sous-titres suivent le style du kit",
+      "dirty": "Modifications non enregistrées",
+      "discard": "Annuler les modifications",
+      "save": "Enregistrer le kit",
+      "saved": "« {{name}} » enregistré (version {{version}})",
+      "version": "Version {{version}}",
+      "useInProject": "Utiliser dans ce projet",
+      "usedInProject": "Utilisé par ce projet"
     }
   }
 }

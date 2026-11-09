@@ -1,9 +1,11 @@
 import type { CaptionStyle, CaptionStylePatch, ItemId } from '@se/protocol';
 import { CAPTION_STYLE_PRESETS, presetStyle } from '@se/engine/caption-styles';
-import { ScrollArea, ToggleGroup, ToggleGroupItem, cn } from '@se/ui';
+import { Button, ScrollArea, ToggleGroup, ToggleGroupItem, cn } from '@se/ui';
+import { BookmarkPlus } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
 import { clearCaptionPreview, previewCaptionStyle } from '../../../shared/caption-preview';
+import { openSaveCaptionStyle } from '../../templates';
 import type { CaptionCommands } from '../hooks/use-caption-commands';
 import { styleOfRow, styleTargets, type CaptionRow } from '../services/caption-rows';
 import { setStyleScope, useCaptionsPreferences } from '../store/captions-store';
@@ -22,7 +24,8 @@ export interface CaptionStylePanelProps {
 /**
  * The style of the captions: « Appliquer à » the selection (a style shared with other captions
  * is copied for it) or the whole track; predefined styles shown in the viewer while hovered and
- * applied on click; then every field of the style.
+ * applied on click; then every field of the style, and « Enregistrer ce style dans la
+ * bibliothèque… » (prompt 25).
  */
 export function CaptionStylePanel({
   rows,
@@ -98,6 +101,25 @@ export function CaptionStylePanel({
         </div>
         {style !== undefined && (
           <CaptionStyleFields style={style} onPreview={preview} onCommit={commit} />
+        )}
+        {style !== undefined && (
+          <Button
+            size="xs"
+            variant="secondary"
+            className="self-start"
+            onClick={() => {
+              const origin = CAPTION_STYLE_PRESETS.find((preset) => preset.id === style.preset);
+              openSaveCaptionStyle(
+                style.id,
+                origin === undefined
+                  ? t('editor.captions.style.libraryName')
+                  : t(presetKey(origin.id)),
+              );
+            }}
+          >
+            <BookmarkPlus aria-hidden className="size-3.5" />
+            {t('editor.captions.style.saveToLibrary')}
+          </Button>
         )}
       </div>
     </ScrollArea>

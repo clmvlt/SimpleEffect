@@ -5,7 +5,7 @@ import { act, createEvent, fireEvent, screen, waitFor } from '@testing-library/r
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { ASSET_DRAG_TYPE } from '../../../shared/drag';
+import { ASSET_DRAG_TYPE, TEMPLATE_DRAG_TYPE } from '../../../shared/drag';
 import { gestureStore } from '../store/gesture-store';
 import { selectionStore } from '../store/selection-store';
 import {
@@ -241,6 +241,49 @@ describe('timeline editing', () => {
       audioTrack: { kind: 'existing', trackId: 'a1' },
       mode: 'overwrite',
     });
+  });
+
+  it('places a template dropped from the browser on the video track under the pointer', async () => {
+    const { send, lanes } = renderTimeline();
+    const template = { source: 'project', id: 'badge', name: 'Badge', duration: seconds(3) };
+    const dataTransfer = {
+      types: [TEMPLATE_DRAG_TYPE],
+      getData: () => JSON.stringify(template),
+      dropEffect: 'none',
+    };
+    fireDrag('dragOver', lanes, 200, 20, dataTransfer);
+    expect(document.querySelectorAll('[data-preview-clip="ghost"]')).toHaveLength(1);
+    fireDrag('drop', lanes, 200, 20, dataTransfer);
+    expect(send).toHaveBeenCalledWith({
+      kind: 'addGraphicItem',
+      projectId: 'project-1',
+      sequenceId: 'sequence-1',
+      at: seconds(4),
+      duration: seconds(3),
+      graphic: { kind: 'template', templateId: 'badge' },
+      trackId: 'v2',
+    });
+    await settled();
+  });
+
+  it('copies a library template dropped on the lanes into the project', async () => {
+    const { send, lanes } = renderTimeline();
+    const template = { source: 'library', id: 'entry-1', name: 'Bandeau', duration: seconds(5) };
+    const dataTransfer = {
+      types: [TEMPLATE_DRAG_TYPE],
+      getData: () => JSON.stringify(template),
+      dropEffect: 'none',
+    };
+    fireDrag('drop', lanes, 100, 130, dataTransfer);
+    expect(send).toHaveBeenCalledWith({
+      kind: 'insertLibraryTemplate',
+      projectId: 'project-1',
+      templateId: 'entry-1',
+      sequenceId: 'sequence-1',
+      trackId: null,
+      start: seconds(2),
+    });
+    await settled();
   });
 
   it('offers the item actions in a context menu', async () => {

@@ -15,7 +15,9 @@ export type TemplateFailureKind =
   /** It ran longer than allowed (an endless loop?): the Worker was killed. */
   | 'timeout'
   /** The Worker died or could not start (a syntax error the compiler let through, a crash). */
-  | 'crashed';
+  | 'crashed'
+  /** The app stopped the Worker (unused, or replaced): not the template's fault, start another. */
+  | 'unloaded';
 
 /** A failure of a template Worker, with where it happened in the module. */
 export class TemplateFailure extends Error {
@@ -185,10 +187,21 @@ export class TemplateWorker {
     });
   }
 
-  /** Stops the Worker; pending requests fail. */
+  /**
+   * Stops the Worker once the requests already queued are answered (a replaced Worker: frames
+   * on their way still arrive); later requests fail as `unloaded`.
+   */
+  retire(): void {
+    void this.enqueue(() => {
+      this.terminate();
+      return Promise.resolve();
+    });
+  }
+
+  /** Stops the Worker; pending requests fail as `unloaded`. */
   terminate(): void {
     this.kill(
-      new TemplateFailure('crashed', [
+      new TemplateFailure('unloaded', [
         { message: 'the template was unloaded', line: null, column: null },
       ]),
     );

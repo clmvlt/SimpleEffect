@@ -57,7 +57,7 @@ pub use item_patch::{
 pub use link_items::{LinkItems, UnlinkItems};
 pub use marker_ops::{AddMarker, MarkerPatch, RemoveMarker, UpdateMarker};
 pub use move_item::MoveItem;
-pub use project_ops::{RenameProject, SetTranscriptionSettings};
+pub use project_ops::{RenameProject, SetBrandKit, SetTranscriptionSettings};
 pub use ripple_delete_range::RippleDeleteRange;
 pub use ripple_delete_ranges::{RippleDeleteRanges, remaining_parts};
 pub use sequence_ops::{AddSequence, RemoveSequence, SequencePatch, UpdateSequence};
@@ -83,8 +83,6 @@ use crate::{DomainError, Project, validate_project};
 ///
 /// Operations that change one item accept an `expected_revision`: when set and different from
 /// the item's revision, the edit fails with [`DomainError::RevisionConflict`].
-///
-/// TODO(prompt-25): operations on the brand kit.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Operation {
@@ -146,6 +144,8 @@ pub enum Operation {
     RenameProject(RenameProject),
     /// Sets how the project's media are transcribed.
     SetTranscriptionSettings(SetTranscriptionSettings),
+    /// Sets (or removes) the project's brand kit.
+    SetBrandKit(SetBrandKit),
     /// Adds a cross-fade on the cut between two adjacent items of a track.
     AddTransition(AddTransition),
     /// Resizes or realigns a transition.
@@ -218,6 +218,7 @@ operation_payloads!(
     RemoveAsset,
     RenameProject,
     SetTranscriptionSettings,
+    SetBrandKit,
     AddTransition,
     UpdateTransition,
     RemoveTransition,

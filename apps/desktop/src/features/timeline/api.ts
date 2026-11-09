@@ -1,3 +1,4 @@
+import type { DraggedTemplate } from '../../shared/drag';
 import type {
   AssetId,
   CoreClient,
@@ -56,6 +57,17 @@ export interface TimelineApi {
   readonly removeMarker: (markerId: MarkerId) => Promise<void>;
   readonly createSequence: (name: string) => Promise<SequenceId>;
   readonly placeMedia: (request: Omit<PlaceMediaRequest, 'projectId'>) => Promise<ItemId[]>;
+  /**
+   * Places a dragged motion template at `start` (prompt 25): a project template, or a library
+   * entry copied into the project; on `trackId` when it is free there. Resolves with the new
+   * instance.
+   */
+  readonly insertTemplate: (
+    sequenceId: SequenceId,
+    template: DraggedTemplate,
+    start: Flicks,
+    trackId: TrackId | null,
+  ) => Promise<ItemId>;
   readonly moveItems: (moves: readonly ItemPlacement[], mode: PlacementMode) => Promise<void>;
   readonly duplicateItems: (
     copies: readonly ItemPlacement[],
@@ -105,6 +117,29 @@ export function timelineApi(client: Pick<CoreClient, 'send'>, projectId: string)
       (await client.send({ kind: 'createSequence', projectId, name, format: null })).sequenceId,
     placeMedia: async (request) =>
       (await client.send({ kind: 'placeMedia', projectId, ...request })).itemIds,
+    insertTemplate: async (sequenceId, template, start, trackId) => {
+      if (template.source === 'library') {
+        const inserted = await client.send({
+          kind: 'insertLibraryTemplate',
+          projectId,
+          templateId: template.id,
+          sequenceId,
+          trackId,
+          start,
+        });
+        return inserted.itemId;
+      }
+      const placed = await client.send({
+        kind: 'addGraphicItem',
+        projectId,
+        sequenceId,
+        at: start,
+        duration: template.duration,
+        graphic: { kind: 'template', templateId: template.id },
+        ...(trackId === null ? {} : { trackId }),
+      });
+      return placed.itemId;
+    },
     moveItems: async (moves, mode) => {
       await client.send({ kind: 'moveItems', projectId, moves: [...moves], mode });
     },

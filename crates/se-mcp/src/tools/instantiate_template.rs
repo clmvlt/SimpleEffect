@@ -2,7 +2,10 @@
 //! task's sequence, with parameter values, placement and animations (prompt 24).
 
 use schemars::JsonSchema;
-use se_app::agent_edits::{AgentEdit, NewAgentItem};
+use se_app::{
+    agent_edits::{AgentEdit, NewAgentItem},
+    template_library::instance_values,
+};
 use se_domain::{Animatable, ItemKind, TemplateItem, Transform2D, Vec2};
 use serde::Deserialize;
 use serde_json::{Map, Value};
@@ -11,9 +14,9 @@ use crate::{
     context::ToolContext,
     output::{ToolError, ToolOutput},
     registry::McpTool,
-    template_io::{find_template, param_values},
+    template_io::{find_template, param_values, template_range},
     time_io::TimeInput,
-    write_inputs::{AnimationInput, PositionInput, presets, span},
+    write_inputs::{AnimationInput, PositionInput, presets},
     writes::{Planned, WriteScene, WriteTool, run},
 };
 
@@ -60,9 +63,9 @@ impl McpTool for InstantiateTemplate {
 
     const DESCRIPTION: &'static str = "Places a motion template of the project on the task's \
         sequence over a time range (default length: the template's), with parameter values \
-        (texts, numbers, colours… — the user edits them later in the inspector), and optional \
-        placement and animations of the whole frame. Answers the new item_id; check it with \
-        get_frames.";
+        (texts, numbers, colours… — the user edits them later in the inspector; parameters bound \
+        to a brand kit role start with the project's kit value), and optional placement and \
+        animations of the whole frame. Answers the new item_id; check it with get_frames.";
 
     const READ_ONLY: bool = false;
 
@@ -74,24 +77,19 @@ impl McpTool for InstantiateTemplate {
 impl WriteTool for InstantiateTemplate {
     fn plan(scene: &WriteScene<'_>, input: Input) -> Result<Planned, ToolError> {
         let template = find_template(scene.project, &input.template_id)?;
-        let range = match (&input.end, &input.duration) {
-            (None, None) => {
-                let start = scene.time(&input.start)?;
-                let end = start
-                    .checked_add(template.default_duration)
-                    .ok_or_else(|| {
-                        ToolError::new(crate::output::codes::INVALID_TIME, "the end is too far")
-                    })?;
-                se_domain::TimeRange::from_start_end(start, end).map_err(|_| {
-                    ToolError::new(crate::output::codes::INVALID_TIME, "the start is invalid")
-                })?
-            }
-            (end, duration) => span(scene, &input.start, end.as_ref(), duration.as_ref())?,
-        };
-        let params = param_values(scene, template, &input.params.unwrap_or_default())?
+        let range = template_range(
+            scene,
+            &input.start,
+            input.end.as_ref(),
+            input.duration.as_ref(),
+            template.default_duration,
+        )?;
+        let explicit = param_values(scene, template, &input.params.unwrap_or_default())?
             .into_iter()
             .filter_map(|(name, value)| value.map(|value| (name, value)))
             .collect();
+        // Parameters bound to a brand kit role start with the project's kit values (prompt 25).
+        let params = instance_values(scene.project, template, explicit);
         let mut transform = Transform2D::default();
         if let Some(position) = input.position {
             transform.position = Animatable::constant(position.to_vec2());

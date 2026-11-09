@@ -17,6 +17,7 @@ mod analyses;
 pub mod context;
 pub mod cuts;
 pub mod describe;
+pub mod library_io;
 pub mod output;
 pub mod registry;
 pub mod server;

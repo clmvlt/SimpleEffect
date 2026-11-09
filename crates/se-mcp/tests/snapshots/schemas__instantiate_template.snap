@@ -8,7 +8,7 @@ expression: definition
     "openWorldHint": false,
     "readOnlyHint": false
   },
-  "description": "Places a motion template of the project on the task's sequence over a time range (default length: the template's), with parameter values (texts, numbers, colours… — the user edits them later in the inspector), and optional placement and animations of the whole frame. Answers the new item_id; check it with get_frames.",
+  "description": "Places a motion template of the project on the task's sequence over a time range (default length: the template's), with parameter values (texts, numbers, colours… — the user edits them later in the inspector; parameters bound to a brand kit role start with the project's kit value), and optional placement and animations of the whole frame. Answers the new item_id; check it with get_frames.",
   "inputSchema": {
     "$defs": {
       "AnimationInput": {

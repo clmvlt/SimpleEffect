@@ -109,6 +109,9 @@ win32job = "2.0.3"
 which = "8.0.6"
 # Content fingerprints of media files (xxh3 of their first and last MiB).
 xxhash-rust = { version = "0.8.19", features = ["xxh3"] }
+# `.setemplate` exchange files of the template library (se-store): plain deflate over zlib-rs
+# (pure Rust), no encryption or exotic codecs.
+zip = { version = "9.5.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

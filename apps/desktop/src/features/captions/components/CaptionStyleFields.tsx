@@ -1,6 +1,5 @@
 import type { CaptionAnimation, CaptionStyle, CaptionStylePatch } from '@se/protocol';
 import {
-  ColorField,
   PropertyGroup,
   PropertyRow,
   ScrubInput,
@@ -14,7 +13,8 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useFontFamilies } from '../../../shared/fonts';
+import { BrandColorField } from '../../../shared/brand-kit';
+import { FontFamilySelect } from '../../../shared/fonts';
 
 /** Props of {@link CaptionStyleFields}. */
 export interface CaptionStyleFieldsProps {
@@ -84,10 +84,9 @@ function NumberField({
 /** Every field of a caption style, grouped like the inspector's sections. */
 export function CaptionStyleFields({ style, onPreview, onCommit }: CaptionStyleFieldsProps) {
   const { t } = useTranslation();
-  const families = useFontFamilies();
   const colour = (field: 'textColor' | 'activeColor' | 'emphasisColor', label: string) => (
     <PropertyRow label={label} htmlFor={`caption-${field}`}>
-      <ColorField
+      <BrandColorField
         id={`caption-${field}`}
         label={label}
         value={opaque(style[field])}
@@ -105,26 +104,13 @@ export function CaptionStyleFields({ style, onPreview, onCommit }: CaptionStyleF
     <div className="flex flex-col">
       <PropertyGroup title={t('editor.captions.style.text')}>
         <PropertyRow label={t('editor.captions.style.font')} htmlFor="caption-font">
-          <Select
+          <FontFamilySelect
+            id="caption-font"
             value={style.fontFamily}
-            onValueChange={(fontFamily) => {
+            onChange={(fontFamily) => {
               onCommit({ fontFamily });
             }}
-          >
-            <SelectTrigger id="caption-font" size="xs" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {!families.some((family) => family.name === style.fontFamily) && (
-                <SelectItem value={style.fontFamily}>{style.fontFamily}</SelectItem>
-              )}
-              {families.map((family) => (
-                <SelectItem key={family.name} value={family.name}>
-                  {family.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
         </PropertyRow>
         <PropertyRow label={t('editor.captions.style.size')} htmlFor="caption-size">
           <NumberField
@@ -275,7 +261,7 @@ function CaptionEffectFields({ style, onPreview, onCommit }: CaptionStyleFieldsP
         />
       </PropertyRow>
       <PropertyRow label={t('editor.captions.style.backgroundColor')} htmlFor="caption-plate">
-        <ColorField
+        <BrandColorField
           id="caption-plate"
           label={t('editor.captions.style.backgroundColor')}
           value={opaque(style.background.color)}

@@ -19,7 +19,7 @@ import {
   ANIMATION_SECONDS_RANGE,
   setGraphicsPreferences,
 } from '../store/graphics-preferences-store';
-import { ProjectTemplates } from '../../templates';
+import { TemplateBrowser } from '../../templates';
 import { PresetCard } from './PresetCard';
 
 const PHASES: readonly AnimationPhase[] = ['in', 'out', 'emphasis'];
@@ -104,7 +104,7 @@ export function AnimationsPanel() {
           ))}
           <TabsContent value="templates" className="min-h-0 flex-1">
             <ScrollArea className="h-full">
-              <ProjectTemplates />
+              <TemplateBrowser />
             </ScrollArea>
           </TabsContent>
         </Tabs>

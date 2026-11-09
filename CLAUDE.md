@@ -35,7 +35,7 @@ This codebase is developed and maintained by AI agents. Optimise every change fo
 | `crates/se-domain` | Document model, time, operations, validation | Pure: no IO, no async, no clock |
 | `crates/se-protocol` | RPC commands/results/events (ts-rs export) | DTOs only, no logic |
 | `crates/se-app` | Use cases, ports (traits), ProjectActor, JobQueue, TaskScheduler | No concrete IO; fakes behind `test-support` feature |
-| `crates/se-store` | Project folder, `project.json`, SQLite | Implements repository ports |
+| `crates/se-store` | Project folder, `project.json`, SQLite, the app's template library and brand kits | Implements repository and library ports |
 | `crates/se-media` | ffprobe/ffmpeg jobs and analysis | Sidecar processes only |
 | `crates/se-transcribe` | whisper.cpp adapter, model files, consented HTTPS downloads | Implements `Transcriber`, `FileDownloader`, `ModelFiles`; the only crate reaching the network |
 | `crates/se-vision` | ONNX face/subject detection | Implements `SubjectDetector` |
@@ -163,7 +163,7 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
 - **whisper.cpp on Windows needs the Visual C++ runtime** (MSVCP140, VCOMP140): a missing DLL is reported as « Microsoft Visual C++ Redistributable 2015–2022 (x64) » to install.
 - **reqwest needs a TLS provider in this workspace** (rustls without a built-in provider, ring installed by `se_transcribe::install_crypto_provider()`): se-core calls it at startup; any test building a reqwest client (rmcp's) calls it first, or reqwest panics.
 - **A running app locks `target/debug/se-core.exe` on Windows**: close `pnpm dev` (or the test build) before `cargo test`, or it fails with « Accès refusé ».
-- **Motion templates are checked by the renderer** (ADR-0035): `create_motion_template`/`update_motion_template` fail with `RENDERER_UNAVAILABLE` without an editor window, like `get_frames`. Code under `packages/engine/src/templates/sandbox/` is serialized with `toString()` into template Workers: keep each function self-contained (no import, no outer variable).
+- **Motion templates are checked by the renderer** (ADR-0035): `create_motion_template`/`update_motion_template` fail with `RENDERER_UNAVAILABLE` without an editor window, like `get_frames`. Code under `packages/engine/src/templates/sandbox/` is serialized with `toString()` into template Workers: keep each function self-contained (no import, no outer variable). Electron's Chromium resolves a font family once per Worker: a family used before its faces arrived stays in the fallback font, so template Workers get families before the first frame using them (restarted otherwise, `packages/engine/CLAUDE.md`).
 - **Never** log or persist AI CLI credentials or tokens; MCP task tokens are redacted in logs.
 - **TypeScript is pinned to 6.0.x**: TypeScript 7 (native) has no JS API, and `typescript-eslint` (typed lint) supports `<6.1`. Upgrade only when `typescript-eslint` supports 7.
 - **Electron binary**: since Electron 45 it is not downloaded at install time; the desktop `dev` script runs `install-electron` (idempotent) first. electron-builder downloads its own copy for packaging.

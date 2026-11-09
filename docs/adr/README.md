@@ -40,6 +40,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0033](0033-captions.md) | Captions: timed words, shared styles with copy on write, rendered by the engine | Accepted |
 | [0034](0034-agents-transcribe-and-composer-guidance.md) | Agents start transcriptions; the composer warns about scope and speech, and continues recent tasks | Accepted |
 | [0035](0035-motion-template-modules-sandbox-and-checks.md) | Motion template modules: one source of truth, a sandboxed Worker runtime, checks by the renderer | Accepted |
+| [0036](0036-template-library-and-brand-kits.md) | Template library and brand kits: app-wide libraries, project copies, proposed updates | Accepted |
 
 ## Template
 

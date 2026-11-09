@@ -14,7 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { AiView, useAiTaskSync } from '../../features/ai';
-import { TemplateCodeDialog } from '../../features/templates';
+import { LibraryInfoDialog, TemplateCodeDialog } from '../../features/templates';
 import { CaptionsView } from '../../features/captions';
 import { AnimationsPanel, useCreateGraphic } from '../../features/graphics';
 import { InspectorView } from '../../features/inspector';
@@ -71,6 +71,7 @@ export function EditorLayout({ layoutStorage }: EditorLayoutProps) {
         </DockPanel>
       </Dock>
       <TemplateCodeDialog />
+      <LibraryInfoDialog />
     </div>
   );
 }

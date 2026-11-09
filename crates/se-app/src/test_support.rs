@@ -6,10 +6,12 @@ mod font_fakes;
 mod job_fakes;
 mod media_fakes;
 mod media_testbed;
+mod memory_brand_kits;
 mod memory_changesets;
 mod memory_library;
 mod memory_repository;
 mod memory_tasks;
+mod memory_template_library;
 mod memory_transcripts;
 mod runtime_fakes;
 mod subtitle_fakes;
@@ -24,12 +26,15 @@ pub use job_fakes::{
     levels_with_silences,
 };
 pub use media_fakes::{
-    FAKE_FILE_BYTES, FakeMedia, fingerprint, probed_audio, probed_prores, probed_video,
+    FAKE_FILE_BYTES, FakeMedia, fingerprint, probed_audio, probed_image, probed_prores,
+    probed_video,
 };
 pub use media_testbed::{MediaTestbed, TESTBED_MCP_URL, TESTBED_MODELS_DIR, settle};
+pub use memory_brand_kits::InMemoryBrandKitLibrary;
 pub use memory_changesets::StoredChangeset;
 pub use memory_library::InMemoryAppLibrary;
 pub use memory_repository::{InMemoryProjectRepository, StoredFolder};
+pub use memory_template_library::InMemoryTemplateLibrary;
 pub use runtime_fakes::{
     FakeRendererLink, FixedClock, RecordingEventSink, SequentialIds, SequentialTokens,
 };

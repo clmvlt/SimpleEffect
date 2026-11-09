@@ -27,6 +27,10 @@ const AGENT_WORKDIRS_DIR_NAME: &str = "agent-workdirs";
 const WHISPER_MODELS_DIR: [&str; 2] = ["models", "whisper"];
 /// Folder of downloaded runtimes (the GPU pack of whisper.cpp).
 const RUNTIMES_DIR_NAME: &str = "runtimes";
+/// Folder of the template library (prompt 25).
+const TEMPLATES_DIR_NAME: &str = "templates";
+/// Folder of the brand kits (prompt 25).
+const BRAND_KITS_DIR_NAME: &str = "brand-kits";
 
 /// Folder proposed for new projects, inside the user's documents folder.
 const PROJECTS_DIR_NAME: &str = "SimpleEffect";
@@ -70,6 +74,16 @@ impl AppPaths {
     /// The working folders of AI agent runs: `<data_dir>/agent-workdirs`.
     pub fn agent_workdirs(&self) -> PathBuf {
         self.data_dir.join(AGENT_WORKDIRS_DIR_NAME)
+    }
+
+    /// The template library: `<data_dir>/templates`.
+    pub fn templates(&self) -> PathBuf {
+        self.data_dir.join(TEMPLATES_DIR_NAME)
+    }
+
+    /// The brand kits: `<data_dir>/brand-kits`.
+    pub fn brand_kits(&self) -> PathBuf {
+        self.data_dir.join(BRAND_KITS_DIR_NAME)
     }
 
     /// Transcription models: `<data_dir>/models/whisper`.

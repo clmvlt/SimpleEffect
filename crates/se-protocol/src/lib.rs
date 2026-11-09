@@ -14,6 +14,7 @@
 
 mod ai;
 mod audio_editing;
+mod brand_kits;
 mod captions;
 mod command;
 mod command_result;
@@ -32,6 +33,7 @@ mod project_entities;
 mod project_session;
 mod smart_cuts;
 mod tasks;
+mod template_library;
 mod templates;
 mod transcription;
 
@@ -40,6 +42,7 @@ pub use ai::{
     InstallationStatus, ModelOption, ProviderCapabilities, ProviderId, ProviderInfo,
 };
 pub use audio_editing::{ItemUpdate, NewTransition};
+pub use brand_kits::{LibraryBrandKit, LibraryLogo};
 pub use captions::{
     CaptionEmphasisEdit, CaptionSegmentation, CaptionStyleChoice, CaptionStyleEdit,
     CaptionTextEdit, CaptionsReport, GenerateCaptionsRequest, ImportSubtitlesRequest,
@@ -85,6 +88,10 @@ pub use smart_cuts::{
 pub use tasks::{
     RunKind, SubmitTaskRequest, Task, TaskEventRecord, TaskRevertReport, TaskRun, TaskScope,
     TaskStatus, TaskUsage,
+};
+pub use template_library::{
+    InsertLibraryTemplateRequest, InsertedLibraryTemplate, LibraryContent, LibraryImportOutcome,
+    LibraryImportResult, LibraryTemplate, LibraryTemplateInfo, ResetValue, TemplateUpdateReport,
 };
 pub use templates::{
     TemplateCheckFrame, TemplateCheckOutcome, TemplateCheckRequest, TemplateCheckStage,

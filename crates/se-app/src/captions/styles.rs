@@ -49,9 +49,9 @@ impl StyleToUse {
 /// videos cover the bottom third with their interface.
 pub const PORTRAIT_CAPTION_BOTTOM: f64 = 0.64;
 
-/// The style asked for: a preset (a new style, raised above the bottom third in portrait
-/// frames), a style of `project`, or `fallback` (the style of the captions being replaced), else
-/// the default preset.
+/// The style asked for: a preset or the brand kit's look (a new style, raised above the bottom
+/// third in portrait frames), a style of `project`, or `fallback` (the style of the captions
+/// being replaced), else the brand kit's look, else the default preset.
 ///
 /// # Errors
 /// An unknown preset or style, id generator failures.
@@ -76,9 +76,35 @@ pub(crate) fn style_to_use(
     match (choice, fallback) {
         (Some(CaptionStyleChoice::Existing { style_id }), _) => existing(*style_id),
         (Some(CaptionStyleChoice::Preset { preset }), _) => new_from_preset(plan, preset, format),
+        (Some(CaptionStyleChoice::BrandKit), _) => match &project.brand_kit {
+            Some(kit) => new_from_look(plan, &kit.caption_style, format),
+            None => Err(AppError::InvalidEdit {
+                reason: "this project has no brand kit: choose a caption preset or a style of \
+                         the project"
+                    .to_owned(),
+            }),
+        },
         (None, Some(id)) => existing(id),
-        (None, None) => new_from_preset(plan, DEFAULT_CAPTION_PRESET, format),
+        (None, None) => match &project.brand_kit {
+            Some(kit) => new_from_look(plan, &kit.caption_style, format),
+            None => new_from_preset(plan, DEFAULT_CAPTION_PRESET, format),
+        },
     }
+}
+
+/// A new style with the values of `look` (a brand kit's caption look), raised above the bottom
+/// third in portrait frames like presets.
+fn new_from_look(
+    plan: &EditPlan<'_>,
+    look: &CaptionStyle,
+    format: &Format,
+) -> Result<StyleToUse, AppError> {
+    let mut style = look.clone();
+    style.id = plan.ids().caption_style()?;
+    if format.height > format.width {
+        style.position.y = style.position.y.min(PORTRAIT_CAPTION_BOTTOM);
+    }
+    Ok(StyleToUse::New(style))
 }
 
 fn new_from_preset(

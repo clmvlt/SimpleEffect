@@ -8,7 +8,7 @@ expression: definition
     "openWorldHint": false,
     "readOnlyHint": false
   },
-  "description": "Adds an editable text over a time range of the task's sequence: content, place, size, font, colour, outline, shadow, box, and optional entrance/exit animations (presets), all in one step. Answers the new item_id. Check the result with get_frames.",
+  "description": "Adds an editable text over a time range of the task's sequence: content, place, size, font, colour, outline, shadow, box, and optional entrance/exit animations (presets), all in one step. Unset style fields take the project's brand kit text style (get_brand_kit). Answers the new item_id. Check the result with get_frames.",
   "inputSchema": {
     "$defs": {
       "AlignInput": {
@@ -221,7 +221,7 @@ expression: definition
         "description": "A box behind the text."
       },
       "color": {
-        "description": "Colour `#rrggbb[aa]`; default white.",
+        "description": "Colour `#rrggbb[aa]`; default: the brand kit's text style, else white.",
         "type": [
           "string",
           "null"
@@ -250,14 +250,14 @@ expression: definition
         "description": "When it disappears (excluded). Give `end` or `duration`."
       },
       "font_family": {
-        "description": "Font family; default \"Inter\".",
+        "description": "Font family; default: the brand kit's text style, else \"Inter\".",
         "type": [
           "string",
           "null"
         ]
       },
       "font_size": {
-        "description": "Size in design pixels (1080 = the frame's shorter side); default 96. Short videos: 80–140\nfor titles, 48–64 for captions.",
+        "description": "Size in design pixels (1080 = the frame's shorter side); default: the brand kit's text\nstyle, else 96. Short videos: 80–140 for titles, 48–64 for captions.",
         "format": "double",
         "type": [
           "number",
@@ -265,7 +265,7 @@ expression: definition
         ]
       },
       "font_weight": {
-        "description": "Weight 1–1000 (400 regular, 700 bold, 900 black); default 600.",
+        "description": "Weight 1–1000 (400 regular, 700 bold, 900 black); default: the brand kit's, else 600.",
         "format": "uint16",
         "maximum": 65535,
         "minimum": 0,
@@ -275,7 +275,7 @@ expression: definition
         ]
       },
       "italic": {
-        "description": "Italic; default false.",
+        "description": "Italic; default: the brand kit's, else false.",
         "type": [
           "boolean",
           "null"
@@ -301,7 +301,7 @@ expression: definition
         "description": "Where its centre sits; default \"center\"."
       },
       "shadow": {
-        "description": "A soft drop shadow; default false.",
+        "description": "A soft drop shadow; default: the brand kit's, else false.",
         "type": [
           "boolean",
           "null"
@@ -334,7 +334,7 @@ expression: definition
         ]
       },
       "uppercase": {
-        "description": "Show in capitals; default false.",
+        "description": "Show in capitals; default: the brand kit's, else false.",
         "type": [
           "boolean",
           "null"

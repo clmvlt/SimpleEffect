@@ -24,6 +24,16 @@ export interface ColorPickerLabels {
   hue: string;
   eyeDropper: string;
   recent: string;
+  /** Name of the group of named swatches (the app's brand palette). */
+  palette: string;
+}
+
+/** A named colour offered as a one-click swatch (a brand kit's palette). */
+export interface ColorSwatch {
+  /** `#rrggbb`. */
+  readonly color: string;
+  /** What it is, e.g. « Accent ». */
+  readonly label: string;
 }
 
 /** Props of {@link ColorPickerPanel}. */
@@ -31,6 +41,8 @@ export interface ColorPickerPanelProps {
   color: PickerColor;
   labels: ColorPickerLabels;
   recentColors: readonly string[];
+  /** Named swatches shown first (empty for none). */
+  palette: readonly ColorSwatch[];
   /** Live change (slider or field being dragged). */
   onChange: (color: PickerColor) => void;
   /** End of a slider or field gesture. */
@@ -63,6 +75,7 @@ export function ColorPickerPanel({
   color,
   labels,
   recentColors,
+  palette,
   onChange,
   onCommit,
   onPick,
@@ -181,6 +194,26 @@ export function ColorPickerPanel({
           />
         )}
       </div>
+      {palette.length > 0 && (
+        <div role="group" aria-label={labels.palette} className="flex flex-wrap gap-1">
+          {palette.map((swatch) => (
+            <button
+              key={`${swatch.label}-${swatch.color}`}
+              type="button"
+              aria-label={`${swatch.label} ${swatch.color}`}
+              title={`${swatch.label} ${swatch.color}`}
+              onClick={() => {
+                const picked = colorFromHex(swatch.color, color.hue);
+                if (picked !== null) {
+                  onPick(picked);
+                }
+              }}
+              className={cn('size-5 rounded-full border border-border-strong', focusRing)}
+              style={{ backgroundColor: swatch.color }}
+            />
+          ))}
+        </div>
+      )}
       {recentColors.length > 0 && (
         <div role="group" aria-label={labels.recent} className="flex flex-wrap gap-1">
           {recentColors.map((recent) => (

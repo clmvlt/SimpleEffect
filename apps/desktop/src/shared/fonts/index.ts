@@ -1,6 +1,7 @@
 /**
- * The font catalogue of the core (`listFonts`): families for the inspector's font menu, faces
- * with their `/media/fonts` URLs for the engine's `FontRegistry`.
+ * The font catalogue of the core (`listFonts`): families for font menus (`FontFamilySelect`,
+ * the brand kit's fonts first), faces with their `/media/fonts` URLs for the engine's
+ * `FontRegistry`.
  */
 export {
   catalogFaces,
@@ -10,3 +11,5 @@ export {
   type FontCatalogState,
 } from './font-catalog-store';
 export { useFontFamilies } from './use-font-families';
+export { FontFamilySelect, useKnownFamily } from './FontFamilySelect';
+export { useDocumentFonts } from './use-document-fonts';

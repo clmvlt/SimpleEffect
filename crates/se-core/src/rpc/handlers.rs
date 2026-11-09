@@ -11,6 +11,7 @@ pub mod editing;
 pub mod frames;
 pub mod graphics;
 pub mod items;
+pub mod library;
 pub mod media;
 pub mod media_settings;
 pub mod projects;
@@ -25,8 +26,9 @@ pub mod transcription;
 use std::{path::Path, sync::Arc};
 
 use se_app::{
-    CaptionService, FrameRenderService, MediaService, ProjectService, SmartCutService, TaskService,
-    TemplateCheckService, TranscriptionService, ports::FontCatalog,
+    BrandKitService, CaptionService, FrameRenderService, MediaService, ProjectService,
+    SmartCutService, TaskService, TemplateCheckService, TemplateLibraryService,
+    TranscriptionService, ports::FontCatalog,
 };
 use se_protocol::{ErrorCode, ProtocolError};
 
@@ -57,6 +59,10 @@ pub struct HandlerContext {
     pub smart_cuts: SmartCutService,
     /// Captions (prompt 23).
     pub captions: CaptionService,
+    /// The template library (prompt 25).
+    pub library_templates: TemplateLibraryService,
+    /// Brand kits (prompt 25).
+    pub brand_kits: BrandKitService,
 }
 
 /// A path sent by a client, refused unless absolute (a relative path would depend on the

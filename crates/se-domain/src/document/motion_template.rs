@@ -6,7 +6,10 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::{Animatable, MAX_TEMPLATE_PARAMS, Origin, TemplateParam, Transform2D};
+use super::{
+    Animatable, LibraryLink, MAX_TEMPLATE_PARAMS, Origin, TemplateCategory, TemplateParam,
+    Transform2D,
+};
 use crate::{AssetId, color::Color, ids::TemplateId, time::Flicks};
 
 /// Longest template name, in characters.
@@ -50,6 +53,12 @@ pub struct MotionTemplate {
     /// Who wrote it.
     #[serde(default = "user_origin")]
     pub origin: Origin,
+    /// Where the template browser files it (`meta.category`; schema version 10).
+    #[serde(default)]
+    pub category: TemplateCategory,
+    /// The app's library entry it was copied from, if any (schema version 10).
+    #[serde(default)]
+    pub library: Option<LibraryLink>,
 }
 
 impl MotionTemplate {

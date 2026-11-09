@@ -5,6 +5,7 @@
 mod agents;
 mod analysis_store;
 mod app_library;
+mod brand_kit_library;
 mod fonts;
 mod media;
 mod project_repository;
@@ -13,6 +14,7 @@ mod runtime;
 mod storage_error;
 mod subtitles;
 mod task_store;
+mod template_library;
 mod transcode;
 mod transcript_store;
 mod transcription;
@@ -23,6 +25,7 @@ pub use agents::{
 };
 pub use analysis_store::{AnalysisStore, StoredAnalysis};
 pub use app_library::{AppLibraryRepository, RecentProjectRecord};
+pub use brand_kit_library::BrandKitLibrary;
 pub use fonts::{FontCatalog, FontData};
 pub use media::{
     FrameExtractor, FrameRequest, MediaError, MediaFiles, MediaJobOutput, MediaJobRunner,
@@ -34,6 +37,7 @@ pub use runtime::{Clock, EventSink, IdGenerator, TokenSource};
 pub use storage_error::StorageError;
 pub use subtitles::{SubtitleCue, SubtitleError, SubtitleFiles};
 pub use task_store::TaskStore;
+pub use template_library::TemplateLibrary;
 pub use transcode::{
     AudioEncoding, AudioPlan, Container, TranscodePlan, TranscodeRecipe, VideoCodecTarget,
     VideoEncoding, VideoPlan,

@@ -8,13 +8,48 @@ expression: definition
     "openWorldHint": false,
     "readOnlyHint": true
   },
-  "description": "The motion templates of the project (id, name, version, default duration, parameters with types, defaults and ranges, number of instances). With template_id: that template and its full TypeScript source, to write a new version with update_motion_template.",
+  "description": "Motion templates of the project (default) or of the user's template library (source \"library\"), optionally of one category: id, name, category, version, default duration, parameters with types, defaults, ranges and brand kit roles, number of instances (project) or the project's copy (library). With template_id: that template and its full TypeScript source (project templates: to write a new version with update_motion_template). Prefer a fitting library template (insert_library_template) over writing a new one.",
   "inputSchema": {
+    "$defs": {
+      "Source": {
+        "description": "Where templates are listed from.",
+        "oneOf": [
+          {
+            "const": "project",
+            "description": "The project's templates (default).",
+            "type": "string"
+          },
+          {
+            "const": "library",
+            "description": "The user's template library, shared by every project.",
+            "type": "string"
+          }
+        ]
+      }
+    },
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": false,
     "properties": {
+      "category": {
+        "description": "Only this category: `title`, `lowerThird`, `callToAction`, `transition` or `other`.",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "source": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Source"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "`project` (default) or `library` (the user's saved templates: insert one with\n`insert_library_template`)."
+      },
       "template_id": {
-        "description": "One template (`template_id`): answers its full source too, to write a new version.",
+        "description": "One template (a project `template_id`, or a `library_template_id` with source\n`library`): answers its full source too.",
         "type": [
           "string",
           "null"

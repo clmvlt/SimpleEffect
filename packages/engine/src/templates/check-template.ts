@@ -49,29 +49,64 @@ export async function checkTemplate(
       compiled.problems.map((problem) => ({ ...problem, stage: 'compile' as const, time: null })),
     );
   }
+  const workerSource = templateWorkerSource(compiled.compiled);
+  const start = () => TemplateWorker.start(workerSource, options.createWorker ?? blobWorkerFactory);
   let worker: TemplateWorker;
   try {
-    worker = await TemplateWorker.start(
-      templateWorkerSource(compiled.compiled),
-      options.createWorker ?? blobWorkerFactory,
-    );
+    worker = await start();
   } catch (error) {
     return failed(problemsOf(error, 'exports', null));
   }
   try {
-    return await renderChecks(worker, options);
+    const first = await renderChecks(worker, options, null);
+    if (first.kind !== 'needsFonts') return first;
+    // A family used before its faces arrived keeps the fallback font in that Worker (Chromium
+    // resolves a family once per Worker): check again in a Worker given them first.
+    worker.terminate();
+    try {
+      worker = await start();
+    } catch (error) {
+      return failed(problemsOf(error, 'exports', null));
+    }
+    return await renderChecks(worker, options, first.families);
   } finally {
     worker.terminate();
   }
 }
 
+/** A first check found families drawn before their faces were given (they have faces). */
+interface NeedsFonts {
+  readonly kind: 'needsFonts';
+  readonly families: readonly string[];
+}
+
+/**
+ * Renders the checks in `worker`, given the default font, the font parameters' defaults and
+ * `extraFamilies` first. Without `extraFamilies` (a first check), families the frames drew
+ * without having them stop the check with {@link NeedsFonts} when the catalogue has them.
+ */
+function renderChecks(
+  worker: TemplateWorker,
+  options: TemplateCheckOptions,
+  extraFamilies: null,
+): Promise<TemplateCheckOutcome | NeedsFonts>;
+function renderChecks(
+  worker: TemplateWorker,
+  options: TemplateCheckOptions,
+  extraFamilies: readonly string[],
+): Promise<TemplateCheckOutcome>;
 async function renderChecks(
   worker: TemplateWorker,
   options: TemplateCheckOptions,
-): Promise<TemplateCheckOutcome> {
+  extraFamilies: readonly string[] | null,
+): Promise<TemplateCheckOutcome | NeedsFonts> {
   const { metaJson, paramsJson } = worker.declarations;
   const defaults = checkDefaults(metaJson, paramsJson);
-  await provideFonts(worker, options.fonts, [DEFAULT_TEMPLATE_FAMILY, ...defaults.families]);
+  await provideFonts(worker, options.fonts, [
+    DEFAULT_TEMPLATE_FAMILY,
+    ...defaults.families,
+    ...(extraFamilies ?? []),
+  ]);
   const budget = options.budgetMs ?? TEMPLATE_FRAME_BUDGET_MS;
   const render = (time: number) =>
     worker.render(
@@ -97,11 +132,9 @@ async function renderChecks(
   try {
     await renderPass(renderAt, instants.timed, warm);
     const missing = [...new Set([...warm.values()].flatMap((frame) => frame.missingFamilies))];
-    if (missing.length > 0) {
-      await provideFonts(worker, options.fonts, missing);
+    if (extraFamilies === null && (await hasFaces(options.fonts, missing))) {
       closeAll(warm);
-      warm.clear();
-      await renderPass(renderAt, instants.timed, warm);
+      return { kind: 'needsFonts', families: missing };
     }
     await renderPass(renderAt, instants.timed, timed);
   } catch (error) {
@@ -181,6 +214,16 @@ async function provideFonts(
   const unique = [...new Set(families.map((family) => family.trim()).filter((f) => f !== ''))];
   const faces = (await Promise.all(unique.map((family) => fonts(family)))).flat();
   if (faces.length > 0) await worker.sendFonts(faces, TEMPLATE_WATCHDOG_MS);
+}
+
+/** Whether the font catalogue has faces for any of `families`. */
+async function hasFaces(
+  fonts: TemplateFontSource | undefined,
+  families: readonly string[],
+): Promise<boolean> {
+  if (fonts === undefined || families.length === 0) return false;
+  const faces = await Promise.all(families.map((family) => fonts(family).catch(() => [])));
+  return faces.some((found) => found.length > 0);
 }
 
 function slowProblem(time: number, elapsedMs: number, budget: number): TemplateProblem {

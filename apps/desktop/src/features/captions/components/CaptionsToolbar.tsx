@@ -16,7 +16,12 @@ import { useTranslation } from 'react-i18next';
 import { useInOutSpan } from '../../timeline';
 import type { CaptionCommands } from '../hooks/use-caption-commands';
 import type { CaptionRow } from '../services/caption-rows';
-import { setGenerationPreset, useCaptionsPreferences } from '../store/captions-store';
+import { useProjectSelector } from '../../../shared/project-store';
+import {
+  FALLBACK_PRESET,
+  setGenerationPreset,
+  useCaptionsPreferences,
+} from '../store/captions-store';
 import { ShiftPopover } from './ShiftPopover';
 
 /** Props of {@link CaptionsToolbar}. */
@@ -36,23 +41,31 @@ export interface CaptionsToolbarProps {
 export function CaptionsToolbar({ sequence, rows, contentEnd, commands }: CaptionsToolbarProps) {
   const { t } = useTranslation();
   const { preset } = useCaptionsPreferences();
+  const hasKit = useProjectSelector((state) => (state.mirror?.project.brandKit ?? null) !== null);
   const span = useInOutSpan(sequence.id, contentEnd);
   const range: TimeRange | null =
     span === null ? null : { start: span.start, duration: (span.end - span.start) as Flicks };
-  const style: CaptionStyleChoice = { kind: 'preset', preset };
+  const chosen = preset === 'brandKit' && !hasKit ? FALLBACK_PRESET : preset;
+  const style: CaptionStyleChoice =
+    chosen === 'brandKit' ? { kind: 'brandKit' } : { kind: 'preset', preset: chosen };
   return (
     <div className="flex flex-wrap items-center gap-1.5 border-b border-border p-2">
       <Select
-        value={preset}
+        value={chosen}
         onValueChange={(value) => {
-          const chosen = CAPTION_STYLE_PRESETS.find((candidate) => candidate.id === value);
-          if (chosen !== undefined) setGenerationPreset(chosen.id);
+          if (value === 'brandKit') {
+            setGenerationPreset('brandKit');
+            return;
+          }
+          const picked = CAPTION_STYLE_PRESETS.find((candidate) => candidate.id === value);
+          if (picked !== undefined) setGenerationPreset(picked.id);
         }}
       >
         <SelectTrigger size="xs" className="w-32" aria-label={t('editor.captions.generationStyle')}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
+          {hasKit && <SelectItem value="brandKit">{t('brandKit.fontsGroup')}</SelectItem>}
           {CAPTION_STYLE_PRESETS.map((candidate) => (
             <SelectItem key={candidate.id} value={candidate.id}>
               {t(presetKey(candidate.id))}

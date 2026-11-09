@@ -13,4 +13,4 @@ preset: string, } | { "kind": "existing",
 /**
  * Its id.
  */
-styleId: CaptionStyleId, };
+styleId: CaptionStyleId, } | { "kind": "brandKit" };

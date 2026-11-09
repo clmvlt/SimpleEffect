@@ -47,7 +47,8 @@ sequences: Array<Sequence>,
  */
 templates: Array<MotionTemplate>, 
 /**
- * The brand identity used by this project, if one was set.
+ * The brand identity used by this project, if one was set: a copy of a library kit
+ * (schema version 10), so the project behaves the same without the library.
  */
 brandKit: BrandKit | null, 
 /**

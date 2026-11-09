@@ -20,7 +20,10 @@ use crate::ids::ProjectId;
 /// Version 8 (prompt 23): caption styles, captions made of timed words.
 /// Version 9 (prompt 24): motion templates with source, parameters and versions; template items
 /// with a transform and animatable values.
-pub const CURRENT_SCHEMA_VERSION: u32 = 9;
+/// Version 10 (prompt 25): complete brand kits (copied from the library: fonts, named palette,
+/// logos, default text and caption looks, favourite templates); templates carry a category and
+/// their library link, parameters an optional brand role.
+pub const CURRENT_SCHEMA_VERSION: u32 = 10;
 
 /// The whole editable state of a project, serialized as `project.json` (ADR-0006).
 ///
@@ -44,7 +47,8 @@ pub struct Project {
     pub sequences: Vec<Sequence>,
     /// Motion templates available to template items.
     pub templates: Vec<MotionTemplate>,
-    /// The brand identity used by this project, if one was set.
+    /// The brand identity used by this project, if one was set: a copy of a library kit
+    /// (schema version 10), so the project behaves the same without the library.
     pub brand_kit: Option<BrandKit>,
     /// Looks shared by its captions (schema version 8).
     #[serde(default)]

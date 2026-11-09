@@ -59,8 +59,8 @@ describe('caption editing', () => {
     });
     expect(readCaptionsPreferences('{"scope":"x","preset":"disco"}')).toEqual({
       scope: 'track',
-      preset: 'karaoke',
+      preset: 'brandKit',
     });
-    expect(readCaptionsPreferences('not json')).toEqual({ scope: 'track', preset: 'karaoke' });
+    expect(readCaptionsPreferences('not json')).toEqual({ scope: 'track', preset: 'brandKit' });
   });
 });

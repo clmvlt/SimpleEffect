@@ -71,7 +71,7 @@ export const Open: Story = { ...Default, args: { defaultOpen: true } };
 export const Sizes: Story = {
   render: () => (
     <div className="flex gap-2">
-      {(['sm', 'md', 'lg'] as const).map((size) => (
+      {(['sm', 'md', 'lg', 'xl'] as const).map((size) => (
         <Dialog key={size}>
           <DialogTrigger asChild>
             <Button>{size}</Button>

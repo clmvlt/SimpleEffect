@@ -16,24 +16,29 @@ const template: MotionTemplate = {
       name: 'label',
       label: 'Texte',
       description: null,
+      brand: null,
       spec: { kind: 'string', default: 'NEW', multiline: false, maxLength: 20 },
     },
     {
       name: 'size',
       label: 'Taille',
       description: null,
+      brand: null,
       spec: { kind: 'number', default: 10, minimum: null, maximum: null, step: null },
     },
     {
       name: 'tint',
       label: 'Teinte',
       description: null,
+      brand: null,
       spec: { kind: 'color', default: '#ff0000' },
     },
-    { name: 'logo', label: 'Logo', description: null, spec: { kind: 'asset' } },
+    { name: 'logo', label: 'Logo', description: null, brand: null, spec: { kind: 'asset' } },
   ],
   defaultDuration: seconds(3),
   origin: { kind: 'user' },
+  category: 'other',
+  library: null,
 };
 
 describe('templateValues', () => {

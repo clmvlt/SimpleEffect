@@ -13,7 +13,7 @@ Two levels of motion design:
 
 Templates run in a dedicated Worker: no network (CSP), no DOM, no protocol client, a restricted 2D drawing API, a per-frame time budget. Render errors are reported back to the agent (through the MCP tool result) so it can fix its code. Templates are stored per project and can be saved to a global library together with brand kits.
 
-Prompt 24 made this concrete in ADR-0035: the schema is declared by the module itself, the renderer checks modules before the core accepts them, and new versions are copied on write for instances outside a task's scope.
+Prompt 24 made this concrete in ADR-0035: the schema is declared by the module itself, the renderer checks modules before the core accepts them, and new versions are copied on write for instances outside a task's scope. Prompt 25 added the global library and brand kits (ADR-0036).
 
 ## Consequences
 - Agents can produce arbitrary 2D motion graphics while results stay parameter-editable and reusable.

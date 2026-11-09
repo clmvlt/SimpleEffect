@@ -39,8 +39,9 @@ pub enum NewGraphic {
     },
 }
 
-/// A graphic item to add at a time (`addGraphicItem`): it goes on the highest unlocked video
-/// track free over its span with nothing above it at that time, or on a new video track on top.
+/// A graphic item to add at a time (`addGraphicItem`): it goes on `trackId` when given and free,
+/// else on the highest unlocked video track free over its span with nothing above it at that
+/// time, or on a new video track on top.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct AddGraphicRequest {
@@ -54,6 +55,11 @@ pub struct AddGraphicRequest {
     pub duration: Flicks,
     /// What it shows.
     pub graphic: NewGraphic,
+    /// The video track it should go on (a drop on the timeline, prompt 25); used when free over
+    /// its span, otherwise the usual choice applies.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub track_id: Option<TrackId>,
 }
 
 /// A new value of one animatable property of one item (`setItemAnimations`).

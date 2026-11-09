@@ -152,6 +152,16 @@ impl Edit for RemoveAsset {
                 item: user.id,
             });
         }
+        if let Some(kit) = project
+            .brand_kit
+            .as_ref()
+            .filter(|kit| kit.uses_asset(self.asset))
+        {
+            return Err(DomainError::AssetIsBrandLogo {
+                asset: self.asset,
+                kit: kit.name.clone(),
+            });
+        }
         let asset = project.assets.remove(index);
         effect.touched.assets.insert(self.asset);
         effect.undo_with(AddAsset {

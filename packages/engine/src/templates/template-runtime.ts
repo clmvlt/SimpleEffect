@@ -9,8 +9,8 @@ import type {
   TemplateRenderResult,
   TemplateRenderer,
 } from './template-renderer';
-import { TemplateFailure } from './template-worker';
-import { TemplateWorkerPool, type WorkerPoolOptions } from './worker-pool';
+import { TemplateFailure, type TemplateFrame } from './template-worker';
+import { TemplateWorkerPool, type PooledWorker, type WorkerPoolOptions } from './worker-pool';
 
 /** Options of a {@link TemplateRuntime}. */
 export interface TemplateRuntimeOptions extends WorkerPoolOptions {
@@ -108,37 +108,55 @@ export class TemplateRuntime implements TemplateRenderer {
     return { lease, issue: outcome.issue };
   }
 
-  private async draw(request: TemplateRenderRequest): Promise<ImageBitmap> {
+  /**
+   * Draws a frame in the version's Worker. A frame using families the Worker lacked is drawn
+   * again by a Worker given them first ({@link TemplateWorkerPool.restartWithFonts}); a Worker
+   * stopped by the app meanwhile (`unloaded`) means drawing once more in the current one.
+   */
+  private async draw(request: TemplateRenderRequest, retried = false): Promise<ImageBitmap> {
     const { layer } = request;
     const entry = await this.pool.acquire(layer.template);
     if (entry.kind === 'failed') throw entry.failure;
-    const { pooled } = entry;
-    const params = await this.pool.inputs(pooled, layer.params, this.watchdogMs);
-    const frameRequest = {
-      time: layer.time,
-      duration: layer.duration,
-      width: request.width,
-      height: request.height,
-      designWidth: request.designWidth,
-      designHeight: request.designHeight,
-      params,
-    };
     try {
-      let frame = await pooled.worker.render(frameRequest, this.watchdogMs);
-      if (frame.missingFamilies.length > 0) {
-        const given = await this.pool.provideFonts(pooled, frame.missingFamilies, this.watchdogMs);
-        if (given) {
-          frame.bitmap.close();
-          frame = await pooled.worker.render(frameRequest, this.watchdogMs);
-        }
-      }
-      return frame.bitmap;
+      const frame = await this.drawIn(entry.pooled, request);
+      if (frame.missingFamilies.length === 0) return frame.bitmap;
+      const restarted = await this.pool.restartWithFonts(
+        layer.template,
+        entry.pooled,
+        frame.missingFamilies,
+      );
+      if (restarted === null) return frame.bitmap;
+      frame.bitmap.close();
+      if (restarted.kind === 'failed') throw restarted.failure;
+      return (await this.drawIn(restarted.pooled, request)).bitmap;
     } catch (failure) {
-      if (failure instanceof TemplateFailure && failure.kind !== 'exception') {
+      if (!(failure instanceof TemplateFailure)) throw failure;
+      if (failure.kind === 'unloaded' && !retried) return this.draw(request, true);
+      if (failure.kind === 'timeout' || failure.kind === 'crashed') {
         this.pool.markFailed(layer.template, failure);
       }
       throw failure;
     }
+  }
+
+  private async drawIn(
+    pooled: PooledWorker,
+    request: TemplateRenderRequest,
+  ): Promise<TemplateFrame> {
+    const { layer } = request;
+    const params = await this.pool.inputs(pooled, layer.params, this.watchdogMs);
+    return pooled.worker.render(
+      {
+        time: layer.time,
+        duration: layer.duration,
+        width: request.width,
+        height: request.height,
+        designWidth: request.designWidth,
+        designHeight: request.designHeight,
+        params,
+      },
+      this.watchdogMs,
+    );
   }
 }
 

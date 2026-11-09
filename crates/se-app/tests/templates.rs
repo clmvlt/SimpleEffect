@@ -454,11 +454,22 @@ async fn users_insert_instances_and_remove_unused_templates() {
             },
             at: secs(11.0),
             duration: secs(5.0),
+            track_id: None,
         })
         .await
         .unwrap();
     let project = bed.project().await;
-    assert_eq!(instance_of(&project, placed.item_id).params.len(), 0);
+    // Only the accent, bound to the brand kit's accent colour, gets a value (prompt 25).
+    let accent = project.brand_kit.as_ref().unwrap().colors.accent;
+    assert_eq!(
+        instance_of(&project, placed.item_id).params,
+        std::collections::BTreeMap::from([(
+            "accent".to_owned(),
+            se_domain::TemplateParamValue::Color {
+                value: se_domain::Animatable::constant(accent)
+            }
+        )])
+    );
     let used = bed
         .services
         .projects

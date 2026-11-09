@@ -321,15 +321,34 @@ async fn frame_requests_are_checked_before_reaching_the_renderer() {
 }
 
 #[tokio::test]
-async fn the_brand_kit_stub_templates_and_presets_answer_plainly() {
+async fn the_brand_kit_templates_and_presets_answer_plainly() {
     let bed = Bed::open().await;
+    let kit = bed.json("get_brand_kit", json!({})).await;
+    assert_eq!(kit["available"], true);
     assert_eq!(
-        bed.json("get_brand_kit", json!({})).await["available"],
-        false
+        kit["fonts"],
+        json!({ "heading": "Montserrat", "body": "Inter" })
     );
+    assert_eq!(kit["colors"]["accent"], "#ff3366");
+    assert_eq!(
+        kit["logos"][0]["asset_id"],
+        "00000000-0003-7000-8000-000000000000"
+    );
+    assert_eq!(kit["text_style"]["font_weight"], 700);
+    assert_eq!(kit["intro_templates"][0]["name"], "Lower third");
     let templates = bed.json("list_templates", json!({})).await;
     assert_eq!(templates["templates"][0]["name"], "Lower third");
     assert_eq!(templates["templates"][0]["instances"], 1);
+    assert_eq!(templates["templates"][0]["category"], "lowerThird");
+    let accent = &templates["templates"][0]["params"][2];
+    assert_eq!(
+        (&accent["name"], &accent["brand"]),
+        (&json!("accent"), &json!("accent"))
+    );
+    let titles = bed
+        .json("list_templates", json!({ "category": "title" }))
+        .await;
+    assert_eq!(titles["templates"], json!([]));
     let presets = bed.json("list_animation_presets", json!({})).await;
     let fade = presets["presets"]
         .as_array()

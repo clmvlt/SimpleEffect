@@ -98,4 +98,6 @@ const EMPTY_TEMPLATE = {
   params: [],
   defaultDuration: 0 as Flicks,
   origin: { kind: 'user' },
+  category: 'other',
+  library: null,
 } satisfies Parameters<typeof useTemplateParams>[2];

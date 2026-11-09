@@ -17,13 +17,20 @@
 //! | `{"type": "string", "format": "asset"}` | image asset (no default) |
 //!
 //! Every parameter takes `title` (inspector label) and `description`; `examples` and `$comment`
-//! are ignored; any other key is refused so typos come back to the agent.
+//! are ignored; any other key is refused so typos come back to the agent. Colour, font and asset
+//! parameters may also take `brand` (prompt 25): a brand kit role (`primary`, `secondary`,
+//! `accent`, `text`, `background` for colours, `heading`, `body` for fonts, `logo` for assets)
+//! whose value new instances start with in a project using a kit.
+//!
+//! `meta` holds `name`, `description`, `defaultDuration` (seconds) and, since prompt 25, an
+//! optional `category` (`title`, `lowerThird`, `callToAction`, `transition`, `other`).
 
 use serde_json::Value;
 
 use super::param_schema::{parse_param, refuse_unknown_keys};
 use crate::{
-    MAX_TEMPLATE_DURATION, MotionTemplate, Origin, TemplateId, TemplateParam, time::Flicks,
+    MAX_TEMPLATE_DURATION, MotionTemplate, Origin, TemplateCategory, TemplateId, TemplateParam,
+    time::Flicks,
 };
 
 /// What a template module declares, checked.
@@ -35,8 +42,18 @@ pub struct TemplateDefinition {
     pub description: String,
     /// `meta.defaultDuration`, in flicks.
     pub default_duration: Flicks,
+    /// `meta.category` (`other` when absent).
+    pub category: TemplateCategory,
     /// The parameters of `params`, in declaration order.
     pub params: Vec<TemplateParam>,
+}
+
+/// The checked fields of `meta`.
+struct Meta {
+    name: String,
+    description: String,
+    default_duration: Flicks,
+    category: TemplateCategory,
 }
 
 /// One problem of a module's declarations: where (`meta.name`, `params.title.default`) and what.
@@ -78,6 +95,8 @@ impl TemplateDefinition {
             params: self.params,
             default_duration: self.default_duration,
             origin,
+            category: self.category,
+            library: None,
         };
         let problems: Vec<DefinitionProblem> = template
             .problems()
@@ -147,22 +166,18 @@ pub fn parse_definition(
     let meta = parse_meta(meta, &mut problems);
     let params = parse_params(params, &mut problems);
     match meta {
-        Some((name, description, default_duration)) if problems.is_empty() => {
-            Ok(TemplateDefinition {
-                name,
-                description,
-                default_duration,
-                params,
-            })
-        }
+        Some(meta) if problems.is_empty() => Ok(TemplateDefinition {
+            name: meta.name,
+            description: meta.description,
+            default_duration: meta.default_duration,
+            category: meta.category,
+            params,
+        }),
         _ => Err(problems),
     }
 }
 
-fn parse_meta(
-    meta: &Value,
-    problems: &mut Vec<DefinitionProblem>,
-) -> Option<(String, String, Flicks)> {
+fn parse_meta(meta: &Value, problems: &mut Vec<DefinitionProblem>) -> Option<Meta> {
     let Some(meta) = meta.as_object() else {
         problems.push(DefinitionProblem::new(
             "meta",
@@ -173,7 +188,7 @@ fn parse_meta(
     refuse_unknown_keys(
         meta,
         "meta",
-        &["name", "description", "defaultDuration"],
+        &["name", "description", "defaultDuration", "category"],
         problems,
     );
     let name = match meta.get("name").and_then(Value::as_str) {
@@ -209,7 +224,35 @@ fn parse_meta(
             "give the default length of an instance in seconds: a number > 0 and at most 3600",
         ));
     }
-    Some((name?, description, duration?))
+    let category = parse_category(meta.get("category"), problems);
+    Some(Meta {
+        name: name?,
+        description,
+        default_duration: duration?,
+        category,
+    })
+}
+
+fn parse_category(
+    value: Option<&Value>,
+    problems: &mut Vec<DefinitionProblem>,
+) -> TemplateCategory {
+    match value {
+        None | Some(Value::Null) => TemplateCategory::Other,
+        Some(value) => value
+            .as_str()
+            .and_then(TemplateCategory::from_name)
+            .unwrap_or_else(|| {
+                problems.push(DefinitionProblem::new(
+                    "meta.category",
+                    format!(
+                        "use one of: {} (or leave it out)",
+                        TemplateCategory::names()
+                    ),
+                ));
+                TemplateCategory::Other
+            }),
+    }
 }
 
 fn parse_params(params: &Value, problems: &mut Vec<DefinitionProblem>) -> Vec<TemplateParam> {
@@ -402,6 +445,52 @@ mod tests {
         assert_eq!(
             paths(&problems),
             ["params.2fast.name", "params.speed.default"],
+            "{problems:?}"
+        );
+    }
+
+    #[test]
+    fn reads_the_category_and_brand_roles() {
+        let meta = json!({ "name": "CTA", "defaultDuration": 4, "category": "callToAction" });
+        let params = json!([
+            ["accent", { "type": "string", "format": "color", "default": "#ffcc00", "brand": "accent" }],
+            ["font", { "type": "string", "format": "font", "default": "Inter", "brand": "heading" }],
+            ["logo", { "type": "string", "format": "asset", "brand": "logo" }]
+        ]);
+        let definition = parse_definition(&meta, &params).unwrap();
+        assert_eq!(definition.category, TemplateCategory::CallToAction);
+        let roles: Vec<_> = definition.params.iter().map(|param| param.brand).collect();
+        assert_eq!(
+            roles,
+            [
+                Some(crate::BrandRole::Accent),
+                Some(crate::BrandRole::Heading),
+                Some(crate::BrandRole::Logo)
+            ]
+        );
+        assert_eq!(
+            parse_definition(&super::tests::meta(), &json!({}))
+                .unwrap()
+                .category,
+            TemplateCategory::Other
+        );
+    }
+
+    #[test]
+    fn refuses_unknown_categories_and_mismatched_roles() {
+        let meta = json!({ "name": "CTA", "defaultDuration": 4, "category": "intro" });
+        let params = json!({
+            "accent": { "type": "string", "format": "color", "default": "#ffcc00", "brand": "heading" },
+            "speed": { "type": "number", "default": 1, "brand": "primary" }
+        });
+        let problems = parse_definition(&meta, &params).unwrap_err();
+        assert_eq!(
+            paths(&problems),
+            ["meta.category", "params.accent.brand", "params.speed.brand"]
+        );
+        assert!(problems[0].message.contains("lowerThird"), "{problems:?}");
+        assert!(
+            problems[1].message.contains("primary, secondary"),
             "{problems:?}"
         );
     }

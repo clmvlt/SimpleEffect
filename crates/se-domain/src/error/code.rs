@@ -85,6 +85,8 @@ pub enum DomainErrorCode {
     LastSequence,
     /// Transcription settings with a malformed language or vocabulary.
     InvalidTranscriptionSettings,
+    /// A brand kit with unusable values (empty name or font, too many logos…).
+    InvalidBrandKit,
 }
 
 impl fmt::Display for DomainErrorCode {

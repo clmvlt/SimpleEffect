@@ -1,7 +1,9 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { Flicks } from "./Flicks";
+import type { LibraryLink } from "./LibraryLink";
 import type { Origin } from "./Origin";
+import type { TemplateCategory } from "./TemplateCategory";
 import type { TemplateId } from "./TemplateId";
 import type { TemplateParam } from "./TemplateParam";
 
@@ -46,4 +48,12 @@ defaultDuration: Flicks,
 /**
  * Who wrote it.
  */
-origin: Origin, };
+origin: Origin, 
+/**
+ * Where the template browser files it (`meta.category`; schema version 10).
+ */
+category: TemplateCategory, 
+/**
+ * The app's library entry it was copied from, if any (schema version 10).
+ */
+library: LibraryLink | null, };

@@ -158,6 +158,16 @@ pub enum ErrorCode {
     TemplateInvalid,
     /// No template check with that id is waiting (it finished or timed out).
     TemplateCheckNotFound,
+    /// No entry of the template library has that id (removed meanwhile?): list it again.
+    LibraryTemplateNotFound,
+    /// No brand kit of the library has that id (removed meanwhile?): list them again.
+    BrandKitNotFound,
+    /// A library file cannot be used: a `.setemplate` file that is not one, or a logo that is
+    /// not an image (the message names the file and why).
+    InvalidLibraryFile,
+    /// A brand kit with unusable values (empty name or font, too many logos…; the message names
+    /// each field).
+    InvalidBrandKit,
 }
 
 #[cfg(test)]

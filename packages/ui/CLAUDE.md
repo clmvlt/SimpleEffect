@@ -23,7 +23,7 @@ Editor widgets (`src/editor/`, prompt 04, Storybook section « Editor »):
 | `PropertyGroup`, `PropertyRow` | Collapsible inspector section and its rows | Row = label, control, keyframe slot, `modified` mark; `htmlFor` names one control, otherwise the control area is a named group |
 | `ScrubInput` | Number edited by horizontal drag | Shift ×10, Alt ×0.1, arrows step, double-click/Enter/digit types (decimal comma accepted); `onChange` live, **`onCommit` once per gesture**; injected `format`/`parse` |
 | `TimecodeInput`, `TimecodeDisplay` | Timecode field and readout (mono, tabular) | Domain-agnostic: `format(value)` / `parse(text)` props; invalid text → `aria-invalid`, Escape restores |
-| `ColorField` | Swatch + popover picker | `#rrggbb` value; OKLCH sliders and fields, hex, `EyeDropper` when available, `recentColors`; `onChange`/`onCommit` |
+| `ColorField` | Swatch + popover picker | `#rrggbb` value; OKLCH sliders and fields, hex, `EyeDropper` when available, `palette` (named round swatches first, e.g. a brand kit: `ColorSwatch { color, label }`, group `labels.palette`), `recentColors`; `onChange`/`onCommit` |
 | `KeyframeButton` | Keyframe diamond | `none` / `betweenKeyframes` / `onKeyframe` (`aria-pressed`), previous/next buttons |
 | `EasingCurveEditor` | Cubic Bézier editor | Draggable and arrow-key handles, presets (linear, ease in/out/in-out, back, hold), animated preview; presentational `EasingCurve` type; `onChange`/`onCommit` |
 | `TransportBar` | Playback controls | Start, previous frame, play/pause, stop, next frame, end, loop; timecode and trailing slots; missing callbacks disable their button |

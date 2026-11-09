@@ -34,6 +34,7 @@
 
 pub mod agent_access;
 pub mod agent_edits;
+pub mod brand_kits;
 pub mod captions;
 mod edit_plan;
 mod error;
@@ -51,12 +52,14 @@ pub mod recovery;
 pub mod smart_cuts;
 pub mod tasks;
 pub mod template_checks;
+pub mod template_library;
 #[cfg(any(test, feature = "test-support"))]
 pub mod test_support;
 pub mod transcription;
 
 pub use agent_access::{AgentContext, McpAccess, TaskToken, TaskTokenRegistry};
 pub use agent_edits::{AgentEditService, EditFailure};
+pub use brand_kits::{BrandKitService, BrandKitServiceDeps};
 pub use captions::{CaptionService, CaptionServiceDeps};
 pub use edit_plan::DEFAULT_IMAGE_DURATION;
 pub use error::AppError;
@@ -74,4 +77,5 @@ pub use project_service::{
 pub use smart_cuts::{SmartCutService, SmartCutServiceDeps};
 pub use tasks::{TaskService, TaskServiceDeps};
 pub use template_checks::{CheckedTemplate, TemplateCheckService};
+pub use template_library::{TemplateLibraryDeps, TemplateLibraryService};
 pub use transcription::{TranscriptionService, TranscriptionServiceDeps};

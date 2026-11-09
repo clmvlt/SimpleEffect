@@ -1,5 +1,6 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
+import type { BrandRole } from "./BrandRole";
 import type { TemplateParamSpec } from "./TemplateParamSpec";
 
 /**
@@ -22,4 +23,9 @@ description: string | null,
 /**
  * The kind of values and their constraints.
  */
-spec: TemplateParamSpec, };
+spec: TemplateParamSpec, 
+/**
+ * The brand kit value new instances start with instead of the default (`brand` in the
+ * schema; colours, fonts and the logo only; prompt 25).
+ */
+brand: BrandRole | null, };
