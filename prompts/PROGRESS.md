@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-09 — Prompt 26: Recadrage automatique 16:9 → 9:16 — Done
 
-**Branch**: `feature/26-recadrage-auto`, merged into `dev` at `MERGE_SHA`
+**Branch**: `feature/26-recadrage-auto`, merged into `dev` at `7c80f9a`
 
 **Done**
 - se-domain (ADR-0037, schema 11): `Reframe::Tracked { focus, tracking: TrackingSettings { smoothing, eyeLine, groupFraming, deadZone } }` (defaults 0.5 / 0.33 / true / 0.15, ranges validated), `AnalysisKind/AnalysisResult::SubjectDetection { model, interval, frames: [SubjectFrame { time, faces: [FaceBox] }] }`, `VideoStreamInfo::{display_size, display_aspect}`; pure `tracking` (`track_subject`): shots at scene changes and at **subject cuts** (every lasting face stops and only new ones start between two samples), face tracks, main subject (persistence × size × centrality), group framing per shot, the engine's `fillCrop` window, the eye line, gaps filled, a camera operator's dead zone (hold, follow, settle), two rounds of forward-backward One-Euro smoothing, RDP over cubic segments (Bézier easings `x1 = 1/3, x2 = 2/3`, slopes in `[0, 3]`, 0.8 % of the frame), keyframes on frames with a hold before each cut.
