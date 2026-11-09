@@ -76,8 +76,9 @@ pub fn project_patch(
             None => deletes.assets.push(*id),
         }
     }
-    // Caption styles travel with the project's own fields (few, small, read with them).
-    if touched.project || !touched.caption_styles.is_empty() {
+    // Caption styles and motion templates travel with the project's own fields (few, read with
+    // them): without them the renderer could not draw the items using them.
+    if touched.project || !touched.caption_styles.is_empty() || !touched.templates.is_empty() {
         upserts.project = Some(project_header(after));
     }
     ProjectPatch {
@@ -147,8 +148,8 @@ mod tests {
     use std::collections::BTreeSet;
 
     use se_domain::{
-        Actor, MoveItem, Operation, RemoveSequence, RenameProject, Transaction, TransactionId,
-        commit,
+        Actor, AddTemplate, MoveItem, Operation, RemoveSequence, RenameProject, TemplateId,
+        Transaction, TransactionId, commit,
         test_support::{example_project, millis},
     };
 
@@ -222,5 +223,22 @@ mod tests {
         );
         assert_eq!(patch.upserts.project.unwrap().name, "Nouveau");
         assert_eq!(patch.upserts.items, []);
+    }
+
+    #[test]
+    fn adding_a_motion_template_upserts_the_header_holding_it() {
+        let project = example_project();
+        let mut template = project.templates[0].clone();
+        template.id = TemplateId::from_test_index(77);
+        let patch = patch_of(
+            &project,
+            AddTemplate {
+                index: None,
+                template: template.clone(),
+            },
+        );
+        let header = patch.upserts.project.unwrap();
+        assert_eq!(header.templates.len(), project.templates.len() + 1);
+        assert_eq!(header.templates.last(), Some(&template));
     }
 }

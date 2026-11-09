@@ -26,7 +26,7 @@ Everything is re-exported at the crate root (`se_domain::Flicks`, `se_domain::Pr
 | `history` | `History` (user undo/redo: `record`, `undo`, `redo`, labels), `HistoryStep` |
 | `changeset` | `Changeset`, `ChangesetEntry`, `plan_revert(&Project, &Changeset) -> RevertPlan { ops, conflicts }`, `Conflict` |
 | `error` | `DomainError` (actionable messages, times as `HH:MM:SS.mmm`), `DomainErrorCode` (`code()`) |
-| `test_support` | feature `test-support`: `example_project()` (valid, every item kind; a lower-third template `lower_third_template()` with its source `LOWER_THIRD_SOURCE` and an instance whose slide is keyframed), `example_ids`, `millis`, `range_ms`, `item`, `track` |
+| `test_support` | feature `test-support`: `example_project()` (valid, every item kind; a lower-third template (source `LOWER_THIRD_SOURCE`) and an instance whose slide is keyframed), `example_ids`, `millis`, `range_ms`, `item`, `track` |
 
 ## Layout
 - `animation_preset/`: `definition.rs` (library types and `check`), `expansion.rs` (`expand_preset`: span, base, merge, exit mirroring); the library is parsed once (`LazyLock`).
