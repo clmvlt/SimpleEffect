@@ -123,6 +123,16 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - The kit's logos as shortcuts in image parameters of templates (today: the project's images).
 - Brand-bound colour parameters keeping the default's alpha (a kit colour is opaque).
 
+## Automatic reframing
+
+- Active-speaker detection (audio diarisation, lip movement) so a two-shot too wide for the frame follows whoever speaks (today: the most persistent, largest, most central face).
+- A person or body detector for subjects seen from behind or too far for faces (today such shots stay centred).
+- Face analyses limited to the source range clips use (today the whole media is analysed once per content).
+- GPU execution providers (DirectML/CUDA on Windows and Linux) should a heavier model come; YuNet runs in a few milliseconds on a CPU.
+- « Recadrer automatiquement » in the timeline's clip menu (today in the inspector's « Cadrage »).
+- Zoom framing (a tighter crop on the speaker, e.g. for a wide interview shot) as a tracking setting.
+- An Intel Mac build of ONNX Runtime (Microsoft publishes none since 1.2x: compile it, or a pure-Rust fallback such as tract there).
+
 ## Platform
 - Light theme.
 - Additional UI languages (English first).

@@ -38,7 +38,7 @@ This codebase is developed and maintained by AI agents. Optimise every change fo
 | `crates/se-store` | Project folder, `project.json`, SQLite, the app's template library and brand kits | Implements repository and library ports |
 | `crates/se-media` | ffprobe/ffmpeg jobs and analysis | Sidecar processes only |
 | `crates/se-transcribe` | whisper.cpp adapter, model files, consented HTTPS downloads | Implements `Transcriber`, `FileDownloader`, `ModelFiles`; the only crate reaching the network |
-| `crates/se-vision` | ONNX face/subject detection | Implements `SubjectDetector` |
+| `crates/se-vision` | YuNet face detection over ONNX Runtime (loaded at runtime, telemetry off) | Implements `SubjectDetector`; the model is embedded |
 | `crates/se-fonts` | Font catalogue: bundled fonts (embedded) + installed fonts (`fontdb`) | Implements `FontCatalog` |
 | `crates/se-agents` | AI CLI providers, stream parsing | Only place that knows a CLI |
 | `crates/se-mcp` | MCP server and tools for agents (`/mcp`, per-run tokens) | One tool per file; writes go through use cases; contract in `docs/ai-tools.md` |
@@ -75,7 +75,7 @@ Adapters depend on `se-app` and `se-domain`, never on each other. `se-core` depe
 | `pnpm generate-test-project` | Write a valid 500-item project with generated media into `target/test-projects/` (`--items`, `--out`, `--name`, `--seed`; needs `pnpm fetch-binaries`) for timeline and performance work |
 | `pnpm exec playwright install chromium` | Once per machine: the headless Chromium of the engine's golden-frame tests (Vitest browser mode, project `engine-browser`, part of `pnpm test`/`pnpm check`) |
 | `node scripts/generate-golden-fixtures.mjs` | Rewrite the engine's committed golden-frame media fixtures with the pinned ffmpeg; `SE_UPDATE_GOLDEN=1 pnpm vitest run --project engine-browser` rewrites the reference PNGs (look at each before committing) |
-| `pnpm fetch-binaries` | Download the pinned ffmpeg/ffprobe builds and whisper.cpp 1.9.5 (`scripts/binaries.manifest.json`, SHA-256 checked) into `resources/bin/<platform>/` (`whisper/` subfolder; macOS compiles whisper.cpp from the pinned sources with cmake); asks first (`--yes` for CI, `--platform <key>`, `--all`). Models and the Windows CUDA pack are downloaded by the app, never by this script |
+| `pnpm fetch-binaries` | Download the pinned ffmpeg/ffprobe builds, whisper.cpp 1.9.5 and ONNX Runtime 1.31.0 (`scripts/binaries.manifest.json`, SHA-256 checked) into `resources/bin/<platform>/` (`whisper/` and `onnxruntime/` subfolders; macOS compiles whisper.cpp from the pinned sources with cmake); asks first (`--yes` for CI, `--platform <key>`, `--all`). Models and the Windows CUDA pack are downloaded by the app, never by this script |
 
 ## Code conventions
 
@@ -164,6 +164,7 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
 - **reqwest needs a TLS provider in this workspace** (rustls without a built-in provider, ring installed by `se_transcribe::install_crypto_provider()`): se-core calls it at startup; any test building a reqwest client (rmcp's) calls it first, or reqwest panics.
 - **A running app locks `target/debug/se-core.exe` on Windows**: close `pnpm dev` (or the test build) before `cargo test`, or it fails with « Accès refusé ».
 - **Motion templates are checked by the renderer** (ADR-0035): `create_motion_template`/`update_motion_template` fail with `RENDERER_UNAVAILABLE` without an editor window, like `get_frames`. Code under `packages/engine/src/templates/sandbox/` is serialized with `toString()` into template Workers: keep each function self-contained (no import, no outer variable). Electron's Chromium resolves a font family once per Worker: a family used before its faces arrived stays in the fallback font, so template Workers get families before the first frame using them (restarted otherwise, `packages/engine/CLAUDE.md`).
+- **ONNX Runtime is loaded at runtime** (se-vision, ADR-0037): without `pnpm fetch-binaries` automatic reframing reports `VISION_UNAVAILABLE` and the real detection test skips itself. Intel Macs have no official build. Always create sessions from the environment built with telemetry off.
 - **Never** log or persist AI CLI credentials or tokens; MCP task tokens are redacted in logs.
 - **TypeScript is pinned to 6.0.x**: TypeScript 7 (native) has no JS API, and `typescript-eslint` (typed lint) supports `<6.1`. Upgrade only when `typescript-eslint` supports 7.
 - **Electron binary**: since Electron 45 it is not downloaded at install time; the desktop `dev` script runs `install-electron` (idempotent) first. electron-builder downloads its own copy for packaging.
