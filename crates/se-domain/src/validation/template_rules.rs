@@ -65,7 +65,7 @@ pub(super) fn check_template_item(
         let inner = value_path.field("value");
         match value {
             TemplateParamValue::Number { value } => {
-                check_keyframes(value, &inner, duration, report)
+                check_keyframes(value, &inner, duration, report);
             }
             TemplateParamValue::Color { value } => check_keyframes(value, &inner, duration, report),
             TemplateParamValue::Asset { value: Some(asset) } => {

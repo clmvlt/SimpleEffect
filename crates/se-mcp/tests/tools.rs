@@ -321,16 +321,15 @@ async fn frame_requests_are_checked_before_reaching_the_renderer() {
 }
 
 #[tokio::test]
-async fn stubs_and_presets_answer_plainly() {
+async fn the_brand_kit_stub_templates_and_presets_answer_plainly() {
     let bed = Bed::open().await;
     assert_eq!(
         bed.json("get_brand_kit", json!({})).await["available"],
         false
     );
-    assert_eq!(
-        bed.json("list_templates", json!({})).await["templates"],
-        json!([])
-    );
+    let templates = bed.json("list_templates", json!({})).await;
+    assert_eq!(templates["templates"][0]["name"], "Lower third");
+    assert_eq!(templates["templates"][0]["instances"], 1);
     let presets = bed.json("list_animation_presets", json!({})).await;
     let fade = presets["presets"]
         .as_array()
