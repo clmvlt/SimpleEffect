@@ -1116,6 +1116,16 @@
         "saveToLibrary": "Enregistrer ce style dans la bibliothèque…",
         "libraryName": "Style de sous-titres"
       }
+    },
+    "recovery": {
+      "replayed_one": "Projet récupéré après un arrêt inattendu ({{count}} modification rejouée)",
+      "replayed_other": "Projet récupéré après un arrêt inattendu ({{count}} modifications rejouées)",
+      "restored": "Projet restauré depuis la sauvegarde {{backup}} : le fichier du projet était illisible",
+      "replayedAfterRestore_one": "{{count}} modification rejouée depuis cette sauvegarde. Le fichier abîmé est conservé à côté (project.json.corrupted).",
+      "replayedAfterRestore_other": "{{count}} modifications rejouées depuis cette sauvegarde. Le fichier abîmé est conservé à côté (project.json.corrupted).",
+      "lost_one": "{{count}} modification récente n’a pas pu être rejouée. Le fichier abîmé est conservé à côté (project.json.corrupted).",
+      "lost_other": "{{count}} modifications récentes n’ont pas pu être rejouées. Le fichier abîmé est conservé à côté (project.json.corrupted).",
+      "setAside": "Le fichier abîmé est conservé à côté (project.json.corrupted)."
     }
   },
   "statusBar": {
@@ -1142,7 +1152,11 @@
         "unknown": "État de connexion inconnu ({{reason}}) : cliquez pour vérifier à nouveau."
       }
     },
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "save": {
+      "failed_one": "Sauvegarde impossible · {{count}} modification non enregistrée",
+      "failed_other": "Sauvegarde impossible · {{count}} modifications non enregistrées"
+    }
   },
   "projects": {
     "card": {

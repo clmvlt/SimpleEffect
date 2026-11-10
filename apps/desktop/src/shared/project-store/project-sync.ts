@@ -20,7 +20,7 @@ export interface ProjectSync {
 
 /**
  * Feeds `store` from core events: applies `projectPatched` in revision order, follows
- * `historyChanged` and `projectClosed`, and reloads the snapshot when a patch is missing, when
+ * `historyChanged`, `projectSaveStateChanged` and `projectClosed`, and reloads the snapshot when a patch is missing, when
  * the core says events were dropped (`resyncRequired`) and after a reconnection. If the core
  * restarted meanwhile (`PROJECT_NOT_OPEN`), the project is opened again from its folder.
  */
@@ -92,6 +92,11 @@ export function connectProjectSync(
         void resync();
       }
     }),
+    client.on('projectSaveStateChanged', ({ projectId, failure, unsavedChanges }) => {
+      if (current()?.projectId === projectId) {
+        store.setState({ saveState: { projectId, failure, unsavedChanges } });
+      }
+    }),
     client.on('historyChanged', ({ projectId, history }) => {
       const mirror = current();
       if (mirror?.projectId === projectId) {
@@ -122,10 +127,14 @@ export function connectProjectSync(
 
   return {
     load(session) {
-      store.setState({ mirror: mirrorFromSession(session), closedProjectId: null });
+      store.setState({
+        mirror: mirrorFromSession(session),
+        closedProjectId: null,
+        saveState: null,
+      });
     },
     forget() {
-      store.setState({ mirror: null, closedProjectId: null });
+      store.setState({ mirror: null, closedProjectId: null, saveState: null });
     },
     resync,
     dispose() {

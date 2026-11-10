@@ -16,5 +16,7 @@ export {
   selectHistory,
   selectProjectId,
   selectProjectName,
+  selectRecovery,
+  selectSaveState,
 } from './selectors';
 export { useProjectMirrorReader, useProjectSelector, useProjectSync } from './use-project-store';

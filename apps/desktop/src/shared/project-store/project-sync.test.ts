@@ -106,7 +106,11 @@ describe('connectProjectSync', () => {
     const { fake, store, sync } = setUp();
     fake.respond = () => Promise.reject(error('PROJECT_NOT_OPEN'));
     await sync.resync();
-    expect(store.getState()).toEqual({ mirror: null, closedProjectId: IDS.project });
+    expect(store.getState()).toEqual({
+      mirror: null,
+      closedProjectId: IDS.project,
+      saveState: null,
+    });
   });
 
   it('clears the mirror when the core closes the project', () => {
@@ -114,7 +118,37 @@ describe('connectProjectSync', () => {
     fake.emit({ kind: 'projectClosed', projectId: 'another' });
     expect(store.getState().mirror).not.toBeNull();
     fake.emit({ kind: 'projectClosed', projectId: IDS.project });
-    expect(store.getState()).toEqual({ mirror: null, closedProjectId: IDS.project });
+    expect(store.getState()).toEqual({
+      mirror: null,
+      closedProjectId: IDS.project,
+      saveState: null,
+    });
+  });
+
+  it('follows the save state of the loaded project and forgets it with the project', () => {
+    const { fake, store, sync } = setUp();
+    const failing = { projectId: IDS.project, failure: 'The disk is full.', unsavedChanges: 4 };
+    fake.emit({
+      kind: 'projectSaveStateChanged',
+      projectId: 'another',
+      failure: 'x',
+      unsavedChanges: 1,
+    });
+    expect(store.getState().saveState).toBeNull();
+    fake.emit({ kind: 'projectSaveStateChanged', ...failing });
+    expect(store.getState().saveState).toEqual(failing);
+    fake.emit({ kind: 'projectPatched', ...emptyPatch(4) });
+    expect(store.getState().saveState).toEqual(failing);
+    sync.forget();
+    expect(store.getState().saveState).toBeNull();
+  });
+
+  it('keeps the recovery report of the session in the mirror', () => {
+    const { store, sync } = setUp();
+    expect(store.getState().mirror?.recovery).toBeNull();
+    const recovery = { replayedChanges: 3, restoredFrom: null, problem: null, lostChanges: 0 };
+    sync.load({ ...session(5), recovery });
+    expect(store.getState().mirror?.recovery).toEqual(recovery);
   });
 
   it('stops listening once disposed', () => {
