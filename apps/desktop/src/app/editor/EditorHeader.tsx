@@ -3,6 +3,7 @@ import { House, Redo2, Undo2 } from '@se/ui/icons';
 import { useTranslation } from 'react-i18next';
 
 import { BrandKitButton } from '../../features/brand-kits';
+import { ExportButton, ExportsButton } from '../../features/export';
 import { SettingsButton, openSettings } from '../../features/settings';
 import { useActiveSequence } from '../../features/timeline';
 import { selectProjectName, useProjectSelector } from '../../shared/project-store';
@@ -16,7 +17,10 @@ export interface EditorHeaderProps {
   readonly onHome: () => void;
 }
 
-/** The editor's top bar: back to the home screen, project and sequence names, undo and redo. */
+/**
+ * The editor's top bar: back to the home screen, project and sequence names, undo and redo, the
+ * brand kit, shortcuts and settings, then « Exports » and « Exporter » (prompt 27).
+ */
 export function EditorHeader({ projectId, onHome }: EditorHeaderProps) {
   const { t } = useTranslation();
   const name = useProjectSelector(selectProjectName);
@@ -71,6 +75,9 @@ export function EditorHeader({ projectId, onHome }: EditorHeaderProps) {
         />
         <ShortcutsButton />
         <SettingsButton projectId={projectId} />
+        <Separator orientation="vertical" className="h-5 self-center" />
+        <ExportsButton />
+        <ExportButton />
       </div>
     </header>
   );
