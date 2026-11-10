@@ -4,12 +4,32 @@ use std::{io, path::Path};
 
 use se_app::ports::StorageError;
 
-/// An IO failure while doing `action` on `path`.
+/// An IO failure while doing `action` on `path`. A full disk says what to do (prompt 29).
 pub fn io_error(action: &'static str, path: &Path, error: &io::Error) -> StorageError {
+    let reason = if error.kind() == io::ErrorKind::StorageFull {
+        "the disk is full: free some space so SimpleEffect can save again".to_owned()
+    } else {
+        error.to_string()
+    };
     StorageError::Io {
         action,
         path: path.to_path_buf(),
-        reason: error.to_string(),
+        reason,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_full_disk_says_what_to_do() {
+        let error = io_error(
+            "write",
+            Path::new("project.json"),
+            &io::Error::from(io::ErrorKind::StorageFull),
+        );
+        assert!(error.to_string().contains("free some space"), "{error}");
     }
 }
 

@@ -58,17 +58,32 @@ impl PartFile {
     }
 }
 
-/// An IO failure on an export file, as users and agents read it.
+/// An IO failure on an export file, as users and agents read it. A full disk says what to do
+/// (prompt 29): the partial files are removed when the export stops, which frees their space.
 pub fn io_error(path: &Path, error: &std::io::Error) -> MediaError {
+    let message = if error.kind() == std::io::ErrorKind::StorageFull {
+        "the disk is full: free some space or choose a folder on another disk, then export again"
+            .to_owned()
+    } else {
+        error.to_string()
+    };
     MediaError::Io {
         path: path.to_path_buf(),
-        message: error.to_string(),
+        message,
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_full_disk_says_what_to_do() {
+        let full = std::io::Error::from(std::io::ErrorKind::StorageFull);
+        let message = io_error(Path::new("film.mp4.part"), &full).to_string();
+        assert!(message.contains("disk is full"), "{message}");
+        assert!(message.contains("another disk"), "{message}");
+    }
 
     #[tokio::test]
     async fn writes_land_at_their_position() {
