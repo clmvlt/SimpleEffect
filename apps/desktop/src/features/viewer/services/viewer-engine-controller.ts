@@ -181,6 +181,11 @@ export class ViewerEngineController {
     return this.engine?.stats() ?? null;
   }
 
+  /** Resolves once the latest requested frame is drawn (at once without an engine). */
+  settled(): Promise<void> {
+    return this.engine?.settled() ?? Promise.resolve();
+  }
+
   private start(engine: PreviewEngine): void {
     this.engine = engine;
     const { pixels, proxy, background, scene, time, playback, fonts, templates } = this.settings;

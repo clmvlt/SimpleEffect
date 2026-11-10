@@ -2,7 +2,13 @@ import { useStore } from 'zustand';
 import { createStore } from 'zustand/vanilla';
 
 /** Sections of « Réglages », in tab order. */
-export const SETTINGS_SECTIONS = ['media', 'ai', 'transcription', 'brandKits'] as const;
+export const SETTINGS_SECTIONS = [
+  'media',
+  'ai',
+  'transcription',
+  'brandKits',
+  'performance',
+] as const;
 
 /** A section of « Réglages ». */
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
