@@ -461,6 +461,30 @@ async fn closing_a_project_cancels_its_tasks() {
 }
 
 #[tokio::test(start_paused = true)]
+async fn quitting_the_app_interrupts_tasks_instead_of_cancelling_them() {
+    let harness = harness().await;
+    let mut settings = harness.tasks.ai_settings();
+    settings.max_concurrent_tasks = 1;
+    harness.tasks.update_ai_settings(settings).await.unwrap();
+    harness.agent.set_default_script(ReplayScript::held());
+    harness.submit("Running").await;
+    harness.submit("Queued").await;
+    run_for(100).await;
+    harness.tasks.begin_shutdown();
+    harness.projects.close_all().await;
+    assert_eq!((harness.agent.alive(), harness.agent.killed()), (0, 1));
+    let folder = harness.repository.folder(project_path()).unwrap();
+    for task in &folder.tasks {
+        let TaskStatus::Failed { failure, message } = &task.status else {
+            panic!("{:?} should be interrupted", task.status);
+        };
+        assert_eq!(*failure, AgentFailureKind::Interrupted);
+        assert!(message.contains("retry"), "{message}");
+    }
+    assert_eq!(folder.tasks.len(), 2);
+}
+
+#[tokio::test(start_paused = true)]
 async fn tasks_are_refused_while_the_cli_is_missing_or_logged_out() {
     let harness = harness().await;
     harness

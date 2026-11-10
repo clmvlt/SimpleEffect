@@ -1,5 +1,6 @@
 //! Tasks follow their project: loaded when it opens (those a stopped core left queued or running
-//! fail as interrupted), cancelled when it closes.
+//! fail as interrupted), cancelled when it closes — or interrupted when the core stops
+//! ([`TaskService::begin_shutdown`], prompt 29).
 
 use std::{sync::Arc, time::Duration};
 
@@ -12,6 +13,16 @@ use crate::{project_actor::ProjectActorHandle, project_service::ProjectObserver}
 
 /// How long closing a project waits for its running agents to stop.
 const CLOSE_GRACE: Duration = Duration::from_secs(8);
+
+impl TaskService {
+    /// Tells the service the core is stopping: tasks stopped by the projects' closing from now
+    /// on are marked interrupted (retry them later), not cancelled by the user.
+    pub fn begin_shutdown(&self) {
+        self.shared
+            .shutting_down
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+}
 
 #[async_trait]
 impl ProjectObserver for TaskService {
@@ -58,9 +69,13 @@ impl ProjectObserver for TaskService {
                     .iter_mut()
                     .filter(|task| removed.contains(&task.id))
                 {
-                    task_state::finish_run(task, TaskStatus::Cancelled, now);
+                    if self.shared.shutting_down() {
+                        task_state::interrupt(task, now);
+                    } else {
+                        task_state::finish_run(task, TaskStatus::Cancelled, now);
+                    }
                     if let Err(error) = store.save_task(task).await {
-                        tracing::warn!(task = %task.id, %error, "saving a cancelled task failed");
+                        tracing::warn!(task = %task.id, %error, "saving a stopped task failed");
                     }
                     self.shared
                         .deps

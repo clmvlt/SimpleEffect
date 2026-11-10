@@ -46,6 +46,7 @@ pub async fn run(
     let events = EventBus::new();
     let services = services::build(&paths, &events, port).await?;
     let projects = Arc::clone(&services.projects);
+    let tasks = Arc::clone(&services.tasks);
     let (stopping_sender, stopping) = watch::channel(false);
     let router = RpcRouter::new(HandlerContext {
         version: CORE_VERSION,
@@ -68,8 +69,10 @@ pub async fn run(
     let app = routes(guard, state, &services, port);
     let server = axum::serve(listener, app).with_graceful_shutdown(async move {
         shutdown.await;
-        // Save every open project, then tell every client, then close the sockets (see
-        // `rpc::connection`).
+        // Stopped AI tasks are interrupted (not cancelled); save every open project (which
+        // cancels its exports, removing partial files), then tell every client, then close the
+        // sockets (see `rpc::connection`).
+        tasks.begin_shutdown();
         projects.close_all().await;
         events.publish(CoreEvent::CoreShuttingDown);
         stopping_sender.send_replace(true);
