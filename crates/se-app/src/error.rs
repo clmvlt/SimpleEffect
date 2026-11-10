@@ -341,6 +341,24 @@ pub enum AppError {
         /// Each faulty field and its rule.
         reason: String,
     },
+    /// No export of this session has this id (prompt 27).
+    #[error("export {export_id} does not exist (it may have finished and been cleared)")]
+    ExportNotFound {
+        /// The export asked for.
+        export_id: se_domain::ExportId,
+    },
+    /// An export that cannot be started as asked.
+    #[error("cannot export: {reason}")]
+    InvalidExport {
+        /// What to change.
+        reason: String,
+    },
+    /// An upload or report for an export the renderer is not rendering.
+    #[error("export {export_id} is not being rendered (it is queued, finished or cancelled)")]
+    ExportNotRendering {
+        /// The export.
+        export_id: se_domain::ExportId,
+    },
     /// A bug: an invariant of the application itself was broken.
     #[error("internal error: {0}; please report it")]
     Internal(String),
@@ -403,6 +421,9 @@ impl AppError {
             Self::BrandKitNotFound { .. } => ErrorCode::BrandKitNotFound,
             Self::InvalidLibraryFile { .. } => ErrorCode::InvalidLibraryFile,
             Self::InvalidLibraryEntry { .. } => ErrorCode::InvalidBrandKit,
+            Self::ExportNotFound { .. } => ErrorCode::ExportNotFound,
+            Self::InvalidExport { .. } => ErrorCode::InvalidExport,
+            Self::ExportNotRendering { .. } => ErrorCode::ExportNotRendering,
             Self::Internal(_) => ErrorCode::Internal,
         }
     }

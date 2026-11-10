@@ -1,7 +1,7 @@
 //! [`NewIds`]: typed ids from the [`IdGenerator`] port.
 
 use se_domain::{
-    AssetId, BrandKitId, CaptionStyleId, ChangesetId, ItemId, JobId, LibraryTemplateId,
+    AssetId, BrandKitId, CaptionStyleId, ChangesetId, ExportId, ItemId, JobId, LibraryTemplateId,
     LinkGroupId, MarkerId, ProjectId, SequenceId, TaskId, TemplateId, TrackId, TransactionId,
     TransitionId,
 };
@@ -45,6 +45,8 @@ id_methods! {
     asset -> AssetId;
     /// A new background job id.
     job -> JobId;
+    /// A new export id.
+    export -> ExportId;
     /// A new item id.
     item -> ItemId;
     /// A new link group id.

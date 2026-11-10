@@ -1,7 +1,8 @@
 //! [`MediaTestbed`]: a `ProjectService`, a `MediaService`, a `TaskService`, an
-//! `AgentEditService`, a `FrameRenderService`, a `TranscriptionService` and a `ReframeService`
-//! wired to the in-memory fakes, for tests of the media, task, agent, transcription and
-//! reframing use cases (se-app) and of what serves them (se-mcp, se-core).
+//! `AgentEditService`, a `FrameRenderService`, a `TranscriptionService`, a `ReframeService` and
+//! an `ExportService` wired to the in-memory fakes, for tests of the media, task, agent,
+//! transcription, reframing and export use cases (se-app) and of what serves them (se-mcp,
+//! se-core).
 
 use std::{
     path::{Path, PathBuf},
@@ -12,18 +13,18 @@ use std::{
 use se_domain::{Asset, Format, FormatPreset, FrameRate, ProjectId};
 
 use super::{
-    FakeAgentWorkspaces, FakeDownloader, FakeFrameExtractor, FakeFrameSampler, FakeJobRunner,
-    FakeMedia, FakeMediaTools, FakeModelFiles, FakeRendererLink, FakeSpeechExtractor,
-    FakeSubjectDetector, FakeSubtitleFiles, FakeTranscriber, FixedClock, InMemoryAppLibrary,
-    InMemoryBrandKitLibrary, InMemoryProjectRepository, InMemoryTemplateLibrary,
-    RecordingEventSink, ReplayProvider, SequentialIds, SequentialTokens,
+    FakeAgentWorkspaces, FakeDownloader, FakeExportOutputs, FakeFrameExtractor, FakeFrameSampler,
+    FakeJobRunner, FakeMedia, FakeMediaTools, FakeModelFiles, FakeRendererLink,
+    FakeSpeechExtractor, FakeSubjectDetector, FakeSubtitleFiles, FakeTranscriber, FixedClock,
+    InMemoryAppLibrary, InMemoryBrandKitLibrary, InMemoryProjectRepository,
+    InMemoryTemplateLibrary, RecordingEventSink, ReplayProvider, SequentialIds, SequentialTokens,
+    testbed_services::{export_service, library_services, reframing_service, speech_services},
 };
 use crate::{
-    AgentEditService, AppError, BrandKitService, BrandKitServiceDeps, CaptionService,
-    CaptionServiceDeps, FrameRenderService, JobQueue, JobQueueConfig, McpAccess, MediaService,
-    MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps, ReframeService,
-    ReframeServiceDeps, SmartCutService, SmartCutServiceDeps, TaskService, TaskServiceDeps,
-    TaskTokenRegistry, TemplateCheckService, TemplateLibraryDeps, TemplateLibraryService,
+    AgentEditService, AppError, BrandKitService, CaptionService, ExportRegistry, ExportService,
+    FrameRenderService, JobQueue, JobQueueConfig, McpAccess, MediaService, MediaServiceDeps,
+    ProjectService, ProjectServiceConfig, ProjectServiceDeps, ReframeService, SmartCutService,
+    TaskService, TaskServiceDeps, TaskTokenRegistry, TemplateCheckService, TemplateLibraryService,
     TranscriptionService, TranscriptionServiceDeps,
 };
 
@@ -101,6 +102,10 @@ pub struct MediaTestbed {
     pub sampler: FakeFrameSampler,
     /// The face detector.
     pub detector: FakeSubjectDetector,
+    /// Exports over `export_outputs`, drawn by `renderer`, cancelled when projects close.
+    pub exports: ExportService,
+    /// Where exports write.
+    pub export_outputs: FakeExportOutputs,
 }
 
 impl MediaTestbed {
@@ -140,22 +145,13 @@ impl MediaTestbed {
         let renderer = Arc::new(FakeRendererLink::default());
         let renders = Arc::new(FrameRenderService::new(renderer.clone(), ids.clone()));
         let template_checks = Arc::new(TemplateCheckService::new(renderer.clone(), ids.clone()));
-        let deps = ProjectServiceDeps {
-            repository: Arc::new(repository.clone()),
-            library: library.clone(),
-            events: events.clone(),
-            clock: clock.clone(),
-            ids: ids.clone(),
-        };
-        let config = ProjectServiceConfig {
-            default_parent_dir: parent_dir.to_path_buf(),
-            save_delay: Duration::from_secs(2),
-        };
+        let export_registry = Arc::new(ExportRegistry::new(jobs.clone(), events.clone()));
         let projects = Arc::new(
-            ProjectService::new(deps, config)
+            project_service(parent_dir, &repository, &library, &runtime)
                 .with_observer(media.clone())
                 .with_observer(Arc::new(tasks.clone()))
-                .with_observer(Arc::new(transcription.clone())),
+                .with_observer(Arc::new(transcription.clone()))
+                .with_observer(export_registry.clone()),
         );
         let edits = Arc::new(AgentEditService::new(
             projects.clone(),
@@ -167,7 +163,17 @@ impl MediaTestbed {
         let (template_library, library_templates, brand_kit_library, brand_kits) =
             library_services(&projects, &media, &files, &template_checks, &runtime);
         let (reframing, sampler, detector) = reframing_service(&projects, &media, jobs, &runtime);
+        let (exports, export_outputs) = export_service(
+            &projects,
+            export_registry,
+            &renderer,
+            &files,
+            &library,
+            &runtime,
+        );
         Self {
+            exports,
+            export_outputs,
             reframing,
             sampler,
             detector,
@@ -285,12 +291,32 @@ pub async fn settle() {
     }
 }
 
-/// Smart cuts and captions (over in-memory SRT files).
+/// The project service over the in-memory folders, saving 2 s after edits.
+fn project_service(
+    parent_dir: &Path,
+    repository: &InMemoryProjectRepository,
+    library: &Arc<InMemoryAppLibrary>,
+    runtime: &Runtime,
+) -> ProjectService {
+    let deps = ProjectServiceDeps {
+        repository: Arc::new(repository.clone()),
+        library: library.clone(),
+        events: runtime.events.clone(),
+        clock: runtime.clock.clone(),
+        ids: runtime.ids.clone(),
+    };
+    let config = ProjectServiceConfig {
+        default_parent_dir: parent_dir.to_path_buf(),
+        save_delay: Duration::from_secs(2),
+    };
+    ProjectService::new(deps, config)
+}
+
 /// The runtime fakes shared by every service.
-struct Runtime {
-    events: Arc<RecordingEventSink>,
-    clock: Arc<FixedClock>,
-    ids: Arc<SequentialIds>,
+pub(super) struct Runtime {
+    pub(super) events: Arc<RecordingEventSink>,
+    pub(super) clock: Arc<FixedClock>,
+    pub(super) ids: Arc<SequentialIds>,
 }
 
 /// The task service over a replayed AI provider, with its workspaces and MCP tokens.
@@ -366,85 +392,4 @@ impl FakeMediaPorts {
             clock: clock.clone(),
         }))
     }
-}
-
-/// Automatic reframing over fake sampling and detection (prompt 26).
-fn reframing_service(
-    projects: &Arc<ProjectService>,
-    media: &Arc<MediaService>,
-    jobs: JobQueue,
-    runtime: &Runtime,
-) -> (ReframeService, FakeFrameSampler, FakeSubjectDetector) {
-    let (sampler, detector) = (FakeFrameSampler::default(), FakeSubjectDetector::default());
-    let reframing = ReframeService::new(ReframeServiceDeps {
-        projects: projects.clone(),
-        media: media.clone(),
-        jobs,
-        sampler: Arc::new(sampler.clone()),
-        detector: Arc::new(detector.clone()),
-        events: runtime.events.clone(),
-        clock: runtime.clock.clone(),
-    });
-    (reframing, sampler, detector)
-}
-
-/// The template library and brand kit services over in-memory libraries (prompt 25).
-fn library_services(
-    projects: &Arc<ProjectService>,
-    media: &Arc<MediaService>,
-    files: &Arc<FakeMedia>,
-    checks: &Arc<TemplateCheckService>,
-    runtime: &Runtime,
-) -> (
-    InMemoryTemplateLibrary,
-    TemplateLibraryService,
-    InMemoryBrandKitLibrary,
-    BrandKitService,
-) {
-    let template_library = InMemoryTemplateLibrary::default();
-    let library_templates = TemplateLibraryService::new(TemplateLibraryDeps {
-        library: Arc::new(template_library.clone()),
-        projects: projects.clone(),
-        checks: checks.clone(),
-        events: runtime.events.clone(),
-        clock: runtime.clock.clone(),
-        ids: runtime.ids.clone(),
-    });
-    let brand_kit_library = InMemoryBrandKitLibrary::writing_to(files.clone());
-    let brand_kits = BrandKitService::new(BrandKitServiceDeps {
-        library: Arc::new(brand_kit_library.clone()),
-        projects: projects.clone(),
-        media: media.clone(),
-        prober: files.clone(),
-        events: runtime.events.clone(),
-        clock: runtime.clock.clone(),
-        ids: runtime.ids.clone(),
-    });
-    (
-        template_library,
-        library_templates,
-        brand_kit_library,
-        brand_kits,
-    )
-}
-
-fn speech_services(
-    projects: &Arc<ProjectService>,
-    media: &Arc<MediaService>,
-    transcription: &TranscriptionService,
-    library: &Arc<InMemoryAppLibrary>,
-) -> (SmartCutService, CaptionService, FakeSubtitleFiles) {
-    let smart_cuts = SmartCutService::new(SmartCutServiceDeps {
-        projects: projects.clone(),
-        media: media.clone(),
-        transcription: transcription.clone(),
-        library: library.clone(),
-    });
-    let subtitles = FakeSubtitleFiles::default();
-    let captions = CaptionService::new(CaptionServiceDeps {
-        projects: projects.clone(),
-        transcription: transcription.clone(),
-        subtitles: Arc::new(subtitles.clone()),
-    });
-    (smart_cuts, captions, subtitles)
 }

@@ -2,6 +2,7 @@
 //! tested without IO, and deterministic ids and clocks.
 
 mod agent_fakes;
+mod export_fakes;
 mod font_fakes;
 mod job_fakes;
 mod media_fakes;
@@ -15,12 +16,14 @@ mod memory_template_library;
 mod memory_transcripts;
 mod runtime_fakes;
 mod subtitle_fakes;
+mod testbed_services;
 mod transcription_fakes;
 mod vision_fakes;
 
 pub use agent_fakes::{
     FakeAgentWorkspaces, REPLAY_PROVIDER_ID, ReplayProvider, ReplayScript, ReplayStep,
 };
+pub use export_fakes::{FakeExportOutputs, FinishedExportFile};
 pub use font_fakes::{FAKE_FONT_BYTES, FakeFontCatalog};
 pub use job_fakes::{
     FakeFrameExtractor, FakeJobRunner, FakeMediaTools, fake_audio_analysis, fake_scene_detection,
@@ -40,6 +43,7 @@ pub use runtime_fakes::{
     FakeRendererLink, FixedClock, RecordingEventSink, SequentialIds, SequentialTokens,
 };
 pub use subtitle_fakes::FakeSubtitleFiles;
+pub use testbed_services::TESTBED_EXPORTS_DIR;
 pub use transcription_fakes::{
     FAKE_WHISPER_PATH, FakeDownloader, FakeModelFile, FakeModelFiles, FakeSpeechExtractor,
     FakeTranscriber, fake_gpu_offer, fake_transcript,
