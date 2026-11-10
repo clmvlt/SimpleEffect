@@ -69,7 +69,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | [x] | 27 | [Export vidéo (rendu final)](27-export-video.md) ⚠️ | 16 | 21 → 26 |
 | [ ] | 28 | [Export Premiere Pro](28-export-premiere.md) ⚠️ | 23, 27 | — |
 | **Phase 8 — Finition** |||||
-| [ ] | 29 | [Performance et robustesse](29-performance-robustesse.md) | 28 | — |
+| [x] | 29 | [Performance et robustesse](29-performance-robustesse.md) | 28 | — |
 | [ ] | 30 | [Packaging multi-plateforme](30-packaging.md) | 29 | — |
 
 « Parallélisable » signifie : peut être développé dans une session séparée (idéalement sur une branche ou un worktree séparé) sans toucher aux mêmes fichiers. En cas de doute, reste séquentiel.
