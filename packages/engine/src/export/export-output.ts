@@ -43,7 +43,7 @@ const QUALITY_LEVELS: Record<ExportQuality, QualityLevel> = {
 };
 
 /** Mediabunny's quality of a picture rate: a level, or an explicit bitrate. */
-function videoQuality(video: VideoExportSettings): Quality {
+export function videoQuality(video: VideoExportSettings): Quality {
   return video.rate.kind === 'quality'
     ? new Quality(QUALITY_LEVELS[video.rate.level])
     : new Quality({ bitrate: video.rate.bitsPerSecond });

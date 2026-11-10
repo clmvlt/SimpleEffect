@@ -44,4 +44,10 @@ export {
   type AudioBlock,
   type ExportFrames,
 } from './export-timing';
+export {
+  audioEncoderSupport,
+  videoEncoderSupport,
+  type AudioEncoderSupport,
+  type VideoEncoderSupport,
+} from './export-support';
 export { renderExport, type ExportRenderContext, type ExportRenderJob } from './render-export';
