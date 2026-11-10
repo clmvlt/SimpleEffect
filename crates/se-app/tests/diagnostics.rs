@@ -12,6 +12,11 @@ use se_app::{
 use se_protocol::{ClientDiagnostics, CodecSupport, ComponentVersion, CoreInfo};
 
 const HOME: &str = "C:\\Users\\Marie Dupont";
+/// An absolute archive path on the platform running the test (the service refuses relative ones).
+#[cfg(windows)]
+const ARCHIVE: &str = "C:\\Exports\\diagnostic.zip";
+#[cfg(not(windows))]
+const ARCHIVE: &str = "/exports/diagnostic.zip";
 const TOKEN: &str = "3f9a1c0b7d2e4f6a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a";
 
 async fn report(services: &MediaTestbed) -> DiagnosticsReport {
@@ -74,7 +79,7 @@ async fn the_archive_holds_the_report_and_logs_with_personal_data_masked() {
         "C:\\logs".into(),
         Some(Path::new(HOME)),
     );
-    let path = Path::new("C:\\Exports\\diagnostic.zip");
+    let path = Path::new(ARCHIVE);
 
     let summary = service
         .export(path, &report(&services).await)
