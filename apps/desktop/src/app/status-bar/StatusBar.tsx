@@ -1,6 +1,7 @@
 import { StatusDot } from '@se/ui';
 import { useTranslation } from 'react-i18next';
 
+import { AboutButton } from '../../features/about';
 import { AiStatusIndicator } from '../../features/ai';
 import { openSettings } from '../../features/settings';
 import { useConnectionStatus } from '../../shared/core';
@@ -10,7 +11,7 @@ import { SaveStateIndicator } from './SaveStateIndicator';
 /**
  * The 24 px bar at the bottom of the window: core connection (announced politely when it
  * changes), the AI provider's state (a click opens the AI settings), the open project's save
- * failure if any, and the app version.
+ * failure if any, and the app version (a click opens « À propos »).
  */
 export function StatusBar() {
   const { t } = useTranslation();
@@ -30,7 +31,9 @@ export function StatusBar() {
         }}
       />
       <SaveStateIndicator />
-      <p className="ml-auto tabular-nums">{t('statusBar.version', { version: __APP_VERSION__ })}</p>
+      <div className="ml-auto">
+        <AboutButton />
+      </div>
     </footer>
   );
 }

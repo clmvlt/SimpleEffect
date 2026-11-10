@@ -215,7 +215,7 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Audio scrub** | Short snippets of sound played when the paused playhead moves | `AudioScheduler.scrub` |
 | **Level meter** | Peak and RMS per channel of the master, measured in an AudioWorklet and shown in dBFS | `AudioMeter`, `Meter` |
 | **Playback session** | The viewer's playback outside React: controller, audio engine, playhead store, picture engine | `PlaybackSession` |
-| **Performance budget** | A limit the app must hold on the dev machine (scrub < 100 ms, no dropped frame at 1×…), measured in « Réglages → Performances » and by `scripts/perf/` | `docs/performance.md`, `BUDGETS` |
+| **Performance budget** | A limit the app must hold on the dev machine (scrub < 100 ms, no dropped frame at 1×…), measured in « À propos → Performances » and by `scripts/perf/` | `docs/performance.md`, `BUDGETS` |
 | **Performance HUD** | The viewer overlay with real frames per second, dropped frames, decoding work and caches | `PerformanceHud` |
 | **Golden frame** | A reference PNG a rendered test scene must match within a tolerance (`packages/engine/test/golden/references/`) | `expectGolden` |
 | **Premiere package** | Export folder with FCP7 XML, OTIO, overlay renders and SRT | — |

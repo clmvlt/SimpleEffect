@@ -90,7 +90,7 @@ only absorb user and system commits.
 
 ### In the app
 
-« Réglages → Performances → Mesurer les performances » times 30 core round trips, 20 scrub steps
+« À propos → Performances → Mesurer les performances » times 30 core round trips, 20 scrub steps
 over the open sequence, 3 s of playback at 1× and the main-thread frames meanwhile, then compares
 them with the budgets. Open a project and show its sequence in the viewer first. The window must
 be visible: a hidden or occluded window gets no animation frames, so the measure refuses to start

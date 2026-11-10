@@ -55,6 +55,9 @@ function bridge(existing: readonly string[] = []) {
       return Promise.resolve({ path, exists: existing.includes(path) });
     }),
     setExportActivity: () => Promise.resolve(),
+    getRuntimeInfo: () => new Promise(() => undefined),
+    getThirdPartyNotices: () => Promise.resolve(null),
+    showLicencesFolder: () => Promise.resolve(),
     onNotificationClick: () => () => undefined,
   } satisfies SimpleEffectBridge;
 }

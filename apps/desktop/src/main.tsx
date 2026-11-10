@@ -27,7 +27,12 @@ const projectStore = createProjectStore();
 const projectSync = connectProjectSync(coreClient, projectStore);
 const shortcuts = new ShortcutRegistry(detectKeyboardPlatform());
 const i18n = createI18n();
-const router = createHashRouter(createAppRoutes({ layoutStorage: uiPreferencesStorage() }));
+const router = createHashRouter(
+  createAppRoutes({
+    layoutStorage: uiPreferencesStorage(),
+    preferences: uiPreferencesStorage(),
+  }),
+);
 
 createRoot(container).render(
   <StrictMode>

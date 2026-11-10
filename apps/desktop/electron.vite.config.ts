@@ -14,10 +14,16 @@ const projectRoot = import.meta.dirname;
 /** Where the licence notices are assembled (`scripts/generate-notices.mjs`, prompt 30). */
 const noticesDir = resolve(projectRoot, 'out/notices');
 
+/** The `version` of a `package.json`. */
+function packageVersion(path: string): string {
+  return (JSON.parse(readFileSync(path, 'utf8')) as { version: string }).version;
+}
+
 /** The app version, shown in the status bar (`__APP_VERSION__`, declared in `src/env.d.ts`). */
-const appVersion = (
-  JSON.parse(readFileSync(resolve(projectRoot, 'package.json'), 'utf8')) as { version: string }
-).version;
+const appVersion = packageVersion(resolve(projectRoot, 'package.json'));
+
+/** The engine's version, shown in « À propos » (`__ENGINE_VERSION__`). */
+const engineVersion = packageVersion(resolve(projectRoot, '../../packages/engine/package.json'));
 
 /**
  * Three bundles: Electron main (ESM), preload (CommonJS, required by `sandbox: true`) and the
@@ -43,7 +49,10 @@ export default defineConfig({
   },
   renderer: {
     root: resolve(projectRoot, 'src'),
-    define: { __APP_VERSION__: JSON.stringify(appVersion) },
+    define: {
+      __APP_VERSION__: JSON.stringify(appVersion),
+      __ENGINE_VERSION__: JSON.stringify(engineVersion),
+    },
     plugins: [
       contentSecurityPolicyPlugin(),
       react(),
