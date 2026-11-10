@@ -6,7 +6,9 @@ import type { ViewerProbe } from '../../../shared/performance';
 import { budgetRows } from './budgets';
 import {
   measurePerformance,
+  MeasureStoppedError,
   scrubTimes,
+  SEEK_TIMEOUT_MS,
   type MeasureDependencies,
   type MeasureStep,
 } from './measure-performance';
@@ -43,9 +45,12 @@ function fakes(probe: ViewerProbe | null) {
       played.push([start, end]);
     },
     recordFrames: () => () => [16, 17, 16, 70, 16],
-    wait: () => Promise.resolve(),
+    // The seek timeout never fires unless a test says so.
+    wait: (milliseconds) =>
+      milliseconds >= SEEK_TIMEOUT_MS ? new Promise<void>(() => undefined) : Promise.resolve(),
     now: () => clock,
     heapBytes: () => 120 * 1_048_576,
+    windowVisible: () => true,
     onStep: (step) => {
       steps.push(step);
     },
@@ -124,6 +129,29 @@ describe('measurePerformance', () => {
     const { dependencies, played } = fakes(viewer);
     await measurePerformance(dependencies);
     expect(played).toEqual([[0, 3 * SECOND]]);
+  });
+
+  it('refuses to measure a hidden window', async () => {
+    const { dependencies, steps } = fakes(null);
+    dependencies.windowVisible = () => false;
+    await expect(measurePerformance(dependencies)).rejects.toEqual(
+      new MeasureStoppedError('hiddenWindow'),
+    );
+    expect(steps).toEqual([]);
+  });
+
+  it('stops when the viewer draws nothing instead of waiting forever', async () => {
+    const { viewer } = probe(60 * SECOND);
+    const stalled: ViewerProbe = { ...viewer, seek: () => new Promise<number>(() => undefined) };
+    const { dependencies } = fakes(stalled);
+    dependencies.wait = () => Promise.resolve();
+    await expect(measurePerformance(dependencies)).rejects.toMatchObject({
+      reason: 'viewerStalled',
+    });
+    dependencies.windowVisible = vi.fn().mockReturnValueOnce(true).mockReturnValue(false);
+    await expect(measurePerformance(dependencies)).rejects.toMatchObject({
+      reason: 'hiddenWindow',
+    });
   });
 
   it('reports a failing core as a rejection', async () => {

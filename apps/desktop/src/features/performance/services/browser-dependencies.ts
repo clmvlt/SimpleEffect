@@ -44,6 +44,7 @@ export function browserDependencies(
       }),
     now: () => performance.now(),
     heapBytes: () => (performance as ChromiumPerformance).memory?.usedJSHeapSize ?? null,
+    windowVisible: () => document.visibilityState === 'visible',
     onStep,
   };
 }

@@ -96,6 +96,11 @@ export function PerformanceSection() {
         )}
       </div>
       {state.kind === 'done' && <ReportTable report={state.report} />}
+      {state.kind === 'stopped' && (
+        <p role="alert" className="text-xs text-warning">
+          {t(`performance.stopped.${state.reason}`)}
+        </p>
+      )}
       {state.kind === 'failed' && (
         <p role="alert" className="text-xs text-danger">
           {t(state.errorKey)}

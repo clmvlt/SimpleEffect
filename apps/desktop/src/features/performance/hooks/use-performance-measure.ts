@@ -5,6 +5,7 @@ import { errorMessageKey, type ErrorMessageKey } from '../../../shared/errors';
 import { browserDependencies } from '../services/browser-dependencies';
 import {
   measurePerformance,
+  MeasureStoppedError,
   type MeasureStep,
   type PerformanceReport,
 } from '../services/measure-performance';
@@ -14,7 +15,9 @@ export type MeasureState =
   | { readonly kind: 'idle' }
   | { readonly kind: 'running'; readonly step: MeasureStep }
   | { readonly kind: 'done'; readonly report: PerformanceReport }
-  | { readonly kind: 'failed'; readonly errorKey: ErrorMessageKey };
+  | { readonly kind: 'failed'; readonly errorKey: ErrorMessageKey }
+  /** The window was hidden or the viewer drew nothing for too long. */
+  | { readonly kind: 'stopped'; readonly reason: MeasureStoppedError['reason'] };
 
 /** Runs the in-app performance measure (« Mesurer les performances ») and keeps its result. */
 export function usePerformanceMeasure(): {
@@ -34,7 +37,11 @@ export function usePerformanceMeasure(): {
         setState({ kind: 'done', report });
       },
       (error: unknown) => {
-        setState({ kind: 'failed', errorKey: errorMessageKey(error) });
+        setState(
+          error instanceof MeasureStoppedError
+            ? { kind: 'stopped', reason: error.reason }
+            : { kind: 'failed', errorKey: errorMessageKey(error) },
+        );
       },
     );
   };

@@ -1926,6 +1926,10 @@
     },
     "milliseconds": "{{value}} ms",
     "noViewer": "Ouvrez un projet dont la séquence contient des plans pour mesurer aussi le viewer.",
-    "details": "Lecture : {{fps}} images/s · {{frames}} images vidéo ouvertes · tas JavaScript : {{heap}} Mo"
+    "details": "Lecture : {{fps}} images/s · {{frames}} images vidéo ouvertes · tas JavaScript : {{heap}} Mo",
+    "stopped": {
+      "hiddenWindow": "Mesure interrompue : la fenêtre est masquée ou réduite, le viewer ne dessine plus. Gardez-la visible pendant la mesure.",
+      "viewerStalled": "Mesure interrompue : le viewer n’a affiché aucune image pendant 10 secondes."
+    }
   }
 }
