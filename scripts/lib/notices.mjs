@@ -167,7 +167,10 @@ export function noticesText(document) {
 
 /** @param {string} text */
 function normaliseText(text) {
-  return text.replace(/^\u{FEFF}/u, '').replaceAll('\r\n', '\n').trim();
+  return text
+    .replace(/^\u{FEFF}/u, '')
+    .replaceAll('\r\n', '\n')
+    .trim();
 }
 
 const SOURCE_ORDER = { component: 0, npm: 1, cargo: 2 };
