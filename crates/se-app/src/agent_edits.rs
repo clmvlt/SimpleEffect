@@ -49,7 +49,8 @@ use crate::{
     ports::IdGenerator, project_actor::AiCommit,
 };
 
-/// How many times a call is planned again when the project changed while it was planned.
+/// How many times a call is planned again when the project changed while it was planned. AI
+/// calls never race each other (`serial`): only user and system commits can come in between.
 const MAX_ATTEMPTS: usize = 4;
 
 /// AI edits of open projects. Cheap to share (`Arc`).
@@ -57,6 +58,10 @@ pub struct AgentEditService {
     projects: Arc<ProjectService>,
     tasks: TaskService,
     ids: Arc<dyn IdGenerator>,
+    /// Held while a call plans and commits. Planning takes milliseconds, while concurrent tasks
+    /// racing on optimistic revisions starved each other (prompt 29's load test: with five tasks
+    /// editing at once, calls failed after `MAX_ATTEMPTS` replans).
+    serial: tokio::sync::Mutex<()>,
 }
 
 impl AgentEditService {
@@ -71,6 +76,7 @@ impl AgentEditService {
             projects,
             tasks,
             ids,
+            serial: tokio::sync::Mutex::new(()),
         }
     }
 
@@ -92,6 +98,7 @@ impl AgentEditService {
             }));
         }
         let handle = self.projects.handle(agent.project_id).await?;
+        let _serial = self.serial.lock().await;
         for _ in 0..MAX_ATTEMPTS {
             let view = handle.view().await?;
             let base = &view.project;
