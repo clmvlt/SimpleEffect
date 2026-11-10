@@ -555,3 +555,54 @@ async fn a_running_task_cannot_be_reverted_and_changesets_survive_reopening() {
         range(8.0, 10.0)
     );
 }
+
+#[tokio::test(start_paused = true)]
+async fn an_agent_crashing_mid_task_leaves_its_edits_whole_and_revertible() {
+    let bed = bed().await;
+    bed.services.agent.push_script(ReplayScript(vec![
+        se_app::test_support::ReplayStep::StartSession,
+        se_app::test_support::ReplayStep::Hold,
+    ]));
+    let running = bed.task(None, None).await;
+    bed.apply(&running, vec![move_to(CAPTION, 8.5)])
+        .await
+        .unwrap();
+    // The CLI dies without reporting a result (crash, lost connection).
+    bed.services.agent.release(1);
+    run_for(100).await;
+    let task = bed
+        .services
+        .tasks
+        .list(bed.project_id)
+        .await
+        .unwrap()
+        .into_iter()
+        .find(|task| task.id == running.task_id)
+        .unwrap();
+    let se_protocol::TaskStatus::Failed { failure, .. } = task.status else {
+        panic!("a crashed run fails its task: {:?}", task.status);
+    };
+    assert_eq!(failure, se_protocol::AgentFailureKind::Crashed);
+    assert!(
+        task.changeset_id.is_some(),
+        "the edit made before the crash is recorded"
+    );
+    // The edit stayed whole, and reverting the task brings the project back.
+    assert_eq!(
+        find(&*bed.project().await, id(CAPTION))
+            .unwrap()
+            .timeline_range,
+        range(8.5, 10.5)
+    );
+    let report = bed
+        .services
+        .tasks
+        .revert(bed.project_id, running.task_id)
+        .await
+        .unwrap();
+    assert!(report.reverted);
+    assert_eq!(
+        without_revisions(bed.project().await.as_ref().clone()),
+        without_revisions(bed.initial.clone())
+    );
+}

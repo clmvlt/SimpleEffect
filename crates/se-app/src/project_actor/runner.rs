@@ -1,9 +1,9 @@
 //! The actor task: its loop, the commit flow and the debounced snapshot.
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use se_domain::{Changeset, Committed, History, Project, Transaction, commit};
-use se_protocol::{CoreEvent, ProjectHistory};
+use se_protocol::{CoreEvent, ProjectHistory, ProjectSaveState};
 use tokio::{
     sync::mpsc,
     time::{Instant, sleep_until},
@@ -17,6 +17,14 @@ use crate::{
     project_view::{history_state, project_patch},
 };
 
+/// The longest a commit waits for its snapshot while commits keep coming (each one would
+/// otherwise push the debounced save back: an agent editing every second never got saved).
+pub(super) const MAX_SAVE_WAIT: Duration = Duration::from_secs(30);
+
+/// Unsaved commits after which the snapshot is written at once (keeps the journal and the
+/// replay at the next opening short).
+pub(super) const MAX_UNSAVED_COMMITS: u64 = 200;
+
 /// State owned by the actor task.
 pub(super) struct ProjectActor {
     pub(super) project: Arc<Project>,
@@ -29,6 +37,10 @@ pub(super) struct ProjectActor {
     saved_revision: u64,
     /// When the next snapshot is due; `None` when nothing waits to be saved.
     save_due: Option<Instant>,
+    /// When the oldest commit not in the snapshot was installed.
+    unsaved_since: Option<Instant>,
+    /// Whether the last snapshot write failed (clients were told).
+    save_failing: bool,
 }
 
 /// Runs the actor until it is closed or every handle is dropped.
@@ -47,6 +59,8 @@ pub(super) async fn run(
         deps,
         changesets: OpenChangesets::new(changesets),
         save_due: None,
+        unsaved_since: None,
+        save_failing: false,
     };
     loop {
         tokio::select! {
@@ -200,8 +214,21 @@ impl ProjectActor {
                 project_id: self.project.id,
                 history: history_state(&self.history),
             }));
-        self.save_due = Some(Instant::now() + self.deps.save_delay);
+        self.schedule_snapshot();
         self.project.revision
+    }
+
+    /// Debounces the snapshot after a commit, bounded by [`MAX_SAVE_WAIT`] since the oldest
+    /// unsaved commit, and immediate after [`MAX_UNSAVED_COMMITS`].
+    fn schedule_snapshot(&mut self) {
+        let now = Instant::now();
+        let oldest = *self.unsaved_since.get_or_insert(now);
+        let unsaved = self.project.revision.saturating_sub(self.saved_revision);
+        self.save_due = Some(if unsaved >= MAX_UNSAVED_COMMITS {
+            now
+        } else {
+            (now + self.deps.save_delay).min(oldest + MAX_SAVE_WAIT)
+        });
     }
 
     /// Writes the snapshot; on failure retries after another delay (the journal keeps every
@@ -211,13 +238,30 @@ impl ProjectActor {
             Ok(()) => {
                 self.saved_revision = self.project.revision;
                 self.save_due = None;
+                self.unsaved_since = None;
                 tracing::debug!(revision = self.saved_revision, "snapshot saved");
+                if std::mem::take(&mut self.save_failing) {
+                    self.publish_save_state(None);
+                }
             }
             Err(error) => {
                 tracing::warn!(%error, "saving the snapshot failed; retrying later");
                 self.save_due = Some(Instant::now() + self.deps.save_delay);
+                self.save_failing = true;
+                self.publish_save_state(Some(error.to_string()));
             }
         }
+    }
+
+    fn publish_save_state(&self, failure: Option<String>) {
+        let unsaved = self.project.revision.saturating_sub(self.saved_revision);
+        self.deps
+            .events
+            .publish(CoreEvent::ProjectSaveStateChanged(ProjectSaveState {
+                project_id: self.project.id,
+                failure,
+                unsaved_changes: u32::try_from(unsaved).unwrap_or(u32::MAX),
+            }));
     }
 
     /// Saves what is not saved yet, then releases the store.

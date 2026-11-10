@@ -24,7 +24,7 @@ use std::{
 };
 
 use se_domain::{Changeset, ChangesetId, ItemId, Project, ProjectId, TaskId, Transaction};
-use se_protocol::{HistoryState, TaskRevertReport};
+use se_protocol::{HistoryState, ProjectRecovery, TaskRevertReport};
 use tokio::sync::{mpsc, oneshot};
 use tracing::Instrument;
 
@@ -139,6 +139,7 @@ pub struct ProjectActorHandle {
     analyses: Arc<dyn AnalysisStore>,
     tasks: Arc<dyn TaskStore>,
     transcripts: Arc<dyn TranscriptStore>,
+    recovery: Option<ProjectRecovery>,
     sender: mpsc::Sender<Message>,
 }
 
@@ -159,11 +160,26 @@ impl ProjectActorHandle {
             analyses: store.analyses(),
             tasks: store.tasks(),
             transcripts: store.transcripts(),
+            recovery: None,
             sender,
         };
         let span = tracing::info_span!("project_actor", project = %project.id);
         tokio::spawn(runner::run(project, changesets, store, deps, inbox).instrument(span));
         handle
+    }
+
+    /// The same handle, remembering what opening the project recovered (shown to clients in
+    /// every session of this opening).
+    #[must_use]
+    pub fn with_recovery(mut self, recovery: Option<ProjectRecovery>) -> Self {
+        self.recovery = recovery;
+        self
+    }
+
+    /// What opening the project recovered, if anything.
+    #[must_use]
+    pub fn recovery(&self) -> Option<&ProjectRecovery> {
+        self.recovery.as_ref()
     }
 
     /// Id of the project.

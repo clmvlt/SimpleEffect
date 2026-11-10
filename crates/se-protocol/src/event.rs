@@ -6,8 +6,8 @@ use ts_rs::TS;
 
 use crate::{
     AiStatus, ExportInfo, ExportRenderRequest, FrameRenderRequest, JobProgress, JobSnapshot,
-    ProjectHistory, ProjectPatch, ProjectSession, ReframeFailure, Task, TaskEventRecord,
-    TemplateCheckRequest, TranscriptionStatus,
+    ProjectHistory, ProjectPatch, ProjectSaveState, ProjectSession, ReframeFailure, Task,
+    TaskEventRecord, TemplateCheckRequest, TranscriptionStatus,
 };
 
 /// An event pushed inside a [`crate::EventEnvelope`], tagged by `kind` (camelCase).
@@ -46,6 +46,9 @@ pub enum CoreEvent {
     },
     /// What undo and redo would do changed for an open project.
     HistoryChanged(ProjectHistory),
+    /// Saving an open project's snapshot started failing, failed again, or works again
+    /// (prompt 29). Commits stay safe in the journal while it fails.
+    ProjectSaveStateChanged(ProjectSaveState),
     // Job events carry the snapshot in a `job` field: flattened, its own `kind` (the job kind)
     // would collide with the event tag.
     /// A background job was queued (again, with `attempt: 2`, for its automatic retry).

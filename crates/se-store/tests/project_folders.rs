@@ -55,7 +55,10 @@ async fn creating_writes_the_documented_layout() {
     assert_eq!(repository.locate(&path).await.unwrap(), path);
 
     let store = repository.open(&path).await.unwrap();
-    assert_eq!(store.load_snapshot().await.unwrap(), example_project());
+    assert_eq!(
+        store.load_snapshot().await.unwrap().project,
+        example_project()
+    );
 
     let again = repository
         .create(&parent.path().join("projects"), &example_project())
@@ -129,8 +132,13 @@ async fn the_journal_survives_reopening_and_is_truncated_by_snapshots() {
     );
     assert_eq!(store.read_journal_since(44).await.unwrap().len(), 1);
 
+    // Each snapshot drops the entries the snapshot it replaces (now `.bak.1`) holds.
+    assert_eq!(store.load_snapshot().await.unwrap().project.revision, 42);
     let mut project = example_project();
     project.revision = 44;
+    store.save_snapshot(&project).await.unwrap();
+    assert_eq!(store.read_journal_since(0).await.unwrap().len(), 3);
+    project.revision = 45;
     store.save_snapshot(&project).await.unwrap();
     assert_eq!(
         store.read_journal_since(0).await.unwrap(),
@@ -164,7 +172,7 @@ async fn load_fixture(name: &str) -> se_domain::Project {
         .join(name);
     fs::copy(fixture, ProjectLayout::new(&path).snapshot()).unwrap();
     let store = repository.open(&path).await.unwrap();
-    store.load_snapshot().await.unwrap()
+    store.load_snapshot().await.unwrap().project
 }
 
 /// The example project as the version-5 fixture holds it: the fast interview clip fits the
@@ -442,6 +450,89 @@ async fn newer_or_broken_documents_are_refused_with_explanations() {
     let error = store.load_snapshot().await.unwrap_err();
     assert!(matches!(error, StorageError::Corrupted { .. }));
     assert!(error.to_string().contains("project.json.bak.1"));
+    assert!(error.to_string().contains("no readable backup"), "{error}");
+}
+
+#[tokio::test]
+async fn an_unreadable_snapshot_is_set_aside_for_the_newest_readable_backup() {
+    let parent = tempfile::tempdir().unwrap();
+    let (repository, path) = created(&parent).await;
+    let layout = ProjectLayout::new(&path);
+    let store = repository.open(&path).await.unwrap();
+    store.load_snapshot().await.unwrap();
+    let mut project = example_project();
+    for revision in 43..=45 {
+        project.revision = revision;
+        store.save_snapshot(&project).await.unwrap();
+    }
+    store
+        .append_journal(&rename_entry(46, "late"))
+        .await
+        .unwrap();
+    drop(store);
+    // A torn write of another tool, and a damaged newest backup.
+    fs::write(layout.snapshot(), "{\"id\": \"0193").unwrap();
+    fs::write(layout.backup(1), "").unwrap();
+
+    let store = repository.open(&path).await.unwrap();
+    let loaded = store.load_snapshot().await.unwrap();
+    assert_eq!(loaded.project.revision, 43);
+    let restored = loaded.restored.unwrap();
+    assert_eq!(restored.backup, "project.json.bak.2");
+    assert!(
+        restored.problem.contains("invalid JSON"),
+        "{}",
+        restored.problem
+    );
+    assert!(!layout.snapshot().exists());
+    assert_eq!(
+        fs::read_to_string(layout.corrupted_snapshot()).unwrap(),
+        "{\"id\": \"0193"
+    );
+    // The journal kept every entry after `.bak.1` (revision 44): 45 is gone with the snapshot.
+    let journal = store.read_journal_since(43).await.unwrap();
+    assert_eq!(
+        journal
+            .iter()
+            .map(|entry| entry.revision)
+            .collect::<Vec<_>>(),
+        [46]
+    );
+}
+
+#[tokio::test]
+async fn a_backup_plus_the_journal_rebuild_the_latest_commits() {
+    let parent = tempfile::tempdir().unwrap();
+    let (repository, path) = created(&parent).await;
+    let layout = ProjectLayout::new(&path);
+    let store = repository.open(&path).await.unwrap();
+    store.load_snapshot().await.unwrap();
+    for (revision, name) in [(43, "A"), (44, "B")] {
+        store
+            .append_journal(&rename_entry(revision, name))
+            .await
+            .unwrap();
+    }
+    let mut project = example_project();
+    project.revision = 44;
+    store.save_snapshot(&project).await.unwrap();
+    store.append_journal(&rename_entry(45, "C")).await.unwrap();
+    drop(store);
+    fs::write(layout.snapshot(), "garbage").unwrap();
+
+    let store = repository.open(&path).await.unwrap();
+    let loaded = store.load_snapshot().await.unwrap();
+    assert_eq!(loaded.restored.unwrap().backup, "project.json.bak.1");
+    assert_eq!(loaded.project.revision, 42);
+    let journal = store.read_journal_since(42).await.unwrap();
+    assert_eq!(
+        journal,
+        [
+            rename_entry(43, "A"),
+            rename_entry(44, "B"),
+            rename_entry(45, "C")
+        ]
+    );
 }
 
 #[tokio::test]
@@ -466,7 +557,7 @@ async fn duplicates_get_a_numbered_folder_their_data_and_no_journal() {
     let copy_path = repository.duplicate(&path, &copy).await.unwrap();
     assert_eq!(copy_path.file_name().unwrap(), "Example 2.seproj");
     let copy_store = repository.open(&copy_path).await.unwrap();
-    assert_eq!(copy_store.load_snapshot().await.unwrap(), copy);
+    assert_eq!(copy_store.load_snapshot().await.unwrap().project, copy);
     assert_eq!(copy_store.read_journal_since(0).await.unwrap(), []);
     let copy_db = rusqlite::Connection::open(ProjectLayout::new(&copy_path).database()).unwrap();
     let transcripts: i64 = copy_db

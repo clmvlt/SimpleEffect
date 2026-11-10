@@ -171,6 +171,8 @@ export type * from './ProjectHeader';
 export type * from './ProjectHistory';
 export type * from './ProjectId';
 export type * from './ProjectPatch';
+export type * from './ProjectRecovery';
+export type * from './ProjectSaveState';
 export type * from './ProjectSession';
 export type * from './ProjectSettings';
 export type * from './ProjectSnapshot';

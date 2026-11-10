@@ -7,8 +7,8 @@ use std::{
 
 use async_trait::async_trait;
 use se_app::ports::{
-    AnalysisStore, ChangesetWrite, JournalEntry, ProjectStore, StorageError, TaskStore,
-    TranscriptStore,
+    AnalysisStore, ChangesetWrite, JournalEntry, LoadedSnapshot, ProjectStore, StorageError,
+    TaskStore, TranscriptStore,
 };
 use se_domain::{Changeset, Project};
 
@@ -28,6 +28,10 @@ pub struct FsProjectStore {
     layout: ProjectLayout,
     database: Arc<Mutex<ProjectDatabase>>,
     lock: Mutex<Option<ProjectLock>>,
+    /// Revision of the snapshot on disk (read or last written): the journal keeps every entry
+    /// after it when the next snapshot is written, so the newest backup plus the journal always
+    /// rebuild the document (prompt 29).
+    snapshot_revision: Arc<Mutex<Option<u64>>>,
 }
 
 impl FsProjectStore {
@@ -37,6 +41,7 @@ impl FsProjectStore {
             layout,
             database: Arc::new(Mutex::new(database)),
             lock: Mutex::new(Some(lock)),
+            snapshot_revision: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -53,15 +58,22 @@ impl FsProjectStore {
     }
 }
 
+/// Locks the snapshot revision, recovering it after a panic elsewhere.
+fn lock_revision(revision: &Mutex<Option<u64>>) -> std::sync::MutexGuard<'_, Option<u64>> {
+    revision.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
 #[async_trait]
 impl ProjectStore for FsProjectStore {
     fn path(&self) -> &Path {
         self.layout.root()
     }
 
-    async fn load_snapshot(&self) -> Result<Project, StorageError> {
+    async fn load_snapshot(&self) -> Result<LoadedSnapshot, StorageError> {
         let layout = self.layout.clone();
-        blocking(self.layout.root(), move || read_snapshot(&layout)).await
+        let loaded = blocking(self.layout.root(), move || read_snapshot(&layout)).await?;
+        *lock_revision(&self.snapshot_revision) = Some(loaded.project.revision);
+        Ok(loaded)
     }
 
     async fn read_journal_since(&self, revision: u64) -> Result<Vec<JournalEntry>, StorageError> {
@@ -91,9 +103,12 @@ impl ProjectStore for FsProjectStore {
 
     async fn save_snapshot(&self, project: &Project) -> Result<(), StorageError> {
         let (layout, project) = (self.layout.clone(), project.clone());
+        let revision = Arc::clone(&self.snapshot_revision);
         self.with_database(move |database| {
             write_snapshot(&layout, &project)?;
-            database.truncate_through(project.revision)
+            // The snapshot just replaced became `.bak.1`: keep the entries after it.
+            let previous = lock_revision(&revision).replace(project.revision);
+            database.truncate_through(previous.unwrap_or(0).min(project.revision))
         })
         .await
     }

@@ -34,7 +34,9 @@ pub use media::{
     FrameExtractor, FrameRequest, MediaError, MediaFiles, MediaJobOutput, MediaJobRunner,
     MediaJobSpec, MediaProber, MediaTask, MediaTools, ProbedMedia, ProgressSink,
 };
-pub use project_repository::{ChangesetWrite, JournalEntry, ProjectRepository, ProjectStore};
+pub use project_repository::{
+    ChangesetWrite, JournalEntry, LoadedSnapshot, ProjectRepository, ProjectStore, RestoredSnapshot,
+};
 pub use renderer::RendererLink;
 pub use runtime::{Clock, EventSink, IdGenerator, TokenSource};
 pub use storage_error::StorageError;

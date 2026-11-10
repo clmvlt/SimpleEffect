@@ -188,6 +188,65 @@ async fn a_failed_snapshot_is_retried_and_the_journal_kept() {
 }
 
 #[tokio::test(start_paused = true)]
+async fn commits_that_keep_coming_are_saved_within_thirty_seconds() {
+    let harness = start().await;
+    // One commit a second (an agent at work): the debounce alone would never fire.
+    for index in 1..=29 {
+        let start_ms = 8000 + i64::try_from(index % 2).unwrap() * 1000;
+        harness
+            .actor
+            .apply(move_text(index, start_ms))
+            .await
+            .unwrap();
+        sleep(Duration::from_secs(1)).await;
+    }
+    assert_eq!(harness.repository.folder(PATH).unwrap().snapshot_saves, 0);
+    harness.actor.apply(move_text(30, 8000)).await.unwrap();
+    sleep(Duration::from_millis(1100)).await;
+    let folder = harness.repository.folder(PATH).unwrap();
+    assert_eq!(
+        folder.snapshot_saves, 1,
+        "saved 30 s after the first unsaved commit"
+    );
+    assert_eq!(folder.snapshot.revision, harness.start_revision + 30);
+}
+
+#[tokio::test(start_paused = true)]
+async fn failing_saves_are_announced_and_their_end_too() {
+    let harness = start().await;
+    harness.repository.fail_snapshot_saves(true);
+    harness.actor.apply(move_text(1, 8000)).await.unwrap();
+    harness.actor.apply(move_text(2, 9000)).await.unwrap();
+    harness.events.take();
+    sleep(SAVE_DELAY + Duration::from_millis(100)).await;
+    let states = save_states(&harness.events.take());
+    assert_eq!(states.len(), 1);
+    assert!(states[0].failure.is_some());
+    assert_eq!(states[0].unsaved_changes, 2);
+
+    harness.repository.fail_snapshot_saves(false);
+    sleep(SAVE_DELAY).await;
+    let states = save_states(&harness.events.take());
+    assert_eq!(states.len(), 1);
+    assert_eq!(states[0].failure, None);
+    assert_eq!(states[0].unsaved_changes, 0);
+    // A save that works without having failed says nothing.
+    harness.actor.apply(move_text(3, 8000)).await.unwrap();
+    sleep(SAVE_DELAY + Duration::from_millis(100)).await;
+    assert!(save_states(&harness.events.take()).is_empty());
+}
+
+fn save_states(events: &[CoreEvent]) -> Vec<se_protocol::ProjectSaveState> {
+    events
+        .iter()
+        .filter_map(|event| match event {
+            CoreEvent::ProjectSaveStateChanged(state) => Some(state.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+#[tokio::test(start_paused = true)]
 async fn undo_and_redo_are_journaled_user_transactions() {
     let harness = start().await;
     assert!(matches!(

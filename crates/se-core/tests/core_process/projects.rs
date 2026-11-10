@@ -110,6 +110,56 @@ async fn a_commit_survives_killing_the_core() {
     let snapshot = &reply["result"]["snapshot"];
     assert_eq!(snapshot["revision"], 1, "{reply}");
     assert_eq!(snapshot["sequences"].as_array().unwrap().len(), 2);
+    let recovery = &reply["result"]["recovery"];
+    assert_eq!(recovery["replayedChanges"], 1, "{reply}");
+    assert_eq!(recovery["restoredFrom"], Value::Null);
+}
+
+#[tokio::test]
+async fn a_corrupted_project_json_opens_from_its_backup_and_the_journal() {
+    let data = tempfile::tempdir().expect("data folder");
+    let projects = tempfile::tempdir().expect("projects folder");
+    let mut core = RunningCore::start_in(data.path()).await;
+    let mut socket = core.connect().await;
+    let session = create(&mut socket, projects.path(), "Damaged").await;
+    let path = session["path"].clone();
+    let project_id = session["snapshot"]["project"]["id"].clone();
+    create_sequence(&mut socket, &project_id).await;
+    // Saved (`project.json` at revision 1, `.bak.1` at 0), then one more commit, then a kill.
+    let (closed, _) = call(
+        &mut socket,
+        5,
+        json!({ "kind": "closeProject", "projectId": project_id }),
+    )
+    .await;
+    assert_eq!(closed["result"]["kind"], "closeProject", "{closed}");
+    let (opened, _) = call(
+        &mut socket,
+        6,
+        json!({ "kind": "openProject", "path": path }),
+    )
+    .await;
+    assert_eq!(opened["result"]["recovery"], Value::Null, "{opened}");
+    create_sequence(&mut socket, &project_id).await;
+    core.child.kill().await.expect("kill se-core");
+    let folder = Path::new(path.as_str().unwrap());
+    std::fs::write(folder.join("project.json"), "{\"id\": ").expect("damage project.json");
+
+    let core = RunningCore::start_in(data.path()).await;
+    let mut socket = core.connect().await;
+    let (reply, _) = call(
+        &mut socket,
+        1,
+        json!({ "kind": "openProject", "path": path }),
+    )
+    .await;
+    let snapshot = &reply["result"]["snapshot"];
+    assert_eq!(snapshot["revision"], 2, "nothing lost: {reply}");
+    assert_eq!(snapshot["sequences"].as_array().unwrap().len(), 3);
+    let recovery = &reply["result"]["recovery"];
+    assert_eq!(recovery["restoredFrom"], "project.json.bak.1", "{reply}");
+    assert_eq!(recovery["lostChanges"], 0);
+    assert!(folder.join("project.json.corrupted").is_file());
 }
 
 #[tokio::test]
