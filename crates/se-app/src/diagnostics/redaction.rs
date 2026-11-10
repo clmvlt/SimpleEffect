@@ -87,6 +87,7 @@ impl Redactor {
     }
 
     /// `text` with the home folder, file names, secrets and e-mail addresses masked.
+    #[must_use]
     pub fn redact(&self, text: &str) -> String {
         let mut text = text.to_owned();
         for spelling in &self.home_spellings {
