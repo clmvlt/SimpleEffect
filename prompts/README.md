@@ -66,7 +66,7 @@ Copie `_TEMPLATE.md` en `NN-ma-feature.md`, remplis-le, ajoute-le au tableau ci-
 | [x] | 25 | [Bibliothèque de templates et brand kit](25-bibliotheque-brand-kit.md) | 23, 24 | 26 |
 | [x] | 26 | [Recadrage automatique 16:9 → 9:16](26-recadrage-auto.md) | 16, 19 | 25 |
 | **Phase 7 — Export** |||||
-| [ ] | 27 | [Export vidéo (rendu final)](27-export-video.md) ⚠️ | 16 | 21 → 26 |
+| [x] | 27 | [Export vidéo (rendu final)](27-export-video.md) ⚠️ | 16 | 21 → 26 |
 | [ ] | 28 | [Export Premiere Pro](28-export-premiere.md) ⚠️ | 23, 27 | — |
 | **Phase 8 — Finition** |||||
 | [ ] | 29 | [Performance et robustesse](29-performance-robustesse.md) | 28 | — |
