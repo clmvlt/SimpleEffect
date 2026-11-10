@@ -114,7 +114,11 @@ async fn creating_a_project_opens_it_with_a_default_sequence() {
 #[tokio::test]
 async fn the_projects_folder_chosen_at_first_run_is_proposed() {
     let harness = harness();
-    let chosen = if cfg!(windows) { r"D:\Films" } else { "/media/films" };
+    let chosen = if cfg!(windows) {
+        r"D:\Films"
+    } else {
+        "/media/films"
+    };
     let defaults = harness
         .service
         .set_projects_folder(Path::new(chosen))

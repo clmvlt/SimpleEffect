@@ -93,7 +93,10 @@ async fn the_archive_holds_the_report_and_logs_with_personal_data_masked() {
     let entries = files.archive(path).unwrap();
     assert_eq!(
         summary.bytes,
-        entries.iter().map(|entry| entry.bytes.len() as u64).sum::<u64>()
+        entries
+            .iter()
+            .map(|entry| entry.bytes.len() as u64)
+            .sum::<u64>()
     );
     let everything: String = entries
         .iter()

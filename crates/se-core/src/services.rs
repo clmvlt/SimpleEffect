@@ -153,16 +153,8 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
     let (library_templates, brand_kits, brand_kit_files) =
         library_services(paths, events, &projects, &media, &template_checks, prober);
     let reframing = reframing_service(events, &projects, &media, reframing_jobs, sampler);
-    let diagnostics = DiagnosticsService::new(
-        Arc::new(FsDiagnosticsFiles),
-        Arc::new(SystemClock),
-        paths.logs_dir.clone(),
-        directories::BaseDirs::new()
-            .map(|dirs| dirs.home_dir().to_path_buf())
-            .as_deref(),
-    );
     Ok(Services {
-        diagnostics,
+        diagnostics: diagnostics_service(paths),
         exports,
         reframing,
         library_templates,
@@ -180,6 +172,18 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         tokens,
         transcription,
     })
+}
+
+/// Diagnostics archives of the core's logs, masking the user's home folder (se-store files).
+fn diagnostics_service(paths: &AppPaths) -> DiagnosticsService {
+    DiagnosticsService::new(
+        Arc::new(FsDiagnosticsFiles),
+        Arc::new(SystemClock),
+        paths.logs_dir.clone(),
+        directories::BaseDirs::new()
+            .map(|dirs| dirs.home_dir().to_path_buf())
+            .as_deref(),
+    )
 }
 
 /// Projects in folders on disk (se-store), new ones proposed in the documents folder.

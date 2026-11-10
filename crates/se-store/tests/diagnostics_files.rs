@@ -35,7 +35,7 @@ async fn the_newest_logs_are_read_cut_to_their_end() {
         .recent_logs(&dir.path().join("nothing"), 7, 10)
         .await
         .unwrap();
-    assert!(missing.is_empty());
+    assert_eq!(missing.len(), 0, "no logs expected: {missing:?}");
 }
 
 #[tokio::test]

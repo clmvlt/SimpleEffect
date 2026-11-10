@@ -64,7 +64,10 @@ impl ProjectService {
         if !path.is_absolute() {
             return Err(AppError::InvalidSetting {
                 name: "projects folder",
-                reason: format!("{} is not an absolute folder: choose a folder", path.display()),
+                reason: format!(
+                    "{} is not an absolute folder: choose a folder",
+                    path.display()
+                ),
             });
         }
         self.deps
