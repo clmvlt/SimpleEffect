@@ -14,6 +14,18 @@ pub async fn get_new_project_defaults(
     Ok(CommandResult::GetNewProjectDefaults(defaults))
 }
 
+/// `setProjectsFolder` (first-run wizard, prompt 30).
+pub async fn set_projects_folder(
+    context: &HandlerContext,
+    path: &str,
+) -> Result<CommandResult, ProtocolError> {
+    let defaults = context
+        .projects
+        .set_projects_folder(absolute_path(path)?)
+        .await?;
+    Ok(CommandResult::SetProjectsFolder { defaults })
+}
+
 /// `createProject`.
 pub async fn create_project(
     context: &HandlerContext,

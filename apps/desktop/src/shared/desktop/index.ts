@@ -5,7 +5,10 @@
 export type {
   ChooseFilesOptions,
   ChooseFolderOptions,
+  NoticeEntry,
+  RuntimeInfo,
   SimpleEffectBridge,
+  ThirdPartyNotices,
 } from '../../../electron/shared/bridge-api';
 export { DesktopBridgeProvider } from './DesktopBridgeProvider';
 export type { DesktopBridgeProviderProps } from './DesktopBridgeProvider';

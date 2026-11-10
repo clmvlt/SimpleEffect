@@ -1,0 +1,99 @@
+{
+  "$comment": "Components shipped with (or downloaded by) SimpleEffect that are not npm or Cargo packages. Read by scripts/generate-notices.mjs; `files` are relative to the repository root. Keep in step with scripts/binaries.manifest.json, crates/se-fonts/fonts/ and crates/se-app/src/transcription/catalogue.rs.",
+  "components": [
+    {
+      "name": "FFmpeg (ffmpeg, ffprobe)",
+      "version": "9.0.2",
+      "license": "GPL-3.0-or-later",
+      "url": "https://ffmpeg.org",
+      "note": "Unmodified builds run as separate programs: Gyan.dev (Windows), Martin Riedl (macOS), BtbN (Linux). Their sources: https://ffmpeg.org/download.html and the build pages listed in LICENSES/README.md.",
+      "files": ["LICENSES/GPL-3.0.txt"]
+    },
+    {
+      "name": "whisper.cpp",
+      "version": "1.9.5",
+      "license": "MIT",
+      "url": "https://github.com/ggml-org/whisper.cpp",
+      "files": ["LICENSES/whisper.cpp-MIT.txt"]
+    },
+    {
+      "name": "ONNX Runtime",
+      "version": "1.31.0",
+      "license": "MIT",
+      "url": "https://github.com/microsoft/onnxruntime",
+      "note": "Its third-party notices ship next to the library (bin/onnxruntime/ThirdPartyNotices.txt).",
+      "files": ["LICENSES/onnxruntime-MIT.txt"]
+    },
+    {
+      "name": "YuNet face detection model",
+      "version": "2026may",
+      "license": "MIT",
+      "url": "https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet",
+      "files": ["LICENSES/yunet-MIT.txt"]
+    },
+    {
+      "name": "Whisper models (ggml), downloaded on request",
+      "version": "large-v3-turbo, medium, small, base, tiny",
+      "license": "MIT",
+      "url": "https://huggingface.co/ggerganov/whisper.cpp",
+      "files": ["LICENSES/whisper-models-MIT.txt"]
+    },
+    {
+      "name": "Silero VAD (voice detection model), downloaded on request",
+      "version": "6.2.0",
+      "license": "MIT",
+      "url": "https://github.com/snakers4/silero-vad",
+      "files": ["LICENSES/silero-vad-MIT.txt"]
+    },
+    {
+      "name": "Electron (with Chromium and Node.js)",
+      "version": "45.2.3",
+      "license": "MIT; Chromium: BSD-3-Clause and others",
+      "url": "https://www.electronjs.org",
+      "note": "Chromium's notices ship next to the app (LICENSES.chromium.html).",
+      "files": ["apps/desktop/node_modules/electron/dist/LICENSE"]
+    },
+    {
+      "name": "Inter (font)",
+      "version": "—",
+      "license": "OFL-1.1",
+      "url": "https://github.com/rsms/inter",
+      "files": ["crates/se-fonts/fonts/inter/LICENSE"]
+    },
+    {
+      "name": "Montserrat (font)",
+      "version": "—",
+      "license": "OFL-1.1",
+      "url": "https://github.com/JulietaUla/Montserrat",
+      "files": ["crates/se-fonts/fonts/montserrat/LICENSE"]
+    },
+    {
+      "name": "Oswald (font)",
+      "version": "—",
+      "license": "OFL-1.1",
+      "url": "https://github.com/googlefonts/OswaldFont",
+      "files": ["crates/se-fonts/fonts/oswald/LICENSE"]
+    },
+    {
+      "name": "Bebas Neue (font)",
+      "version": "—",
+      "license": "OFL-1.1",
+      "url": "https://github.com/dharmatype/Bebas-Neue",
+      "files": ["crates/se-fonts/fonts/bebas-neue/LICENSE"]
+    },
+    {
+      "name": "Playfair Display (font)",
+      "version": "—",
+      "license": "OFL-1.1",
+      "url": "https://github.com/clauseggers/Playfair",
+      "files": ["crates/se-fonts/fonts/playfair-display/LICENSE"]
+    },
+    {
+      "name": "Permanent Marker (font)",
+      "version": "—",
+      "license": "Apache-2.0",
+      "url": "https://fonts.google.com/specimen/Permanent+Marker",
+      "files": ["crates/se-fonts/fonts/permanent-marker/LICENSE"]
+    }
+  ]
+}

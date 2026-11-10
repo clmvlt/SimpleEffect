@@ -112,6 +112,31 @@ async fn creating_a_project_opens_it_with_a_default_sequence() {
 }
 
 #[tokio::test]
+async fn the_projects_folder_chosen_at_first_run_is_proposed() {
+    let harness = harness();
+    let chosen = if cfg!(windows) {
+        r"D:\Films"
+    } else {
+        "/media/films"
+    };
+    let defaults = harness
+        .service
+        .set_projects_folder(Path::new(chosen))
+        .await
+        .unwrap();
+    assert_eq!(Path::new(&defaults.parent_dir), Path::new(chosen));
+    let again = harness.service.new_project_defaults().await.unwrap();
+    assert_eq!(again.parent_dir, defaults.parent_dir);
+
+    let error = harness
+        .service
+        .set_projects_folder(Path::new("relative/folder"))
+        .await
+        .unwrap_err();
+    assert_eq!(code(error), ErrorCode::InvalidRequest);
+}
+
+#[tokio::test]
 async fn creation_refuses_empty_names_invalid_formats_and_taken_folders() {
     let harness = harness();
     let parent = Path::new(PARENT);

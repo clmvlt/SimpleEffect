@@ -1,5 +1,7 @@
 # Builds the installers of every platform and, for version tags, publishes a GitHub release.
-# Release commands for humans: GUIDE-GIT.md.
+# Release commands for humans: GUIDE-GIT.md. Installer names are stable
+# (apps/desktop/electron-builder.yml): SimpleEffect-<version>-windows-x64-setup.exe,
+# -macos-arm64.dmg, -macos-x64.dmg, -linux-x86_64.AppImage, -linux-amd64.deb.
 name: Release
 
 on:
@@ -19,7 +21,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        # macos-latest builds the Apple Silicon dmg, macos-15-intel the Intel one (without ONNX
+        # Runtime: there is no official build for Intel Macs, ADR-0037).
+        os: [windows-latest, macos-latest, macos-15-intel, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -74,10 +78,11 @@ jobs:
 
       - run: pnpm fetch-binaries --yes
 
+      # `pnpm package` = se-core, the bundles, the licence notices, then electron-builder. macOS
+      # builds are ad-hoc signed (`identity: '-'`); no certificate is looked up.
       - name: Build the installer
         run: pnpm package
         env:
-          # Installers are unsigned for now: never look for a signing identity.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
       - uses: actions/upload-artifact@v7
@@ -98,6 +103,20 @@ jobs:
     permissions:
       contents: write
     steps:
+      # The notes list the commits since the previous tag: full history needed.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Write the release notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/release-notes.mjs "$TAG" > release-notes.md
+
       - uses: actions/download-artifact@v8
         with:
           pattern: installers-*
@@ -118,5 +137,5 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
             --title "SimpleEffect $TAG" \
-            --generate-notes \
+            --notes-file release-notes.md \
             "${prerelease[@]}"

@@ -6,7 +6,10 @@ import { defineProject } from 'vitest/config';
  * when one exists.
  */
 export default defineProject({
-  define: { __APP_VERSION__: JSON.stringify('0.0.0-test') },
+  define: {
+    __APP_VERSION__: JSON.stringify('0.0.0-test'),
+    __ENGINE_VERSION__: JSON.stringify('0.0.0-engine'),
+  },
   test: {
     name: 'desktop',
     environment: 'node',

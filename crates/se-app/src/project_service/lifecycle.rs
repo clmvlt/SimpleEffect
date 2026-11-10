@@ -56,6 +56,27 @@ impl ProjectService {
         })
     }
 
+    /// Makes `path` the folder new projects are proposed in (first-run wizard, prompt 30).
+    ///
+    /// # Errors
+    /// `InvalidSetting` for a relative or empty path; storage errors.
+    pub async fn set_projects_folder(&self, path: &Path) -> Result<NewProjectDefaults, AppError> {
+        if !path.is_absolute() {
+            return Err(AppError::InvalidSetting {
+                name: "projects folder",
+                reason: format!(
+                    "{} is not an absolute folder: choose a folder",
+                    path.display()
+                ),
+            });
+        }
+        self.deps
+            .library
+            .set_setting(LAST_PARENT_DIR_SETTING, &display_path(path))
+            .await?;
+        self.new_project_defaults().await
+    }
+
     /// Creates `<parent_dir>/<name>.seproj` with a default sequence, then opens it.
     ///
     /// # Errors

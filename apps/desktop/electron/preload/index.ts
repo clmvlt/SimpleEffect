@@ -14,8 +14,10 @@ import {
   type ExportActivity,
   type ResolvedFilePath,
   type ResolveFilePathOptions,
+  type RuntimeInfo,
   type SimpleEffectBridge,
   type SystemNotification,
+  type ThirdPartyNotices,
 } from '../shared/bridge-api';
 
 const bridge: SimpleEffectBridge = {
@@ -49,6 +51,10 @@ const bridge: SimpleEffectBridge = {
     ipcRenderer.invoke(IPC_CHANNELS.resolveFilePath, options) as Promise<ResolvedFilePath>,
   setExportActivity: (activity: ExportActivity | null) =>
     ipcRenderer.invoke(IPC_CHANNELS.setExportActivity, activity) as Promise<void>,
+  getRuntimeInfo: () => ipcRenderer.invoke(IPC_CHANNELS.getRuntimeInfo) as Promise<RuntimeInfo>,
+  getThirdPartyNotices: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.getThirdPartyNotices) as Promise<ThirdPartyNotices | null>,
+  showLicencesFolder: () => ipcRenderer.invoke(IPC_CHANNELS.showLicencesFolder) as Promise<void>,
 };
 
 contextBridge.exposeInMainWorld('simpleEffect', bridge);

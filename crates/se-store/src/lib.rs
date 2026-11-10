@@ -20,6 +20,7 @@ mod document_migrations;
 mod folder_name;
 mod fs_analysis_store;
 mod fs_brand_kits;
+mod fs_diagnostics;
 mod fs_repository;
 mod fs_store;
 mod fs_task_store;
@@ -40,6 +41,7 @@ pub use document_migrations::{
     MIGRATED_TEMPLATE_SOURCE,
 };
 pub use fs_brand_kits::FsBrandKitLibrary;
+pub use fs_diagnostics::FsDiagnosticsFiles;
 pub use fs_repository::FsProjectRepository;
 pub use fs_template_library::FsTemplateLibrary;
 pub use layout::{BACKUP_COUNT, PROJECT_EXTENSION, ProjectLayout};

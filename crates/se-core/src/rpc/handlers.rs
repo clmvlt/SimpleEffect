@@ -7,6 +7,7 @@
 
 pub mod ai;
 pub mod captions;
+pub mod diagnostics;
 pub mod editing;
 pub mod exports;
 pub mod frames;
@@ -28,9 +29,9 @@ pub mod vision;
 use std::{path::Path, sync::Arc};
 
 use se_app::{
-    BrandKitService, CaptionService, ExportService, FrameRenderService, MediaService,
-    ProjectService, ReframeService, SmartCutService, TaskService, TemplateCheckService,
-    TemplateLibraryService, TranscriptionService, ports::FontCatalog,
+    BrandKitService, CaptionService, DiagnosticsService, ExportService, FrameRenderService,
+    MediaService, ProjectService, ReframeService, SmartCutService, TaskService,
+    TemplateCheckService, TemplateLibraryService, TranscriptionService, ports::FontCatalog,
 };
 use se_protocol::{ErrorCode, ProtocolError};
 
@@ -69,6 +70,8 @@ pub struct HandlerContext {
     pub reframing: ReframeService,
     /// Video exports (prompt 27).
     pub exports: ExportService,
+    /// Diagnostics archives (prompt 30).
+    pub diagnostics: DiagnosticsService,
 }
 
 /// A path sent by a client, refused unless absolute (a relative path would depend on the

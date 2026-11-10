@@ -8,4 +8,7 @@ declare global {
 
   /** The app version from `apps/desktop/package.json`, injected at build time (Vite `define`). */
   const __APP_VERSION__: string;
+
+  /** The version of `@se/engine` (`packages/engine/package.json`), injected at build time. */
+  const __ENGINE_VERSION__: string;
 }

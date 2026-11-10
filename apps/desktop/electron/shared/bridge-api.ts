@@ -100,6 +100,46 @@ export interface ExportActivity {
   readonly stayLabel: string;
 }
 
+/** Versions of the runtime the app runs on (« À propos », diagnostics; prompt 30). */
+export interface RuntimeInfo {
+  /** Electron's version. */
+  readonly electron: string;
+  /** Chromium's version. */
+  readonly chrome: string;
+  /** Node.js's version. */
+  readonly node: string;
+  /** V8's version. */
+  readonly v8: string;
+  /** `process.platform` (`win32`, `darwin`, `linux`). */
+  readonly platform: string;
+  /** `process.arch` (`x64`, `arm64`). */
+  readonly arch: string;
+  /** Whether the app runs from an installer's copy (false under `pnpm dev`). */
+  readonly packaged: boolean;
+}
+
+/** One component or package of the licence notices (`scripts/generate-notices.mjs`). */
+export interface NoticeEntry {
+  /** Where it comes from: a bundled component, an npm package or a Cargo crate. */
+  readonly source: 'component' | 'npm' | 'cargo';
+  readonly name: string;
+  readonly version: string;
+  /** SPDX expression or free text. */
+  readonly license: string;
+  /** Home page or repository. */
+  readonly url?: string;
+  readonly note?: string;
+  /** Ids of its licence texts in {@link ThirdPartyNotices.texts}. */
+  readonly textIds: readonly number[];
+}
+
+/** The licence notices shipped with the app (« À propos → Licences »). */
+export interface ThirdPartyNotices {
+  readonly entries: readonly NoticeEntry[];
+  /** Licence texts by id (identical texts are stored once). */
+  readonly texts: Readonly<Record<string, string>>;
+}
+
 /** API exposed by the preload script as `window.simpleEffect`. */
 export interface SimpleEffectBridge {
   /**
@@ -153,6 +193,15 @@ export interface SimpleEffectBridge {
    * suspending the app and asks before the window closes.
    */
   setExportActivity(activity: ExportActivity | null): Promise<void>;
+  /** Versions of Electron, Chromium, Node.js and V8, the platform and whether packaged. */
+  getRuntimeInfo(): Promise<RuntimeInfo>;
+  /**
+   * The licence notices, or `null` when they were not generated (`pnpm dev` before any
+   * `pnpm build`).
+   */
+  getThirdPartyNotices(): Promise<ThirdPartyNotices | null>;
+  /** Reveals the folder holding the licence texts in the OS file manager. */
+  showLicencesFolder(): Promise<void>;
 }
 
 /** IPC channels between preload and main. */
@@ -168,4 +217,7 @@ export const IPC_CHANNELS = {
   notificationClicked: 'notification:clicked',
   resolveFilePath: 'fs:resolve-file-path',
   setExportActivity: 'export:set-activity',
+  getRuntimeInfo: 'app:get-runtime-info',
+  getThirdPartyNotices: 'app:get-third-party-notices',
+  showLicencesFolder: 'app:show-licences-folder',
 } as const;

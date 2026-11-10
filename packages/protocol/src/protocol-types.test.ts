@@ -144,6 +144,8 @@ describe('derived protocol types', () => {
       | 'failExportRender'
       | 'getExportPreferences'
       | 'updateExportPreferences'
+      | 'setProjectsFolder'
+      | 'exportDiagnostics'
     >();
   });
 

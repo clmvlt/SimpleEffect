@@ -43,19 +43,17 @@ async function ensureVisible(page) {
     );
 }
 
-/** Runs « Réglages → Performances → Mesurer les performances » and reads the table. */
+/** Runs « À propos → Performances → Mesurer les performances » and reads the table. */
 async function inAppMeasure(page) {
   await ensureVisible(page);
-  const settingsLabel = french.settings.open;
-  await evaluate(
-    page,
-    `document.querySelector('button[aria-label="${settingsLabel}"]').click(); true`,
-  );
+  // The status bar's version button opens « À propos » (its title names the dialog).
+  const aboutLabel = french.about.open;
+  await evaluate(page, `document.querySelector('button[title="${aboutLabel}"]').click(); true`);
   await waitFor(page, `!!document.querySelector('[role=dialog]')`);
   // Radix tabs switch on pointer down: click again until the panel shows (the dialog animates in).
   const measureButton = `[...document.querySelectorAll('[role=dialog] button')].some((button) => button.textContent.includes(${JSON.stringify(french.performance.measure)}))`;
   for (let attempt = 0; attempt < 10 && !(await evaluate(page, measureButton)); attempt += 1) {
-    await clickText(page, '[role=tab]', french.settings.sections.performance);
+    await clickText(page, '[role=tab]', french.about.tabs.performance);
     await new Promise((done) => setTimeout(done, 300));
   }
   await clickText(page, 'button', french.performance.measure);

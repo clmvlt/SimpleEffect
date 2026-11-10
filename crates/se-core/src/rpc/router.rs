@@ -9,9 +9,9 @@ use se_protocol::{
 use super::{
     encode::encode,
     handlers::{
-        HandlerContext, ai, captions, editing, exports, frames, graphics, items, library, media,
-        media_settings, projects, smart_cuts, sound, system, tasks, templates, timeline,
-        transcription, vision,
+        HandlerContext, ai, captions, diagnostics, editing, exports, frames, graphics, items,
+        library, media, media_settings, projects, smart_cuts, sound, system, tasks, templates,
+        timeline, transcription, vision,
     },
     request::{Rejection, parse_request},
 };
@@ -102,6 +102,12 @@ impl RpcRouter {
             Command::Ping => Ok(system::ping()),
             Command::GetCoreInfo => Ok(system::get_core_info(context)),
             Command::GetNewProjectDefaults => projects::get_new_project_defaults(context).await,
+            Command::SetProjectsFolder { path } => {
+                projects::set_projects_folder(context, path).await
+            }
+            Command::ExportDiagnostics { path, client } => {
+                diagnostics::export_diagnostics(context, path, client).await
+            }
             Command::CreateProject(request) => projects::create_project(context, request).await,
             Command::OpenProject { path } => projects::open_project(context, path).await,
             Command::CloseProject { project_id } => {
@@ -678,7 +684,10 @@ pub mod testing {
         sync::Arc,
     };
 
-    use se_app::test_support::{FakeFontCatalog, MediaTestbed};
+    use se_app::{
+        DiagnosticsService,
+        test_support::{FakeDiagnosticsFiles, FakeFontCatalog, MediaTestbed},
+    };
 
     use crate::{app_paths::AppPaths, rpc::handlers::HandlerContext};
 
@@ -697,6 +706,7 @@ pub mod testing {
             brand_kits,
             reframing,
             exports,
+            clock,
             ..
         } = MediaTestbed::new(Path::new("/projects"));
         HandlerContext {
@@ -718,6 +728,12 @@ pub mod testing {
             brand_kits,
             reframing,
             exports,
+            diagnostics: DiagnosticsService::new(
+                Arc::new(FakeDiagnosticsFiles::default()),
+                clock,
+                PathBuf::from("data").join("logs"),
+                None,
+            ),
         }
     }
 }
@@ -942,6 +958,43 @@ mod tests {
             let request = format!(r#"{{"type":"request","id":1,"command":{{"kind":"{kind}"}}}}"#);
             assert_eq!(reply(&request).await["result"]["kind"], kind);
         }
+    }
+
+    #[tokio::test]
+    async fn first_run_and_diagnostics_commands_reach_their_handlers() {
+        let root = if cfg!(windows) { "C:\\" } else { "/" };
+        let folder = format!("{root}Films");
+        let request = |id: u64, command: serde_json::Value| {
+            serde_json::json!({ "type": "request", "id": id, "command": command }).to_string()
+        };
+        let set = reply(&request(
+            1,
+            serde_json::json!({ "kind": "setProjectsFolder", "path": folder }),
+        ))
+        .await;
+        assert_eq!(set["result"]["kind"], "setProjectsFolder", "{set}");
+        assert_eq!(set["result"]["defaults"]["parentDir"], folder.as_str());
+        let client = serde_json::json!({
+            "appVersion": "1.2.3", "components": [], "gpu": null, "codecs": [], "locale": "fr"
+        });
+        let exported = reply(&request(
+            2,
+            serde_json::json!({
+                "kind": "exportDiagnostics", "path": format!("{root}out{}diag.zip", &root[root.len() - 1..]), "client": client
+            }),
+        ))
+        .await;
+        assert_eq!(
+            exported["result"]["kind"], "exportDiagnostics",
+            "{exported}"
+        );
+        assert_eq!(exported["result"]["files"][1], "report.json");
+        let relative = reply(&request(
+            3,
+            serde_json::json!({ "kind": "exportDiagnostics", "path": "diag.zip", "client": client }),
+        ))
+        .await;
+        assert_eq!(relative["error"]["code"], "INVALID_REQUEST");
     }
 
     #[tokio::test]

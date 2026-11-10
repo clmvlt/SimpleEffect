@@ -1308,8 +1308,7 @@
       "media": "Médias",
       "ai": "IA",
       "transcription": "Transcription",
-      "brandKits": "Brand kits",
-      "performance": "Performances"
+      "brandKits": "Brand kits"
     },
     "media": {
       "derivedTitle": "Copies de travail",
@@ -1895,6 +1894,142 @@
       "message_other": "Quitter maintenant annule les exports et supprime les fichiers inachevés.",
       "leave": "Quitter quand même",
       "stay": "Continuer l’export"
+    }
+  },
+  "about": {
+    "open": "À propos de SimpleEffect",
+    "title": "À propos de SimpleEffect",
+    "description": "Versions, diagnostic, licences et performances.",
+    "tagline": "Éditeur vidéo local, piloté par l’IA. Vos médias et vos projets restent sur cet ordinateur.",
+    "welcome": "Assistant de bienvenue",
+    "tabs": {
+      "application": "Application",
+      "licences": "Licences",
+      "performance": "Performances"
+    },
+    "versions": {
+      "title": "Versions",
+      "app": "SimpleEffect",
+      "core": "Cœur (se-core)",
+      "engine": "Moteur de rendu",
+      "electron": "Electron",
+      "chromium": "Chromium",
+      "unknown": "inconnue",
+      "aiMissing": "non détecté",
+      "copy": "Copier",
+      "copied": "Versions copiées dans le presse-papiers.",
+      "copyFailed": "Impossible de copier les versions."
+    },
+    "diagnostics": {
+      "title": "Diagnostic",
+      "description": "Une archive .zip pour signaler un problème : versions, état de l’IA, des outils et du GPU, codecs, journaux récents. Sans contenu de projet ni identifiants ; votre dossier personnel et les noms de vos fichiers y sont masqués.",
+      "export": "Exporter un diagnostic…",
+      "exporting": "Export du diagnostic…",
+      "dialogTitle": "Exporter un diagnostic",
+      "dialogButton": "Exporter",
+      "filterName": "Archive zip",
+      "done": "Diagnostic exporté ({{size}}).",
+      "reveal": "Afficher"
+    },
+    "licences": {
+      "intro": "SimpleEffect s’appuie sur des logiciels libres. Voici chacun d’eux avec sa licence.",
+      "openFolder": "Ouvrir le dossier des licences",
+      "loading": "Lecture des licences…",
+      "missing": "Les notices de licences sont générées à la construction de l’application (pnpm build) : elles manquent dans cette version de développement.",
+      "failed": "Impossible de lire les notices de licences.",
+      "search": "Rechercher un composant ou une licence",
+      "list": "Composants et paquets",
+      "counts": "{{component}} composants · {{npm}} paquets npm · {{cargo}} crates Rust",
+      "noMatch": "Aucun résultat.",
+      "noText": "Ce paquet ne fournit pas de texte de licence : seule son expression de licence est connue.",
+      "sources": {
+        "component": "Composant",
+        "npm": "Paquet npm",
+        "cargo": "Crate Rust"
+      }
+    }
+  },
+  "onboarding": {
+    "stepsLabel": "Étapes de l’assistant",
+    "progress": "Étape {{step}} sur {{count}}",
+    "skip": "Passer",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "finish": "Terminer",
+    "welcome": {
+      "title": "Bienvenue dans SimpleEffect",
+      "intro": "SimpleEffect est un éditeur vidéo qui fonctionne entièrement sur votre ordinateur, avec un assistant IA pour monter à votre place.",
+      "local": "Vos médias et vos projets ne quittent jamais cet ordinateur.",
+      "ai": "L’IA passe par un assistant installé chez vous et n’agit que par les outils de l’éditeur.",
+      "editable": "Tout ce que fait l’IA reste modifiable : coupes, textes, animations.",
+      "next": "Quelques vérifications rapides et c’est parti. Vous pourrez rouvrir cet assistant depuis « À propos »."
+    },
+    "ai": {
+      "title": "Assistant IA",
+      "intro": "SimpleEffect confie le montage à {{name}}, installé sur cet ordinateur.",
+      "installed": "{{name}} installé",
+      "loggedIn": "{{name}} connecté",
+      "installation": {
+        "checking": "Recherche en cours…",
+        "ready": "Trouvé et utilisable.",
+        "notInstalled": "Introuvable. Installez-le, puis cliquez sur « Vérifier à nouveau ».",
+        "unusable": "Trouvé, mais il ne démarre pas. Choisissez un autre exécutable dans les réglages IA."
+      },
+      "login": {
+        "checking": "Vérification…",
+        "ready": "Prêt à recevoir des tâches.",
+        "loggedOut": "Ouvrez un terminal, lancez `{{command}}`, puis tapez `{{login}}`.",
+        "unknown": "État inconnu : lancez `{{command}}` dans un terminal pour vérifier.",
+        "needsCli": "À vérifier une fois {{name}} installé."
+      },
+      "check": "Vérifier à nouveau",
+      "checking": "Vérification…",
+      "howToInstall": "Comment installer {{name}}",
+      "settings": "Réglages IA",
+      "later": "Facultatif pour monter à la main : l’IA pourra être configurée plus tard."
+    },
+    "media": {
+      "title": "Binaires et GPU",
+      "intro": "Les outils embarqués et ce que votre machine sait décoder et encoder.",
+      "tools": {
+        "label": "ffmpeg et ffprobe",
+        "checking": "Recherche…",
+        "missing": "Introuvables : l’import et l’export ne fonctionneront pas. {{problem}}",
+        "softwareOnly": "Version {{version}}, encodage logiciel (aucun encodeur matériel).",
+        "ready": "Version {{version}}, encodeurs matériels : {{encoders}}."
+      },
+      "gpu": {
+        "label": "Carte graphique",
+        "checking": "Détection…",
+        "unknown": "Non identifiée par le système.",
+        "ready": "{{name}}"
+      },
+      "codecs": {
+        "label": "Codecs vidéo (WebCodecs)",
+        "checking": "Test des codecs…",
+        "summary": "Décodage : {{decode}}. Encodage : {{encode}}."
+      },
+      "vision": {
+        "label": "Détection des visages (recadrage automatique)",
+        "checking": "Vérification…",
+        "unavailable": "Indisponible : {{reason}}",
+        "ready": "{{runtime}}, sur {{accelerator}}."
+      }
+    },
+    "models": {
+      "title": "Modèles de transcription (facultatif)",
+      "intro": "La transcription (sous-titres, coupes au texte) utilise un modèle Whisper téléchargé une fois. Chaque téléchargement indique sa taille et sa source et attend votre accord.",
+      "loading": "Lecture des modèles…",
+      "later": "Vous pourrez le faire plus tard dans Réglages → Transcription."
+    },
+    "projects": {
+      "title": "Dossier des projets",
+      "intro": "Les nouveaux projets sont proposés dans ce dossier.",
+      "loading": "Lecture…",
+      "choose": "Choisir un autre dossier…",
+      "dialogTitle": "Dossier des projets",
+      "dialogButton": "Choisir ce dossier",
+      "hint": "Chaque projet reste un dossier .seproj que vous pouvez déplacer ou sauvegarder."
     }
   },
   "performance": {

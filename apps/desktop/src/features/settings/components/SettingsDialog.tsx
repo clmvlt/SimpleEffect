@@ -18,7 +18,6 @@ import { useMediaSettings } from '../hooks/use-media-settings';
 import { useProjectCache } from '../hooks/use-project-cache';
 import { useTranscriptionSettings } from '../hooks/use-transcription-settings';
 import { BrandKitsSection } from '../../brand-kits';
-import { PerformanceSection } from '../../performance';
 import { settingsSectionOf, type SettingsSection } from '../store/settings-dialog-store';
 import { AiSettingsSection } from './AiSettingsSection';
 import { MediaSettingsSection } from './MediaSettingsSection';
@@ -73,7 +72,6 @@ export function SettingsDialog({
             <TabsTrigger value="ai">{t('settings.sections.ai')}</TabsTrigger>
             <TabsTrigger value="transcription">{t('settings.sections.transcription')}</TabsTrigger>
             <TabsTrigger value="brandKits">{t('settings.sections.brandKits')}</TabsTrigger>
-            <TabsTrigger value="performance">{t('settings.sections.performance')}</TabsTrigger>
           </TabsList>
           <TabsContent
             value="media"
@@ -119,12 +117,6 @@ export function SettingsDialog({
             className="flex max-h-[70vh] flex-col gap-4 overflow-auto pt-3"
           >
             {section === 'brandKits' && <BrandKitsSection projectId={projectId} />}
-          </TabsContent>
-          <TabsContent
-            value="performance"
-            className="flex max-h-[60vh] flex-col gap-4 overflow-auto pt-3"
-          >
-            <PerformanceSection />
           </TabsContent>
         </Tabs>
       </DialogContent>

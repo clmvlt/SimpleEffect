@@ -64,6 +64,7 @@ pub async fn run(
         brand_kits: services.brand_kits.clone(),
         reframing: services.reframing.clone(),
         exports: services.exports.clone(),
+        diagnostics: services.diagnostics.clone(),
     });
     let state = RpcState::new(router, events.clone(), stopping.clone());
     let app = routes(guard, state, &services, port);

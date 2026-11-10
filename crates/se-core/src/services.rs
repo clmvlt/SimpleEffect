@@ -10,11 +10,12 @@ use std::{path::PathBuf, sync::Arc};
 use se_agents::{FsAgentWorkspaces, providers::claude_code::ClaudeCodeProvider};
 use se_app::{
     AgentEditService, BrandKitService, BrandKitServiceDeps, CaptionService, CaptionServiceDeps,
-    DEFAULT_SAVE_DELAY, ExportRegistry, ExportService, ExportServiceDeps, FrameRenderService,
-    JobQueue, JobQueueConfig, McpAccess, MediaService, MediaServiceDeps, ProjectService,
-    ProjectServiceConfig, ProjectServiceDeps, ReframeService, ReframeServiceDeps, SmartCutService,
-    SmartCutServiceDeps, TaskService, TaskServiceDeps, TaskTokenRegistry, TemplateCheckService,
-    TemplateLibraryDeps, TemplateLibraryService, TranscriptionService, TranscriptionServiceDeps,
+    DEFAULT_SAVE_DELAY, DiagnosticsService, ExportRegistry, ExportService, ExportServiceDeps,
+    FrameRenderService, JobQueue, JobQueueConfig, McpAccess, MediaService, MediaServiceDeps,
+    ProjectService, ProjectServiceConfig, ProjectServiceDeps, ReframeService, ReframeServiceDeps,
+    SmartCutService, SmartCutServiceDeps, TaskService, TaskServiceDeps, TaskTokenRegistry,
+    TemplateCheckService, TemplateLibraryDeps, TemplateLibraryService, TranscriptionService,
+    TranscriptionServiceDeps,
     media_service::settings::keys::TOOLS_DIR,
     ports::{AppLibraryRepository, BrandKitLibrary, FontCatalog, IdGenerator, MediaProber},
 };
@@ -22,7 +23,9 @@ use se_fonts::LocalFontCatalog;
 use se_media::{
     FfmpegJobRunner, FfmpegTools, FfprobeProber, FsExportOutputs, FsMediaFiles, ToolLocator,
 };
-use se_store::{FsBrandKitLibrary, FsProjectRepository, FsTemplateLibrary, SqliteAppLibrary};
+use se_store::{
+    FsBrandKitLibrary, FsDiagnosticsFiles, FsProjectRepository, FsTemplateLibrary, SqliteAppLibrary,
+};
 use se_transcribe::{FsModelFiles, HttpDownloader, WhisperLocator, WhisperTranscriber};
 use se_vision::{RuntimeLocator, YuNetDetector};
 
@@ -67,6 +70,8 @@ pub struct Services {
     pub reframing: ReframeService,
     /// Video exports drawn by the renderer, written by se-media (prompt 27).
     pub exports: ExportService,
+    /// Diagnostics archives of the logs and the machine (prompt 30).
+    pub diagnostics: DiagnosticsService,
 }
 
 /// Builds the services over the real adapters, for a core listening on `port`.
@@ -149,6 +154,7 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         library_services(paths, events, &projects, &media, &template_checks, prober);
     let reframing = reframing_service(events, &projects, &media, reframing_jobs, sampler);
     Ok(Services {
+        diagnostics: diagnostics_service(paths),
         exports,
         reframing,
         library_templates,
@@ -166,6 +172,18 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         tokens,
         transcription,
     })
+}
+
+/// Diagnostics archives of the core's logs, masking the user's home folder (se-store files).
+fn diagnostics_service(paths: &AppPaths) -> DiagnosticsService {
+    DiagnosticsService::new(
+        Arc::new(FsDiagnosticsFiles),
+        Arc::new(SystemClock),
+        paths.logs_dir.clone(),
+        directories::BaseDirs::new()
+            .map(|dirs| dirs.home_dir().to_path_buf())
+            .as_deref(),
+    )
 }
 
 /// Projects in folders on disk (se-store), new ones proposed in the documents folder.

@@ -8,6 +8,8 @@ import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { aboutDialogStore } from '../features/about';
+import { ONBOARDING_DONE_KEY, onboardingStore } from '../features/onboarding';
 import type { SimpleEffectBridge } from '../shared/desktop';
 import { createI18n } from '../i18n';
 import { connectProjectSync, createProjectStore } from '../shared/project-store';
@@ -47,6 +49,9 @@ const idleBridge: SimpleEffectBridge = {
   resolveFilePath: ({ folder, fileName }) =>
     Promise.resolve({ path: `${folder}/${fileName}`, exists: false }),
   setExportActivity: () => Promise.resolve(),
+  getRuntimeInfo: () => new Promise(() => undefined),
+  getThirdPartyNotices: () => Promise.resolve(null),
+  showLicencesFolder: () => Promise.resolve(),
   onNotificationClick: () => () => undefined,
   chooseFile: () => Promise.resolve(null),
   chooseSaveFile: () => Promise.resolve(null),
@@ -54,12 +59,24 @@ const idleBridge: SimpleEffectBridge = {
 };
 
 /** Renders the app at `path`; `loaded` puts the fixture project in the store first. */
-function renderApp(path: string, { layoutStorage = memoryStorage(), loaded = false } = {}) {
+/** Preferences of a machine that already went through the first-run wizard. */
+function onboardedPreferences() {
+  const storage = memoryStorage();
+  storage.setItem(ONBOARDING_DONE_KEY, '2026-11-01T00:00:00.000Z');
+  return storage;
+}
+
+function renderApp(
+  path: string,
+  { layoutStorage = memoryStorage(), loaded = false, preferences = onboardedPreferences() } = {},
+) {
   const coreClient = idleCoreClient();
   const projectStore = createProjectStore();
   const projectSync = connectProjectSync(coreClient, projectStore);
   if (loaded) projectSync.load(session());
-  const router = createMemoryRouter(createAppRoutes({ layoutStorage }), { initialEntries: [path] });
+  const router = createMemoryRouter(createAppRoutes({ layoutStorage, preferences }), {
+    initialEntries: [path],
+  });
   return render(
     <AppProviders
       coreClient={coreClient}
@@ -80,6 +97,8 @@ afterEach(() => {
   for (const client of clients.splice(0)) {
     client.close();
   }
+  aboutDialogStore.setState({ open: false, tab: 'application' });
+  onboardingStore.setState({ open: false, step: 'welcome' });
 });
 
 describe('app shell', () => {
@@ -156,5 +175,36 @@ describe('app shell', () => {
     expect(within(statusBar).getByRole('status')).toHaveTextContent('Connexion au cœur…');
     expect(statusBar).toHaveTextContent('Vérification de l’IA…');
     expect(statusBar).toHaveTextContent('Version 0.0.0-test');
+  });
+
+  it('opens the welcome wizard on the first launch and remembers it was skipped', async () => {
+    const user = userEvent.setup();
+    const preferences = memoryStorage();
+    renderApp('/', { preferences });
+    const wizard = await screen.findByRole('dialog', { name: 'Bienvenue dans SimpleEffect' });
+    expect(wizard).toHaveTextContent('Étape 1 sur 5');
+    await user.click(within(wizard).getByRole('button', { name: 'Suivant' }));
+    expect(screen.getByRole('dialog', { name: 'Assistant IA' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Passer' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(preferences.entries.has(ONBOARDING_DONE_KEY)).toBe(true);
+  });
+
+  it('opens « À propos » from the version, with its versions, licences and the wizard', async () => {
+    const user = userEvent.setup();
+    renderApp('/');
+    await user.click(screen.getByRole('button', { name: 'Version 0.0.0-test' }));
+    const about = screen.getByRole('dialog', { name: 'À propos de SimpleEffect' });
+    const versions = within(about).getByRole('region', { name: 'Versions' });
+    expect(versions).toHaveTextContent('SimpleEffect0.0.0-test');
+    expect(versions).toHaveTextContent('Moteur de rendu0.0.0-engine');
+    expect(versions).toHaveTextContent('Electroninconnue');
+    await user.click(within(about).getByRole('tab', { name: 'Licences' }));
+    expect(await within(about).findByText(/générées à la construction/)).toBeInTheDocument();
+    await user.click(within(about).getByRole('tab', { name: 'Application' }));
+    await user.click(within(about).getByRole('button', { name: 'Assistant de bienvenue' }));
+    expect(
+      await screen.findByRole('dialog', { name: 'Bienvenue dans SimpleEffect' }),
+    ).toBeInTheDocument();
   });
 });

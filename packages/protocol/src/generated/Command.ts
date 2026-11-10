@@ -9,6 +9,7 @@ import type { CaptionEmphasisEdit } from "./CaptionEmphasisEdit";
 import type { CaptionStyleEdit } from "./CaptionStyleEdit";
 import type { CaptionStyleId } from "./CaptionStyleId";
 import type { CaptionTextEdit } from "./CaptionTextEdit";
+import type { ClientDiagnostics } from "./ClientDiagnostics";
 import type { CreateProjectRequest } from "./CreateProjectRequest";
 import type { DecodabilityReport } from "./DecodabilityReport";
 import type { DecoderCapabilities } from "./DecoderCapabilities";
@@ -924,4 +925,16 @@ exportId: ExportId,
 /**
  * Why (actionable, English).
  */
-message: string, } | { "kind": "getExportPreferences" } | { "kind": "updateExportPreferences" } & ExportPreferences;
+message: string, } | { "kind": "getExportPreferences" } | { "kind": "updateExportPreferences" } & ExportPreferences | { "kind": "setProjectsFolder", 
+/**
+ * An absolute folder.
+ */
+path: string, } | { "kind": "exportDiagnostics", 
+/**
+ * Absolute path of the `.zip` to write (replaced when it exists).
+ */
+path: string, 
+/**
+ * What the window adds about itself.
+ */
+client: ClientDiagnostics, };

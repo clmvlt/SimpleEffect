@@ -4,6 +4,7 @@
  */
 import { app, BrowserWindow } from 'electron';
 
+import { registerAboutHandlers } from './about-handlers';
 import { CORE_PATH_ENV, resolveCoreBinaryPath } from './core-binary-path';
 import { CoreSupervisor } from './core-supervisor';
 import { ExportActivityGuard } from './export-activity';
@@ -11,12 +12,17 @@ import { electronExportGuardServices } from './export-guard-services';
 import { registerIpcHandlers } from './ipc-handlers';
 import { createMainWindow } from './main-window';
 import { notificationAppId } from './platform/app-identity';
+import { resolveLicencePaths } from './resource-paths';
+
+const resourceContext = {
+  isPackaged: app.isPackaged,
+  resourcesPath: process.resourcesPath,
+  appPath: app.getAppPath(),
+};
 
 const supervisor = new CoreSupervisor({
   binaryPath: resolveCoreBinaryPath({
-    isPackaged: app.isPackaged,
-    resourcesPath: process.resourcesPath,
-    appPath: app.getAppPath(),
+    ...resourceContext,
     platform: process.platform,
     override: process.env[CORE_PATH_ENV],
   }),
@@ -34,6 +40,7 @@ if (appId !== null) app.setAppUserModelId(appId);
 void app.whenReady().then(() => {
   supervisor.start();
   registerIpcHandlers(supervisor, exportGuard);
+  registerAboutHandlers(resolveLicencePaths(resourceContext), app.isPackaged);
   const window = createMainWindow();
   window.on('close', (event) => {
     if (!exportGuard.mayLeave(window)) event.preventDefault();

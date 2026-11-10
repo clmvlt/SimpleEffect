@@ -10,6 +10,7 @@ import type { CaptionsReport } from "./CaptionsReport";
 import type { ChangesetId } from "./ChangesetId";
 import type { CoreInfo } from "./CoreInfo";
 import type { CutSummary } from "./CutSummary";
+import type { DiagnosticsSummary } from "./DiagnosticsSummary";
 import type { ExportInfo } from "./ExportInfo";
 import type { ExportPreferences } from "./ExportPreferences";
 import type { FillerOccurrence } from "./FillerOccurrence";
@@ -307,4 +308,8 @@ export: ExportInfo, } | { "kind": "cancelExport" } | { "kind": "listExports",
 /**
  * Exports of this session, oldest first.
  */
-exports: Array<ExportInfo>, } | { "kind": "clearFinishedExports" } | { "kind": "reportExportProgress" } | { "kind": "finishExportRender" } | { "kind": "failExportRender" } | { "kind": "getExportPreferences" } & ExportPreferences | { "kind": "updateExportPreferences" };
+exports: Array<ExportInfo>, } | { "kind": "clearFinishedExports" } | { "kind": "reportExportProgress" } | { "kind": "finishExportRender" } | { "kind": "failExportRender" } | { "kind": "getExportPreferences" } & ExportPreferences | { "kind": "updateExportPreferences" } | { "kind": "setProjectsFolder", 
+/**
+ * The updated defaults.
+ */
+defaults: NewProjectDefaults, } | { "kind": "exportDiagnostics" } & DiagnosticsSummary;

@@ -9,7 +9,7 @@ use ts_rs::TS;
 
 use crate::{
     AiSettings, AiStatus, AnimationPresetInfo, AutoReframeReport, CaptionsReport, CutSummary,
-    ExportInfo, ExportPreferences, FillerOccurrence, FontFamily, ImportReport,
+    DiagnosticsSummary, ExportInfo, ExportPreferences, FillerOccurrence, FontFamily, ImportReport,
     InsertedLibraryTemplate, JobSnapshot, LibraryBrandKit, LibraryImportResult, LibraryTemplate,
     MediaSettings, MediaToolsStatus, NewProjectDefaults, PlacedGraphic, ProjectCacheInfo,
     ProjectSession, RecentProject, RelinkOutcome, SmartCutSettings, Task, TaskEventRecord,
@@ -478,6 +478,14 @@ pub enum CommandResult {
     GetExportPreferences(ExportPreferences),
     /// Answer to [`crate::Command::UpdateExportPreferences`].
     UpdateExportPreferences,
+    /// Answer to [`crate::Command::SetProjectsFolder`]: the « new project » choices with the new
+    /// folder.
+    SetProjectsFolder {
+        /// The updated defaults.
+        defaults: NewProjectDefaults,
+    },
+    /// Answer to [`crate::Command::ExportDiagnostics`].
+    ExportDiagnostics(DiagnosticsSummary),
 }
 
 /// Facts about the running core, shown in the UI and useful in bug reports.
