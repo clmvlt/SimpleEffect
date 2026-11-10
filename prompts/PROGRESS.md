@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-10 — Prompt 30: Packaging multi-plateforme — Done
 
-**Branch**: `feature/30-packaging`, merged into `dev` at `<pending>`
+**Branch**: `feature/30-packaging`, merged into `dev` at `1d4b485`
 
 **Done**
 - electron-builder (`apps/desktop/electron-builder.yml`): Windows NSIS x64 per user (folder choice, app data kept at uninstall), macOS dmg arm64 + x64 ad-hoc signed (`identity: '-'`), Linux AppImage + deb; stable names `SimpleEffect-<version>-windows-x64-setup.exe`, `-macos-<arch>.dmg`, `-linux-x86_64.AppImage`, `-linux-amd64.deb`; icon `build-resources/icon.png` (source `icon.svg`). `pnpm build` (release core, bundles, notices) and `pnpm package`.
