@@ -43,6 +43,7 @@ impl AgentEditService {
         media: &CutMedia,
     ) -> Result<CutOutcome, AppError> {
         let handle = self.projects.handle(agent.project_id).await?;
+        let _serial = self.serial.lock().await;
         for _ in 0..MAX_ATTEMPTS {
             let view = handle.view().await?;
             let base = &view.project;

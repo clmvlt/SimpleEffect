@@ -88,7 +88,7 @@ pub use project_entities::{
 };
 pub use project_session::{
     CreateProjectRequest, FormatPresetDimensions, HistoryState, NewProjectDefaults, ProjectHistory,
-    ProjectSession, RecentProject,
+    ProjectRecovery, ProjectSaveState, ProjectSession, RecentProject,
 };
 pub use smart_cuts::{
     CutSummary, FillerList, FillerOccurrence, SilenceCutParams, SmartCutSettings, WordCutPurpose,

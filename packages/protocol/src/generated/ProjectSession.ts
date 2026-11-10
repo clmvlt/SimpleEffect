@@ -1,6 +1,7 @@
 // GENERATED — DO NOT EDIT. Source: Rust types deriving `ts_rs::TS` (crates/se-protocol,
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { HistoryState } from "./HistoryState";
+import type { ProjectRecovery } from "./ProjectRecovery";
 import type { ProjectSnapshot } from "./ProjectSnapshot";
 
 /**
@@ -19,4 +20,9 @@ snapshot: ProjectSnapshot,
 /**
  * What undo and redo would do now.
  */
-history: HistoryState, };
+history: HistoryState, 
+/**
+ * How opening recovered the project after an unexpected stop (prompt 29); `null` when it
+ * had been closed cleanly. Kept for as long as the project stays open.
+ */
+recovery: ProjectRecovery | null, };

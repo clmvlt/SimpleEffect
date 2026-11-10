@@ -30,7 +30,10 @@ mod task_state;
 
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex as StdMutex, MutexGuard, PoisonError},
+    sync::{
+        Arc, Mutex as StdMutex, MutexGuard, PoisonError,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 use se_domain::{ProjectId, TaskId};
@@ -77,6 +80,8 @@ struct Shared {
     /// What is known about each provider, once checked.
     statuses: StdMutex<HashMap<ProviderId, AiStatus>>,
     settings: StdMutex<AiSettings>,
+    /// Set when the core stops: runs stopped from now on end as interrupted, not cancelled.
+    shutting_down: AtomicBool,
 }
 
 /// Open projects and the run queue.
@@ -101,6 +106,13 @@ impl OpenProject {
                 project_id,
                 task_id,
             })
+    }
+}
+
+impl Shared {
+    /// Whether the core is stopping ([`TaskService::begin_shutdown`]).
+    fn shutting_down(&self) -> bool {
+        self.shutting_down.load(Ordering::SeqCst)
     }
 }
 
@@ -143,6 +155,7 @@ impl TaskService {
                 }),
                 statuses: StdMutex::new(HashMap::new()),
                 settings: StdMutex::new(settings),
+                shutting_down: AtomicBool::new(false),
             }),
         }
     }

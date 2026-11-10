@@ -350,6 +350,92 @@ pub fn build_project(
     Ok(project)
 }
 
+/// Spreads the sequence's items and markers over `seconds` (when it is shorter): every start is
+/// multiplied by the same factor (rounded down to a frame) and durations are kept, so items stay
+/// apart, linked items stay together and the timeline becomes as long as asked (`--minutes`).
+///
+/// # Errors
+/// A document the domain refuses afterwards (a bug of this tool).
+pub fn stretch_to(project: &mut Project, seconds: u64) -> Result<(), DevError> {
+    let target = Flicks::new(
+        i64::try_from(seconds)
+            .unwrap_or(i64::MAX)
+            .saturating_mul(Flicks::PER_SECOND),
+    )
+    .map_err(|error| DevError::Invalid(error.to_string()))?;
+    for sequence in &mut project.sequences {
+        let rate = sequence.format.frame_rate;
+        let end = sequence
+            .tracks
+            .iter()
+            .filter_map(|track| track.items.last())
+            .map(|item| item.timeline_range.end())
+            .max()
+            .unwrap_or(Flicks::ZERO);
+        if end >= target || end == Flicks::ZERO {
+            continue;
+        }
+        let factor = target.to_seconds_f64() / end.to_seconds_f64();
+        let stretched = |time: Flicks| -> Flicks {
+            time.checked_mul_f64(factor)
+                .map(|scaled| scaled.to_frames(rate, se_domain::RoundingMode::Floor))
+                .and_then(|frames| Flicks::from_frames(frames, rate).ok())
+                .unwrap_or(time)
+        };
+        for item in sequence
+            .tracks
+            .iter_mut()
+            .flat_map(|track| &mut track.items)
+        {
+            let start = stretched(item.timeline_range.start());
+            item.timeline_range = TimeRange::new(start, item.timeline_range.duration())
+                .map_err(|error| DevError::Invalid(error.to_string()))?;
+        }
+        for marker in &mut sequence.markers {
+            marker.time = stretched(marker.time);
+        }
+    }
+    match validate_project(project).first() {
+        Some(first) => Err(DevError::Invalid(first.message.clone())),
+        None => Ok(()),
+    }
+}
+
+/// Assets standing for real media (no files), for benchmarks and tests: two videos with sound
+/// of 30 s and 3 s and a minute of music.
+#[must_use]
+pub fn synthetic_assets() -> Vec<Asset> {
+    [
+        (AssetKind::Video, 30),
+        (AssetKind::Video, 3),
+        (AssetKind::Audio, 60),
+    ]
+    .into_iter()
+    .filter_map(|(kind, seconds)| synthetic_asset(kind, seconds))
+    .collect()
+}
+
+fn synthetic_asset(kind: AssetKind, seconds: i64) -> Option<Asset> {
+    let info = se_domain::MediaInfo {
+        duration: Some(Flicks::new(seconds * Flicks::PER_SECOND).ok()?),
+        container: "mp4".to_owned(),
+        video_stream: None,
+        audio_streams: Vec::new(),
+    };
+    Some(Asset {
+        id: se_domain::AssetId::from_uuid(Uuid::now_v7()).ok()?,
+        original_path: format!("/media/{seconds}.mp4"),
+        relative_hint: None,
+        kind,
+        decodability: se_domain::Decodability::unchecked(&info),
+        media_info: Some(info),
+        fingerprint: None,
+        derived: se_domain::DerivedMedia::default(),
+        analysis: se_domain::AssetAnalysis::default(),
+        missing: false,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use se_domain::{AssetAnalysis, AssetId, Decodability, DerivedMedia, MediaInfo};
@@ -394,6 +480,22 @@ mod tests {
             assert_eq!(items, count);
             assert_eq!(validate_project(&project), []);
         }
+    }
+
+    #[test]
+    fn stretching_spreads_the_items_over_the_asked_length() {
+        let mut project = build_project("Test", synthetic_assets(), 500, 3).unwrap();
+        stretch_to(&mut project, 3600).unwrap();
+        let end = project.sequences[0]
+            .tracks
+            .iter()
+            .filter_map(|track| track.items.last())
+            .map(|item| item.timeline_range.end())
+            .max()
+            .unwrap();
+        let minutes = end.to_seconds_f64() / 60.0;
+        assert!((59.0..=60.5).contains(&minutes), "{minutes} minutes");
+        assert_eq!(validate_project(&project), []);
     }
 
     #[test]

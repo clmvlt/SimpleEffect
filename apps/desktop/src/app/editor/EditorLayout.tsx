@@ -24,6 +24,7 @@ import { TimelinePanel } from '../../features/timeline';
 import { TranscriptView } from '../../features/transcript';
 import { ViewerPanel } from '../../features/viewer';
 import { isSidePanelTab, showSidePanelTab, useSidePanelTab } from '../../shared/side-panel';
+import { useRecoveryNotice } from './use-recovery-notice';
 
 /** Props of {@link EditorLayout}. */
 export interface EditorLayoutProps {
@@ -41,6 +42,7 @@ export function EditorLayout({ layoutStorage }: EditorLayoutProps) {
   const creator = useCreateGraphic();
   useAiTaskSync();
   useAutoReframeEvents();
+  useRecoveryNotice();
   return (
     <div className="min-h-0 flex-1">
       <Dock layoutId="editor.rows" orientation="vertical" storage={layoutStorage}>

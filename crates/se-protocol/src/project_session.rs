@@ -18,6 +18,26 @@ pub struct ProjectSession {
     pub snapshot: ProjectSnapshot,
     /// What undo and redo would do now.
     pub history: HistoryState,
+    /// How opening recovered the project after an unexpected stop (prompt 29); `null` when it
+    /// had been closed cleanly. Kept for as long as the project stays open.
+    pub recovery: Option<ProjectRecovery>,
+}
+
+/// What opening a project had to recover: commits replayed from the journal (the app or the
+/// core stopped before saving them) and, when `project.json` was unreadable, the backup it was
+/// restored from.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectRecovery {
+    /// Changes replayed from the journal on top of the snapshot.
+    pub replayed_changes: u32,
+    /// The backup file (`project.json.bak.1`…) the document was restored from, when
+    /// `project.json` could not be read; that file was kept as `project.json.corrupted`.
+    pub restored_from: Option<String>,
+    /// Why `project.json` could not be read.
+    pub problem: Option<String>,
+    /// Journal changes that could not be replayed on the backup (lost).
+    pub lost_changes: u32,
 }
 
 /// What undo and redo would do now, for menus and shortcuts. Pushed as
@@ -43,6 +63,19 @@ pub struct ProjectHistory {
     pub project_id: ProjectId,
     /// Its new undo state.
     pub history: HistoryState,
+}
+
+/// Whether an open project's snapshot can be saved, as pushed by
+/// [`crate::CoreEvent::ProjectSaveStateChanged`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectSaveState {
+    /// The project.
+    pub project_id: ProjectId,
+    /// Why the last save failed; `null` once a save succeeded again.
+    pub failure: Option<String>,
+    /// Changes not in `project.json` yet (kept by the journal).
+    pub unsaved_changes: u32,
 }
 
 /// A project of the home screen's recent list.

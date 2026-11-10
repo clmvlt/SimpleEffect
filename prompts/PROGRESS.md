@@ -26,6 +26,40 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-10 — Prompt 29: Performance et robustesse — Done
+
+**Branch**: `feature/29-performance-robustesse`, merged into `dev` at `MERGE_SHA`
+
+**Done**
+- Budgets, methods and results in `docs/performance.md` (new), checked in the app: « Réglages → Performances → Mesurer les performances » (`features/performance`: 30 core round trips, 20 scrub steps, 3 s of playback, main-thread frames, open `VideoFrame`s and heap against `BUDGETS`; the viewer registers a `ViewerProbe` in `shared/performance`; a hidden window is refused and a stalled seek stops after 10 s).
+- Core benchmarks (`pnpm bench`, criterion in `se-devtools/benches/core.rs`: commit, patch, snapshot, `project.json`, journal append, snapshot write, replay, opening); `generate-test-project --minutes` (a one-hour timeline). Built-app scripts `scripts/perf/` (synthetic 4K H.264 / HEVC 10-bit media, CDP driver, 4K and timeline scenarios with exports).
+- Tooling: every RPC command timed (slow ones logged at `info`), optional `tokio-console` feature of se-core (development only).
+- Robustness: a corrupted `project.json` is set aside and the newest valid backup restored, then the journal replayed (journal kept since the previous snapshot); `ProjectRecovery` in the session announced by a toast; snapshots bounded to 30 s / 200 commits under continuous editing; `projectSaveStateChanged` and a status-bar alert when saving fails; actionable disk-full messages (store and export part files); tasks marked interrupted (not cancelled) when the core shuts down.
+- Load test `se-app/tests/load.rs` (5 AI tasks × 20 edits + 20 user moves at once).
+- Docs: `docs/performance.md`, architecture §11, glossary, backlog, CLAUDE.md of root, se-app, se-store, se-core, se-devtools, engine, desktop.
+
+**Before / after (dev machine, Windows, RTX 3080, release core, production bundle)**
+- 4K/30 two-track preview: scrub p95 573 ms → 31 ms, dropped frames at 1× 9 → 0 (the viewer now reads ready proxies by default; exports still read originals).
+- AI load: before, parallel tasks failed with « the project kept changing » after 4 replans; after, every edit lands (AI edits plan and commit one at a time).
+- Perf measure on a hidden window: before, waited forever; after, refused or stopped with a reason.
+- Unchanged and within budget: 1 h / 500-item timeline zoom/scroll p95 7.1 ms (worst 41.7 ms), core round trip p95 0.2–1.5 ms, commit on 500 items 1.37 ms, opening with 200 journal entries 295 ms, exports 3.7× (1080p) and 3.1× (2160p) real time.
+
+**Deviations from the prompt**
+- Synthetic 4K media (user's choice) instead of real footage.
+- Load tests of the UI run as CDP scripts against the built app (`scripts/perf/`, plain Node over the DevTools protocol, no new dependency) rather than Playwright tests; they are run by hand, not in CI (they need the real GPU and the release build).
+- MCP tool latency is not benchmarked separately (same use cases as RPC).
+- Extras accepted by the user: « Journal compacté au besoin » (snapshot bound), « Reprise visible après crash » (recovery toast); « Panneau perf dans À propos » and « Diagnostic avec chemins masqués » belong to prompt 30's About screen.
+
+**Follow-ups**
+- 4K originals without proxies scrub at ~500–570 ms (backlog « Rendering engine »: nearest keyframe first, then refine).
+- A scripted 30-minute memory soak (backlog « Platform »); single runs show 2 open `VideoFrame`s and a 36–58 MB heap.
+- `append_journal` costs ~10 ms on Windows (`synchronous = FULL`, kept on purpose).
+
+**Notes for the next agent**
+- Windows stops animation frames of covered windows: start measured apps with `--disable-features=CalculateNativeWinOcclusion --disable-renderer-backgrounding --disable-background-timer-throttling`, and move test windows to a secondary screen without activating them (`SetWindowPos` flags `0x14`): the user works on the primary screen.
+- `TaskStop` on a backgrounded Electron leaves it running on Windows: `taskkill /PID <parent of se-core>` (graceful).
+- The proxy toggle is a machine preference in `localStorage` (`se.ui.viewer.v1`): scripts click the real toggle rather than editing storage and reloading.
+
 ## 2026-11-10 — Prompt 27: Export vidéo (rendu final) — Done
 
 **Branch**: `feature/27-export-video`, merged into `dev` at `c41e117`

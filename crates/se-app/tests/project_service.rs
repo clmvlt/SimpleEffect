@@ -157,9 +157,107 @@ async fn opening_replays_the_journal_and_saves_the_recovered_state() {
     let session = harness.service.open_project(&example_path()).await.unwrap();
     assert_eq!(session.snapshot.revision, snapshot.revision + 1);
     assert_eq!(session.snapshot.project.name, "Recovered");
+    let recovery = session.recovery.unwrap();
+    assert_eq!(recovery.replayed_changes, 1);
+    assert_eq!(recovery.restored_from, None);
     let folder = harness.repository.folder(example_path()).unwrap();
     assert_eq!(folder.snapshot_saves, 1);
     assert_eq!(folder.journal, []);
+}
+
+fn rename_entry(revision: u64, name: &str) -> JournalEntry {
+    JournalEntry {
+        revision,
+        committed_at: 0,
+        transaction: Transaction {
+            id: TransactionId::from_test_index(revision),
+            actor: Actor::User,
+            label: "Rename".to_owned(),
+            ops: vec![
+                RenameProject {
+                    name: name.to_owned(),
+                }
+                .into(),
+            ],
+        },
+    }
+}
+
+#[tokio::test]
+async fn a_cleanly_closed_project_reports_no_recovery() {
+    let harness = harness();
+    harness
+        .repository
+        .insert(example_path(), example_project(), Vec::new());
+    let session = harness.service.open_project(&example_path()).await.unwrap();
+    assert_eq!(session.recovery, None);
+}
+
+#[tokio::test]
+async fn a_restored_backup_is_reported_with_the_changes_replayed_or_lost() {
+    let harness = harness();
+    let snapshot = example_project();
+    let next = snapshot.revision + 1;
+    harness.repository.insert(
+        example_path(),
+        snapshot.clone(),
+        vec![rename_entry(next, "Back")],
+    );
+    harness
+        .repository
+        .restore_from_backup(example_path(), "project.json.bak.1", "invalid JSON");
+    let session = harness.service.open_project(&example_path()).await.unwrap();
+    assert_eq!(session.snapshot.project.name, "Back");
+    let recovery = session.recovery.clone().unwrap();
+    assert_eq!(
+        recovery.restored_from.as_deref(),
+        Some("project.json.bak.1")
+    );
+    assert_eq!(recovery.problem.as_deref(), Some("invalid JSON"));
+    assert_eq!((recovery.replayed_changes, recovery.lost_changes), (1, 0));
+    // Every later session of this opening tells it too.
+    let again = harness
+        .service
+        .project_session(session.snapshot.project.id)
+        .await
+        .unwrap();
+    assert_eq!(again.recovery, Some(recovery));
+    harness
+        .service
+        .close_project(session.snapshot.project.id)
+        .await
+        .unwrap();
+
+    // An older backup the journal does not join: opened alone, the entries counted as lost.
+    let other = Path::new(PARENT).join("Older.seproj");
+    harness.repository.insert(
+        &other,
+        snapshot.clone(),
+        vec![
+            rename_entry(next + 3, "Gap"),
+            rename_entry(next + 4, "Gap 2"),
+        ],
+    );
+    harness
+        .repository
+        .restore_from_backup(&other, "project.json.bak.3", "invalid JSON");
+    let session = harness.service.open_project(&other).await.unwrap();
+    assert_eq!(session.snapshot.revision, snapshot.revision);
+    let recovery = session.recovery.unwrap();
+    assert_eq!((recovery.replayed_changes, recovery.lost_changes), (0, 2));
+    harness
+        .service
+        .close_project(session.snapshot.project.id)
+        .await
+        .unwrap();
+
+    // The same gap on `project.json` itself is refused: nothing is dropped silently.
+    let broken = Path::new(PARENT).join("Broken.seproj");
+    harness
+        .repository
+        .insert(&broken, snapshot, vec![rename_entry(next + 3, "Gap")]);
+    let refused = harness.service.open_project(&broken).await.unwrap_err();
+    assert_eq!(code(refused), ErrorCode::ProjectCorrupted);
 }
 
 #[tokio::test]

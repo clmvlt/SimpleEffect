@@ -91,6 +91,7 @@ export function session(revision = 3): ProjectSession {
       assets: [],
     },
     history: { canUndo: false, canRedo: false, undoLabel: null, redoLabel: null },
+    recovery: null,
   };
 }
 

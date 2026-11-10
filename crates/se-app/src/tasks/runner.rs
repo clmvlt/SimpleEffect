@@ -210,6 +210,9 @@ fn earliest(deadline: Option<Instant>, delay: Duration) -> Instant {
 
 /// The status a run ends with; records the terminal event the stream lacked, if any.
 async fn final_status(recorder: &Recorder, end: StreamEnd) -> TaskStatus {
+    if end.stop_requested && recorder.shared.shutting_down() {
+        return interrupted_by_shutdown(recorder).await;
+    }
     match end.terminal {
         Some(AgentEvent::Completed { .. }) => TaskStatus::Completed,
         Some(AgentEvent::Failed { failure, .. })
@@ -239,6 +242,23 @@ async fn final_status(recorder: &Recorder, end: StreamEnd) -> TaskStatus {
                 message,
             }
         }
+    }
+}
+
+/// The status of a run the core's shutdown stopped (recorded in its log too).
+async fn interrupted_by_shutdown(recorder: &Recorder) -> TaskStatus {
+    let message =
+        "SimpleEffect was closed while this task was running: retry it (edits already made are kept)"
+            .to_owned();
+    recorder
+        .record(&AgentEvent::Failed {
+            failure: AgentFailureKind::Interrupted,
+            message: message.clone(),
+        })
+        .await;
+    TaskStatus::Failed {
+        failure: AgentFailureKind::Interrupted,
+        message,
     }
 }
 

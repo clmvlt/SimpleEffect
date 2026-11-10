@@ -44,6 +44,13 @@ impl ProjectLayout {
         self.root.join(format!("project.json.bak.{number}"))
     }
 
+    /// `project.json.corrupted`: an unreadable `project.json` set aside when a backup replaced
+    /// it (prompt 29), kept for inspection.
+    #[must_use]
+    pub fn corrupted_snapshot(&self) -> PathBuf {
+        self.root.join("project.json.corrupted")
+    }
+
     /// `project.db`: SQLite (journal, tasks, transcripts, analyses).
     #[must_use]
     pub fn database(&self) -> PathBuf {

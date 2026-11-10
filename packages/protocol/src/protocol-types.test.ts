@@ -168,6 +168,7 @@ describe('derived protocol types', () => {
       | 'projectPatched'
       | 'projectClosed'
       | 'historyChanged'
+      | 'projectSaveStateChanged'
       | 'jobQueued'
       | 'jobProgress'
       | 'jobCompleted'

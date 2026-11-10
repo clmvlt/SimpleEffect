@@ -1116,6 +1116,16 @@
         "saveToLibrary": "Enregistrer ce style dans la bibliothèque…",
         "libraryName": "Style de sous-titres"
       }
+    },
+    "recovery": {
+      "replayed_one": "Projet récupéré après un arrêt inattendu ({{count}} modification rejouée)",
+      "replayed_other": "Projet récupéré après un arrêt inattendu ({{count}} modifications rejouées)",
+      "restored": "Projet restauré depuis la sauvegarde {{backup}} : le fichier du projet était illisible",
+      "replayedAfterRestore_one": "{{count}} modification rejouée depuis cette sauvegarde. Le fichier abîmé est conservé à côté (project.json.corrupted).",
+      "replayedAfterRestore_other": "{{count}} modifications rejouées depuis cette sauvegarde. Le fichier abîmé est conservé à côté (project.json.corrupted).",
+      "lost_one": "{{count}} modification récente n’a pas pu être rejouée. Le fichier abîmé est conservé à côté (project.json.corrupted).",
+      "lost_other": "{{count}} modifications récentes n’ont pas pu être rejouées. Le fichier abîmé est conservé à côté (project.json.corrupted).",
+      "setAside": "Le fichier abîmé est conservé à côté (project.json.corrupted)."
     }
   },
   "statusBar": {
@@ -1142,7 +1152,11 @@
         "unknown": "État de connexion inconnu ({{reason}}) : cliquez pour vérifier à nouveau."
       }
     },
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "save": {
+      "failed_one": "Sauvegarde impossible · {{count}} modification non enregistrée",
+      "failed_other": "Sauvegarde impossible · {{count}} modifications non enregistrées"
+    }
   },
   "projects": {
     "card": {
@@ -1294,7 +1308,8 @@
       "media": "Médias",
       "ai": "IA",
       "transcription": "Transcription",
-      "brandKits": "Brand kits"
+      "brandKits": "Brand kits",
+      "performance": "Performances"
     },
     "media": {
       "derivedTitle": "Copies de travail",
@@ -1880,6 +1895,41 @@
       "message_other": "Quitter maintenant annule les exports et supprime les fichiers inachevés.",
       "leave": "Quitter quand même",
       "stay": "Continuer l’export"
+    }
+  },
+  "performance": {
+    "title": "Mesurer les performances",
+    "description": "Mesure cette fenêtre : temps de réponse du cœur, puis, si une séquence est ouverte dans le viewer, la latence du scrub, trois secondes de lecture et la fluidité de l’interface. La tête de lecture revient ensuite à sa place.",
+    "measure": "Mesurer les performances",
+    "steps": {
+      "core": "Temps de réponse du cœur…",
+      "scrub": "Scrub dans le viewer…",
+      "playback": "Lecture à 1× …"
+    },
+    "columns": {
+      "measure": "Mesure",
+      "value": "Valeur",
+      "budget": "Budget",
+      "status": "État"
+    },
+    "rows": {
+      "coreLatency": "Réponse du cœur (95 %)",
+      "scrub": "Scrub : image affichée (95 %)",
+      "frameInterval": "Image de l’interface (95 %)",
+      "longFrames": "Saccades de l’interface (> 50 ms)",
+      "droppedFrames": "Images perdues en lecture"
+    },
+    "status": {
+      "within": "Dans le budget",
+      "over": "Hors budget",
+      "skipped": "Non mesuré"
+    },
+    "milliseconds": "{{value}} ms",
+    "noViewer": "Ouvrez un projet dont la séquence contient des plans pour mesurer aussi le viewer.",
+    "details": "Lecture : {{fps}} images/s · {{frames}} images vidéo ouvertes · tas JavaScript : {{heap}} Mo",
+    "stopped": {
+      "hiddenWindow": "Mesure interrompue : la fenêtre est masquée ou réduite, le viewer ne dessine plus. Gardez-la visible pendant la mesure.",
+      "viewerStalled": "Mesure interrompue : le viewer n’a affiché aucune image pendant 10 secondes."
     }
   }
 }

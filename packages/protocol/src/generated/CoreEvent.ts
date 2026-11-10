@@ -12,6 +12,7 @@ import type { JobSnapshot } from "./JobSnapshot";
 import type { ProjectHistory } from "./ProjectHistory";
 import type { ProjectId } from "./ProjectId";
 import type { ProjectPatch } from "./ProjectPatch";
+import type { ProjectSaveState } from "./ProjectSaveState";
 import type { ProjectSession } from "./ProjectSession";
 import type { ReframeFailure } from "./ReframeFailure";
 import type { Task } from "./Task";
@@ -38,7 +39,7 @@ missedEvents: number, } | { "kind": "projectOpened" } & ProjectSession | { "kind
 /**
  * The project.
  */
-projectId: ProjectId, } | { "kind": "historyChanged" } & ProjectHistory | { "kind": "jobQueued", 
+projectId: ProjectId, } | { "kind": "historyChanged" } & ProjectHistory | { "kind": "projectSaveStateChanged" } & ProjectSaveState | { "kind": "jobQueued", 
 /**
  * The job.
  */

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useCoreEndpoint } from '../../../shared/core';
 import { ShortcutRegion } from '../../../shared/shortcuts';
 import { useInOutSpan } from '../../timeline';
+import { usePerformanceProbe } from '../hooks/use-performance-probe';
 import { usePlaybackSession } from '../hooks/use-playback-session';
 import { usePlaybackShortcuts } from '../hooks/use-playback-shortcuts';
 import { usePlayRequests } from '../hooks/use-play-requests';
@@ -59,6 +60,7 @@ export function ViewerWorkspace({
   });
   usePlaybackShortcuts(session);
   usePlayRequests(session);
+  usePerformanceProbe(engine, sequence.id, contentEnd);
   return (
     <ShortcutRegion context="viewer" className="flex size-full flex-col">
       <ViewerStage

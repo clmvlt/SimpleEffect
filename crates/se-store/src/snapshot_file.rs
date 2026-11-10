@@ -6,7 +6,7 @@ use std::{
     path::Path,
 };
 
-use se_app::ports::StorageError;
+use se_app::ports::{LoadedSnapshot, RestoredSnapshot, StorageError};
 use se_domain::{CURRENT_SCHEMA_VERSION, Project};
 
 use crate::{
@@ -16,12 +16,15 @@ use crate::{
     platform,
 };
 
-/// Reads the snapshot of the project at `layout`, migrated to the current format.
+/// Reads the snapshot of the project at `layout`, migrated to the current format. When
+/// `project.json` is unreadable, the newest readable backup is read instead and the unreadable
+/// file is renamed `project.json.corrupted` (so the next save does not rotate it into the
+/// backups).
 ///
 /// # Errors
 /// [`StorageError::NotFound`] without `project.json`, [`StorageError::SchemaTooNew`],
-/// [`StorageError::Corrupted`], IO errors.
-pub fn read_snapshot(layout: &ProjectLayout) -> Result<Project, StorageError> {
+/// [`StorageError::Corrupted`] when no backup is readable either, IO errors.
+pub fn read_snapshot(layout: &ProjectLayout) -> Result<LoadedSnapshot, StorageError> {
     let path = layout.snapshot();
     let text = fs::read_to_string(&path).map_err(|error| match error.kind() {
         io::ErrorKind::NotFound => StorageError::NotFound {
@@ -29,30 +32,73 @@ pub fn read_snapshot(layout: &ProjectLayout) -> Result<Project, StorageError> {
         },
         _ => io_error("read", &path, &error),
     })?;
-    let corrupted = |reason: String| StorageError::Corrupted {
-        path: path.clone(),
+    match parse_document(&text) {
+        Ok(project) => Ok(LoadedSnapshot::current(project)),
+        Err(DocumentProblem::TooNew { found, supported }) => Err(StorageError::SchemaTooNew {
+            path,
+            found,
+            supported,
+        }),
+        Err(DocumentProblem::Unreadable(reason)) => restore_backup(layout, &reason),
+    }
+}
+
+/// Reads the newest readable backup in place of an unreadable `project.json`.
+fn restore_backup(layout: &ProjectLayout, problem: &str) -> Result<LoadedSnapshot, StorageError> {
+    for number in 1..=BACKUP_COUNT {
+        let backup = layout.backup(number);
+        let Ok(text) = fs::read_to_string(&backup) else {
+            continue;
+        };
+        let Ok(project) = parse_document(&text) else {
+            tracing::warn!(backup = %backup.display(), "a backup is unreadable too");
+            continue;
+        };
+        fs::rename(layout.snapshot(), layout.corrupted_snapshot())
+            .map_err(|error| io_error("set aside", &layout.snapshot(), &error))?;
+        tracing::warn!(%problem, backup = %backup.display(), "project.json was unreadable; restored a backup");
+        return Ok(LoadedSnapshot {
+            project,
+            restored: Some(RestoredSnapshot {
+                backup: format!("project.json.bak.{number}"),
+                problem: problem.to_owned(),
+            }),
+        });
+    }
+    Err(StorageError::Corrupted {
+        path: layout.snapshot(),
         reason: format!(
-            "{reason}; the previous versions are in project.json.bak.1 to .bak.{BACKUP_COUNT}"
+            "{problem}; no readable backup either (project.json.bak.1 to .bak.{BACKUP_COUNT}):              restore the folder from a copy of your own"
         ),
-    };
-    let document: serde_json::Value = serde_json::from_str(&text)
-        .map_err(|error| corrupted(format!("invalid JSON ({error})")))?;
+    })
+}
+
+/// Why a snapshot's text could not become a document.
+enum DocumentProblem {
+    /// Written by a newer version of the app.
+    TooNew { found: u32, supported: u32 },
+    /// Not JSON, not a project, or not upgradable.
+    Unreadable(String),
+}
+
+/// Parses and migrates a snapshot's text.
+fn parse_document(text: &str) -> Result<Project, DocumentProblem> {
+    let document: serde_json::Value = serde_json::from_str(text)
+        .map_err(|error| DocumentProblem::Unreadable(format!("invalid JSON ({error})")))?;
     let document = migrate_document(document, MIGRATIONS, CURRENT_SCHEMA_VERSION).map_err(
         |error| match error {
-            MigrationError::TooNew { found, supported } => StorageError::SchemaTooNew {
-                path: path.clone(),
-                found,
-                supported,
-            },
-            MigrationError::MissingVersion => {
-                corrupted("schemaVersion is missing or not a positive integer".to_owned())
+            MigrationError::TooNew { found, supported } => {
+                DocumentProblem::TooNew { found, supported }
             }
-            MigrationError::Failed { from, reason } => corrupted(format!(
+            MigrationError::MissingVersion => DocumentProblem::Unreadable(
+                "schemaVersion is missing or not a positive integer".to_owned(),
+            ),
+            MigrationError::Failed { from, reason } => DocumentProblem::Unreadable(format!(
                 "cannot upgrade it from format version {from}: {reason}"
             )),
         },
     )?;
-    serde_json::from_value(document).map_err(|error| corrupted(format!("{error}")))
+    serde_json::from_value(document).map_err(|error| DocumentProblem::Unreadable(error.to_string()))
 }
 
 /// Replaces the snapshot with `project`: the current file becomes `project.json.bak.1` (older

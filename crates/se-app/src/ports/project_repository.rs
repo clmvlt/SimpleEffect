@@ -60,11 +60,14 @@ pub trait ProjectStore: Send + Sync {
     /// Canonical absolute path of the project folder.
     fn path(&self) -> &Path;
 
-    /// Reads `project.json`, migrated to the current document format.
+    /// Reads `project.json`, migrated to the current document format. When it cannot be read,
+    /// the newest readable backup is used instead and the unreadable file is set aside
+    /// ([`LoadedSnapshot::restored`]).
     ///
     /// # Errors
-    /// [`StorageError::SchemaTooNew`], [`StorageError::Corrupted`], IO errors.
-    async fn load_snapshot(&self) -> Result<Project, StorageError>;
+    /// [`StorageError::SchemaTooNew`], [`StorageError::Corrupted`] (no backup readable either),
+    /// IO errors.
+    async fn load_snapshot(&self) -> Result<LoadedSnapshot, StorageError>;
 
     /// Journal entries whose revision is greater than `revision`, in revision order.
     ///
@@ -98,7 +101,9 @@ pub trait ProjectStore: Send + Sync {
     async fn load_changesets(&self) -> Result<Vec<Changeset>, StorageError>;
 
     /// Atomically replaces `project.json` with `project` (keeping the previous versions as
-    /// backups), then drops the journal entries it includes (revision ≤ `project.revision`).
+    /// backups), then drops the journal entries the **previous** snapshot already includes: the
+    /// journal keeps every commit since the newest backup, so restoring that backup loses
+    /// nothing (prompt 29).
     ///
     /// # Errors
     /// IO errors; the previous snapshot and the journal are then left intact.
@@ -153,4 +158,33 @@ pub enum ChangesetWrite {
         /// When (milliseconds since the Unix epoch).
         at: i64,
     },
+}
+
+/// The snapshot read when a project opens.
+#[derive(Debug, Clone)]
+pub struct LoadedSnapshot {
+    /// The document (migrated to the current format).
+    pub project: Project,
+    /// Set when `project.json` was unreadable and a backup was read instead.
+    pub restored: Option<RestoredSnapshot>,
+}
+
+impl LoadedSnapshot {
+    /// A snapshot read from `project.json` itself.
+    #[must_use]
+    pub const fn current(project: Project) -> Self {
+        Self {
+            project,
+            restored: None,
+        }
+    }
+}
+
+/// Where a snapshot came from when `project.json` was unreadable.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RestoredSnapshot {
+    /// The backup's file name (`project.json.bak.1`).
+    pub backup: String,
+    /// Why `project.json` could not be read.
+    pub problem: String,
 }

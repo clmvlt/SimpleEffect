@@ -98,6 +98,8 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 # SHA-256 of downloaded and imported transcription models.
 sha2 = "0.11.1"
+# Benchmarks of the core (`pnpm bench`, se-devtools, prompt 29).
+criterion = { version = "0.8.2", default-features = false, features = ["cargo_bench_support"] }
 tempfile = "3.27.0"
 thiserror = "2.0.21"
 tokio = "1.54.1"

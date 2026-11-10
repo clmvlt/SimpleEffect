@@ -25,7 +25,12 @@ export const NO_GUIDES: ViewerGuides = { safeArea: null, thirds: false, centre: 
 /** Viewer options: machine preferences, never project data. */
 export interface ViewerPreferences {
   readonly zoom: ViewerZoom;
-  /** Decode ready proxies instead of originals. */
+  /**
+   * Decode ready proxies instead of originals. On by default since prompt 29: proxies are made
+   * only for media this machine cannot scrub smoothly (UHD, undecodable), and 4K originals
+   * scrubbed at ~570 ms per step against ~30 ms with their proxies (`docs/performance.md`).
+   * Exports always read originals.
+   */
   readonly proxy: boolean;
   /** Show transparent areas over a checkerboard (instead of black). */
   readonly checkerboard: boolean;
@@ -42,7 +47,7 @@ export interface ViewerPreferences {
 /** Defaults on a new machine. */
 export const DEFAULT_VIEWER_PREFERENCES: ViewerPreferences = {
   zoom: 'fit',
-  proxy: false,
+  proxy: true,
   checkerboard: false,
   loop: false,
   scrubAudio: true,

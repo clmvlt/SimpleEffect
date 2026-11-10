@@ -9,6 +9,7 @@ import type {
   ProjectHeader,
   ProjectId,
   ProjectPatch,
+  ProjectRecovery,
   ProjectSession,
   SequenceEntity,
   SequenceId,
@@ -36,6 +37,11 @@ export interface ProjectMirror {
   readonly markers: Readonly<Record<MarkerId, MarkerEntity>>;
   readonly assets: Readonly<Record<AssetId, Asset>>;
   readonly history: HistoryState;
+  /**
+   * What opening repaired (journal replayed after a crash, backup restored), or `null` when the
+   * project opened cleanly. Shown once by the editor (`useRecoveryNotice`).
+   */
+  readonly recovery: ProjectRecovery | null;
 }
 
 /** What {@link applyPatch} did with a patch. */
@@ -68,6 +74,7 @@ export function mirrorFromSession(session: ProjectSession): ProjectMirror {
     markers: byId(snapshot.markers),
     assets: byId(snapshot.assets),
     history: session.history,
+    recovery: session.recovery,
   };
 }
 

@@ -17,8 +17,8 @@ use super::{
     memory_transcripts::InMemoryTranscriptStore,
 };
 use crate::ports::{
-    AnalysisStore, ChangesetWrite, JournalEntry, ProjectRepository, ProjectStore, StorageError,
-    StoredAnalysis, StoredTranscript, TaskStore, TranscriptStore,
+    AnalysisStore, ChangesetWrite, JournalEntry, LoadedSnapshot, ProjectRepository, ProjectStore,
+    RestoredSnapshot, StorageError, StoredAnalysis, StoredTranscript, TaskStore, TranscriptStore,
 };
 
 /// One fake project folder.
@@ -42,6 +42,9 @@ pub struct StoredFolder {
     pub changesets: Vec<StoredChangeset>,
     /// Transcripts saved in its database.
     pub transcripts: BTreeMap<AssetId, StoredTranscript>,
+    /// Set to pretend `project.json` was unreadable and `snapshot` is a backup (prompt 29);
+    /// cleared by the next save.
+    pub restored: Option<RestoredSnapshot>,
 }
 
 #[derive(Debug, Default)]
@@ -74,8 +77,19 @@ impl InMemoryProjectRepository {
                 task_events: BTreeMap::new(),
                 changesets: Vec::new(),
                 transcripts: BTreeMap::new(),
+                restored: None,
             },
         );
+    }
+
+    /// Pretends the folder's `project.json` was unreadable: its snapshot is read as `backup`.
+    pub fn restore_from_backup(&self, path: impl AsRef<Path>, backup: &str, problem: &str) {
+        if let Some(folder) = lock(&self.state).folders.get_mut(path.as_ref()) {
+            folder.restored = Some(RestoredSnapshot {
+                backup: backup.to_owned(),
+                problem: problem.to_owned(),
+            });
+        }
     }
 
     /// The folder at `path`, if any.
@@ -225,9 +239,13 @@ impl ProjectStore for InMemoryProjectStore {
         &self.path
     }
 
-    async fn load_snapshot(&self) -> Result<Project, StorageError> {
-        self.repository
-            .with_folder(&self.path, |folder| Ok(folder.snapshot.clone()))
+    async fn load_snapshot(&self) -> Result<LoadedSnapshot, StorageError> {
+        self.repository.with_folder(&self.path, |folder| {
+            Ok(LoadedSnapshot {
+                project: folder.snapshot.clone(),
+                restored: folder.restored.clone(),
+            })
+        })
     }
 
     async fn read_journal_since(&self, revision: u64) -> Result<Vec<JournalEntry>, StorageError> {
@@ -280,6 +298,7 @@ impl ProjectStore for InMemoryProjectStore {
                 return Err(io_error(&self.path));
             }
             folder.snapshot = project.clone();
+            folder.restored = None;
             folder
                 .journal
                 .retain(|entry| entry.revision > project.revision);
