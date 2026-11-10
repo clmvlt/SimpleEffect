@@ -6,8 +6,8 @@
 //! ADR-0019).
 //!
 //! It implements the `MediaProber` ([`FfprobeProber`]), `MediaFiles` ([`FsMediaFiles`]),
-//! `MediaJobRunner` and `FrameExtractor` ([`FfmpegJobRunner`]) and `MediaTools`
-//! ([`FfmpegTools`]) ports of `se-app`. Allowed workspace dependencies:
+//! `MediaJobRunner` and `FrameExtractor` ([`FfmpegJobRunner`]), `MediaTools`
+//! ([`FfmpegTools`]) and `ExportOutputs` ([`FsExportOutputs`], prompt 27) ports of `se-app`. Allowed workspace dependencies:
 //! `se-app`, `se-domain`, `se-protocol` (DTOs); never another adapter crate. Sidecars are spawned
 //! processes only (one helper: [`process::Sidecar`]); no FFmpeg linking.
 //!
@@ -17,6 +17,7 @@
 pub mod analysis;
 pub mod cache_layout;
 pub mod encoders;
+mod export_output;
 mod ffmpeg_tools;
 mod files;
 pub mod fingerprint;
@@ -30,6 +31,9 @@ pub mod process;
 pub mod speech_audio;
 mod tools;
 
+pub use export_output::{
+    FsExportOutputs, aac_remux_args, frames_args, master_codec_args, muxer_of,
+};
 pub use ffmpeg_tools::FfmpegTools;
 pub use files::FsMediaFiles;
 pub use jobs::{FfmpegJobRunner, parse_tile_times, scene_filter, thumbnail_plan, transcode_args};
