@@ -1,12 +1,20 @@
-# Local and CI packaging (`pnpm package`). Installers are unsigned (see GUIDE-GIT.md).
+# Local and CI packaging (`pnpm package`, ADR-0039). Installers are not signed by a certificate:
+# Windows shows SmartScreen once, macOS builds are ad-hoc signed (Gatekeeper workaround in
+# README.md and the release notes). Installer names are stable: the release workflow and
+# GUIDE-GIT.md rely on them.
 appId: com.simpleeffect.app
 productName: SimpleEffect
+copyright: Copyright © 2026 SimpleEffect contributors
 directories:
   output: release
   buildResources: build-resources
-# Everything is bundled by electron-vite: the app ships no node_modules.
+# build-resources/icon.png (1024 px; icon.svg is its source) gives every platform its icons.
+icon: build-resources/icon.png
+# Everything is bundled by electron-vite: the app ships no node_modules. The notices are
+# resources (below), not part of the app archive.
 files:
   - out/**/*
+  - '!out/notices/**/*'
   - package.json
 npmRebuild: false
 publish: null
@@ -18,8 +26,19 @@ extraMetadata:
 # ONNX Runtime library of face detection in `onnxruntime/`, from `pnpm fetch-binaries`) share
 # `resources/bin/`, where se-core looks for them first (crates/se-media/src/tools.rs,
 # crates/se-vision/src/runtime.rs). The filters leave out the fetch stamp (`.fetched.json`).
+# `resources/LICENSES/` holds the repository's LICENSES folder and the generated notices
+# (`scripts/generate-notices.mjs`), read by « À propos → Licences ».
+extraResources:
+  - from: ../../LICENSES
+    to: LICENSES
+  - from: out/notices
+    to: LICENSES
+    filter: [third-party-notices.json, THIRD-PARTY-NOTICES.txt]
+
 win:
-  target: nsis
+  target:
+    - target: nsis
+      arch: [x64]
   extraResources:
     - from: ../../target/release/se-core.exe
       to: bin/se-core.exe
@@ -27,11 +46,24 @@ win:
       to: bin
       filter: [ffmpeg.exe, ffprobe.exe, whisper/**/*, onnxruntime/**/*]
 nsis:
-  artifactName: ${productName}-Setup-${version}.${ext}
+  artifactName: SimpleEffect-${version}-windows-x64-setup.${ext}
+  # Per-user install without administrator rights; the user may pick another folder.
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: SimpleEffect
+  # Projects, settings and models are the user's: never deleted with the app.
+  deleteAppDataOnUninstall: false
 
 mac:
-  target: dmg
-  identity: null
+  target:
+    - target: dmg
+  category: public.app-category.video
+  # Ad-hoc signature: Apple Silicon refuses unsigned code, and there is no Developer ID yet.
+  identity: '-'
+  hardenedRuntime: false
+  gatekeeperAssess: false
   extraResources:
     - from: ../../target/release/se-core
       to: bin/se-core
@@ -39,13 +71,17 @@ mac:
       to: bin
       filter: [ffmpeg, ffprobe, whisper/**/*, onnxruntime/**/*]
 dmg:
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  artifactName: SimpleEffect-${version}-macos-${arch}.${ext}
 
 linux:
   target:
-    - AppImage
-    - deb
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
   category: AudioVideo
+  synopsis: Local, AI-first video editor
+  description: SimpleEffect, a local AI-first video editor.
   maintainer: SimpleEffect <clmvlt@users.noreply.github.com>
   extraResources:
     - from: ../../target/release/se-core
@@ -54,6 +90,6 @@ linux:
       to: bin
       filter: [ffmpeg, ffprobe, whisper/**/*, onnxruntime/**/*]
 appImage:
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  artifactName: SimpleEffect-${version}-linux-x86_64.${ext}
 deb:
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  artifactName: SimpleEffect-${version}-linux-amd64.${ext}
