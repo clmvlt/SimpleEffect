@@ -21,6 +21,7 @@
     "codegen": "node scripts/codegen.mjs",
     "fetch-binaries": "node scripts/fetch-binaries.mjs",
     "generate-test-project": "cargo run -q -p se-devtools --",
+    "bench": "cargo bench -p se-devtools --bench core --",
     "storybook": "pnpm --filter @se/ui storybook",
     "set-version": "node scripts/set-version.mjs"
   },
