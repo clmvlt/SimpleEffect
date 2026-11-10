@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-10 — Prompt 29: Performance et robustesse — Done
 
-**Branch**: `feature/29-performance-robustesse`, merged into `dev` at `MERGE_SHA`
+**Branch**: `feature/29-performance-robustesse`, merged into `dev` at `f9deccb`
 
 **Done**
 - Budgets, methods and results in `docs/performance.md` (new), checked in the app: « Réglages → Performances → Mesurer les performances » (`features/performance`: 30 core round trips, 20 scrub steps, 3 s of playback, main-thread frames, open `VideoFrame`s and heap against `BUDGETS`; the viewer registers a `ViewerProbe` in `shared/performance`; a hidden window is refused and a stalled seek stops after 10 s).
