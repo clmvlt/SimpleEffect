@@ -95,6 +95,21 @@ describe('DecoderPool: playback readers', () => {
     expect(frames.find((frame) => frame.index === 30)?.closed).toBe(false);
   });
 
+  it('closes the frames a clip has passed while another clip of the file reads earlier', async () => {
+    const { pool, sources } = setup();
+    pool.prefetch([forward(0, 0.4, 'item-2'), forward(5)]);
+    await drain();
+    pool.prefetch([forward(0.2, 0.4, 'item-2'), forward(5.2)]);
+    await drain();
+    const frames = sources[0]?.decodedFrames ?? [];
+    const closed = (index: number) => frames.find((frame) => frame.index === index)?.closed;
+    expect(closed(129)).toBe(true);
+    expect(closed(130)).toBe(false);
+    expect(closed(4)).toBe(true);
+    expect(closed(5)).toBe(false);
+    pool.destroy();
+  });
+
   it('never holds more frames ahead than its share of the cache', async () => {
     const { pool, sources } = setup(8);
     pool.prefetch([forward(0, 10)]);

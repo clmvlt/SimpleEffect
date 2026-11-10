@@ -16,6 +16,21 @@ function cache(maxEntries = 3, budgetBytes = 1_000) {
 }
 
 describe('FrameCache', () => {
+  it('drops pictures every shown stretch has passed, keeping those another stretch shows', () => {
+    const frames = cache(10);
+    const pictures = [0, 1, 2, 3, 4].map((index) => picture(index));
+    for (const [index, entry] of pictures.entries()) {
+      frames.insert('a', entry, index, index + 1, 10).release();
+    }
+    frames.dropPassed('a', [
+      { from: 1.5, to: 2 },
+      { from: 3.5, to: 4 },
+    ]);
+    expect(pictures.map((entry) => entry.frame.closed)).toEqual([true, false, true, false, false]);
+    frames.dropPassed('a', [{ from: 4.5, to: 5 }]);
+    expect(pictures.map((entry) => entry.frame.closed)).toEqual([true, true, true, true, false]);
+  });
+
   it('finds the picture whose range contains a time, per source', () => {
     const frames = cache();
     frames.insert('a', picture(0), 0, 0.04, 10).release();

@@ -286,17 +286,20 @@ export class DecoderPool {
   }
 
   /**
-   * Closes the cached frames forward playback has passed (before the earliest time on screen of
-   * each file): held frames are what stalls hardware decoders, and passed ones will not be shown.
+   * Closes the cached frames forward playback has passed: held frames are what stalls hardware
+   * decoders, and passed ones will not be shown. Per clip, not per file: when two clips show the
+   * same file at once (different source points), the frames the later one has passed are closed
+   * even though the other reads earlier; kept, they would starve that clip's decoder of surfaces
+   * and an export, which waits for every picture, would never finish.
    */
   private dropPassedFrames(requests: readonly PrefetchRequest[]): void {
-    const earliest = new Map<string, number>();
+    const stretches = new Map<string, PrefetchRequest[]>();
     for (const request of requests) {
       if (request.direction < 0) continue;
       const id = cacheId(request.file);
-      earliest.set(id, Math.min(earliest.get(id) ?? Infinity, request.from));
+      stretches.set(id, [...(stretches.get(id) ?? []), request]);
     }
-    for (const [id, time] of earliest) this.cache.dropBefore(id, time);
+    for (const [id, shown] of stretches) this.cache.dropPassed(id, shown);
   }
 
   /** Keeps, extends or restarts the reader of `key` for `request`. */
