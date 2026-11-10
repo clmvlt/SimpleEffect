@@ -233,7 +233,7 @@ async fn failing_saves_are_announced_and_their_end_too() {
     // A save that works without having failed says nothing.
     harness.actor.apply(move_text(3, 8000)).await.unwrap();
     sleep(SAVE_DELAY + Duration::from_millis(100)).await;
-    assert!(save_states(&harness.events.take()).is_empty());
+    assert_eq!(save_states(&harness.events.take()), Vec::new());
 }
 
 fn save_states(events: &[CoreEvent]) -> Vec<se_protocol::ProjectSaveState> {

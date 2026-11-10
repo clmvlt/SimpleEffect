@@ -375,7 +375,7 @@ pub fn stretch_to(project: &mut Project, seconds: u64) -> Result<(), DevError> {
         if end >= target || end == Flicks::ZERO {
             continue;
         }
-        let factor = target.get() as f64 / end.get() as f64;
+        let factor = target.to_seconds_f64() / end.to_seconds_f64();
         let stretched = |time: Flicks| -> Flicks {
             time.checked_mul_f64(factor)
                 .map(|scaled| scaled.to_frames(rate, se_domain::RoundingMode::Floor))

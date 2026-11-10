@@ -18,21 +18,6 @@ pub fn io_error(action: &'static str, path: &Path, error: &io::Error) -> Storage
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_full_disk_says_what_to_do() {
-        let error = io_error(
-            "write",
-            Path::new("project.json"),
-            &io::Error::from(io::ErrorKind::StorageFull),
-        );
-        assert!(error.to_string().contains("free some space"), "{error}");
-    }
-}
-
 /// A SQLite failure while doing `action` on the database at `path`.
 pub fn sqlite_error(action: &'static str, path: &Path, error: &rusqlite::Error) -> StorageError {
     StorageError::Io {
@@ -67,4 +52,19 @@ pub fn utf8_path<'a>(action: &'static str, path: &'a Path) -> Result<&'a str, St
         reason: "the path is not valid Unicode; move the project to a folder with a simpler name"
             .to_owned(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_full_disk_says_what_to_do() {
+        let error = io_error(
+            "write",
+            Path::new("project.json"),
+            &io::Error::from(io::ErrorKind::StorageFull),
+        );
+        assert!(error.to_string().contains("free some space"), "{error}");
+    }
 }

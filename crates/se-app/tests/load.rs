@@ -106,7 +106,7 @@ impl Bed {
     /// Agent `index` adds `EDITS_PER_TASK` texts on V3, in its own stretch after the content.
     async fn agent_edits(&self, agent: &AgentContext, index: usize) {
         for edit in 0..EDITS_PER_TASK {
-            let start = 20.0 + (index * EDITS_PER_TASK + edit) as f64;
+            let start = 20.0 + f64::from(u32::try_from(index * EDITS_PER_TASK + edit).unwrap());
             let text = AgentEdit::AddItem(Box::new(NewAgentItem {
                 kind: ItemKind::Text(TextItem::new("Abonne-toi")),
                 range: TimeRange::from_start_end(secs(start), secs(start + 0.5)).unwrap(),
