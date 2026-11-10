@@ -11,6 +11,9 @@ import {
   type ChooseSaveFileOptions,
   type ChooseFolderOptions,
   type CoreConnection,
+  type ExportActivity,
+  type ResolvedFilePath,
+  type ResolveFilePathOptions,
   type SimpleEffectBridge,
   type SystemNotification,
 } from '../shared/bridge-api';
@@ -42,6 +45,10 @@ const bridge: SimpleEffectBridge = {
       ipcRenderer.removeListener(IPC_CHANNELS.notificationClicked, handler);
     };
   },
+  resolveFilePath: (options: ResolveFilePathOptions) =>
+    ipcRenderer.invoke(IPC_CHANNELS.resolveFilePath, options) as Promise<ResolvedFilePath>,
+  setExportActivity: (activity: ExportActivity | null) =>
+    ipcRenderer.invoke(IPC_CHANNELS.setExportActivity, activity) as Promise<void>,
 };
 
 contextBridge.exposeInMainWorld('simpleEffect', bridge);

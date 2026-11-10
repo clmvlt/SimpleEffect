@@ -1,7 +1,12 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
 
 import { IPC_CHANNELS } from '../shared/bridge-api';
 import type { CoreSupervisor } from './core-supervisor';
+import type { ExportActivityGuard } from './export-activity';
+import { parseExportActivity, parseResolveFilePath } from './export-arguments';
 import {
   parseChooseFileOptions,
   parseChooseFilesOptions,
@@ -14,7 +19,10 @@ import {
 import { showSystemNotification } from './notifications';
 
 /** Answers the preload bridge's requests (see `electron/shared/bridge-api.ts`). */
-export function registerIpcHandlers(supervisor: CoreSupervisor): void {
+export function registerIpcHandlers(
+  supervisor: CoreSupervisor,
+  exportGuard: ExportActivityGuard,
+): void {
   ipcMain.handle(IPC_CHANNELS.getCoreConnection, () => supervisor.waitForConnection());
 
   ipcMain.handle(IPC_CHANNELS.chooseFolder, async (event, value: unknown) => {
@@ -94,5 +102,15 @@ export function registerIpcHandlers(supervisor: CoreSupervisor): void {
 
   ipcMain.handle(IPC_CHANNELS.showNotification, (event, value: unknown) => {
     showSystemNotification(event.sender, parseNotification(value));
+  });
+
+  ipcMain.handle(IPC_CHANNELS.resolveFilePath, (_event, value: unknown) => {
+    const { folder, fileName } = parseResolveFilePath(value);
+    const path = join(folder, fileName);
+    return { path, exists: existsSync(path) };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.setExportActivity, (_event, value: unknown) => {
+    exportGuard.set(parseExportActivity(value));
   });
 }

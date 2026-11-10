@@ -59,7 +59,6 @@ export interface ChooseSaveFileOptions {
   readonly extensions: readonly string[];
 }
 
-/** API exposed by the preload script as `window.simpleEffect`. */
 /** A notification of the operating system (an AI task finished while the window was hidden). */
 export interface SystemNotification {
   /** Its title (translated by the renderer). */
@@ -70,6 +69,38 @@ export interface SystemNotification {
   readonly tag: string;
 }
 
+/** Options of {@link SimpleEffectBridge.resolveFilePath}. */
+export interface ResolveFilePathOptions {
+  /** An absolute folder. */
+  readonly folder: string;
+  /** A file name in it (no folder separators). */
+  readonly fileName: string;
+}
+
+/** A file path built by the main process with the platform's path rules. */
+export interface ResolvedFilePath {
+  /** The absolute path of the file. */
+  readonly path: string;
+  /** Whether a file already exists there (the renderer asks before replacing it). */
+  readonly exists: boolean;
+}
+
+/**
+ * Exports running in the renderer (prompt 27): while one is given, the system does not suspend
+ * the app and closing the window asks first, with these texts (translated by the renderer).
+ */
+export interface ExportActivity {
+  /** Title of the confirmation dialog. */
+  readonly title: string;
+  /** Its message (how many exports would stop). */
+  readonly message: string;
+  /** Label of the button that closes anyway. */
+  readonly quitLabel: string;
+  /** Label of the button that keeps the app open. */
+  readonly stayLabel: string;
+}
+
+/** API exposed by the preload script as `window.simpleEffect`. */
 export interface SimpleEffectBridge {
   /**
    * Resolves with the connection of the running core, waiting while it (re)starts.
@@ -112,6 +143,16 @@ export interface SimpleEffectBridge {
    * brought to the front first); returns the function that stops listening.
    */
   onNotificationClick(listener: (tag: string) => void): () => void;
+  /**
+   * The absolute path of `fileName` in `folder`, joined with the platform's rules, and whether a
+   * file exists there (export destinations, prompt 27).
+   */
+  resolveFilePath(options: ResolveFilePathOptions): Promise<ResolvedFilePath>;
+  /**
+   * Tells the main process exports are running (`null`: none any more): it keeps the system from
+   * suspending the app and asks before the window closes.
+   */
+  setExportActivity(activity: ExportActivity | null): Promise<void>;
 }
 
 /** IPC channels between preload and main. */
@@ -125,4 +166,6 @@ export const IPC_CHANNELS = {
   showInFolder: 'shell:show-in-folder',
   showNotification: 'notification:show',
   notificationClicked: 'notification:clicked',
+  resolveFilePath: 'fs:resolve-file-path',
+  setExportActivity: 'export:set-activity',
 } as const;

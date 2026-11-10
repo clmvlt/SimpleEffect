@@ -66,6 +66,9 @@ const idleBridge: SimpleEffectBridge = {
   showInFolder: () => Promise.resolve(),
   getPathForFile: () => '',
   showNotification: () => Promise.resolve(),
+  resolveFilePath: ({ folder, fileName }) =>
+    Promise.resolve({ path: `${folder}/${fileName}`, exists: false }),
+  setExportActivity: () => Promise.resolve(),
   onNotificationClick: () => () => undefined,
 };
 
