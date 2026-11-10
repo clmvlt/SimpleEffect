@@ -22,6 +22,7 @@ mod editing;
 mod envelope;
 mod error;
 mod event;
+mod exports;
 mod fonts;
 mod frame_renders;
 mod graphics;
@@ -59,6 +60,12 @@ pub use envelope::{
 };
 pub use error::{ErrorCode, ProtocolError};
 pub use event::CoreEvent;
+pub use exports::{
+    AudioEncoderChoice, AudioExportCodec, AudioExportSettings, ExportCheck, ExportContainer,
+    ExportInfo, ExportPipeline, ExportPreferences, ExportPreset, ExportPresetVideo, ExportQuality,
+    ExportRenderRequest, ExportSettings, ExportState, StartExportRequest, VideoExportCodec,
+    VideoExportSettings, VideoRate,
+};
 pub use fonts::{FontFace, FontFamily, FontSource};
 pub use frame_renders::FrameRenderRequest;
 pub use graphics::{

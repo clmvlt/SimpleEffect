@@ -1,10 +1,10 @@
 //! Commands a client asks `se-core` to execute.
 
 use se_domain::{
-    AnimationPhase, AssetId, BrandKitId, CaptionStyleId, Flicks, Format, FormatAdaptation, ItemId,
-    JobId, LibraryTemplateId, MarkerColor, MarkerId, MarkerPatch, ProjectId, PropertyAnimation,
-    SequenceId, TaskId, TemplateId, TimeRange, TrackId, TrackKind, TrackPatch, TrackingSettings,
-    TranscriptionSettings, TransitionId, TransitionPatch,
+    AnimationPhase, AssetId, BrandKitId, CaptionStyleId, ExportId, Flicks, Format,
+    FormatAdaptation, ItemId, JobId, LibraryTemplateId, MarkerColor, MarkerId, MarkerPatch,
+    ProjectId, PropertyAnimation, SequenceId, TaskId, TemplateId, TimeRange, TrackId, TrackKind,
+    TrackPatch, TrackingSettings, TranscriptionSettings, TransitionId, TransitionPatch,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -12,11 +12,12 @@ use ts_rs::TS;
 use crate::{
     AddGraphicRequest, AiSettings, CaptionEmphasisEdit, CaptionStyleEdit, CaptionTextEdit,
     CreateProjectRequest, DecodabilityReport, DecoderCapabilities, DownloadTarget,
-    GenerateCaptionsRequest, GenerateDerivedRequest, ImportMediaRequest, ImportSubtitlesRequest,
-    InsertLibraryTemplateRequest, ItemAnimation, ItemPlacement, ItemTrim, ItemUpdate,
-    LibraryBrandKit, LibraryTemplateInfo, MediaSettings, NewTransition, PastedItem,
+    ExportPreferences, GenerateCaptionsRequest, GenerateDerivedRequest, ImportMediaRequest,
+    ImportSubtitlesRequest, InsertLibraryTemplateRequest, ItemAnimation, ItemPlacement, ItemTrim,
+    ItemUpdate, LibraryBrandKit, LibraryTemplateInfo, MediaSettings, NewTransition, PastedItem,
     PlaceMediaRequest, PlacementMode, RelinkAssetRequest, SilenceCutParams, SmartCutSettings,
-    SubmitTaskRequest, TaskScope, TemplateCheckOutcome, TranscriptionPreferences, WordCutPurpose,
+    StartExportRequest, SubmitTaskRequest, TaskScope, TemplateCheckOutcome,
+    TranscriptionPreferences, WordCutPurpose,
 };
 
 /// A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -917,6 +918,51 @@ pub enum Command {
         /// The media.
         asset_id: AssetId,
     },
+    /// Snapshots a sequence and queues its export (prompt 27, ADR-0038). Answered by
+    /// [`crate::CommandResult::StartExport`].
+    StartExport(StartExportRequest),
+    /// Cancels a queued or running export; its partial files are removed. Answered by
+    /// [`crate::CommandResult::CancelExport`].
+    CancelExport {
+        /// The export.
+        export_id: ExportId,
+    },
+    /// The exports of this session, oldest first. Answered by
+    /// [`crate::CommandResult::ListExports`].
+    ListExports,
+    /// Forgets finished exports (completed, failed, cancelled). Answered by
+    /// [`crate::CommandResult::ClearFinishedExports`].
+    ClearFinishedExports,
+    /// The renderer's progress on an export it renders. Answered by
+    /// [`crate::CommandResult::ReportExportProgress`].
+    ReportExportProgress {
+        /// The export.
+        export_id: ExportId,
+        /// Units done (frames, or sound samples for sound-only exports).
+        done: u64,
+        /// Units in all.
+        total: u64,
+    },
+    /// The renderer uploaded everything of an export: the core completes the file. Answered by
+    /// [`crate::CommandResult::FinishExportRender`].
+    FinishExportRender {
+        /// The export.
+        export_id: ExportId,
+    },
+    /// The renderer cannot render an export (the export fails with `message`). Answered by
+    /// [`crate::CommandResult::FailExportRender`].
+    FailExportRender {
+        /// The export.
+        export_id: ExportId,
+        /// Why (actionable, English).
+        message: String,
+    },
+    /// What the export dialog remembers. Answered by
+    /// [`crate::CommandResult::GetExportPreferences`].
+    GetExportPreferences,
+    /// Stores what the export dialog remembers. Answered by
+    /// [`crate::CommandResult::UpdateExportPreferences`].
+    UpdateExportPreferences(ExportPreferences),
 }
 
 #[cfg(test)]

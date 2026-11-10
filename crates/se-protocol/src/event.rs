@@ -1,13 +1,13 @@
 //! Events pushed by `se-core` to its clients.
 
-use se_domain::{ChangesetId, ItemId, ProjectId, TaskId};
+use se_domain::{ChangesetId, ExportId, ItemId, ProjectId, TaskId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    AiStatus, FrameRenderRequest, JobProgress, JobSnapshot, ProjectHistory, ProjectPatch,
-    ProjectSession, ReframeFailure, Task, TaskEventRecord, TemplateCheckRequest,
-    TranscriptionStatus,
+    AiStatus, ExportInfo, ExportRenderRequest, FrameRenderRequest, JobProgress, JobSnapshot,
+    ProjectHistory, ProjectPatch, ProjectSession, ReframeFailure, Task, TaskEventRecord,
+    TemplateCheckRequest, TranscriptionStatus,
 };
 
 /// An event pushed inside a [`crate::EventEnvelope`], tagged by `kind` (camelCase).
@@ -130,6 +130,23 @@ pub enum CoreEvent {
         /// The media whose faces could not be analysed, and why.
         failures: Vec<ReframeFailure>,
     },
+    /// An export's job started (prompt 27, ADR-0038): the renderer renders its snapshot, uploads
+    /// to `/media/exports/{exportId}/…`, reports its progress, then answers
+    /// [`crate::Command::FinishExportRender`] or [`crate::Command::FailExportRender`].
+    ExportRenderRequested(ExportRenderRequest),
+    /// An export was cancelled while the renderer rendered it: the renderer stops (its uploads
+    /// are refused from now on).
+    ExportRenderCancelled {
+        /// The export.
+        export_id: ExportId,
+    },
+    /// An export was queued, progressed, finished, failed or was cancelled.
+    ExportUpdated {
+        /// The export as it is now.
+        export: ExportInfo,
+    },
+    /// Finished exports were forgotten (`clearFinishedExports`): clients list them again.
+    ExportsCleared,
 }
 
 #[cfg(test)]

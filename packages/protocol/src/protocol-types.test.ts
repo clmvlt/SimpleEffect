@@ -135,6 +135,15 @@ describe('derived protocol types', () => {
       | 'getVisionStatus'
       | 'autoReframeItems'
       | 'getSubjectDetection'
+      | 'startExport'
+      | 'cancelExport'
+      | 'listExports'
+      | 'clearFinishedExports'
+      | 'reportExportProgress'
+      | 'finishExportRender'
+      | 'failExportRender'
+      | 'getExportPreferences'
+      | 'updateExportPreferences'
     >();
   });
 
@@ -173,6 +182,10 @@ describe('derived protocol types', () => {
       | 'transcriptionStatusChanged'
       | 'libraryChanged'
       | 'autoReframeFinished'
+      | 'exportRenderRequested'
+      | 'exportRenderCancelled'
+      | 'exportUpdated'
+      | 'exportsCleared'
     >();
     expectTypeOf<CoreEventOf<'jobCompleted'>['job']>().toEqualTypeOf<JobSnapshot>();
     expectTypeOf<CoreEventOf<'projectPatched'>>().toExtend<ProjectPatch>();

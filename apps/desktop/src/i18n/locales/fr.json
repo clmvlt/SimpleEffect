@@ -103,7 +103,8 @@
         "audioAnalysis": "Analyse du son",
         "sceneDetection": "Changements de plan",
         "transcription": "Transcription",
-        "subjectDetection": "Analyse des visages"
+        "subjectDetection": "Analyse des visages",
+        "export": "Export"
       },
       "menu": {
         "transcribe": "Transcrire",
@@ -1262,7 +1263,10 @@
     "BRAND_KIT_NOT_FOUND": "Ce brand kit n’existe plus : la liste a été rechargée.",
     "INVALID_LIBRARY_FILE": "Ce fichier ne peut pas être utilisé : ce n’est pas un modèle SimpleEffect (.setemplate) ou pas une image.",
     "INVALID_BRAND_KIT": "Valeurs invalides : vérifiez le nom, les polices et les champs signalés.",
-    "VISION_UNAVAILABLE": "La détection des visages n’est pas disponible sur cet ordinateur : recadrez les clips à la main."
+    "VISION_UNAVAILABLE": "La détection des visages n’est pas disponible sur cet ordinateur : recadrez les clips à la main.",
+    "EXPORT_NOT_FOUND": "Cet export n’existe plus : il est peut-être terminé et effacé de la liste.",
+    "INVALID_EXPORT": "Export impossible avec ces réglages : corrigez le point signalé.",
+    "EXPORT_NOT_RENDERING": "Cet export n’est plus en cours : il a été annulé ou a échoué."
   },
   "format": {
     "ratio": "Format",

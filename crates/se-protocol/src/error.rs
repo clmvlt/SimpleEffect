@@ -171,6 +171,14 @@ pub enum ErrorCode {
     /// Faces cannot be detected on this machine (the ONNX Runtime library is missing, or the
     /// system has no build of it; the message says why): reframe by hand.
     VisionUnavailable,
+    /// No export of this session has this id (it may have finished and been cleared).
+    ExportNotFound,
+    /// The export cannot be started as asked (settings, range or destination; the message says
+    /// what to change).
+    InvalidExport,
+    /// The export is not being rendered (it is queued, finished or cancelled): uploads and
+    /// reports are refused.
+    ExportNotRendering,
 }
 
 #[cfg(test)]

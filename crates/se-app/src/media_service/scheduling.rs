@@ -92,7 +92,8 @@ pub(super) fn is_used(project: &Project, asset: &Asset) -> bool {
 /// used media > analyses > mezzanines of media no clip uses yet.
 pub(super) fn priority(kind: JobKind, used: bool) -> JobPriority {
     match kind {
-        JobKind::Thumbnails | JobKind::WaveformPeaks => JobPriority::High,
+        // Exports are queued by the export service, which picks the same priority.
+        JobKind::Thumbnails | JobKind::WaveformPeaks | JobKind::Export => JobPriority::High,
         // Subject detection runs on request only (automatic reframing waits for it).
         JobKind::Proxy | JobKind::SubjectDetection => JobPriority::Normal,
         JobKind::Mezzanine if used => JobPriority::Normal,

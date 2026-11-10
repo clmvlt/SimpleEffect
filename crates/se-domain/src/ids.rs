@@ -210,6 +210,12 @@ uuid_id!(
     JobId,
     "job"
 );
+uuid_id!(
+    /// Identifies a video export of the core (prompt 27): its job, its render by the renderer and
+    /// its upload routes. Exports live in memory only: documents never reference them.
+    ExportId,
+    "export"
+);
 
 #[cfg(test)]
 mod tests {

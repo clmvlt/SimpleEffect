@@ -13,6 +13,8 @@ import type { CreateProjectRequest } from "./CreateProjectRequest";
 import type { DecodabilityReport } from "./DecodabilityReport";
 import type { DecoderCapabilities } from "./DecoderCapabilities";
 import type { DownloadTarget } from "./DownloadTarget";
+import type { ExportId } from "./ExportId";
+import type { ExportPreferences } from "./ExportPreferences";
 import type { Flicks } from "./Flicks";
 import type { Format } from "./Format";
 import type { FormatAdaptation } from "./FormatAdaptation";
@@ -44,6 +46,7 @@ import type { RelinkAssetRequest } from "./RelinkAssetRequest";
 import type { SequenceId } from "./SequenceId";
 import type { SilenceCutParams } from "./SilenceCutParams";
 import type { SmartCutSettings } from "./SmartCutSettings";
+import type { StartExportRequest } from "./StartExportRequest";
 import type { SubmitTaskRequest } from "./SubmitTaskRequest";
 import type { TaskId } from "./TaskId";
 import type { TaskScope } from "./TaskScope";
@@ -893,4 +896,32 @@ projectId: ProjectId,
 /**
  * The media.
  */
-assetId: AssetId, };
+assetId: AssetId, } | { "kind": "startExport" } & StartExportRequest | { "kind": "cancelExport", 
+/**
+ * The export.
+ */
+exportId: ExportId, } | { "kind": "listExports" } | { "kind": "clearFinishedExports" } | { "kind": "reportExportProgress", 
+/**
+ * The export.
+ */
+exportId: ExportId, 
+/**
+ * Units done (frames, or sound samples for sound-only exports).
+ */
+done: number, 
+/**
+ * Units in all.
+ */
+total: number, } | { "kind": "finishExportRender", 
+/**
+ * The export.
+ */
+exportId: ExportId, } | { "kind": "failExportRender", 
+/**
+ * The export.
+ */
+exportId: ExportId, 
+/**
+ * Why (actionable, English).
+ */
+message: string, } | { "kind": "getExportPreferences" } | { "kind": "updateExportPreferences" } & ExportPreferences;
