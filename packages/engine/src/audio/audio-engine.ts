@@ -1,14 +1,14 @@
-import type { Asset, AssetId, Flicks } from '@se/protocol';
+import type { AssetId, Flicks } from '@se/protocol';
 
 import type { MediaLocator } from '../decode/media-variant';
 import type { AssetTable } from '../evaluate/item-layer';
 import type { PlaybackClock } from '../playback/playback-controller';
 import type { PlaybackBounds, Transport } from '../playback/transport';
-import { playbackSource } from '../sources/playback-source';
 import { AudioChunkPool, type AudioChunkPoolStats } from './audio-chunk-pool';
 import { audioClipsOf, type PlayableSequence } from './audio-clips';
 import { AudioGraph } from './audio-graph';
 import { AudioScheduler } from './audio-scheduler';
+import { soundFileOf } from './sound-file';
 import type { AudioReaderFactory } from './audio-source';
 import { SILENT_LEVELS, type AudioMeter, type MeterLevels } from './meter/audio-meter';
 
@@ -61,10 +61,6 @@ export interface AudioEngineParts {
 const TICK_MS = 25;
 
 /** Whether `asset` has sound to play: an audio or video file with a sound stream. */
-function hasSound(asset: Asset): boolean {
-  return asset.kind !== 'image' && asset.decodability.audio !== 'noStream';
-}
-
 class WebAudioEngine implements AudioEngine {
   readonly clock: PlaybackClock;
   private readonly graph: AudioGraph;
@@ -134,11 +130,7 @@ class WebAudioEngine implements AudioEngine {
 
   /** The file whose sound `assetId` plays: its original, or its mezzanine (never the proxy). */
   private fileOf(assetId: AssetId): string | null {
-    const asset = this.assets[assetId];
-    if (asset === undefined || !hasSound(asset)) return null;
-    const source = playbackSource(asset);
-    if (source.kind !== 'original' && source.kind !== 'mezzanine') return null;
-    return this.locator(assetId, source.kind);
+    return soundFileOf(this.assets, this.locator, assetId);
   }
 
   /** Runs scheduling ticks while sound plays or a scrub snippet waits. */

@@ -95,9 +95,9 @@ pub use document::{
 pub use error::{DomainError, DomainErrorCode};
 pub use history::{History, HistoryStep};
 pub use ids::{
-    AssetId, BrandKitId, CaptionStyleId, ChangesetId, IdError, ItemId, JobId, LibraryTemplateId,
-    LinkGroupId, MarkerId, ProjectId, SequenceId, TaskId, TemplateId, TrackId, TransactionId,
-    TransitionId, Uuid,
+    AssetId, BrandKitId, CaptionStyleId, ChangesetId, ExportId, IdError, ItemId, JobId,
+    LibraryTemplateId, LinkGroupId, MarkerId, ProjectId, SequenceId, TaskId, TemplateId, TrackId,
+    TransactionId, TransitionId, Uuid,
 };
 pub use operation::{
     AddAsset, AddCaptionStyle, AddItem, AddMarker, AddSequence, AddTemplate, AddTrack,

@@ -44,6 +44,7 @@ export const SHORTCUT_ACTIONS = {
   },
   showShortcuts: { contexts: ['global'], keys: ['?'] },
   askAi: { contexts: ['global'], keys: ['mod+i'] },
+  exportSequence: { contexts: ['global'], keys: ['mod+m'] },
   togglePlay: { contexts: TIME_CONTEXTS, keys: ['space'] },
   // JKL: J plays in reverse, K pauses, L plays forward (repeated presses speed up); holding K
   // while pressing J or L steps one frame.

@@ -67,6 +67,7 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - FCPXML export (Final Cut Pro, DaVinci Resolve).
 - Proprietary RAW support (Blackmagic RAW SDK, RED SDK).
 - Master render path through ffmpeg from originals for 10-bit deliverables.
+- Export (prompt 27, ADR-0038): retry in software when a hardware video encoder fails mid-export (today the export fails with the encoder's message; « Exporter » again picks the same encoder); keep the exports list across core restarts (in memory today: the files stay, the list is forgotten); export several sequences or presets in one go (a batch queued from the dialog); a « render in place » cache of finished frames so a second export of an unchanged span is faster; export markers as chapters (MP4 `chpl`).
 
 ## Projects
 - Keep the undo history of a project across closing and reopening (stored in `project.db`; ADR-0017).

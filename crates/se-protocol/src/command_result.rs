@@ -9,11 +9,11 @@ use ts_rs::TS;
 
 use crate::{
     AiSettings, AiStatus, AnimationPresetInfo, AutoReframeReport, CaptionsReport, CutSummary,
-    FillerOccurrence, FontFamily, ImportReport, InsertedLibraryTemplate, JobSnapshot,
-    LibraryBrandKit, LibraryImportResult, LibraryTemplate, MediaSettings, MediaToolsStatus,
-    NewProjectDefaults, PlacedGraphic, ProjectCacheInfo, ProjectSession, RecentProject,
-    RelinkOutcome, SmartCutSettings, Task, TaskEventRecord, TaskRevertReport, TemplateUpdateReport,
-    TranscriptSearchHit, TranscriptionStatus, VisionStatus,
+    ExportInfo, ExportPreferences, FillerOccurrence, FontFamily, ImportReport,
+    InsertedLibraryTemplate, JobSnapshot, LibraryBrandKit, LibraryImportResult, LibraryTemplate,
+    MediaSettings, MediaToolsStatus, NewProjectDefaults, PlacedGraphic, ProjectCacheInfo,
+    ProjectSession, RecentProject, RelinkOutcome, SmartCutSettings, Task, TaskEventRecord,
+    TaskRevertReport, TemplateUpdateReport, TranscriptSearchHit, TranscriptionStatus, VisionStatus,
 };
 
 /// The result of a [`crate::Command`], tagged by the **same `kind` as the command** it answers.
@@ -454,6 +454,30 @@ pub enum CommandResult {
         /// The faces of the sampled pictures; `null` while not analysed.
         detection: Option<SubjectDetection>,
     },
+    /// Answer to [`crate::Command::StartExport`].
+    StartExport {
+        /// The queued export.
+        export: ExportInfo,
+    },
+    /// Answer to [`crate::Command::CancelExport`].
+    CancelExport,
+    /// Answer to [`crate::Command::ListExports`].
+    ListExports {
+        /// Exports of this session, oldest first.
+        exports: Vec<ExportInfo>,
+    },
+    /// Answer to [`crate::Command::ClearFinishedExports`].
+    ClearFinishedExports,
+    /// Answer to [`crate::Command::ReportExportProgress`].
+    ReportExportProgress,
+    /// Answer to [`crate::Command::FinishExportRender`].
+    FinishExportRender,
+    /// Answer to [`crate::Command::FailExportRender`].
+    FailExportRender,
+    /// Answer to [`crate::Command::GetExportPreferences`].
+    GetExportPreferences(ExportPreferences),
+    /// Answer to [`crate::Command::UpdateExportPreferences`].
+    UpdateExportPreferences,
 }
 
 /// Facts about the running core, shown in the UI and useful in bug reports.

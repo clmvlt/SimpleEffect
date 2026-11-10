@@ -2,6 +2,9 @@
 // crates/se-domain). Regenerate with `pnpm codegen`.
 import type { AiStatus } from "./AiStatus";
 import type { ChangesetId } from "./ChangesetId";
+import type { ExportId } from "./ExportId";
+import type { ExportInfo } from "./ExportInfo";
+import type { ExportRenderRequest } from "./ExportRenderRequest";
 import type { FrameRenderRequest } from "./FrameRenderRequest";
 import type { ItemId } from "./ItemId";
 import type { JobProgress } from "./JobProgress";
@@ -107,4 +110,12 @@ appliedItemIds: Array<ItemId>,
 /**
  * The media whose faces could not be analysed, and why.
  */
-failures: Array<ReframeFailure>, };
+failures: Array<ReframeFailure>, } | { "kind": "exportRenderRequested" } & ExportRenderRequest | { "kind": "exportRenderCancelled", 
+/**
+ * The export.
+ */
+exportId: ExportId, } | { "kind": "exportUpdated", 
+/**
+ * The export as it is now.
+ */
+export: ExportInfo, } | { "kind": "exportsCleared" };

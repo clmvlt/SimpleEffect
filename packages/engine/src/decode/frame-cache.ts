@@ -9,6 +9,12 @@ export interface PictureLease {
   release(): void;
 }
 
+/** A stretch of media seconds forward playback shows: `[from, to)`. */
+export interface ShownStretch {
+  readonly from: number;
+  readonly to: number;
+}
+
 /** Limits of a {@link FrameCache}. */
 export interface FrameCacheLimits {
   /** Estimated bytes of cached pixels before the least recently used pictures are closed. */
@@ -82,12 +88,18 @@ export class FrameCache {
   }
 
   /**
-   * Removes the pictures of `sourceId` shown entirely before `time` (forward playback has passed
-   * them): a decoder running through a file gets its surfaces back instead of stalling.
+   * Removes the pictures of `sourceId` forward playback has passed: shown entirely before one of
+   * `stretches` and inside none of them. A decoder running through a file gets its surfaces back
+   * instead of stalling, even while another clip of the same file reads an earlier stretch.
    */
-  dropBefore(sourceId: string, time: number): void {
+  dropPassed(sourceId: string, stretches: readonly ShownStretch[]): void {
     for (const [key, entry] of this.entries) {
-      if (entry.sourceId === sourceId && entry.end <= time) this.remove(key, entry);
+      if (entry.sourceId !== sourceId) continue;
+      const passed = stretches.some((stretch) => entry.end <= stretch.from);
+      const shown = stretches.some(
+        (stretch) => entry.end > stretch.from && entry.start < stretch.to,
+      );
+      if (passed && !shown) this.remove(key, entry);
     }
   }
 

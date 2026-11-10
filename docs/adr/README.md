@@ -42,6 +42,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0035](0035-motion-template-modules-sandbox-and-checks.md) | Motion template modules: one source of truth, a sandboxed Worker runtime, checks by the renderer | Accepted |
 | [0036](0036-template-library-and-brand-kits.md) | Template library and brand kits: app-wide libraries, project copies, proposed updates | Accepted |
 | [0037](0037-automatic-reframing.md) | Automatic reframing: YuNet over a runtime-loaded ONNX Runtime, pure tracking, editable keyframes | Accepted |
+| [0038](0038-video-export-renderer-encodes-core-writes.md) | Video export: the renderer draws and encodes, the core orchestrates and writes | Accepted |
 
 ## Template
 

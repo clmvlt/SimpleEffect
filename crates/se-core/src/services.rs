@@ -2,24 +2,26 @@
 //! tasks over se-agents (acting through `/mcp` with per-run tokens), frames for agents through
 //! the renderer, transcription over se-transcribe (whisper.cpp) sharing the media job queue, smart
 //! cuts over projects, media and transcription, automatic reframing over se-media's frame
-//! sampling and se-vision's face detector (sharing the job queue too), all publishing to the
-//! event bus.
+//! sampling and se-vision's face detector (sharing the job queue too), exports drawn by the
+//! renderer and written by se-media (prompt 27), all publishing to the event bus.
 
 use std::{path::PathBuf, sync::Arc};
 
 use se_agents::{FsAgentWorkspaces, providers::claude_code::ClaudeCodeProvider};
 use se_app::{
     AgentEditService, BrandKitService, BrandKitServiceDeps, CaptionService, CaptionServiceDeps,
-    DEFAULT_SAVE_DELAY, FrameRenderService, JobQueue, JobQueueConfig, McpAccess, MediaService,
-    MediaServiceDeps, ProjectService, ProjectServiceConfig, ProjectServiceDeps, ReframeService,
-    ReframeServiceDeps, SmartCutService, SmartCutServiceDeps, TaskService, TaskServiceDeps,
-    TaskTokenRegistry, TemplateCheckService, TemplateLibraryDeps, TemplateLibraryService,
-    TranscriptionService, TranscriptionServiceDeps,
+    DEFAULT_SAVE_DELAY, ExportRegistry, ExportService, ExportServiceDeps, FrameRenderService,
+    JobQueue, JobQueueConfig, McpAccess, MediaService, MediaServiceDeps, ProjectService,
+    ProjectServiceConfig, ProjectServiceDeps, ReframeService, ReframeServiceDeps, SmartCutService,
+    SmartCutServiceDeps, TaskService, TaskServiceDeps, TaskTokenRegistry, TemplateCheckService,
+    TemplateLibraryDeps, TemplateLibraryService, TranscriptionService, TranscriptionServiceDeps,
     media_service::settings::keys::TOOLS_DIR,
     ports::{AppLibraryRepository, BrandKitLibrary, FontCatalog, IdGenerator, MediaProber},
 };
 use se_fonts::LocalFontCatalog;
-use se_media::{FfmpegJobRunner, FfmpegTools, FfprobeProber, FsMediaFiles, ToolLocator};
+use se_media::{
+    FfmpegJobRunner, FfmpegTools, FfprobeProber, FsExportOutputs, FsMediaFiles, ToolLocator,
+};
 use se_store::{FsBrandKitLibrary, FsProjectRepository, FsTemplateLibrary, SqliteAppLibrary};
 use se_transcribe::{FsModelFiles, HttpDownloader, WhisperLocator, WhisperTranscriber};
 use se_vision::{RuntimeLocator, YuNetDetector};
@@ -61,7 +63,10 @@ pub struct Services {
     pub brand_kits: BrandKitService,
     /// The brand kits on disk (logo files served at `/media/brand-kits`).
     pub brand_kit_files: Arc<dyn BrandKitLibrary>,
+    /// Automatic reframing (prompt 26).
     pub reframing: ReframeService,
+    /// Video exports drawn by the renderer, written by se-media (prompt 27).
+    pub exports: ExportService,
 }
 
 /// Builds the services over the real adapters, for a core listening on `port`.
@@ -80,7 +85,9 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
     };
     let ids: Arc<dyn IdGenerator> = Arc::new(UuidV7Ids);
     let jobs = JobQueue::new(Arc::new(events.clone()), ids, JobQueueConfig::default());
+    let export_registry = Arc::new(ExportRegistry::new(jobs.clone(), Arc::new(events.clone())));
     let tools = FfmpegTools::new(ToolLocator::for_current_exe(tools_dir));
+    let locator = tools.locator().clone();
     let runner = Arc::new(FfmpegJobRunner::new(tools.clone()));
     let prober: Arc<dyn MediaProber> = Arc::new(FfprobeProber::new(tools.locator().clone()));
     let media = Arc::new(media_service(
@@ -107,22 +114,20 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         Arc::new(events.clone()),
         Arc::new(UuidV7Ids),
     ));
-    let deps = ProjectServiceDeps {
-        repository: Arc::new(FsProjectRepository),
-        library: library.clone(),
-        events: Arc::new(events.clone()),
-        clock: Arc::new(SystemClock),
-        ids: Arc::new(UuidV7Ids),
-    };
-    let config = ProjectServiceConfig {
-        default_parent_dir: paths.default_projects_dir(),
-        save_delay: DEFAULT_SAVE_DELAY,
-    };
     let projects = Arc::new(
-        ProjectService::new(deps, config)
+        project_service(paths, events, library.clone())
             .with_observer(media.clone())
             .with_observer(tasks.clone())
-            .with_observer(Arc::new(transcription.clone())),
+            .with_observer(Arc::new(transcription.clone()))
+            .with_observer(export_registry.clone()),
+    );
+    let exports = export_service(
+        paths,
+        events,
+        &projects,
+        export_registry,
+        &locator,
+        library.clone(),
     );
     let edits = Arc::new(AgentEditService::new(
         Arc::clone(&projects),
@@ -144,6 +149,7 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
         library_services(paths, events, &projects, &media, &template_checks, prober);
     let reframing = reframing_service(events, &projects, &media, reframing_jobs, sampler);
     Ok(Services {
+        exports,
         reframing,
         library_templates,
         brand_kits,
@@ -162,8 +168,50 @@ pub async fn build(paths: &AppPaths, events: &EventBus, port: u16) -> Result<Ser
     })
 }
 
-/// The template library and brand kits in the app data folder (prompt 25), and the kits'
-/// files (served at `/media/brand-kits`).
+/// Projects in folders on disk (se-store), new ones proposed in the documents folder.
+fn project_service(
+    paths: &AppPaths,
+    events: &EventBus,
+    library: Arc<SqliteAppLibrary>,
+) -> ProjectService {
+    let deps = ProjectServiceDeps {
+        repository: Arc::new(FsProjectRepository),
+        library,
+        events: Arc::new(events.clone()),
+        clock: Arc::new(SystemClock),
+        ids: Arc::new(UuidV7Ids),
+    };
+    let config = ProjectServiceConfig {
+        default_parent_dir: paths.default_projects_dir(),
+        save_delay: DEFAULT_SAVE_DELAY,
+    };
+    ProjectService::new(deps, config)
+}
+
+/// Exports (prompt 27): files written by se-media with the ffmpeg of `locator`, checked by its
+/// ffprobe, drawn by the renderer behind the event bus; first proposed in the videos folder.
+fn export_service(
+    paths: &AppPaths,
+    events: &EventBus,
+    projects: &Arc<ProjectService>,
+    registry: Arc<ExportRegistry>,
+    locator: &ToolLocator,
+    library: Arc<SqliteAppLibrary>,
+) -> ExportService {
+    ExportService::new(ExportServiceDeps {
+        registry,
+        projects: Arc::clone(projects),
+        outputs: Arc::new(FsExportOutputs::new(locator.clone())),
+        prober: Arc::new(FfprobeProber::new(locator.clone())),
+        renderer: Arc::new(events.clone()),
+        library,
+        events: Arc::new(events.clone()),
+        clock: Arc::new(SystemClock),
+        ids: Arc::new(UuidV7Ids),
+        default_directory: paths.default_exports_dir(),
+    })
+}
+
 /// Automatic reframing (prompt 26): frames sampled by ffmpeg, faces found by YuNet over the ONNX
 /// Runtime library next to the binary (loaded on first use, on half the processor's threads).
 fn reframing_service(
@@ -186,6 +234,8 @@ fn reframing_service(
     })
 }
 
+/// The template library and brand kits in the app data folder (prompt 25), and the kits'
+/// files (served at `/media/brand-kits`).
 fn library_services(
     paths: &AppPaths,
     events: &EventBus,

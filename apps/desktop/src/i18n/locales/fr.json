@@ -103,7 +103,8 @@
         "audioAnalysis": "Analyse du son",
         "sceneDetection": "Changements de plan",
         "transcription": "Transcription",
-        "subjectDetection": "Analyse des visages"
+        "subjectDetection": "Analyse des visages",
+        "export": "Export"
       },
       "menu": {
         "transcribe": "Transcrire",
@@ -1262,7 +1263,10 @@
     "BRAND_KIT_NOT_FOUND": "Ce brand kit n’existe plus : la liste a été rechargée.",
     "INVALID_LIBRARY_FILE": "Ce fichier ne peut pas être utilisé : ce n’est pas un modèle SimpleEffect (.setemplate) ou pas une image.",
     "INVALID_BRAND_KIT": "Valeurs invalides : vérifiez le nom, les polices et les champs signalés.",
-    "VISION_UNAVAILABLE": "La détection des visages n’est pas disponible sur cet ordinateur : recadrez les clips à la main."
+    "VISION_UNAVAILABLE": "La détection des visages n’est pas disponible sur cet ordinateur : recadrez les clips à la main.",
+    "EXPORT_NOT_FOUND": "Cet export n’existe plus : il est peut-être terminé et effacé de la liste.",
+    "INVALID_EXPORT": "Export impossible avec ces réglages : corrigez le point signalé.",
+    "EXPORT_NOT_RENDERING": "Cet export n’est plus en cours : il a été annulé ou a échoué."
   },
   "format": {
     "ratio": "Format",
@@ -1520,7 +1524,8 @@
       "nudgeLeftTen": "Décaler la sélection de dix images vers la gauche",
       "nudgeRightTen": "Décaler la sélection de dix images vers la droite",
       "addText": "Ajouter un texte à la tête de lecture",
-      "askAi": "Demander à l’IA (ouvrir le composeur)"
+      "askAi": "Demander à l’IA (ouvrir le composeur)",
+      "exportSequence": "Exporter la séquence"
     }
   },
   "ai": {
@@ -1727,6 +1732,154 @@
       "version": "Version {{version}}",
       "useInProject": "Utiliser dans ce projet",
       "usedInProject": "Utilisé par ce projet"
+    }
+  },
+  "export": {
+    "button": {
+      "label": "Exporter",
+      "tooltip": "Exporter la séquence"
+    },
+    "presets": {
+      "youtube1080": "YouTube 1080p (H.264)",
+      "youtube4k": "YouTube 4K (H.264)",
+      "youtubeHevc": "YouTube 1080p (HEVC, plus léger)",
+      "shorts": "Shorts / Reels / TikTok (9:16)",
+      "square": "Carré (1:1)",
+      "master": "Master ProRes 422 HQ",
+      "soundWav": "Son seul (WAV)",
+      "soundAac": "Son seul (AAC .m4a)",
+      "custom": "Personnalisé…"
+    },
+    "containers": {
+      "mp4": "MP4",
+      "mov": "QuickTime (.mov)",
+      "webm": "WebM",
+      "m4a": "Audio M4A",
+      "wav": "WAV"
+    },
+    "codecs": {
+      "h264": "H.264",
+      "hevc": "HEVC (H.265)",
+      "av1": "AV1",
+      "vp9": "VP9",
+      "prores422Hq": "ProRes 422 HQ",
+      "prores4444": "ProRes 4444",
+      "dnxhrHq": "DNxHR HQ"
+    },
+    "audioCodecs": {
+      "aac": "AAC",
+      "opus": "Opus",
+      "pcm": "PCM non compressé"
+    },
+    "quality": {
+      "low": "Qualité basse",
+      "medium": "Qualité moyenne",
+      "high": "Qualité haute",
+      "veryHigh": "Qualité très haute"
+    },
+    "summary": {
+      "size": "{{width}} × {{height}}",
+      "megabits": "{{value}} Mb/s",
+      "audio": "{{codec}} {{value}} kb/s"
+    },
+    "dialog": {
+      "title": "Exporter « {{name}} »",
+      "description": "Le rendu se fait en arrière-plan : vous pouvez continuer à monter pendant l’export.",
+      "preset": "Préréglage",
+      "savedPresets": "Mes préréglages",
+      "savePreset": "Enregistrer comme préréglage",
+      "removePreset": "Supprimer ce préréglage",
+      "presetName": "Nom du préréglage",
+      "range": "Plage",
+      "wholeSequence": "Toute la séquence ({{duration}})",
+      "noInOut": "Entre les points d’entrée et de sortie (aucun point défini)",
+      "inOut": "Entre les points d’entrée et de sortie ({{duration}})",
+      "folder": "Dossier",
+      "chooseFolder": "Dossier d’export",
+      "chooseFolderButton": "Choisir ce dossier",
+      "changeFolder": "Choisir…",
+      "fileName": "Nom du fichier",
+      "fileNameHint": "Donne « {{name}} ». Champs : {{fields}}",
+      "invalidTemplate": "Le nom ne peut pas être vide ni contenir < > : \" / \\ | ? *",
+      "estimate": "Durée {{duration}} · environ {{size}}",
+      "probing": "Vérification des encodeurs…",
+      "start": "Exporter"
+    },
+    "custom": {
+      "container": "Format",
+      "videoCodec": "Codec vidéo",
+      "resolution": "Résolution",
+      "sequenceSize": "Taille de la séquence",
+      "shortSide": "{{value}}p",
+      "rate": "Débit",
+      "bitrate": "Débit fixe…",
+      "megabits": "Débit (Mb/s)",
+      "audioCodec": "Codec audio",
+      "silent": "Sans son",
+      "audioBitrate": "Débit audio",
+      "kilobits": "{{value}} kb/s"
+    },
+    "warnings": {
+      "label": "Avertissements",
+      "emptyRange": "La plage est vide : rien à exporter.",
+      "noVideoEncoder": "Cette machine ne sait pas encoder ce codec vidéo à cette taille. Choisissez un autre codec ou une autre résolution.",
+      "noAudioEncoder": "Cette machine ne sait pas encoder ce codec audio. Choisissez un autre codec.",
+      "missingMedia_one": "{{count}} média manque : il sera remplacé par du noir et du silence.",
+      "missingMedia_other": "{{count}} médias manquent : ils seront remplacés par du noir et du silence.",
+      "preparingMedia_one": "{{count}} média est encore en préparation : l’export l’attendra.",
+      "preparingMedia_other": "{{count}} médias sont encore en préparation : l’export les attendra.",
+      "missingFonts_one": "Police introuvable : {{families}}. Une police de remplacement sera utilisée.",
+      "missingFonts_other": "Polices introuvables : {{families}}. Des polices de remplacement seront utilisées.",
+      "aspect": "Ce préréglage attend un format {{ratio}} : la séquence garde le sien. Créez une version au bon format pour remplir l’image.",
+      "softwareEncoding": "Pas d’encodeur matériel pour ce codec : l’export sera plus lent.",
+      "aacByFfmpeg": "Le son AAC sera encodé par ffmpeg (cette machine n’a pas d’encodeur AAC).",
+      "createVersion": "Créer une version…"
+    },
+    "replace": {
+      "title": "Remplacer le fichier ?",
+      "description": "« {{path}} » existe déjà. Il sera remplacé à la fin de l’export.",
+      "confirm": "Remplacer"
+    },
+    "started": "Export de « {{name}} » lancé",
+    "pill": {
+      "open": "Exports",
+      "idle": "Exports",
+      "active_one": "{{count}} export en attente",
+      "active_other": "{{count}} exports en attente",
+      "rendering_one": "Export {{percent}} %",
+      "rendering_other": "Exports {{percent}} % ({{count}})"
+    },
+    "list": {
+      "title": "Exports",
+      "clear": "Effacer les terminés",
+      "origin": "{{preset}} · {{sequence}}",
+      "progress": "Progression de {{name}}",
+      "percent": "{{percent}} %",
+      "remaining": "{{percent}} % · {{time}} restantes",
+      "completed": "{{size}} · rendu en {{time}}",
+      "state": {
+        "queued": "En attente",
+        "finalizing": "Finalisation…",
+        "cancelled": "Annulé"
+      },
+      "cancel": "Annuler l’export de {{name}}",
+      "reveal": "Afficher {{name}} dans le dossier"
+    },
+    "notice": {
+      "completed": "« {{name}} » est exporté",
+      "failed": "L’export de « {{name}} » a échoué",
+      "size": "{{size}}",
+      "reveal": "Afficher dans le dossier",
+      "issues_one": "{{count}} élément n’a pas pu être dessiné dans l’export (média, police ou modèle).",
+      "issues_other": "{{count}} éléments n’ont pas pu être dessinés dans l’export (médias, polices ou modèles)."
+    },
+    "quit": {
+      "title_one": "Un export est en cours",
+      "title_other": "{{count}} exports sont en cours",
+      "message_one": "Quitter maintenant annule l’export et supprime le fichier inachevé.",
+      "message_other": "Quitter maintenant annule les exports et supprime les fichiers inachevés.",
+      "leave": "Quitter quand même",
+      "stay": "Continuer l’export"
     }
   }
 }

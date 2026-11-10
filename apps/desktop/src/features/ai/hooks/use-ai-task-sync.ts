@@ -93,7 +93,14 @@ export function useAiTaskSync(): void {
     if (projectId === null) return;
     return connectTaskSync(client, projectId, { onRunFinished: announce });
   }, [client, projectId]);
-  useEffect(() => bridge.onNotificationClick(showTask), [bridge]);
+  useEffect(
+    () =>
+      bridge.onNotificationClick((tag) => {
+        // Other features tag their notifications too (exports: `export:<id>`).
+        if (aiTasksStore.getState().tasks.some((task) => task.id === tag)) showTask(tag);
+      }),
+    [bridge],
+  );
   useEffect(() => connectComposerPersistence(uiPreferencesStorage()), []);
   useShortcutAction('askAi', () => {
     openComposer();

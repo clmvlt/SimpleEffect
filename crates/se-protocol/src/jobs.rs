@@ -24,6 +24,8 @@ pub enum JobKind {
     Transcription,
     /// Faces in sampled pictures, for automatic reframing (prompt 26).
     SubjectDetection,
+    /// A video export (prompt 27): rendered by the renderer, written by the core.
+    Export,
 }
 
 /// Where a job stands.

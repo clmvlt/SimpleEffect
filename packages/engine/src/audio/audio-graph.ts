@@ -34,8 +34,12 @@ export class AudioGraph implements AudioOutput {
     return this.context.currentTime;
   }
 
-  /** Applies the mixing state of the sequence's tracks; strips of removed tracks are freed. */
-  setMix(tracks: readonly MixTrack[]): void {
+  /**
+   * Applies the mixing state of the sequence's tracks; strips of removed tracks are freed.
+   * `immediate` sets the levels at once instead of smoothing them: an offline render starts from
+   * them (export blocks, which would otherwise fade every muted track in and out at each block).
+   */
+  setMix(tracks: readonly MixTrack[], { immediate = false }: { immediate?: boolean } = {}): void {
     const settings = stripSettings(tracks);
     const now = this.context.currentTime;
     for (const [trackId, strip] of this.strips) {
@@ -46,6 +50,11 @@ export class AudioGraph implements AudioOutput {
     }
     for (const [trackId, { gain, pan }] of settings) {
       const strip = this.stripOf(trackId);
+      if (immediate) {
+        strip.gain.gain.value = gain;
+        strip.pan.pan.value = pan;
+        continue;
+      }
       strip.gain.gain.setTargetAtTime(gain, now, SMOOTHING_SECONDS);
       strip.pan.pan.setTargetAtTime(pan, now, SMOOTHING_SECONDS);
     }

@@ -44,7 +44,8 @@ pub fn completion_files(kind: JobKind) -> Option<Vec<String>> {
         | JobKind::AudioAnalysis
         | JobKind::SceneDetection
         | JobKind::Transcription
-        | JobKind::SubjectDetection => None,
+        | JobKind::SubjectDetection
+        | JobKind::Export => None,
     }
 }
 

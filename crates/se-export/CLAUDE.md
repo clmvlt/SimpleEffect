@@ -1,7 +1,7 @@
 # se-export
 
 ## Purpose
-Export adapter: SRT subtitles (prompt 23), later FCP7 XML and OTIO timelines (Premiere Pro) and the orchestration of final renders (`docs/adr/0008-premiere-export.md`, ADR-0033). Pixel rendering happens in `@se/engine` (WYSIWYG).
+Export adapter: SRT subtitles (prompt 23), later FCP7 XML and OTIO timelines (Premiere Pro) (`docs/adr/0008-premiere-export.md`, ADR-0033). Video exports (prompt 27, ADR-0038) are not here: se-app's `exports` module orchestrates them (queue, snapshot, progress, checks), se-media writes their files (`FsExportOutputs`, ffmpeg for masters and AAC) and `@se/engine/export` draws and encodes them in the renderer (WYSIWYG).
 
 ## Public API
 | Item | Role |

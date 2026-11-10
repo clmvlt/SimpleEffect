@@ -65,6 +65,12 @@ pub trait JobWork: Send + Sync {
     /// Runs the work, reporting progress; an error message makes the job retry once, then fail.
     /// On the `last` attempt, the work records its own failure (if it must) before returning it.
     async fn run(&self, progress: &dyn ProgressSink, attempt: JobAttempt) -> Result<(), String>;
+
+    /// Whether a failed attempt is retried (exports are not: a second render starts over and
+    /// the user decides).
+    fn retries(&self) -> bool {
+        true
+    }
 }
 
 /// A job to queue.
@@ -106,6 +112,7 @@ impl Default for JobQueueConfig {
                 (JobKind::SceneDetection, 1),
                 (JobKind::Transcription, 1),
                 (JobKind::SubjectDetection, 1),
+                (JobKind::Export, 1),
             ]),
             max_running: 4,
             max_attempts: 2,
@@ -272,7 +279,7 @@ impl JobQueue {
             let reporter = Reporter::new(Arc::clone(&self.shared), &snapshot);
             let attempt = JobAttempt {
                 number: snapshot.attempt,
-                last: snapshot.attempt >= self.shared.config.max_attempts,
+                last: snapshot.attempt >= self.shared.config.max_attempts || !work.retries(),
             };
             let worker = tokio::spawn(async move { work.run(&reporter, attempt).await });
             let (terminated_sender, terminated) = oneshot::channel::<()>();
@@ -319,7 +326,7 @@ impl JobQueue {
                     job: entry.snapshot.clone(),
                 }
             }
-            Some(message) if entry.snapshot.attempt < max_attempts => {
+            Some(message) if entry.snapshot.attempt < max_attempts && entry.work.retries() => {
                 tracing::warn!(%job_id, %message, "job failed; retrying once");
                 entry.snapshot.attempt += 1;
                 entry.snapshot.state = JobState::Queued;

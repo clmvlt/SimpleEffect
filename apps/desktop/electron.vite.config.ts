@@ -44,6 +44,9 @@ export default defineConfig({
       babel({ presets: [reactCompilerPreset()] }),
       tailwindcss(),
     ],
+    // The export Worker (`@se/engine/export`) is a module Worker that imports lazily: the default
+    // `iife` format cannot split its chunks.
+    worker: { format: 'es' },
     build: {
       outDir: resolve(projectRoot, 'out/renderer'),
       rolldownOptions: {

@@ -57,6 +57,9 @@ export const ERROR_CODES = [
   'INVALID_LIBRARY_FILE',
   'INVALID_BRAND_KIT',
   'VISION_UNAVAILABLE',
+  'EXPORT_NOT_FOUND',
+  'INVALID_EXPORT',
+  'EXPORT_NOT_RENDERING',
 ] as const satisfies readonly ErrorCode[];
 
 /**

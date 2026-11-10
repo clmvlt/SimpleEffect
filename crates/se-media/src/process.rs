@@ -1,7 +1,8 @@
 //! [`Sidecar`]: the single helper that spawns ffmpeg and ffprobe (`docs/architecture.md` §14).
 //!
 //! Every process is isolated (job object on Windows, process group on Unix, no console window),
-//! has no stdin, pipes stdout and stderr, and is killed with its whole tree when the [`Sidecar`]
+//! has no stdin (except export encoders fed through [`Sidecar::spawn_with_stdin`]), pipes stdout
+//! and stderr, and is killed with its whole tree when the [`Sidecar`]
 //! is dropped before it exits, which is how cancelling a job (dropping its future) stops it.
 //! stderr is collected in the background so error messages can quote its last lines.
 
@@ -11,7 +12,7 @@ use process_wrap::tokio::{ChildWrapper, CommandWrap};
 use se_app::ports::MediaError;
 use tokio::{
     io::{AsyncBufReadExt, AsyncReadExt, BufReader},
-    process::ChildStdout,
+    process::{ChildStdin, ChildStdout},
     task::JoinHandle,
 };
 
@@ -38,6 +39,32 @@ impl Sidecar {
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,
     {
+        Self::start(program, args, cwd, false)
+    }
+
+    /// Starts `program` with `args` and a piped stdin ([`Sidecar::take_stdin`]): an encoder fed
+    /// with raw frames (prompt 27).
+    ///
+    /// # Errors
+    /// [`MediaError::Failed`] when the process cannot start.
+    pub fn spawn_with_stdin<I, S>(program: &Path, args: I) -> Result<Self, MediaError>
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<OsStr>,
+    {
+        Self::start(program, args, None, true)
+    }
+
+    fn start<I, S>(
+        program: &Path,
+        args: I,
+        cwd: Option<&Path>,
+        piped_stdin: bool,
+    ) -> Result<Self, MediaError>
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<OsStr>,
+    {
         let name = program.file_stem().map_or_else(
             || "tool".to_owned(),
             |stem| stem.to_string_lossy().into_owned(),
@@ -45,7 +72,11 @@ impl Sidecar {
         let mut command = CommandWrap::with_new(program, |command| {
             command
                 .args(args)
-                .stdin(Stdio::null())
+                .stdin(if piped_stdin {
+                    Stdio::piped()
+                } else {
+                    Stdio::null()
+                })
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped());
             if let Some(dir) = cwd {
@@ -70,6 +101,22 @@ impl Sidecar {
             stderr,
             exited: false,
         })
+    }
+
+    /// Takes the process's stdin (once; only with [`Sidecar::spawn_with_stdin`]). Dropping it
+    /// tells the process its input ended.
+    pub fn take_stdin(&mut self) -> Option<ChildStdin> {
+        self.child.stdin().take()
+    }
+
+    /// Stops the process and its tree, and waits until it exited (its files are closed then).
+    pub async fn stop(mut self) {
+        if let Err(error) = self.child.start_kill() {
+            tracing::debug!(%error, tool = %self.name, "stopping a sidecar failed");
+        }
+        // An error means it is already gone, which is what we wait for.
+        let _ = self.child.wait().await;
+        self.exited = true;
     }
 
     /// Takes the process's stdout (once).

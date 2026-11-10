@@ -10,6 +10,8 @@ import type { CaptionsReport } from "./CaptionsReport";
 import type { ChangesetId } from "./ChangesetId";
 import type { CoreInfo } from "./CoreInfo";
 import type { CutSummary } from "./CutSummary";
+import type { ExportInfo } from "./ExportInfo";
+import type { ExportPreferences } from "./ExportPreferences";
 import type { FillerOccurrence } from "./FillerOccurrence";
 import type { FontFamily } from "./FontFamily";
 import type { ImportReport } from "./ImportReport";
@@ -297,4 +299,12 @@ status: VisionStatus, } | { "kind": "autoReframeItems" } & AutoReframeReport | {
 /**
  * The faces of the sampled pictures; `null` while not analysed.
  */
-detection: SubjectDetection | null, };
+detection: SubjectDetection | null, } | { "kind": "startExport", 
+/**
+ * The queued export.
+ */
+export: ExportInfo, } | { "kind": "cancelExport" } | { "kind": "listExports", 
+/**
+ * Exports of this session, oldest first.
+ */
+exports: Array<ExportInfo>, } | { "kind": "clearFinishedExports" } | { "kind": "reportExportProgress" } | { "kind": "finishExportRender" } | { "kind": "failExportRender" } | { "kind": "getExportPreferences" } & ExportPreferences | { "kind": "updateExportPreferences" };
