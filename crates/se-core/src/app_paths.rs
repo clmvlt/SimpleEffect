@@ -106,6 +106,26 @@ impl AppPaths {
         self.projects_dir_in(documents)
     }
 
+    /// Folder proposed for the first export (prompt 27): the user's videos folder, else their
+    /// documents folder, else `<data_dir>/exports`.
+    pub fn default_exports_dir(&self) -> PathBuf {
+        let user = directories::UserDirs::new();
+        let videos = user
+            .as_ref()
+            .and_then(|dirs| dirs.video_dir().map(Path::to_path_buf));
+        let documents = user
+            .as_ref()
+            .and_then(|dirs| dirs.document_dir().map(Path::to_path_buf));
+        self.exports_dir_in(videos, documents)
+    }
+
+    /// Pure rule of [`AppPaths::default_exports_dir`].
+    fn exports_dir_in(&self, videos: Option<PathBuf>, documents: Option<PathBuf>) -> PathBuf {
+        videos
+            .or(documents)
+            .unwrap_or_else(|| self.data_dir.join("exports"))
+    }
+
     /// Pure rule of [`AppPaths::default_projects_dir`], separated from the environment for tests.
     fn projects_dir_in(&self, documents: Option<PathBuf>) -> PathBuf {
         match documents {
@@ -167,6 +187,22 @@ mod tests {
         assert_eq!(
             paths.projects_dir_in(None),
             Path::new("/data").join("projects")
+        );
+    }
+
+    #[test]
+    fn exports_go_to_the_videos_folder_first() {
+        let paths = AppPaths::under(Path::new("/data"));
+        let videos = Some(PathBuf::from("/videos"));
+        let documents = Some(PathBuf::from("/docs"));
+        assert_eq!(
+            paths.exports_dir_in(videos, documents.clone()),
+            Path::new("/videos")
+        );
+        assert_eq!(paths.exports_dir_in(None, documents), Path::new("/docs"));
+        assert_eq!(
+            paths.exports_dir_in(None, None),
+            Path::new("/data").join("exports")
         );
     }
 

@@ -12,7 +12,7 @@ use crate::{
     app_paths::AppPaths,
     brand_kit_routes,
     error::CoreError,
-    font_routes, handshake, mcp_routes, media_routes, render_routes,
+    export_routes, font_routes, handshake, mcp_routes, media_routes, render_routes,
     rpc::{self, EventBus, HandlerContext, RpcRouter, RpcState},
     services::{self, Services},
 };
@@ -62,6 +62,7 @@ pub async fn run(
         library_templates: services.library_templates.clone(),
         brand_kits: services.brand_kits.clone(),
         reframing: services.reframing.clone(),
+        exports: services.exports.clone(),
     });
     let state = RpcState::new(router, events.clone(), stopping.clone());
     let app = routes(guard, state, &services, port);
@@ -95,6 +96,7 @@ fn routes(guard: Arc<AccessGuard>, state: RpcState, services: &Services, port: u
             &services.brand_kit_files,
         )))
         .merge(render_routes::routes(Arc::clone(&services.renders)))
+        .merge(export_routes::routes(services.exports.clone()))
         .layer(middleware::from_fn_with_state(guard, require_local_access));
     let agents = mcp_routes::routes(
         se_mcp::McpDeps {

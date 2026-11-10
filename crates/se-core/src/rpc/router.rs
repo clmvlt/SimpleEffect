@@ -7,7 +7,7 @@ use se_protocol::{
 use super::{
     encode::encode,
     handlers::{
-        HandlerContext, ai, captions, editing, frames, graphics, items, library, media,
+        HandlerContext, ai, captions, editing, exports, frames, graphics, items, library, media,
         media_settings, projects, smart_cuts, sound, system, tasks, templates, timeline,
         transcription, vision,
     },
@@ -404,6 +404,15 @@ impl RpcRouter {
             | Command::AddProjectBrandKitToLibrary { .. } => {
                 Self::dispatch_library(context, command).await
             }
+            Command::StartExport(_)
+            | Command::CancelExport { .. }
+            | Command::ListExports
+            | Command::ClearFinishedExports
+            | Command::ReportExportProgress { .. }
+            | Command::FinishExportRender { .. }
+            | Command::FailExportRender { .. }
+            | Command::GetExportPreferences
+            | Command::UpdateExportPreferences(_) => exports::dispatch(context, command).await,
         }
     }
 
@@ -653,6 +662,7 @@ pub mod testing {
             library_templates,
             brand_kits,
             reframing,
+            exports,
             ..
         } = MediaTestbed::new(Path::new("/projects"));
         HandlerContext {
@@ -673,6 +683,7 @@ pub mod testing {
             library_templates,
             brand_kits,
             reframing,
+            exports,
         }
     }
 }
@@ -881,6 +892,9 @@ mod tests {
             "listLibraryTemplates",
             "listBrandKits",
             "getVisionStatus",
+            "listExports",
+            "clearFinishedExports",
+            "getExportPreferences",
         ] {
             let request = format!(r#"{{"type":"request","id":1,"command":{{"kind":"{kind}"}}}}"#);
             assert_eq!(reply(&request).await["result"]["kind"], kind);
@@ -916,6 +930,26 @@ mod tests {
         ))
         .await;
         assert_eq!(export["error"]["code"], "INVALID_REQUEST");
+    }
+
+    #[tokio::test]
+    async fn export_commands_reach_their_handlers() {
+        let export = "00000000-0001-7000-8000-000000000000";
+        let cancel = reply(&format!(
+            r#"{{"type":"request","id":1,"command":{{"kind":"cancelExport","exportId":"{export}"}}}}"#
+        ))
+        .await;
+        assert_eq!(cancel["error"]["code"], "EXPORT_NOT_FOUND");
+        let progress = reply(&format!(
+            r#"{{"type":"request","id":2,"command":{{"kind":"reportExportProgress","exportId":"{export}","done":1,"total":2}}}}"#
+        ))
+        .await;
+        assert_eq!(progress["error"]["code"], "EXPORT_NOT_FOUND");
+        let start = reply(
+            r#"{"type":"request","id":3,"command":{"kind":"startExport","projectId":"00000000-0009-7000-8000-000000000000","sequenceId":"00000000-0001-7000-8000-000000000000","settings":{"container":"wav","video":null,"audio":{"codec":"pcm","bitsPerSecond":1536000,"encoder":"webCodecs"}},"path":"son.wav","presetName":"WAV"}}"#,
+        )
+        .await;
+        assert_eq!(start["error"]["code"], "INVALID_EXPORT");
     }
 
     #[tokio::test]
