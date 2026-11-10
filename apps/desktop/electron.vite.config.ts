@@ -6,9 +6,13 @@ import tailwindcss from '@tailwindcss/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { defineConfig } from 'electron-vite';
 
+import { bundledPackagesPlugin } from './tooling/bundled-packages-plugin';
 import { contentSecurityPolicyPlugin } from './tooling/csp-plugin';
 
 const projectRoot = import.meta.dirname;
+
+/** Where the licence notices are assembled (`scripts/generate-notices.mjs`, prompt 30). */
+const noticesDir = resolve(projectRoot, 'out/notices');
 
 /** The app version, shown in the status bar (`__APP_VERSION__`, declared in `src/env.d.ts`). */
 const appVersion = (
@@ -21,6 +25,7 @@ const appVersion = (
  */
 export default defineConfig({
   main: {
+    plugins: [bundledPackagesPlugin(noticesDir, 'main')],
     build: {
       rolldownOptions: {
         input: { index: resolve(projectRoot, 'electron/main/index.ts') },
@@ -28,6 +33,7 @@ export default defineConfig({
     },
   },
   preload: {
+    plugins: [bundledPackagesPlugin(noticesDir, 'preload')],
     build: {
       rolldownOptions: {
         input: { index: resolve(projectRoot, 'electron/preload/index.ts') },
@@ -43,10 +49,11 @@ export default defineConfig({
       react(),
       babel({ presets: [reactCompilerPreset()] }),
       tailwindcss(),
+      bundledPackagesPlugin(noticesDir, 'renderer'),
     ],
     // The export Worker (`@se/engine/export`) is a module Worker that imports lazily: the default
     // `iife` format cannot split its chunks.
-    worker: { format: 'es' },
+    worker: { format: 'es', plugins: () => [bundledPackagesPlugin(noticesDir, 'worker')] },
     build: {
       outDir: resolve(projectRoot, 'out/renderer'),
       rolldownOptions: {
