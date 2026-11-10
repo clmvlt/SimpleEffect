@@ -28,7 +28,7 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 ## 2026-11-10 — Prompt 27: Export vidéo (rendu final) — Done
 
-**Branch**: `feature/27-export-video`, merged into `dev` at `MERGE_SHA`
+**Branch**: `feature/27-export-video`, merged into `dev` at `c41e117`
 
 **Done**
 - se-protocol / se-domain (ADR-0038): `ExportId`; `ExportSettings { container, video?, audio? }` (MP4 H.264/HEVC/AV1, WebM VP9/AV1, `.mov` ProRes 422 HQ / ProRes 4444 / DNxHR HQ, WAV, AAC `.m4a`; bitrate or quality), `ExportInfo`/`ExportState` (queued, rendering with progress and time left, completed with size, time and ffprobe check, failed, cancelled), commands `startExport`, `cancelExport`, `listExports`, `clearFinishedExports`, `getExportPreferences`/`updateExportPreferences` (folder, file name template, saved presets), `reportExportProgress`, `finishExportRender`, `failExportRender`; events `exportUpdated`, `exportRenderRequested { snapshot, settings, start, end, pipeline }`; job kind `export`; codes `EXPORT_NOT_FOUND`, `INVALID_EXPORT`, `EXPORT_NOT_RENDERING`.
