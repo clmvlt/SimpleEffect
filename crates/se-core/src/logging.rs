@@ -12,7 +12,7 @@ use tracing_appender::{
     non_blocking::{NonBlocking, WorkerGuard},
     rolling::{InitError, RollingFileAppender, Rotation},
 };
-use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Environment variable holding the log filter, e.g. `SE_LOG=se_core=debug,info`.
 pub const LOG_FILTER_ENV: &str = "SE_LOG";
@@ -40,23 +40,28 @@ pub struct LogGuard {
 /// (forwarded to the Electron console by the supervisor). If the log folder is unusable, logs fall
 /// back to stderr so they are never lost silently.
 pub fn init(logs_dir: &Path) -> LogGuard {
-    let filter =
-        EnvFilter::try_from_env(LOG_FILTER_ENV).unwrap_or_else(|_| EnvFilter::new(DEFAULT_FILTER));
     let file = open_log_file(logs_dir);
     let show_stderr = cfg!(debug_assertions) || file.is_err();
     let (file_writer, file_guard, file_error) = match file {
         Ok((writer, guard)) => (Some(writer), Some(guard), None),
         Err(error) => (None, None, Some(error)),
     };
-    let file_layer = file_writer.map(|writer| fmt::layer().with_writer(writer).with_ansi(false));
+    // One filter per output, so the tokio-console layer (development) sees tokio's own spans.
+    let file_layer = file_writer.map(|writer| {
+        fmt::layer()
+            .with_writer(writer)
+            .with_ansi(false)
+            .with_filter(log_filter())
+    });
     // ANSI colours only on a terminal, so the Electron supervisor receives plain text.
     let stderr_layer = show_stderr.then(|| {
         fmt::layer()
             .with_writer(io::stderr)
             .with_ansi(io::stderr().is_terminal())
+            .with_filter(log_filter())
     });
     tracing_subscriber::registry()
-        .with(filter)
+        .with(console_layer())
         .with(file_layer)
         .with(stderr_layer)
         .init();
@@ -70,6 +75,24 @@ pub fn init(logs_dir: &Path) -> LogGuard {
     LogGuard {
         _file_writer: file_guard,
     }
+}
+
+/// The filter of `SE_LOG`, or the default one.
+fn log_filter() -> EnvFilter {
+    EnvFilter::try_from_env(LOG_FILTER_ENV).unwrap_or_else(|_| EnvFilter::new(DEFAULT_FILTER))
+}
+
+/// The tokio-console layer of development builds made with the `tokio-console` feature and
+/// `RUSTFLAGS="--cfg tokio_unstable"` (`docs/performance.md`); none otherwise.
+#[cfg(feature = "tokio-console")]
+fn console_layer() -> Option<impl Layer<tracing_subscriber::Registry>> {
+    Some(console_subscriber::spawn())
+}
+
+/// No tokio-console layer: the feature is off (always in shipped builds).
+#[cfg(not(feature = "tokio-console"))]
+fn console_layer() -> Option<tracing_subscriber::layer::Identity> {
+    None
 }
 
 fn open_log_file(logs_dir: &Path) -> Result<(NonBlocking, WorkerGuard), InitError> {

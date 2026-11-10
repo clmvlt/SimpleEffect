@@ -41,6 +41,13 @@ tracing-subscriber = { workspace = true }
 tower = { version = "0.5.3", features = ["util"] }
 uuid = { workspace = true, features = ["v7"] }
 
+# Development only (`docs/performance.md`): `RUSTFLAGS="--cfg tokio_unstable" cargo run -p se-core
+# --features tokio-console`, then `tokio-console` shows the core's tasks. Never in shipped builds.
+console-subscriber = { version = "0.5.0", optional = true }
+
+[features]
+tokio-console = ["dep:console-subscriber", "tokio/tracing"]
+
 [target.'cfg(windows)'.dependencies]
 win32job = { workspace = true }
 

@@ -1,5 +1,7 @@
 //! `RpcRouter`: one text frame in, one response frame out.
 
+use std::time::{Duration, Instant};
+
 use se_protocol::{
     Command, CommandResult, ProtocolError, ResponseEnvelope, ResponseOutcome, ServerMessage,
 };
@@ -13,6 +15,35 @@ use super::{
     },
     request::{Rejection, parse_request},
 };
+
+/// Commands taking longer than this are logged at `info` (prompt 29: performance budgets,
+/// `docs/performance.md`). Long-running commands by nature (imports, exports' setup, waits for
+/// the renderer) show up too: the log says which command it was.
+const SLOW_COMMAND: Duration = Duration::from_millis(250);
+
+/// Logs how long a command took: every command at `debug`, slow ones at `info`. The command's
+/// kind is read from the frame only when the line is written.
+fn log_duration(id: u64, text: &str, elapsed: Duration) {
+    let slow = elapsed >= SLOW_COMMAND;
+    if !slow && !tracing::enabled!(tracing::Level::DEBUG) {
+        return;
+    }
+    let kind = command_kind(text);
+    let elapsed_ms = elapsed.as_secs_f64() * 1000.0;
+    if slow {
+        tracing::info!(id, %kind, elapsed_ms, "slow command");
+    } else {
+        tracing::debug!(id, %kind, elapsed_ms, "command answered");
+    }
+}
+
+/// The `command.kind` of a request frame (`?` when unreadable).
+fn command_kind(text: &str) -> String {
+    serde_json::from_str::<serde_json::Value>(text)
+        .ok()
+        .and_then(|frame| frame["command"]["kind"].as_str().map(str::to_owned))
+        .unwrap_or_else(|| "?".to_owned())
+}
 
 /// Parses requests, dispatches each command to its handler and encodes the response.
 ///
@@ -34,7 +65,10 @@ impl RpcRouter {
         let response = match parse_request(text) {
             Ok(request) => {
                 tracing::debug!(id = request.id, command = ?request.command, "request");
-                let outcome = match self.dispatch(&request.command).await {
+                let started = Instant::now();
+                let dispatched = self.dispatch(&request.command).await;
+                log_duration(request.id, text, started.elapsed());
+                let outcome = match dispatched {
                     Ok(result) => ResponseOutcome::Result(result),
                     Err(error) => {
                         tracing::info!(id = request.id, code = ?error.code, message = %error.message, "command failed");
@@ -697,6 +731,15 @@ mod tests {
     async fn reply(text: &str) -> Value {
         let router = RpcRouter::new(testing::context());
         serde_json::from_str(&router.handle_text(text).await).unwrap()
+    }
+
+    #[test]
+    fn the_kind_of_a_command_is_read_for_duration_logs() {
+        assert_eq!(
+            command_kind(r#"{"type":"request","id":1,"command":{"kind":"undo","projectId":"x"}}"#),
+            "undo"
+        );
+        assert_eq!(command_kind("not json"), "?");
     }
 
     #[tokio::test]
