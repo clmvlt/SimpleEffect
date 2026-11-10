@@ -64,7 +64,9 @@ git push origin dev
 
 > Les workflows `.github/workflows/ci.yml` et `release.yml` sont créés par le prompt 01.
 
-Pousser un tag lance la construction des installeurs Windows (`.exe`), macOS (`.dmg`) et Linux (`.AppImage`), puis publie une release GitHub. La version de l'app est lue dans le tag (format `vMAJEUR.MINEUR.CORRECTIF`).
+Pousser un tag lance la construction des installeurs Windows (`.exe`), macOS Apple Silicon et Intel (`.dmg`) et Linux (`.AppImage`, `.deb`), puis publie une release GitHub avec des notes générées depuis les commits (`scripts/release-notes.mjs`). La version de l'app est lue dans le tag (format `vMAJEUR.MINEUR.CORRECTIF`).
+
+Noms des fichiers (stables) : `SimpleEffect-<version>-windows-x64-setup.exe`, `SimpleEffect-<version>-macos-arm64.dmg`, `SimpleEffect-<version>-macos-x64.dmg`, `SimpleEffect-<version>-linux-x86_64.AppImage`, `SimpleEffect-<version>-linux-amd64.deb`. Avant de promouvoir une version, passe la [checklist de release](docs/release-checklist.md).
 
 **Pré-release de test** (depuis `recette`) :
 
@@ -110,4 +112,4 @@ git tag -d v0.1.0
 ## Bon à savoir
 
 - La CI (`ci.yml`) lance `pnpm check` à chaque push sur `dev`, `recette`, `main` et `feature/**` : `gh run list --branch dev`.
-- Les installeurs ne sont pas signés : sous Windows, SmartScreen affiche un avertissement (« Informations complémentaires » → « Exécuter quand même ») ; sous macOS, fais clic droit → « Ouvrir » au premier lancement.
+- Les installeurs ne sont pas signés par un certificat : sous Windows, SmartScreen affiche un avertissement (« Informations complémentaires » → « Exécuter quand même ») ; sous macOS (signature ad hoc, pas de notarisation), fais clic droit → « Ouvrir » au premier lancement, ou `xattr -dr com.apple.quarantine /Applications/SimpleEffect.app`.

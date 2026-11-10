@@ -67,8 +67,9 @@ Adapters depend on `se-app` and `se-domain`, never on each other. `se-core` depe
 | `pnpm check` | Everything CI runs: format check, lint, typecheck, raw-colour guard, JS tests, codegen freshness, `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test` (`scripts/check.mjs`) |
 | `pnpm test` / `cargo test --workspace` | Tests only |
 | `pnpm lint` / `pnpm format` / `pnpm typecheck` | Single steps of `pnpm check` (`format` rewrites files) |
-| `pnpm build` | Release se-core + production bundles of the Electron app |
-| `pnpm package` | `build`, then the installer of the current platform into `apps/desktop/release/` |
+| `pnpm build` | Release se-core + production bundles of the Electron app + licence notices (`scripts/generate-notices.mjs` → `apps/desktop/out/notices/`) |
+| `pnpm package` | `build`, then the installer of the current platform into `apps/desktop/release/` (`SimpleEffect-<version>-windows-x64-setup.exe`, `-macos-<arch>.dmg`, `-linux-x86_64.AppImage`, `-linux-amd64.deb`; needs `pnpm fetch-binaries`; checks in `docs/release-checklist.md`, ADR-0039) |
+| `node scripts/release-notes.mjs <tag>` | The GitHub release notes of a tag (feat/fix/perf commits since the previous tag + install notes), used by `release.yml` |
 | `pnpm set-version <semver>` | Write the version into every `package.json` and `Cargo.toml` (used by the release workflow) |
 | `pnpm codegen` | Regenerate `packages/protocol/src/generated/` from Rust (`se-codegen`); `--check` fails if stale |
 | `pnpm storybook` | Design system playground (`@se/ui` Storybook on http://localhost:6006, a11y addon) |
@@ -168,6 +169,7 @@ The user has durably authorized AI agents to commit and push to `dev` and to the
 - **Motion templates are checked by the renderer** (ADR-0035): `create_motion_template`/`update_motion_template` fail with `RENDERER_UNAVAILABLE` without an editor window, like `get_frames`. Code under `packages/engine/src/templates/sandbox/` is serialized with `toString()` into template Workers: keep each function self-contained (no import, no outer variable). Electron's Chromium resolves a font family once per Worker: a family used before its faces arrived stays in the fallback font, so template Workers get families before the first frame using them (restarted otherwise, `packages/engine/CLAUDE.md`).
 - **ONNX Runtime is loaded at runtime** (se-vision, ADR-0037): without `pnpm fetch-binaries` automatic reframing reports `VISION_UNAVAILABLE` and the real detection test skips itself. Intel Macs have no official build. Always create sessions from the environment built with telemetry off.
 - **Never** log or persist AI CLI credentials or tokens; MCP task tokens are redacted in logs.
+- **Licence notices** list what ships (ADR-0039): a new sidecar, model, font or other non-npm/non-Cargo asset needs an entry in `LICENSES/components.json` (+ its text in `LICENSES/`); `pnpm dev` shows no notices until a `pnpm build`. Diagnostics archives are masked by se-app's `Redactor`: keep log lines maskable (paths through the home folder, never raw secrets).
 - **TypeScript is pinned to 6.0.x**: TypeScript 7 (native) has no JS API, and `typescript-eslint` (typed lint) supports `<6.1`. Upgrade only when `typescript-eslint` supports 7.
 - **Electron binary**: since Electron 45 it is not downloaded at install time; the desktop `dev` script runs `install-electron` (idempotent) first. electron-builder downloads its own copy for packaging.
 - **Dependency install scripts** are blocked by pnpm unless listed in `allowBuilds` (`pnpm-workspace.yaml`). pnpm also refuses versions published less than a day ago (`minimumReleaseAge`): pick the previous release rather than adding exclusions.

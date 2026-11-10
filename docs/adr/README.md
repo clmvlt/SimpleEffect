@@ -43,6 +43,7 @@ ADRs are immutable once accepted: to change a decision, write a new ADR that sup
 | [0036](0036-template-library-and-brand-kits.md) | Template library and brand kits: app-wide libraries, project copies, proposed updates | Accepted |
 | [0037](0037-automatic-reframing.md) | Automatic reframing: YuNet over a runtime-loaded ONNX Runtime, pure tracking, editable keyframes | Accepted |
 | [0038](0038-video-export-renderer-encodes-core-writes.md) | Video export: the renderer draws and encodes, the core orchestrates and writes | Accepted |
+| [0039](0039-packaging-licences-diagnostics-first-run.md) | Packaging, licence notices, diagnostics archives and the first-run wizard | Accepted |
 
 ## Template
 
