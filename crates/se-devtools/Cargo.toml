@@ -1,6 +1,6 @@
 [package]
 name = "se-devtools"
-description = "Development tools (never shipped): generates large test projects for timeline and performance work."
+description = "Development tools (never shipped): generates large test projects and benchmarks the core for timeline and performance work."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -19,6 +19,17 @@ se-store = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt"] }
 uuid = { workspace = true, features = ["v7"] }
+
+[dev-dependencies]
+criterion = { workspace = true }
+se-domain = { workspace = true, features = ["test-support"] }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+
+[[bench]]
+name = "core"
+harness = false
 
 [lints]
 workspace = true
