@@ -60,4 +60,4 @@ Record the result of each line (✅ / ❌ + note) in the release's PROGRESS entr
 
 | Version | Platform | Date | Result |
 |---|---|---|---|
-| 0.1.0 | Windows 11 x64 (dev machine, RTX 3080) | 2026-11-10 | See `prompts/PROGRESS.md`, prompt 30 |
+| 0.1.0 | Windows 11 x64 (dev machine, RTX 3080) | 2026-11-10 | ✅ 14/14 applicable steps (12 N/A); details in `prompts/PROGRESS.md`, prompt 30 |

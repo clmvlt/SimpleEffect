@@ -26,6 +26,54 @@ Journal de bord partagé entre les sessions. **Chaque session qui exécute un pr
 
 <!-- Add new entries below this line, most recent first. -->
 
+## 2026-11-10 — Prompt 30: Packaging multi-plateforme — Done
+
+**Branch**: `feature/30-packaging`, merged into `dev` at `<pending>`
+
+**Done**
+- electron-builder (`apps/desktop/electron-builder.yml`): Windows NSIS x64 per user (folder choice, app data kept at uninstall), macOS dmg arm64 + x64 ad-hoc signed (`identity: '-'`), Linux AppImage + deb; stable names `SimpleEffect-<version>-windows-x64-setup.exe`, `-macos-<arch>.dmg`, `-linux-x86_64.AppImage`, `-linux-amd64.deb`; icon `build-resources/icon.png` (source `icon.svg`). `pnpm build` (release core, bundles, notices) and `pnpm package`.
+- Resources: `resources/bin/` (se-core + sidecars, unchanged) and `resources/LICENSES/` (repository `LICENSES/` + generated notices), resolved by pure functions tested per platform (`resource-paths.test.ts`).
+- Licence notices generated at build time from what ships: a Vite plugin lists the npm packages of each bundle (main, preload, renderer, workers); `scripts/generate-notices.mjs` adds the crates linked into se-core (`cargo metadata --filter-platform`, normal deps, no proc-macros) and `LICENSES/components.json` → `third-party-notices.json` (deduplicated texts) + `THIRD-PARTY-NOTICES.txt`.
+- Diagnostics archive: `exportDiagnostics` (se-app `DiagnosticsService`, se-store `FsDiagnosticsFiles`): `README.txt`, `report.json`, `logs/` (7 newest, 2 MiB tails), masked by one `Redactor` (home folder → `~`, media/project names → hashes, tokens/bearer/long secrets → `<redacted>`, e-mails → `<email>`); no project content read. `setProjectsFolder` command.
+- « À propos » (`features/about`, opened from the status bar version): versions (app, se-core, engine, Electron, Chromium, AI CLI) + « Copier », « Exporter un diagnostic… », « Assistant de bienvenue », Licences (search, counts, texts, « Ouvrir le dossier des licences »), Performances (moved from Réglages).
+- First-run wizard (`features/onboarding`, step dialog): Bienvenue, Assistant IA (installed / logged in, how to install), Binaires et GPU (ffmpeg + hardware encoders, WebGL GPU, WebCodecs, face detection), Modèles (the settings' Whisper list, consented downloads), Dossier des projets; once per machine (`se.ui.onboarding.v1.done`).
+- `release.yml`: Intel macOS (`macos-15-intel`) added, release notes from Conventional Commits (`scripts/release-notes.mjs`, feat/fix/perf in French headings + install notes per platform).
+- Docs: ADR-0039, `docs/release-checklist.md`, README « Installation » and « Licences », architecture §2/§4/§13/§14, glossary, GUIDE-GIT artifact names, CLAUDE.md of root, se-app, se-store, se-core, se-protocol, desktop.
+
+**Release checklist — 0.1.0, Windows 11 x64 (dev machine, RTX 3080), 2026-11-10**
+Silent per-user install into a scratch folder, fresh `--user-data-dir`, window on the secondary screen, driven over CDP:
+1. Install ✅ no administrator rights; Start menu and desktop shortcuts with the icon; 197 MB installer.
+2. First launch ✅ « Cœur connecté », wizard « Bienvenue dans SimpleEffect ».
+3. Assistant IA ✅ Claude Code « Trouvé et utilisable », « Prêt à recevoir des tâches » (logged-out case not re-tested on the installed build; covered by unit tests).
+4. Binaires et GPU ✅ ffmpeg 9.0.2 with nvenc, RTX 3080 named, decode/encode H.264, HEVC, VP9, AV1; face detection ONNX Runtime on CPU.
+5. Modèles ✅ tiny → large-v3-turbo with sizes, « Importer un modèle… » (no download started).
+6. Dossier des projets ✅ folder shown, set through `setProjectsFolder` (the native picker was not clicked, it would open on the primary screen), Terminer; not shown again at the next launch.
+7. Create a project ✅ `.seproj` created in that folder, editor opened.
+8. Import ✅ via `importMedia` + `placeMedia` (10 s, bin thumbnail, waveform canvas); drag and drop not exercised by the script.
+9. Playback ✅ playhead advances in real time (2:28 → 5:26 in 3 s).
+10. AI task ✅ « Coupe les 2 premières secondes » trimmed both linked clips by 2 s; « revertTask » restored them (no conflict), undoing the revert re-applied the cut. Note: user undo does not cover AI edits by design (ADR-0005).
+11. Video export ✅ 1080p H.264/AAC, 10 s, 17 MB in 1.4 s, checked by ffprobe.
+12. Premiere export — N/A (prompt 28 skipped).
+13. À propos ✅ versions 0.1.0 / 0.1.0 / 0.1.0, Electron 45.2.3, Chromium 156.0.8078.80, Claude Code 2.1.321; Licences: 13 components · 86 npm packages · 213 crates; `resources/LICENSES` present (the folder button was not clicked: Explorer would open on the primary screen).
+14. Diagnostic ✅ zip of `README.txt`, `report.json`, `logs/se-core.<date>.log` (5.6 KB); no user name, project or media name, token or e-mail (home folder shown as `~`).
+15. Uninstall ✅ silent; app folder, shortcuts and uninstall registry key gone; profile (`library.db`) and project kept.
+
+**Deviations from the prompt**
+- Premiere export N/A: prompt 28 (FCP7 XML) skipped at the user's request.
+- The face detection model is embedded (prompt 26), so the wizard's models step offers only Whisper models.
+- « Performances » moved from Réglages to À propos (user's choice: « Panneau perf dans À propos »).
+- macOS and Linux installers are built by `release.yml` but not tested locally (no machine); their checklist runs at the first release.
+- No code signing certificate (personal use): SmartScreen and Gatekeeper workarounds documented.
+
+**Follow-ups**
+- Run the checklist on macOS (arm64 and Intel) and Linux at the first tagged release.
+- The checklist's logged-out and not-installed AI cases on an installed build.
+
+**Notes for the next agent**
+- Launch test windows without stealing focus: start the exe with `STARTUPINFO.wShowWindow = SW_SHOWMINNOACTIVE` (7), then `SetWindowPlacement(showCmd = SW_SHOWNOACTIVATE)` with a normal rectangle on the secondary screen (PowerShell `Add-Type` + `CreateProcess`); the window draws normally there.
+- `target/debug/incremental` can grow past 100 GB: makensis then fails with « can't write … bytes to output » on a full disk. Deleting `target/debug/incremental` is safe (rebuilt on demand).
+- Native dialogs (folder picker, save dialog, Explorer) open on the primary screen: drive their core commands instead in scripted checks.
+
 ## 2026-11-10 — Prompt 29: Performance et robustesse — Done
 
 **Branch**: `feature/29-performance-robustesse`, merged into `dev` at `f9deccb`
