@@ -41,6 +41,9 @@ Persistence adapter: project folders, `project.json` snapshots, the project and 
 - Blocking filesystem and SQLite calls run in `spawn_blocking` (`io_errors::blocking`).
 - Never delete user data: trashing uses the OS trash.
 
+- Recovery (prompt 29): a `project.json` that fails to parse or validate is renamed `project.json.corrupted` (never deleted) and the newest valid `.bak.N` is restored; the journal is truncated only up to the **previous** snapshot so a backup plus the journal still rebuild every change. Disk-full and permission errors map to actionable messages (`io_errors.rs`).
+- The journal keeps `synchronous = FULL` on purpose: ~10 ms per append on Windows (`pnpm bench`, `docs/performance.md`) buys durability of every committed edit.
+
 ## Allowed dependencies
 `se-app`, `se-domain`, `se-protocol` (the task and library DTOs it stores as JSON) and storage libraries (`rusqlite` bundled, `serde_json`, `dunce`, `trash`, `zip` (deflate only) for `.setemplate` files, `tokio` for `spawn_blocking`). Never another adapter crate. See `docs/architecture.md` §3.
 

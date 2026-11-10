@@ -56,10 +56,15 @@ The application layer: use cases, ports (traits implemented by adapters), the `P
 - AI runs act only through the MCP endpoint of their spec: a run's token is valid exactly while the run is going (minted after it is marked running, revoked by a drop guard whatever way it ends).
 - AI tasks: task state lives behind the service's async mutex, held while a change is saved (saves of one task never overtake each other); event appends happen outside it. Every task change is saved then published (`taskUpdated`); every event appended then published (`taskEventAppended`). A run's status and its task's are always equal (`task_state::set_status`). Nothing reruns a task without the user: interrupted tasks only fail.
 
+- AI edits plan and commit **one at a time** (prompt 29): `AgentEditService::apply` and `apply_cuts` hold the service's `serial` lock for the whole plan → `apply_ai_on` loop. Without it, parallel tasks invalidated each other's optimistic base revisions and failed after `MAX_ATTEMPTS` replans (found by `tests/load.rs`). Replans now only absorb user and system commits; never take the lock inside the actor or while waiting for an agent.
+- Snapshots are bounded (`project_actor/runner.rs`): `MAX_SAVE_WAIT` 30 s and `MAX_UNSAVED_COMMITS` 200 after the first unsaved commit, whatever the debounce says; a failing save publishes `projectSaveStateChanged` and retries, the journal keeps the edits.
+- Performance (`docs/performance.md`): `commit` on a 500-item project costs ~1.4 ms and the journal append ~10 ms (fsync): keep validation incremental-friendly and never add a second full-project pass per commit; publish the patch before slow IO.
+
 ## Allowed dependencies
 `se-domain`, `se-protocol`, `tokio`, `async-trait`, `tracing`, `thiserror`. Never an adapter crate. See `docs/architecture.md` §3.
 
 ## How to test
+- `tests/load.rs` (prompt 29): five AI tasks of 20 edits each while the user edits; every edit lands, the saved snapshot matches, each task reverts alone. Keep it green when touching `agent_edits`, the actor or tasks.
 - `cargo test -p se-app`
 - Unit tests in-file (patch building, recovery, new projects, error codes).
 - `tests/project_actor.rs`: actor against the in-memory store with `#[tokio::test(start_paused = true)]` (commit order, events, journal failure, debounced and retried snapshots, close).

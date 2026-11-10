@@ -58,6 +58,8 @@ Adding a command: recipe in `crates/se-protocol/CLAUDE.md`. Publishing an event:
 - Handlers convert `se_app::AppError` with `?` (`From<AppError> for ProtocolError`); they hold no logic beyond argument checks.
 - New routes go behind the access-guard middleware (router layer in `server.rs`); `/mcp` is the one exception, with its own guard (agents never see the session token).
 
+- Every RPC command is timed (`rpc/router.rs`): commands over 250 ms are logged at `info` as « slow command » with their kind, all at `debug`. Never log arguments (they may hold paths or text). The `tokio-console` feature (with `RUSTFLAGS="--cfg tokio_unstable"`) is for development only: never enable it in builds or CI (`docs/performance.md`).
+
 ## Allowed dependencies
 Every workspace crate (composition root); nothing depends on `se-core`. See `docs/architecture.md` §3.
 

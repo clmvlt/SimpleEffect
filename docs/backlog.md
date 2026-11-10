@@ -97,6 +97,7 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - Fall back to the mezzanine at runtime when the original was reported decodable but `canDecode()` refuses it on this machine (today: a « decodeFailed » issue).
 - Text in Workers needs the fonts loaded there (FontFace); the preview draws text on the main thread (prompt 15).
 - Prefetch the frames around the playhead while scrubbing; prompt 13 decodes sequentially for playback only.
+- Scrubbing 4K long-GOP originals without proxies takes ~500–570 ms per step (decode from the previous keyframe; `docs/performance.md`): draw the nearest keyframe at once, then refine to the exact frame. Proxies are read by default since prompt 29.
 - Playback timers (display refresh, 25 ms audio ticks) are throttled when the window is hidden or minimised: sound stutters there. Options: `backgroundThrottling: false` while playing, or audio scheduling in a Worker (prompt 13).
 - Sound at other speeds: JKL 2×/4× and reverse are silent, and clip speed changes pitch (`playbackRate`); add pitch-preserving or granular playback when editing needs it.
 - Reverse playback of long-GOP footage decodes a window per chunk and skips frames when the GOP is long; an intra-frame proxy for shuttling would make it smooth.
@@ -135,6 +136,7 @@ Ideas worth keeping that are not part of the current roadmap (`prompts/`). When 
 - An Intel Mac build of ONNX Runtime (Microsoft publishes none since 1.2x: compile it, or a pure-Rust fallback such as tract there).
 
 ## Platform
+- A scripted 30-minute memory soak of the built app (open `VideoFrame`s, JavaScript heap, se-core RSS) in the spirit of `scripts/perf/measure-app.mjs` (prompt 29 measured single runs only).
 - Light theme.
 - Additional UI languages (English first).
 - Plugin system for community motion templates.
