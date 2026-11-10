@@ -132,14 +132,16 @@ describe('ViewerPanel', () => {
     // The picture fills a wrapper of the displayed size (the transform handles sit over it).
     expect(picture.parentElement).toHaveStyle({ width: '960px', height: '540px' });
     expect(engine.size).toEqual([960, 540]);
-    await user.click(screen.getByRole('button', { name: 'Lire les proxys' }));
+    // Proxies are read by default (prompt 29): the button turns them off.
     expect(engine.proxy).toBe(true);
+    await user.click(screen.getByRole('button', { name: 'Lire les proxys' }));
+    expect(engine.proxy).toBe(false);
     await user.click(screen.getByRole('button', { name: 'Damier de transparence' }));
     expect(engine.background).toBe('transparent');
     expect(JSON.parse(window.localStorage.getItem('se.ui.viewer.v1') ?? '{}')).toEqual({
       ...DEFAULT_VIEWER_PREFERENCES,
       zoom: 0.5,
-      proxy: true,
+      proxy: false,
       checkerboard: true,
     });
   });
