@@ -18,6 +18,7 @@ mod brand_kits;
 mod captions;
 mod command;
 mod command_result;
+mod diagnostics;
 mod editing;
 mod envelope;
 mod error;
@@ -51,6 +52,7 @@ pub use captions::{
 };
 pub use command::Command;
 pub use command_result::{CommandResult, CoreInfo};
+pub use diagnostics::{ClientDiagnostics, CodecSupport, ComponentVersion, DiagnosticsSummary};
 pub use editing::{
     ItemPlacement, ItemTrim, PastedItem, PlaceMediaRequest, PlacementMode, TrackTarget,
 };

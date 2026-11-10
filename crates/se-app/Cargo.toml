@@ -16,6 +16,7 @@ test-support = ["se-domain/test-support"]
 se-domain = { workspace = true }
 se-protocol = { workspace = true }
 async-trait = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
 tracing = { workspace = true }

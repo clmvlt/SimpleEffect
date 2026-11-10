@@ -2,6 +2,7 @@
 //! tested without IO, and deterministic ids and clocks.
 
 mod agent_fakes;
+mod diagnostics_fakes;
 mod export_fakes;
 mod font_fakes;
 mod job_fakes;
@@ -23,6 +24,7 @@ mod vision_fakes;
 pub use agent_fakes::{
     FakeAgentWorkspaces, REPLAY_PROVIDER_ID, ReplayProvider, ReplayScript, ReplayStep,
 };
+pub use diagnostics_fakes::FakeDiagnosticsFiles;
 pub use export_fakes::{FakeExportOutputs, FinishedExportFile};
 pub use font_fakes::{FAKE_FONT_BYTES, FakeFontCatalog};
 pub use job_fakes::{

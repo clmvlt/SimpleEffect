@@ -11,14 +11,19 @@ pub fn ping() -> CommandResult {
 
 /// `getCoreInfo`: version, platform and folders of the running core.
 pub fn get_core_info(context: &HandlerContext) -> CommandResult {
-    CommandResult::GetCoreInfo(CoreInfo {
+    CommandResult::GetCoreInfo(core_info(context))
+}
+
+/// Version, platform and folders of the running core (also in diagnostics archives).
+pub fn core_info(context: &HandlerContext) -> CoreInfo {
+    CoreInfo {
         version: context.version.to_owned(),
         os: std::env::consts::OS.to_owned(),
         arch: std::env::consts::ARCH.to_owned(),
         // Display-only strings: a non-UTF-8 path is shown with replacement characters.
         app_data_dir: context.paths.data_dir.to_string_lossy().into_owned(),
         logs_dir: context.paths.logs_dir.to_string_lossy().into_owned(),
-    })
+    }
 }
 
 #[cfg(test)]

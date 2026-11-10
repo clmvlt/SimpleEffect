@@ -6,6 +6,7 @@ mod agents;
 mod analysis_store;
 mod app_library;
 mod brand_kit_library;
+mod diagnostics;
 mod exports;
 mod fonts;
 mod media;
@@ -28,6 +29,7 @@ pub use agents::{
 pub use analysis_store::{AnalysisStore, StoredAnalysis};
 pub use app_library::{AppLibraryRepository, RecentProjectRecord};
 pub use brand_kit_library::BrandKitLibrary;
+pub use diagnostics::{ArchiveEntry, DiagnosticsFiles, LogFile};
 pub use exports::{ExportOutput, ExportOutputPlan, ExportOutputs, ExportStream};
 pub use fonts::{FontCatalog, FontData};
 pub use media::{

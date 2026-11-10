@@ -167,3 +167,22 @@ fn smart_cut_commands_carry_ranges_and_silence_params() {
     assert!((params.threshold_dbfs + 45.0).abs() < f64::EPSILON);
     assert!(all_tracks);
 }
+
+#[test]
+fn diagnostics_carry_what_the_window_knows() {
+    let json = r#"{"kind":"exportDiagnostics","path":"/tmp/d.zip","client":{"appVersion":"0.1.0","components":[{"name":"Electron","version":"45.2.3"}],"gpu":"ANGLE","codecs":[{"codec":"H.264","decode":true,"encode":false}],"locale":"fr"}}"#;
+    let Command::ExportDiagnostics { path, client } = serde_json::from_str(json).unwrap() else {
+        panic!("exportDiagnostics must parse as Command::ExportDiagnostics");
+    };
+    assert_eq!(path, "/tmp/d.zip");
+    assert_eq!(client.components[0].name, "Electron");
+    assert!(client.codecs[0].decode && !client.codecs[0].encode);
+    let folder: Command =
+        serde_json::from_str(r#"{"kind":"setProjectsFolder","path":"/films"}"#).unwrap();
+    assert_eq!(
+        folder,
+        Command::SetProjectsFolder {
+            path: "/films".to_owned()
+        }
+    );
+}

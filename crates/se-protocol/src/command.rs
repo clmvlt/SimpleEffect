@@ -11,13 +11,13 @@ use ts_rs::TS;
 
 use crate::{
     AddGraphicRequest, AiSettings, CaptionEmphasisEdit, CaptionStyleEdit, CaptionTextEdit,
-    CreateProjectRequest, DecodabilityReport, DecoderCapabilities, DownloadTarget,
-    ExportPreferences, GenerateCaptionsRequest, GenerateDerivedRequest, ImportMediaRequest,
-    ImportSubtitlesRequest, InsertLibraryTemplateRequest, ItemAnimation, ItemPlacement, ItemTrim,
-    ItemUpdate, LibraryBrandKit, LibraryTemplateInfo, MediaSettings, NewTransition, PastedItem,
-    PlaceMediaRequest, PlacementMode, RelinkAssetRequest, SilenceCutParams, SmartCutSettings,
-    StartExportRequest, SubmitTaskRequest, TaskScope, TemplateCheckOutcome,
-    TranscriptionPreferences, WordCutPurpose,
+    ClientDiagnostics, CreateProjectRequest, DecodabilityReport, DecoderCapabilities,
+    DownloadTarget, ExportPreferences, GenerateCaptionsRequest, GenerateDerivedRequest,
+    ImportMediaRequest, ImportSubtitlesRequest, InsertLibraryTemplateRequest, ItemAnimation,
+    ItemPlacement, ItemTrim, ItemUpdate, LibraryBrandKit, LibraryTemplateInfo, MediaSettings,
+    NewTransition, PastedItem, PlaceMediaRequest, PlacementMode, RelinkAssetRequest,
+    SilenceCutParams, SmartCutSettings, StartExportRequest, SubmitTaskRequest, TaskScope,
+    TemplateCheckOutcome, TranscriptionPreferences, WordCutPurpose,
 };
 
 /// A command sent inside a [`crate::RequestEnvelope`], tagged by `kind` (camelCase).
@@ -963,6 +963,22 @@ pub enum Command {
     /// Stores what the export dialog remembers. Answered by
     /// [`crate::CommandResult::UpdateExportPreferences`].
     UpdateExportPreferences(ExportPreferences),
+    /// Makes `path` the folder new projects are proposed in (prompt 30, first-run wizard).
+    /// Answered by [`crate::CommandResult::SetProjectsFolder`].
+    SetProjectsFolder {
+        /// An absolute folder.
+        path: String,
+    },
+    /// Writes a diagnostics archive (zip) to `path` (prompt 30): the core's recent logs and a
+    /// report of the machine, AI CLI, tools and settings, with the user's home folder written
+    /// `~`, media and project file names hashed and secrets removed; never project content.
+    /// Answered by [`crate::CommandResult::ExportDiagnostics`].
+    ExportDiagnostics {
+        /// Absolute path of the `.zip` to write (replaced when it exists).
+        path: String,
+        /// What the window adds about itself.
+        client: ClientDiagnostics,
+    },
 }
 
 #[cfg(test)]
