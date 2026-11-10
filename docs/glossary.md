@@ -216,6 +216,15 @@ Use these terms consistently in code, docs, UI keys and agent instructions. Add 
 | **Performance HUD** | The viewer overlay with real frames per second, dropped frames, decoding work and caches | `PerformanceHud` |
 | **Golden frame** | A reference PNG a rendered test scene must match within a tolerance (`packages/engine/test/golden/references/`) | `expectGolden` |
 | **Premiere package** | Export folder with FCP7 XML, OTIO, overlay renders and SRT | — |
+| **Export** | One final render of a sequence (or its in/out span) to a file, queued in the core, drawn and encoded by the renderer with the preview's engine (prompt 27, ADR-0038) | `ExportInfo`, `ExportService`, `ExportJob` |
+| **Export snapshot** | The project's entities when an export starts: the renderer draws them, never the live mirror, so later edits never reach the file | `ExportRenderRequest.snapshot`, `exports::scene` |
+| **Export pipeline** | How an export's file is put together: `muxed` (WebCodecs + Mediabunny bytes), `ffmpegFrames` (raw RGBA frames encoded by ffmpeg: masters), `aacRemux` (ffmpeg encodes the sound as AAC and joins the muxed picture) | `ExportPipeline`, `pipeline_of` |
+| **Master** | A high-quality intermediate export for other editing software: ProRes 422 HQ, ProRes 4444 or DNxHR HQ in `.mov`, PCM sound, encoded by ffmpeg | `isMasterCodec`, `is_ffmpeg_codec` |
+| **Export preset** | Named export settings: built in (YouTube, Shorts/Reels/TikTok, square, master, sound only) or saved by the user; a preset fixes the picture's shorter side, the output keeps the sequence's aspect | `ExportPreset`, `BUILT_IN_PRESETS` |
+| **File name template** | The export file's name with placeholders (`{project}`, `{sequence}`, `{preset}`, `{date}`, `{time}`, `{width}`, `{height}`), characters file systems refuse replaced | `expandFileName`, `ExportPreferences.fileNameTemplate` |
+| **Export check** | What ffprobe finds in a finished export compared with its settings (duration, codecs, size): a warning when they differ | `ExportCheck`, `exports::check::file_check` |
+| **Audio block (export)** | 30 s of an export's sound mixed offline through the preview's audio graph, from a short lead-in so blocks join on the sample | `AUDIO_BLOCK_SECONDS`, `ExportAudioMixer` |
+| **Export activity** | What the main process does while exports run: keep the app from being suspended, ask before the window closes or the app quits | `ExportActivityGuard`, `setExportActivity` |
 | **Core** | The Rust process `se-core` | — |
 | **Renderer** | The Electron renderer process (React UI + engine) | — |
 | **Handshake** | The single JSON line (`port`, `token`, `version`) the core prints on stdout once it accepts connections | `CoreHandshake` |
